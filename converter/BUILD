@@ -1,8 +1,8 @@
-load("//third_party/llvm/build_defs:lit.bzl", "glob_lit_tests")
-load("//third_party/tensorflow:tensorflow.google.bzl", "filegroup")
+#load("@llvm-project//llvm/build_defs:lit.bzl", "glob_lit_tests")
+#load("@org_tensorflow//tensorflow:tensorflow.google.bzl", "filegroup")
 
 package(
-    default_applicable_licenses = ["//third_party/tensorflow:license"],  # copybara:comment
+    #    default_applicable_licenses = ["@org_tensorflow//:LICENSE"],  # copybara:comment
     default_visibility = ["//visibility:public"],
 )
 
@@ -112,7 +112,7 @@ cc_test(
 cc_library(
     name = "visualize_config",
     hdrs = ["visualize_config.h"],
-    compatible_with = ["//buildenv/target:non_prod"],
+    #compatible_with = ["//buildenv/target:non_prod"],
 )
 
 cc_library(
@@ -227,12 +227,12 @@ cc_binary(
 )
 
 # Standard file check tests setup.
-glob_lit_tests(
-    name = "all_tests",
-    data = [":test_utilities"],
-    driver = "//third_party/tensorflow/compiler/mlir/lite/experimental/google/tooling:run_lit.sh",
-    test_file_exts = ["mlir"],
-)
+# glob_lit_tests(
+#     name = "all_tests",
+#     data = [":test_utilities"],
+#     driver = "//third_party/tensorflow/compiler/mlir/lite/experimental/google/tooling:run_lit.sh",
+#     test_file_exts = ["mlir"],
+# )
 
 exports_files(
     ["tflite-to-visualizer-json.sh"],
