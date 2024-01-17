@@ -1,2 +1,2 @@
-# Required by tensorflow
+# Tensorflow needs remote repo
 common --experimental_repo_remote_exec

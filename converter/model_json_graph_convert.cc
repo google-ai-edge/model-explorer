@@ -1,52 +1,48 @@
-#include "third_party/tensorflow/compiler/mlir/lite/experimental/google/tooling/model_json_graph_convert.h"
+#include "converter/model_json_graph_convert.h"
 
-#include <cstdint>
 #include <memory>
 #include <string>
 #include <unordered_set>
 #include <utility>
 #include <vector>
 
-#include "file/base/file.h"
-#include "file/base/file_closer.h"
-#include "file/base/helpers.h"
-#include "file/base/options.h"
-#include "third_party/absl/log/log.h"
-#include "third_party/absl/status/status.h"
-#include "third_party/absl/status/statusor.h"
-#include "third_party/absl/strings/str_cat.h"
-#include "third_party/absl/strings/str_join.h"
-#include "third_party/absl/strings/str_split.h"
-#include "third_party/absl/strings/string_view.h"
-#include "third_party/absl/types/span.h"
-#include "third_party/llvm/llvm-project/llvm/include/llvm/Support/SMLoc.h"
-#include "third_party/llvm/llvm-project/llvm/include/llvm/Support/SourceMgr.h"
-#include "third_party/llvm/llvm-project/llvm/include/llvm/Support/raw_ostream.h"
-#include "third_party/llvm/llvm-project/mlir/include/mlir/Bytecode/BytecodeReader.h"
-#include "third_party/llvm/llvm-project/mlir/include/mlir/Dialect/Func/IR/FuncOps.h"
-#include "third_party/llvm/llvm-project/mlir/include/mlir/IR/BuiltinOps.h"
-#include "third_party/llvm/llvm-project/mlir/include/mlir/IR/Location.h"
-#include "third_party/llvm/llvm-project/mlir/include/mlir/IR/MLIRContext.h"
-#include "third_party/llvm/llvm-project/mlir/include/mlir/IR/OwningOpRef.h"
-#include "third_party/llvm/llvm-project/mlir/include/mlir/IR/Verifier.h"
-#include "third_party/llvm/llvm-project/mlir/include/mlir/Pass/PassManager.h"
-#include "third_party/llvm/llvm-project/mlir/include/mlir/Support/FileUtilities.h"
-#include "third_party/llvm/llvm-project/mlir/include/mlir/Support/LogicalResult.h"
-#include "third_party/tensorflow/cc/saved_model/reader.h"
-#include "third_party/tensorflow/compiler/mlir/lite/experimental/google/tooling/translations.h"
-#include "third_party/tensorflow/compiler/mlir/lite/experimental/google/tooling/visualize_config.h"
-#include "third_party/tensorflow/compiler/mlir/lite/flatbuffer_import.h"
-#include "third_party/tensorflow/compiler/mlir/lite/stablehlo/transforms/legalize_tf_xla_call_module_to_stablehlo_pass.h"
-#include "third_party/tensorflow/compiler/mlir/lite/stablehlo/transforms/rename_entrypoint_to_main.h"
-#include "third_party/tensorflow/compiler/mlir/quantization/tensorflow/quantize_preprocess.h"  // IWYU pragma: keep
-#include "third_party/tensorflow/compiler/mlir/tensorflow/ir/tf_ops.h"
-#include "third_party/tensorflow/compiler/mlir/tensorflow/transforms/passes.h"
-#include "third_party/tensorflow/compiler/mlir/tensorflow/translate/mlir_import_options.h"
-#include "third_party/tensorflow/compiler/mlir/tensorflow/translate/tf_mlir_translate.h"
-#include "third_party/tensorflow/core/protobuf/saved_model.proto.h"
-#include "third_party/tensorflow/core/protobuf/saved_object_graph.proto.h"
-#include "third_party/tensorflow/core/protobuf/trackable_object_graph.proto.h"
-#include "util/task/status_macros.h"
+#include "absl/log/log.h"
+#include "absl/status/status.h"
+#include "absl/status/statusor.h"
+#include "absl/strings/str_cat.h"
+#include "absl/strings/str_join.h"
+#include "absl/strings/str_split.h"
+#include "absl/strings/string_view.h"
+#include "absl/types/span.h"
+#include "llvm/Support/SMLoc.h"
+#include "llvm/Support/SourceMgr.h"
+#include "llvm/Support/raw_ostream.h"
+#include "mlir/Bytecode/BytecodeReader.h"
+#include "mlir/Dialect/Func/IR/FuncOps.h"
+#include "mlir/IR/BuiltinOps.h"
+#include "mlir/IR/Location.h"
+#include "mlir/IR/MLIRContext.h"
+#include "mlir/IR/OwningOpRef.h"
+#include "mlir/IR/Verifier.h"
+#include "mlir/Pass/PassManager.h"
+#include "mlir/Support/FileUtilities.h"
+#include "mlir/Support/LogicalResult.h"
+#include "tensorflow/cc/saved_model/reader.h"
+#include "converter/status_macros.h"
+#include "converter/translations.h"
+#include "converter/visualize_config.h"
+#include "tensorflow/compiler/mlir/lite/flatbuffer_import.h"
+#include "tensorflow/compiler/mlir/lite/stablehlo/transforms/legalize_tf_xla_call_module_to_stablehlo_pass.h"
+#include "tensorflow/compiler/mlir/lite/stablehlo/transforms/rename_entrypoint_to_main.h"
+#include "tensorflow/compiler/mlir/quantization/tensorflow/quantize_preprocess.h"  // IWYU pragma: keep
+#include "tensorflow/compiler/mlir/tensorflow/ir/tf_ops.h"
+#include "tensorflow/compiler/mlir/tensorflow/transforms/passes.h"
+#include "tensorflow/compiler/mlir/tensorflow/translate/mlir_import_options.h"
+#include "tensorflow/compiler/mlir/tensorflow/translate/tf_mlir_translate.h"
+#include "tensorflow/core/protobuf/saved_model.proto.h"
+#include "tensorflow/core/protobuf/saved_object_graph.proto.h"
+#include "tensorflow/core/protobuf/trackable_object_graph.proto.h"
+#include "tensorflow/tsl/platform/env.h"
 
 namespace tooling {
 namespace visualization_client {
@@ -244,20 +240,10 @@ absl::StatusOr<std::string> ConvertFlatbufferToJson(
   std::unique_ptr<llvm::MemoryBuffer> input;
   std::string model_content;
   if (is_modelpath) {
-    File* model_file;
-    absl::Status file_status =
-        file::Open(model_path_or_buffer, "r", &model_file, file::Defaults());
-    FileCloser file_closer(model_file);
-    if (!file_status.ok()) return file_status;
+    RETURN_IF_ERROR(tsl::ReadFileToString(tsl::Env::Default(),
+                                          std::string(model_path_or_buffer),
+                                          &model_content));
 
-    int64_t flat_buffer_size, bytes_read;
-    RETURN_IF_ERROR(
-        file::GetSize(model_file, &flat_buffer_size, file::Defaults()));
-    std::vector<char> flat_buffer_data(flat_buffer_size);
-    RETURN_IF_ERROR(file::ReadToBuffer(model_file, flat_buffer_data.data(),
-                                       flat_buffer_size, &bytes_read,
-                                       file::Defaults()));
-    model_content.assign(flat_buffer_data.begin(), flat_buffer_data.end());
     input = llvm::MemoryBuffer::getMemBuffer(model_content,
                                              /*BufferName=*/"flatbuffer",
                                              /*RequiresNullTerminator=*/false);

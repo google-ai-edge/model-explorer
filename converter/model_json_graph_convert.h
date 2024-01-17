@@ -3,9 +3,9 @@
 
 #include <string>
 
-#include "third_party/absl/status/statusor.h"
-#include "third_party/absl/strings/string_view.h"
-#include "third_party/tensorflow/compiler/mlir/lite/experimental/google/tooling/visualize_config.h"
+#include "absl/status/statusor.h"
+#include "absl/strings/string_view.h"
+#include "converter/visualize_config.h"
 
 namespace tooling {
 namespace visualization_client {

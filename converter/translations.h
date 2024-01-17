@@ -1,15 +1,15 @@
 #ifndef TENSORFLOW_COMPILER_MLIR_LITE_EXPERIMENTAL_GOOGLE_TOOLING_TRANSLATIONS_H_
 #define TENSORFLOW_COMPILER_MLIR_LITE_EXPERIMENTAL_GOOGLE_TOOLING_TRANSLATIONS_H_
 
-#include "third_party/absl/status/statusor.h"
-#include "third_party/llvm/llvm-project/llvm/include/llvm/Support/FormatVariadic.h"
-#include "third_party/llvm/llvm-project/llvm/include/llvm/Support/JSON.h"
-#include "third_party/llvm/llvm-project/llvm/include/llvm/Support/raw_ostream.h"
-#include "third_party/llvm/llvm-project/mlir/include/mlir/IR/Operation.h"
-#include "third_party/llvm/llvm-project/mlir/include/mlir/Support/LogicalResult.h"
-#include "third_party/tensorflow/compiler/mlir/lite/experimental/google/tooling/formats/schema_structs.h"
-#include "third_party/tensorflow/compiler/mlir/lite/experimental/google/tooling/translate_helpers.h"
-#include "third_party/tensorflow/compiler/mlir/lite/experimental/google/tooling/visualize_config.h"
+#include "absl/status/statusor.h"
+#include "llvm/Support/FormatVariadic.h"
+#include "llvm/Support/JSON.h"
+#include "llvm/Support/raw_ostream.h"
+#include "mlir/IR/Operation.h"
+#include "mlir/Support/LogicalResult.h"
+#include "converter/formats/schema_structs.h"
+#include "converter/translate_helpers.h"
+#include "converter/visualize_config.h"
 
 namespace tooling {
 namespace visualization_client {

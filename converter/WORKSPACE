@@ -16,11 +16,6 @@ http_archive(
         "https://github.com/tensorflow/tensorflow/archive/" + TENSORFLOW_COMMIT +
         ".tar.gz",
     ],
-    # patches = [
-    #     # We need to rename lite/ios/BUILD.apple to lite/ios/BUILD.
-    #     Label("//third_party:tensorflow_lite_ios_build.patch"),
-    # ],
-    # patch_args = ["-p1"],
 )
 
 load("@org_tensorflow//tensorflow:workspace3.bzl", "tf_workspace3")

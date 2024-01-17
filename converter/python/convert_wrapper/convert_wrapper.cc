@@ -13,12 +13,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-#include "third_party/absl/strings/string_view.h"
-#include "third_party/pybind11/include/pybind11/pybind11.h"
-#include "third_party/pybind11_abseil/import_status_module.h"
-#include "third_party/pybind11_abseil/status_casters.h"  // IWYU pragma : keep
-#include "third_party/tensorflow/compiler/mlir/lite/experimental/google/tooling/model_json_graph_convert.h"
-#include "third_party/tensorflow/compiler/mlir/lite/experimental/google/tooling/visualize_config.h"
+#include "absl/strings/string_view.h"
+#include "pybind11/pybind11.h"
+#include "pybind11_abseil/import_status_module.h"
+#include "pybind11_abseil/status_casters.h"  // IWYU pragma : keep
+#include "converter/model_json_graph_convert.h"
+#include "converter/visualize_config.h"
 
 using tooling::visualization_client::VisualizeConfig;
 

@@ -1,10 +1,10 @@
 #ifndef TENSORFLOW_COMPILER_MLIR_LITE_EXPERIMENTAL_GOOGLE_TOOLING_TRANSLATE_HELPERS_H_
 #define TENSORFLOW_COMPILER_MLIR_LITE_EXPERIMENTAL_GOOGLE_TOOLING_TRANSLATE_HELPERS_H_
 
-#include "third_party/absl/status/statusor.h"
-#include "third_party/llvm/llvm-project/mlir/include/mlir/IR/Value.h"
-#include "third_party/tensorflow/compiler/mlir/lite/experimental/google/tooling/formats/schema_structs.h"
-#include "third_party/tensorflow/compiler/mlir/lite/experimental/google/tooling/visualize_config.h"
+#include "absl/status/statusor.h"
+#include "mlir/IR/Value.h"
+#include "converter/formats/schema_structs.h"
+#include "converter/visualize_config.h"
 
 namespace tooling {
 namespace visualization_client {
