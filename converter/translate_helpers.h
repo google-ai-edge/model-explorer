@@ -3,8 +3,8 @@
 
 #include "absl/status/statusor.h"
 #include "mlir/IR/Value.h"
-#include "converter/formats/schema_structs.h"
-#include "converter/visualize_config.h"
+#include "formats/schema_structs.h"
+#include "visualize_config.h"
 
 namespace tooling {
 namespace visualization_client {

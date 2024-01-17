@@ -1,4 +1,4 @@
-#include "converter/translate_helpers.h"
+#include "translate_helpers.h"
 
 #include <cstddef>
 #include <string>
@@ -29,11 +29,11 @@
 #include "mlir/IR/Value.h"
 #include "mlir/IR/Visitors.h"
 #include "stablehlo/dialect/StablehloOps.h"
-#include "converter/formats/schema_structs.h"
-#include "converter/graphnode_builder.h"
-#include "converter/status_macros.h"
-#include "converter/tools/attribute_printer.h"
-#include "converter/visualize_config.h"
+#include "formats/schema_structs.h"
+#include "graphnode_builder.h"
+#include "status_macros.h"
+#include "tools/attribute_printer.h"
+#include "visualize_config.h"
 #include "tensorflow/compiler/mlir/lite/ir/tfl_ops.h"
 #include "tensorflow/compiler/mlir/tensorflow/ir/tf_dialect.h"
 

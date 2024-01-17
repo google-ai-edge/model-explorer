@@ -22,8 +22,8 @@ cc_library(
         "@llvm-project//mlir:IR",
         "@stablehlo//:stablehlo_ops",
         "@org_tensorflow//tensorflow/compiler/mlir/lite:tensorflow_lite",
-        "//converter/formats:schema_structs",
-        "//converter/tools:attribute_printer",
+        "//formats:schema_structs",
+        "//tools:attribute_printer",
         "@org_tensorflow//tensorflow/compiler/mlir/tensorflow:tensorflow_types",
     ],
 )
@@ -39,7 +39,7 @@ cc_library(
         "@llvm-project//llvm:Support",
         "@llvm-project//mlir:IR",
         "@llvm-project//mlir:Support",
-        "//converter/formats:schema_structs",
+        "//formats:schema_structs",
     ],
     alwayslink = True,
 )
@@ -91,7 +91,7 @@ cc_library(
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/strings:string_view",
-        "//converter/formats:schema_structs",
+        "//formats:schema_structs",
     ],
 )
 

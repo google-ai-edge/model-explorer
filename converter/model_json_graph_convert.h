@@ -5,7 +5,7 @@
 
 #include "absl/status/statusor.h"
 #include "absl/strings/string_view.h"
-#include "converter/visualize_config.h"
+#include "visualize_config.h"
 
 namespace tooling {
 namespace visualization_client {

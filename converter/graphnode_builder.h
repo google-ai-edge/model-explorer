@@ -5,7 +5,7 @@
 
 #include "absl/status/status.h"
 #include "absl/strings/string_view.h"
-#include "converter/formats/schema_structs.h"
+#include "formats/schema_structs.h"
 
 namespace tooling {
 namespace visualization_client {

@@ -7,9 +7,9 @@
 #include "llvm/Support/raw_ostream.h"
 #include "mlir/IR/Operation.h"
 #include "mlir/Support/LogicalResult.h"
-#include "converter/formats/schema_structs.h"
-#include "converter/translate_helpers.h"
-#include "converter/visualize_config.h"
+#include "formats/schema_structs.h"
+#include "translate_helpers.h"
+#include "visualize_config.h"
 
 namespace tooling {
 namespace visualization_client {

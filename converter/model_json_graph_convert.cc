@@ -1,4 +1,4 @@
-#include "converter/model_json_graph_convert.h"
+#include "model_json_graph_convert.h"
 
 #include <memory>
 #include <string>
@@ -28,9 +28,9 @@
 #include "mlir/Support/FileUtilities.h"
 #include "mlir/Support/LogicalResult.h"
 #include "tensorflow/cc/saved_model/reader.h"
-#include "converter/status_macros.h"
-#include "converter/translations.h"
-#include "converter/visualize_config.h"
+#include "status_macros.h"
+#include "translations.h"
+#include "visualize_config.h"
 #include "tensorflow/compiler/mlir/lite/flatbuffer_import.h"
 #include "tensorflow/compiler/mlir/lite/stablehlo/transforms/legalize_tf_xla_call_module_to_stablehlo_pass.h"
 #include "tensorflow/compiler/mlir/lite/stablehlo/transforms/rename_entrypoint_to_main.h"

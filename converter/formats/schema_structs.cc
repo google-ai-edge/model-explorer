@@ -1,4 +1,4 @@
-#include "converter/formats/schema_structs.h"
+#include "formats/schema_structs.h"
 
 #include <string>
 

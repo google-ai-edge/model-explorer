@@ -1,4 +1,4 @@
-#include "converter/graphnode_builder.h"
+#include "graphnode_builder.h"
 
 #include <string>
 #include <vector>
@@ -6,8 +6,8 @@
 #include "absl/status/status.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
-#include "converter/formats/schema_structs.h"
-#include "converter/status_macros.h"
+#include "formats/schema_structs.h"
+#include "status_macros.h"
 
 namespace tooling {
 namespace visualization_client {

@@ -20,7 +20,7 @@ pybind_extension(
         "@pybind11",
         "@pybind11_abseil:import_status_module",
         "@pybind11_abseil:status_casters",
-        "//converter:model_json_graph_convert",
-        "//converter:visualize_config",
+        "@org_tensorflow//tensorflow/compiler/mlir/lite/experimental/google/tooling:model_json_graph_convert",
+        "@org_tensorflow//tensorflow/compiler/mlir/lite/experimental/google/tooling:visualize_config",
     ],
 )

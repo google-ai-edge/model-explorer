@@ -17,8 +17,8 @@ limitations under the License.
 #include "pybind11/pybind11.h"
 #include "pybind11_abseil/import_status_module.h"
 #include "pybind11_abseil/status_casters.h"  // IWYU pragma : keep
-#include "converter/model_json_graph_convert.h"
-#include "converter/visualize_config.h"
+#include "model_json_graph_convert.h"
+#include "visualize_config.h"
 
 using tooling::visualization_client::VisualizeConfig;
 
