@@ -20,7 +20,7 @@ pybind_extension(
         "@pybind11",
         "@pybind11_abseil:import_status_module",
         "@pybind11_abseil:status_casters",
-        "converter:model_json_graph_convert",
-        "converter:visualize_config",
+        "//converter:model_json_graph_convert",
+        "//converter:visualize_config",
     ],
 )
