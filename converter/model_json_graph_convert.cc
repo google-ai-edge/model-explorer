@@ -17,32 +17,40 @@
 #include "llvm/Support/SMLoc.h"
 #include "llvm/Support/SourceMgr.h"
 #include "llvm/Support/raw_ostream.h"
-#include "mlir/Bytecode/BytecodeReader.h"
+#include "mlir/Dialect/Arith/IR/Arith.h"
 #include "mlir/Dialect/Func/IR/FuncOps.h"
+#include "mlir/Dialect/SCF/IR/SCF.h"
+#include "mlir/Dialect/Shape/IR/Shape.h"
+#include "mlir/IR/AsmState.h"
 #include "mlir/IR/BuiltinOps.h"
 #include "mlir/IR/Location.h"
 #include "mlir/IR/MLIRContext.h"
 #include "mlir/IR/OwningOpRef.h"
 #include "mlir/IR/Verifier.h"
+#include "mlir/Parser/Parser.h"
 #include "mlir/Pass/PassManager.h"
 #include "mlir/Support/FileUtilities.h"
 #include "mlir/Support/LogicalResult.h"
+#include "stablehlo/dialect/ChloOps.h"
+#include "stablehlo/dialect/StablehloOps.h"
+#include "stablehlo/dialect/VhloOps.h"
 #include "tensorflow/cc/saved_model/reader.h"
 #include "status_macros.h"
 #include "translations.h"
 #include "visualize_config.h"
 #include "tensorflow/compiler/mlir/lite/flatbuffer_import.h"
+#include "tensorflow/compiler/mlir/lite/ir/tfl_ops.h"
 #include "tensorflow/compiler/mlir/lite/stablehlo/transforms/legalize_tf_xla_call_module_to_stablehlo_pass.h"
 #include "tensorflow/compiler/mlir/lite/stablehlo/transforms/rename_entrypoint_to_main.h"
-#include "tensorflow/compiler/mlir/quantization/tensorflow/quantize_preprocess.h"  // IWYU pragma: keep
 #include "tensorflow/compiler/mlir/tensorflow/ir/tf_ops.h"
 #include "tensorflow/compiler/mlir/tensorflow/transforms/passes.h"
 #include "tensorflow/compiler/mlir/tensorflow/translate/mlir_import_options.h"
 #include "tensorflow/compiler/mlir/tensorflow/translate/tf_mlir_translate.h"
-#include "tensorflow/core/protobuf/saved_model.proto.h"
-#include "tensorflow/core/protobuf/saved_object_graph.proto.h"
-#include "tensorflow/core/protobuf/trackable_object_graph.proto.h"
-#include "tensorflow/tsl/platform/env.h"
+#include "tensorflow/compiler/xla/mlir_hlo/mhlo/IR/hlo_ops.h"
+#include "tensorflow/core/protobuf/saved_model.pb.h"
+#include "tensorflow/core/protobuf/saved_object_graph.pb.h"
+#include "tensorflow/core/protobuf/trackable_object_graph.pb.h"
+#include "tsl/platform/env.h"
 
 namespace tooling {
 namespace visualization_client {
@@ -136,6 +144,40 @@ absl::Status ConvertToStablehloModule(mlir::ModuleOp module_op) {
 }
 
 }  // namespace
+
+absl::StatusOr<std::string> ConvertStablehloMlirToJson(
+    const VisualizeConfig& config, absl::string_view model_path) {
+  mlir::DialectRegistry registry;
+  // Note: This is more dialects than is currently visualized, but does include
+  // what is commonly produced by different frameworks. So this would parse
+  // correctly but then fail in visualization. This should result in a better
+  // user experience than failing to parse here.
+  registry.insert<mlir::stablehlo::StablehloDialect, mlir::chlo::ChloDialect,
+                  mlir::mhlo::MhloDialect, mlir::vhlo::VhloDialect,
+                  mlir::func::FuncDialect, mlir::arith::ArithDialect,
+                  mlir::shape::ShapeDialect, mlir::TFL::TensorFlowLiteDialect,
+                  mlir::scf::SCFDialect>();
+  mlir::MLIRContext context(registry);
+  mlir::ParserConfig parser_config(&context);
+  std::string model_content;
+  RETURN_IF_ERROR(tsl::ReadFileToString(
+      tsl::Env::Default(), std::string(model_path), &model_content));
+  auto module_op =
+      mlir::parseSourceString<::mlir::ModuleOp>(model_content, parser_config);
+  if (!module_op) return absl::InternalError("Unable to parse module");
+
+  // Converts StableHLO MLIR module to JSON string.
+  std::string json_output;
+  llvm::raw_string_ostream json_ost(json_output);
+  mlir::LogicalResult result =
+      JaxConvertedMlirToJsonTranslate(*module_op, json_ost);
+  if (mlir::failed(result)) {
+    return absl::InternalError(
+        "Failed to convert JAX converted MLIR module to JSON string.");
+  }
+
+  return json_output;
+}
 
 absl::StatusOr<std::string> ConvertSavedModelV1ToJson(
     const VisualizeConfig& config, absl::string_view model_path) {

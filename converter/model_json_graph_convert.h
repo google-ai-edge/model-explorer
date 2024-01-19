@@ -23,6 +23,11 @@ absl::StatusOr<std::string> ConvertFlatbufferToJson(
     const VisualizeConfig& config, absl::string_view model_path_or_buffer,
     bool is_modelpath);
 
+// Converts a MLIR textual/bytecode file to visualizer JSON string.
+// Note: this expects StableHLO inside the bytecode file.
+absl::StatusOr<std::string> ConvertStablehloMlirToJson(
+    const VisualizeConfig& config, absl::string_view model_path);
+
 }  // namespace visualization_client
 }  // namespace tooling
 
