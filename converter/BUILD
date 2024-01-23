@@ -79,7 +79,7 @@ cc_library(
         "@org_tensorflow//tensorflow/compiler/mlir/tensorflow:mlir_import_options",
         "@org_tensorflow//tensorflow/compiler/mlir/tensorflow:translate_lib",
         "@org_tensorflow//tensorflow/compiler/mlir/tensorflow/transforms:verify_no_outside_compilation_markers_pass",
-        "@org_tensorflow//tensorflow/compiler/xla/mlir_hlo",
+        "@mlir-hlo//:mlir_hlo",
         "@org_tensorflow//tensorflow/core:lib",
         "@org_tensorflow//tensorflow/core:tensorflow",
         "@org_tensorflow//tensorflow/core/protobuf:for_core_protos_cc",
