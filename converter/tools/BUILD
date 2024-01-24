@@ -17,3 +17,11 @@ cc_library(
         "@llvm-project//mlir:Support",
     ],
 )
+
+cc_library(
+    name = "convert_type",
+    srcs = ["convert_type.cc"],
+    hdrs = ["convert_type.h"],
+    compatible_with = ["//buildenv/target:non_prod"],
+    deps = ["@org_tensorflow//tensorflow/lite/schema:schema_fbs"],
+)
