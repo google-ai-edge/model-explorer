@@ -1,4 +1,4 @@
-load("@org_tensorflow//tensorflow:tensorflow.google.bzl", "pybind_extension")
+load("@org_tensorflow//tensorflow:tensorflow.default.bzl", "pybind_extension")
 
 package(
     # copybara:uncomment default_applicable_licenses = ["@org_tensorflow//tensorflow:license"],
@@ -18,9 +18,9 @@ pybind_extension(
     deps = [
         "@com_google_absl//absl/strings:string_view",
         "@pybind11",
-        "@pybind11_abseil:import_status_module",
-        "@pybind11_abseil:status_casters",
-        "@org_tensorflow//tensorflow/compiler/mlir/lite/experimental/google/tooling:model_json_graph_convert",
-        "@org_tensorflow//tensorflow/compiler/mlir/lite/experimental/google/tooling:visualize_config",
+        "@pybind11_abseil//pybind11_abseil:import_status_module",
+        "@pybind11_abseil//pybind11_abseil:status_casters",
+        "//:model_json_graph_convert",
+        "//:visualize_config",
     ],
 )

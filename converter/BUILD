@@ -108,3 +108,19 @@ cc_library(
     name = "status_macros",
     hdrs = ["status_macros.h"],
 )
+
+cc_binary(
+    name = "models_to_json",
+    srcs = ["models_to_json_main.cc"],
+    deps = [
+        ":direct_flatbuffer_to_json_graph_convert",
+        ":model_json_graph_convert",
+        ":visualize_config",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/status:statusor",
+        "@org_tensorflow//tensorflow/compiler/mlir:init_mlir",
+        "@org_tensorflow//tensorflow/core:lib",
+        "@org_tensorflow//tensorflow/core:portable_gif_internal",
+        "@org_tensorflow//tensorflow/lite/tools:command_line_flags",
+    ],
+)
