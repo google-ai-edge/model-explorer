@@ -21,21 +21,8 @@ http_archive(
     urls = ["https://github.com/abseil/abseil-cpp/archive/refs/tags/20230802.1.tar.gz"],
 )
 
-MLIR_HLO_COMMIT = "c4b17b03019776196031a0e3f74799214752ddc6"
-MLIR_HLO_SHA256 = "1e7b9cc230c9f88a3d0831573a2f8ad0be82bb7011cf62c57207a9e075c468d0"
-
-http_archive(
-    name = "mlir-hlo",
-    sha256 = MLIR_HLO_SHA256,
-    strip_prefix = "mlir-hlo-" + MLIR_HLO_COMMIT,
-    urls = [
-        "https://github.com/tensorflow/mlir-hlo/archive/" + MLIR_HLO_COMMIT +
-        ".tar.gz",
-    ],
-)
-
-TENSORFLOW_COMMIT = "69ac603ba800a1355f287a894fdadb26ca901b38"
-TENSORFLOW_SHA256 = "e6ab44f0449be57a3385d7847d77de65e34759a5686085741f4508d00cc1011a"
+TENSORFLOW_COMMIT = "8ee164fe0facf636c414e521ec1ae82fcccb2244"
+TENSORFLOW_SHA256 = "cfd9078149546120c090a5abe3ad09df3a2900fdec2139a89bd6762cbe7f2a4a"
 
 http_archive(
     name = "org_tensorflow",
