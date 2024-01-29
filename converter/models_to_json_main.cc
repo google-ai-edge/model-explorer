@@ -5,6 +5,7 @@
 #include "absl/status/statusor.h"
 #include "tensorflow/compiler/mlir/init_mlir.h"
 #include "direct_flatbuffer_to_json_graph_convert.h"
+#include "direct_saved_model_to_json_graph_convert.h"
 #include "model_json_graph_convert.h"
 #include "visualize_config.h"
 #include "tensorflow/core/platform/logging.h"
@@ -21,6 +22,7 @@ namespace {
 
 using ::tooling::visualization_client::ConvertFlatbufferDirectlyToJson;
 using ::tooling::visualization_client::ConvertFlatbufferToJson;
+using ::tooling::visualization_client::ConvertSavedModelDirectlyToJson;
 using ::tooling::visualization_client::ConvertSavedModelV1ToJson;
 using ::tooling::visualization_client::ConvertSavedModelV2ToJson;
 
@@ -29,6 +31,9 @@ enum ModelFormat {
   kSavedModelV1,
   kSavedModelV2,
   kStablehloMlir,
+  kFlatbufferDirect,
+  kSavedModelDirect,
+  kGraphDefDirect,
 };
 
 }  // namespace
@@ -80,7 +85,9 @@ int main(int argc, char* argv[]) {
   ModelFormat model_format;
   if (dot_idx == std::string::npos) {
     // TF or JAX SavedModel
-    if (use_tf_v2) {
+    if (disable_mlir) {
+      model_format = kSavedModelDirect;
+    } else if (use_tf_v2) {
       model_format = kSavedModelV2;
     } else {
       model_format = kSavedModelV1;
@@ -89,10 +96,17 @@ int main(int argc, char* argv[]) {
     std::string extension = input_file.substr(dot_idx, n - dot_idx);
     if (extension == ".tflite") {
       // TFLite Flatbuffer
-      model_format = kFlatbuffer;
+      if (disable_mlir) {
+        model_format = kFlatbufferDirect;
+      } else {
+        model_format = kFlatbuffer;
+      }
     } else if (extension == ".mlirbc" || extension == ".mlir") {
       // StableHLO module represented using MLIR textual or bytecode format.
       model_format = kStablehloMlir;
+    } else if (extension == ".pb" || extension == ".pbtxt" ||
+               extension == ".graphdef") {
+      model_format = kGraphDefDirect;
     } else {
       LOG(ERROR) << "Unsupported model format.";
       return 1;
@@ -106,12 +120,8 @@ int main(int argc, char* argv[]) {
   absl::StatusOr<std::string> json_output;
   switch (model_format) {
     case kFlatbuffer: {
-      if (disable_mlir) {
-        json_output = ConvertFlatbufferDirectlyToJson(config, input_file);
-      } else {
-        json_output =
-            ConvertFlatbufferToJson(config, input_file, /*is_modelpath=*/true);
-      }
+      json_output =
+          ConvertFlatbufferToJson(config, input_file, /*is_modelpath=*/true);
       break;
     }
     case kStablehloMlir: {
@@ -124,6 +134,18 @@ int main(int argc, char* argv[]) {
     }
     case kSavedModelV2: {
       json_output = ConvertSavedModelV2ToJson(config, input_file);
+      break;
+    }
+    case kFlatbufferDirect: {
+      json_output = ConvertFlatbufferDirectlyToJson(config, input_file);
+      break;
+    }
+    case kSavedModelDirect: {
+      json_output = ConvertSavedModelDirectlyToJson(config, input_file);
+      break;
+    }
+    case kGraphDefDirect: {
+      json_output = ConvertGraphDefDirectlyToJson(config, input_file);
       break;
     }
     default: {

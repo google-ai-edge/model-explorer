@@ -114,6 +114,7 @@ cc_binary(
     srcs = ["models_to_json_main.cc"],
     deps = [
         ":direct_flatbuffer_to_json_graph_convert",
+        ":direct_saved_model_to_json_graph_convert",
         ":model_json_graph_convert",
         ":visualize_config",
         "@com_google_absl//absl/log",
