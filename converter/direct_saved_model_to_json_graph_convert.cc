@@ -42,6 +42,7 @@ constexpr char kPathSeparator = '/';
 constexpr absl::string_view kGraphInputs = "GraphInputs";
 constexpr absl::string_view kGraphOutputs = "GraphOutputs";
 constexpr absl::string_view kTensorName = "tensor_name";
+constexpr absl::string_view kControlInput = "control_input";
 
 struct EdgeInfo {
   std::string source_node_id;
@@ -284,11 +285,15 @@ absl::StatusOr<std::string> ParseImmediateNodeName(absl::string_view path) {
   return name;
 }
 
-std::string MaybeAdjustForControlInput(absl::string_view source_node_name) {
+std::string MaybeAdjustForControlInput(absl::string_view source_node_name,
+                                       GraphNodeBuilder& builder) {
   if (absl::StartsWith(source_node_name, "^")) {
+    // Adds a node attribute for the control input.
+    const std::string control_input = std::string(source_node_name).substr(1);
+    builder.AppendNodeAttribute(kControlInput, control_input);
     // Per GraphDef proto docs, this is a control input. For now, we don't
     // differentiate between control and normal inputs: Remove the first char.
-    return std::string(source_node_name).substr(1);
+    return control_input;
   }
   return std::string(source_node_name);
 }
@@ -296,14 +301,15 @@ std::string MaybeAdjustForControlInput(absl::string_view source_node_name) {
 absl::StatusOr<EdgeInfo> ComputeEdgeInfoFromInput(
     absl::string_view input,
     const absl::flat_hash_map<std::string, int>& input_to_idx,
-    const absl::flat_hash_map<std::string, std::string>& node_to_id) {
+    const absl::flat_hash_map<std::string, std::string>& node_to_id,
+    GraphNodeBuilder& builder) {
   EdgeInfo edge_info;
   std::string source_node_name;
   std::vector<std::string> input_parts = absl::StrSplit(input, ':');
   if (input_parts.size() == 1) {
     // No `source_node_output_id` specified. Just use the whole path as the name
     // of the node.
-    source_node_name = MaybeAdjustForControlInput(input);
+    source_node_name = MaybeAdjustForControlInput(input, builder);
 
     // When no `source_node_output_id` is specified, the default output is 0.
     edge_info.source_node_output_id = "0";
@@ -311,7 +317,7 @@ absl::StatusOr<EdgeInfo> ComputeEdgeInfoFromInput(
     // When `input` looks like `RestoreV2/shape_and_slices:output:0`, we assign
     // the part before the first colon to `source_node_name` and the last part
     // to `edgeinfo.source_node_output_id`.
-    source_node_name = MaybeAdjustForControlInput(input_parts.front());
+    source_node_name = MaybeAdjustForControlInput(input_parts.front(), builder);
     edge_info.source_node_output_id = input_parts.back();
   }
 
@@ -372,9 +378,10 @@ absl::Status AddGraphOutputsNode(
       return absl::InvalidArgumentError(absl::StrFormat(
           "Could not find output arg name \"%s\"", output_arg_name));
     }
-    ASSIGN_OR_RETURN(const EdgeInfo edge_info,
-                     ComputeEdgeInfoFromInput(node_name_it->second,
-                                              /*input_to_idx=*/{}, node_to_id));
+    ASSIGN_OR_RETURN(
+        const EdgeInfo edge_info,
+        ComputeEdgeInfoFromInput(node_name_it->second,
+                                 /*input_to_idx=*/{}, node_to_id, builder));
     builder.AppendEdgeInfo(edge_info.source_node_id,
                            edge_info.source_node_output_id,
                            /*target_node_input_id_str=*/absl::StrCat(i));
@@ -425,7 +432,7 @@ absl::Status AddSubgraph(
       // TODO: b/322649392 - Add tensor index and tensor shape.
       ASSIGN_OR_RETURN(
           const EdgeInfo edge_info,
-          ComputeEdgeInfoFromInput(input, input_to_idx, node_to_id));
+          ComputeEdgeInfoFromInput(input, input_to_idx, node_to_id, builder));
 
       // The input index represents the relative rank of the given input
       // compared to other inputs. It does NOT represent the output index of the
