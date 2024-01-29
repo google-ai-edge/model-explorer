@@ -156,3 +156,28 @@ cc_library(
         "@org_tensorflow//tensorflow/lite/schema:schema_utils",
     ],
 )
+
+cc_library(
+    name = "direct_saved_model_to_json_graph_convert",
+    srcs = ["direct_saved_model_to_json_graph_convert.cc"],
+    hdrs = ["direct_saved_model_to_json_graph_convert.h"],
+    deps = [
+        ":graphnode_builder",
+        ":status_macros",
+        ":visualize_config",
+        "@com_google_absl//absl/container:flat_hash_map",
+        "@com_google_absl//absl/container:flat_hash_set",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status:statusor",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/strings:str_format",
+        "@com_google_absl//absl/strings:string_view",
+        "@llvm-project//llvm:Support",
+        "//third_party/protobuf:protobuf_lite",
+        "@org_tensorflow//tensorflow/cc/saved_model:reader",
+        "//formats:schema_structs",
+        "@org_tensorflow//tensorflow/core:framework",
+        "@org_tensorflow//tensorflow/core:lib",
+        "@org_tensorflow//tensorflow/core:protos_all_cc",
+    ],
+)
