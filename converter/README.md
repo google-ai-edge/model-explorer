@@ -1,27 +1,5 @@
 # Model Explorer Converter
 
-## Install from TestPyPI
-
-Install the `model-explorer-converter` via pip from TestPyPI. For example, in a Python virtual
-environment:
-
-```
-% python3 -m venv ~/tmp/venv
-% source ~/tmp/venv/bin/activate
-(venv) $ pip install -i https://test.pypi.org/simple/ model-explorer-converter
-```
-
-The package should now be importable and usable. For example:
-
-```
-(venv) $ python3
->>> from model_explorer_converter import _pywrap_convert_wrapper as convert_wrapper
->>> config = convert_wrapper.VisualizeConfig()
->>> model_path = 'foo.tflite'
->>> json = convert_wrapper.ConvertFlatbufferToJson(config, model_path, True)
->>> print(json)
-```
-
 ## Build and Install Locally
 
 ### Build
@@ -49,3 +27,13 @@ environment:
 (venv) $ pip install gen/converter_pip/dist/model_explorer_converter-0.1.0-cp311-cp311-linux_x86_64.whl
 ```
 
+The package should now be importable and usable. For example:
+
+```
+(venv) $ python3
+>>> from model_explorer_converter import _pywrap_convert_wrapper as convert_wrapper
+>>> config = convert_wrapper.VisualizeConfig()
+>>> model_path = 'foo.tflite'
+>>> json = convert_wrapper.ConvertFlatbufferToJson(config, model_path, True)
+>>> print(json)
+```
