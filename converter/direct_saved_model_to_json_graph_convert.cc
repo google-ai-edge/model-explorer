@@ -17,7 +17,6 @@
 #include "absl/strings/string_view.h"
 #include "llvm/Support/FormatVariadic.h"
 #include "llvm/Support/JSON.h"
-#include "third_party/protobuf/repeated_ptr_field.h"
 #include "tensorflow/cc/saved_model/reader.h"
 #include "formats/schema_structs.h"
 #include "graphnode_builder.h"
@@ -74,7 +73,8 @@ std::string FormatJsonPrimitive(const llvm::json::Value& v) {
 }
 
 template <typename T>
-std::string FormatRepeatedPrimitive(const ::proto2::RepeatedField<T>& field) {
+std::string FormatRepeatedPrimitive(
+    const tensorflow::protobuf::RepeatedField<T>& field) {
   return FormatJson(llvm::json::Array(field));
 }
 
@@ -141,7 +141,8 @@ std::string StringifyTensorShape(const tensorflow::TensorShapeProto& shape) {
 }
 
 std::string StringifyListOfTensorShapes(
-    const proto2::RepeatedPtrField<tensorflow::TensorShapeProto>& shapes) {
+    const tensorflow::protobuf::RepeatedPtrField<tensorflow::TensorShapeProto>&
+        shapes) {
   llvm::json::Array jsonified;
   for (const tensorflow::TensorShapeProto& shape : shapes) {
     jsonified.push_back(JsonifyTensorShape(shape));
@@ -151,7 +152,8 @@ std::string StringifyListOfTensorShapes(
 
 absl::StatusOr<std::string> StringifyListOfTensors(
     absl::string_view attr_name,
-    const proto2::RepeatedPtrField<tensorflow::TensorProto>& tensors,
+    const tensorflow::protobuf::RepeatedPtrField<tensorflow::TensorProto>&
+        tensors,
     const VisualizeConfig& config) {
   llvm::json::Array jsonified;
   for (const tensorflow::TensorProto& tensor : tensors) {
@@ -193,7 +195,8 @@ absl::Status AddFunctionAttribute(
 absl::Status ProcessListOfFunctionsAttribute(
     const std::string& attr_name,
     const absl::flat_hash_set<std::string>& functions_set,
-    const proto2::RepeatedPtrField<tensorflow::NameAttrList>& funcs,
+    const tensorflow::protobuf::RepeatedPtrField<tensorflow::NameAttrList>&
+        funcs,
     GraphNodeBuilder& builder) {
   llvm::json::Array jsonified;
   for (const tensorflow::NameAttrList& func : funcs) {
@@ -403,7 +406,8 @@ absl::Status AddGraphOutputsNode(
 
 absl::Status AddSubgraph(
     absl::string_view subgraph_name, const VisualizeConfig& config,
-    const ::proto2::RepeatedPtrField<tensorflow::NodeDef>& node_defs,
+    const tensorflow::protobuf::RepeatedPtrField<tensorflow::NodeDef>&
+        node_defs,
     const absl::flat_hash_set<std::string>& functions_set,
     const std::optional<const tensorflow::FunctionDef>& func_def,
     Graph* graph) {
