@@ -123,6 +123,10 @@ absl::StatusOr<std::string> StringifyTensor(
     return absl::InvalidArgumentError(absl::StrFormat(
         "Failed to parse tensor stored in attribute %s", attr_name));
   }
+  // Special handling for invalid string value tensor.
+  if (tensor.dtype() == tensorflow::DataType::DT_STRING) {
+    return tensor.DeviceSafeDebugString();
+  }
   return tensor.DebugString(config.const_element_count_limit);
 }
 
