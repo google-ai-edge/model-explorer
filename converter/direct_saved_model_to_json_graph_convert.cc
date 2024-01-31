@@ -43,6 +43,7 @@ constexpr absl::string_view kGraphInputs = "GraphInputs";
 constexpr absl::string_view kGraphOutputs = "GraphOutputs";
 constexpr absl::string_view kTensorName = "tensor_name";
 constexpr absl::string_view kControlInput = "control_input";
+constexpr absl::string_view kConfigProto = "config_proto";
 
 struct EdgeInfo {
   std::string source_node_id;
@@ -58,6 +59,11 @@ absl::Status ReadGraphDef(absl::string_view model_path,
   }
   return absl::OkStatus();
 }
+
+// Skip serializing attributes that match the given name. This is a hard-code to
+// avoid adding binary string attribute into JSON. This disallow list might
+// expand as more unsupported attribute found.
+inline bool SkipAttr(absl::string_view name) { return name == kConfigProto; }
 
 std::string FormatJson(const llvm::json::Value& value) {
   return llvm::formatv("{0:2}", value);
@@ -237,6 +243,7 @@ absl::Status AddAttributeInformation(
   for (auto it = node_def.attr().begin(); it != node_def.attr().end(); ++it) {
     const std::string& attr_name = it->first;
     const tensorflow::AttrValue& attr_value = it->second;
+    if (SkipAttr(attr_name)) continue;
     if (attr_value.has_s()) {
       builder.AppendNodeAttribute(attr_name, attr_value.s());
     } else if (attr_value.has_i()) {
