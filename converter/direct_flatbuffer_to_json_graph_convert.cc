@@ -179,7 +179,8 @@ absl::StatusOr<std::string> GenerateNodeName(
       continue;
     }
     std::string tensor_name = tensors[index]->name;
-    std::vector<std::string> temp_names = absl::StrSplit(tensor_name, ';');
+    std::vector<std::string> temp_names =
+        absl::StrSplit(tensor_name, ';', absl::SkipEmpty());
     for (absl::string_view name : temp_names) {
       sub_names.push_back(std::string(name));
     }
@@ -537,13 +538,13 @@ absl::Status AddNode(
   return absl::OkStatus();
 }
 
-absl::Status ValidateSubgraph(const std::vector<std::string>& node_ids,
-                              const EdgeMap& edge_map) {
+void ValidateSubgraph(const std::vector<std::string>& node_ids,
+                      const EdgeMap& edge_map) {
   absl::flat_hash_set<std::string> node_ids_set(node_ids.begin(),
                                                 node_ids.end());
   if (node_ids_set.size() != node_ids.size()) {
     LOG(INFO) << "Node ids: " << absl::StrJoin(node_ids, ",");
-    return absl::InternalError("Node ids are not unique.");
+    LOG(ERROR) << "Node ids are not unique.";
   }
 
   bool has_incomplete_edges = false;
@@ -552,14 +553,13 @@ absl::Status ValidateSubgraph(const std::vector<std::string>& node_ids,
     const EdgeInfo& edge_info = edge.second;
     if (EdgeInfoIncomplete(edge_info)) {
       has_incomplete_edges = true;
-      LOG(ERROR) << "tensor index: " << tensor_index << ", "
-                 << EdgeInfoDebugString(edge_info);
+      LOG(INFO) << "tensor index: " << tensor_index << ", "
+                << EdgeInfoDebugString(edge_info);
     }
   }
   if (has_incomplete_edges) {
-    return absl::InternalError("EdgeMap has incomplete EdgeInfo.");
+    LOG(ERROR) << "EdgeMap has incomplete EdgeInfo.";
   }
-  return absl::OkStatus();
 }
 
 // Adds a subgraph to Graph.
@@ -598,10 +598,7 @@ absl::Status AddSubgraph(
       signature_name_map, model_ptr, config.const_element_count_limit, node_ids,
       edge_map, mlir_builder, subgraph));
 
-  absl::Status v_status = ValidateSubgraph(node_ids, edge_map);
-  if (!v_status.ok()) {
-    LOG(ERROR) << v_status.message();
-  }
+  ValidateSubgraph(node_ids, edge_map);
   graph.subgraphs.push_back(subgraph);
   return absl::OkStatus();
 }

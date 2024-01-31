@@ -273,7 +273,7 @@ llvm::StringRef GetTfliteNodeName(llvm::StringRef node_id_str,
         absl::StrReplaceAll(node_label, {{"_", ""}});
     llvm::SmallVector<llvm::StringRef, 4> single_names;
     single_names.reserve(num_substrs);
-    node_name.split(single_names, kSemicolonSeparator);
+    node_name.split(single_names, kSemicolonSeparator, /*KeepEmpty=*/false);
     // We iterate backwards to find if a single node name contains the node
     // label in the end hierarchy.
     for (auto it = single_names.rbegin(); it != single_names.rend(); ++it) {
