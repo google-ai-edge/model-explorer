@@ -18,7 +18,7 @@ set -ex
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PYTHON="${CI_BUILD_PYTHON:-python3}"
 VERSION_SUFFIX=${VERSION_SUFFIX:-}
-export PACKAGE_VERSION="v0.1.0"
+export PACKAGE_VERSION="v0.2.0"
 export PROJECT_NAME=${WHEEL_PROJECT_NAME:-model_explorer_converter}
 BUILD_DIR="gen/converter_pip"
 BAZEL_FLAGS="--copt=-O3"
