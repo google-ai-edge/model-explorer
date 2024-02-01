@@ -163,31 +163,31 @@ std::string StringifyTensorShape(const TensorT& tensor) {
 //
 // In TFLite, a single tensor name could still contain several hierarchical info
 // concatenated together with semicolons. In this case, we will find the last
-// single node name that contains this node label. If no match is found, we will
-// return the last single node name by default. This method also echos the
-// MLIR-based conversion for Flatbuffer.
+// candidate node name that contains this node label. If no match is found, we
+// will return the last candidate node name by default. This method also echos
+// the MLIR-based conversion for Flatbuffer.
 absl::StatusOr<std::string> GenerateNodeName(
     absl::string_view node_id_str, absl::string_view node_label,
     const std::vector<int>& tensor_indices, const Tensors& tensors) {
   if (tensor_indices.empty()) {
     return absl::InvalidArgumentError("Tensor indices cannot be empty.");
   }
-  std::vector<std::string> sub_names;
+  std::vector<std::string> candidate_names;
   for (const int index : tensor_indices) {
     // Skips the optional inputs which are indicated by -1.
     if (index < 0) {
       continue;
     }
     std::string tensor_name = tensors[index]->name;
-    std::vector<std::string> temp_names =
+    std::vector<std::string> tmp_names =
         absl::StrSplit(tensor_name, ';', absl::SkipEmpty());
-    for (absl::string_view name : temp_names) {
-      sub_names.push_back(std::string(name));
+    for (absl::string_view name : tmp_names) {
+      candidate_names.push_back(std::string(name));
     }
   }
-  if (sub_names.empty()) return "";
-  if (sub_names.size() == 1) {
-    return sub_names[0];
+  if (candidate_names.empty()) return "";
+  if (candidate_names.size() == 1) {
+    return candidate_names[0];
   }
 
   // Removes any underscores in `node_label`.
@@ -196,8 +196,8 @@ absl::StatusOr<std::string> GenerateNodeName(
 
   // Iterates backwards to find if the last chunk of sub_name contains the node
   // label in the end hierarchy.
-  for (auto name_it = std::rbegin(sub_names); name_it != std::rend(sub_names);
-       ++name_it) {
+  for (auto name_it = std::rbegin(candidate_names);
+       name_it != std::rend(candidate_names); ++name_it) {
     const auto start_pos = name_it->find_last_of('/');
     std::string last_substr;
     if (start_pos != std::string::npos) {
@@ -211,13 +211,13 @@ absl::StatusOr<std::string> GenerateNodeName(
     }
   }
 
-  // If there is no match in `sub_names` vector, we return the last single
+  // If there is no match in `sub_names` vector, we return the last candidate
   // name by default. Skipping "pseudo_const" node to reduce verbosity.
   if (node_label != kPseudoConst) {
     LOG(WARNING) << "No matched name for node \"" << node_label << "\" at "
                  << node_id_str << ", using the last node name by default.";
   }
-  return sub_names.back();
+  return candidate_names.back();
 }
 
 absl::Status AppendMetadata(

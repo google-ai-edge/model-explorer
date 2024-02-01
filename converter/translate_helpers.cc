@@ -125,7 +125,7 @@ void AddJaxNodeNameAndAttribute(Operation& operation,
   loc_info.split(loc_vec, '[', /*MaxSplit=*/1, /*KeepEmpty=*/false);
   builder.SetNodeName(/*node_name=*/loc_vec[0]);
 
-  if (loc_vec.size() > 1 && !loc_vec[1].empty()) {
+  if (loc_vec.size() > 1) {
     // Removes the last char ']' from op attribute string.
     llvm::StringRef attr_value = loc_vec[1].substr(0, loc_vec[1].size() - 1);
     builder.AppendNodeAttribute(/*key=*/"jax_op_attr", attr_value);
@@ -239,65 +239,71 @@ llvm::StringRef GetTfNodeName(Operation& operation) {
   return node_name;
 }
 
-// Gets the node name (the hierarchical information of the node) from a tfl
+// Generates the node name (the hierarchical information of the node) from a tfl
 // dialect operation.
-llvm::StringRef GetTfliteNodeName(llvm::StringRef node_id_str,
-                                  llvm::StringRef node_label,
-                                  Operation& operation) {
-  // Initializes `node_name` as an empty string literal.
-  llvm::StringRef node_name = kEmptyString;
+llvm::StringRef GenerateTfliteNodeName(llvm::StringRef node_id_str,
+                                       llvm::StringRef node_label,
+                                       Operation& operation) {
   auto fusedLoc = operation.getLoc()->findInstanceOf<mlir::FusedLoc>();
   auto nameLoc = operation.getLoc()->findInstanceOf<mlir::NameLoc>();
   if (fusedLoc == nullptr && nameLoc == nullptr) {
-    return node_name;
+    return kEmptyString;
   }
   // In TFLite, we store op's output tensor names in location attribute. So it
   // could be either a simple NameLoc of the original node_name; or a special
   // case when an op has multiple output tensors, it creates a FusedLoc to
-  // store each tensor names. The naming of multiple tensors is by appending
-  // incremental digits after the 1st tensor_name.
-  if (fusedLoc) {
-    node_name = llvm::dyn_cast<mlir::NameLoc>(fusedLoc.getLocations().front())
-                    .getName();
+  // store each tensor names.
+  llvm::SmallVector<llvm::StringRef, 2> tensor_names;
+  if (nameLoc != nullptr) {
+    tensor_names.push_back(nameLoc.getName());
   } else {
-    node_name = nameLoc.getName();
+    for (const mlir::Location& loc : fusedLoc.getLocations()) {
+      tensor_names.push_back(llvm::dyn_cast<mlir::NameLoc>(loc).getName());
+    }
   }
   // Some TFLite has fused op names with several hierarchical information
   // concatenated together with semicolons. In this case, we will find the last
   // single node name that contains this node label. If no matching found, we
   // will return the last single node name by default.
-  const size_t num_substrs = node_name.count(kSemicolonSeparator) + 1;
-  if (num_substrs > 1) {
-    // Removes any underscores in `node_label`.
-    const std::string node_label_substr =
-        absl::StrReplaceAll(node_label, {{"_", ""}});
-    llvm::SmallVector<llvm::StringRef, 4> single_names;
-    single_names.reserve(num_substrs);
-    node_name.split(single_names, kSemicolonSeparator, /*KeepEmpty=*/false);
-    // We iterate backwards to find if a single node name contains the node
-    // label in the end hierarchy.
-    for (auto it = single_names.rbegin(); it != single_names.rend(); ++it) {
-      llvm::StringRef name = *it;
-      llvm::StringRef last_substr = name;
-      const size_t start_pos = name.find_last_of('/');
-      if (start_pos != std::string::npos) {
-        last_substr = name.substr(start_pos);
-      }
-      if (last_substr.contains_insensitive(node_label_substr)) {
-        return name;
-      }
-    }
-    // if there is no match in `single_names` vector, we return the last node
-    // name in that fused op names by default. Skipping "pseudo_const" node to
-    // reduce verbosity.
-    node_name = single_names.back();
-    if (node_label != kPseudoConst) {
-      llvm::errs() << "WARNING: No matched name for node \"" << node_label
-                   << "\" at " << node_id_str
-                   << ", using the last node name by default.\n";
+  llvm::SmallVector<llvm::StringRef, 4> candidate_names;
+  for (const llvm::StringRef tensor_name : tensor_names) {
+    llvm::SmallVector<llvm::StringRef, 4> tmp_names;
+    tensor_name.split(tmp_names, kSemicolonSeparator, /*KeepEmpty=*/false);
+    for (const llvm::StringRef name : tmp_names) {
+      candidate_names.push_back(name);
     }
   }
-  return node_name;
+  if (candidate_names.empty()) {
+    return kEmptyString;
+  }
+  if (candidate_names.size() == 1) {
+    return candidate_names.front();
+  }
+  // Removes any underscores in `node_label`.
+  const std::string node_label_substr =
+      absl::StrReplaceAll(node_label, {{"_", ""}});
+  // We iterate backwards to find if a single node name contains the node
+  // label in the end hierarchy.
+  for (auto it = candidate_names.rbegin(); it != candidate_names.rend(); ++it) {
+    llvm::StringRef name = *it;
+    llvm::StringRef last_substr = name;
+    const size_t start_pos = name.find_last_of('/');
+    if (start_pos != std::string::npos) {
+      last_substr = name.substr(start_pos);
+    }
+    if (last_substr.contains_insensitive(node_label_substr)) {
+      return name;
+    }
+  }
+  // if there is no match in `candidate_names` vector, we return the last node
+  // name in that fused op names by default. Skipping "pseudo_const" node to
+  // reduce verbosity.
+  if (node_label != kPseudoConst) {
+    llvm::errs() << "WARNING: No matched name for node \"" << node_label
+                 << "\" at " << node_id_str
+                 << ", using the last node name by default.\n";
+  }
+  return candidate_names.back();
 }
 
 // Gets a list of output tensor name(s) of an TFLite operation. Returns empty
@@ -453,7 +459,7 @@ absl::Status TfliteFunctionToSubgraph(const VisualizeConfig& config,
     }
     seen_ops.insert({&operation, node_id});
     llvm::StringRef node_name =
-        GetTfliteNodeName(node_id, node_label, operation);
+        GenerateTfliteNodeName(node_id, node_label, operation);
     GraphNodeBuilder builder;
     builder.SetNodeInfo(node_id, node_label, node_name);
     AppendNodeAttrs(config.const_element_count_limit, operation, builder);
