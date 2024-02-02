@@ -17,7 +17,6 @@
 #include "absl/strings/string_view.h"
 #include "llvm/Support/FormatVariadic.h"
 #include "llvm/Support/JSON.h"
-#include "tensorflow/cc/saved_model/reader.h"
 #include "formats/schema_structs.h"
 #include "graphnode_builder.h"
 #include "status_macros.h"
@@ -31,6 +30,8 @@
 #include "tensorflow/core/framework/tensor.pb.h"
 #include "tensorflow/core/framework/tensor_shape.pb.h"
 #include "tensorflow/core/framework/types.pb.h"
+#include "tensorflow/core/protobuf/meta_graph.pb.h"
+#include "tensorflow/core/protobuf/saved_model.pb.h"
 #include "tsl/platform/env.h"
 
 namespace tooling {
@@ -57,6 +58,13 @@ absl::Status ReadGraphDef(absl::string_view model_path,
                          &graph_def);
   }
   return absl::OkStatus();
+}
+
+absl::Status ReadSavedModelProto(absl::string_view model_path,
+                                 tensorflow::SavedModel& saved_model_proto) {
+  absl::Status result = ReadBinaryProto(
+      tsl::Env::Default(), std::string(model_path), &saved_model_proto);
+  return result;
 }
 
 // Skip serializing attributes that match the given name. This is a hard-code to
@@ -525,9 +533,9 @@ absl::StatusOr<std::string> ConvertGraphDefDirectlyToJson(
 }
 
 absl::StatusOr<std::string> ConvertSavedModelDirectlyToJson(
-    const VisualizeConfig& config, absl::string_view model_path) {
+    const VisualizeConfig& config, absl::string_view saved_model_pb_path) {
   tensorflow::SavedModel saved_model;
-  RETURN_IF_ERROR(tensorflow::ReadSavedModel(model_path, &saved_model));
+  RETURN_IF_ERROR(ReadSavedModelProto(saved_model_pb_path, saved_model));
 
   if (saved_model.meta_graphs_size() != 1) {
     return absl::InvalidArgumentError(absl::StrFormat(

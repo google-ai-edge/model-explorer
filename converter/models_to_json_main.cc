@@ -1,8 +1,10 @@
+#include <cstddef>
 #include <string>
 #include <vector>
 
 #include "absl/log/log.h"
 #include "absl/status/statusor.h"
+#include "absl/strings/string_view.h"
 #include "tensorflow/compiler/mlir/init_mlir.h"
 #include "direct_flatbuffer_to_json_graph_convert.h"
 #include "direct_saved_model_to_json_graph_convert.h"
@@ -35,6 +37,32 @@ enum ModelFormat {
   kSavedModelDirect,
   kGraphDefDirect,
 };
+
+// Returns the part of the path after the final "/".  If there is no
+// "/" in the path, the result is the same as the input.
+absl::string_view GetBasename(absl::string_view path) {
+  size_t pos = path.find_last_of('/');
+  // Handle the case with no '/' in 'path'.
+  if (pos == absl::string_view::npos) {
+    return path;
+  }
+  // Handle the case with a single leading '/' in 'path'.
+  if (pos == 0) {
+    return absl::ClippedSubstr(path, 1);
+  }
+  return absl::ClippedSubstr(path, pos + 1);
+}
+
+// Returns the part of the basename of path after the final ".".  If
+// there is no "." in the basename, the result is empty.
+absl::string_view GetExtension(absl::string_view path) {
+  path = GetBasename(path);
+  size_t pos = path.find_last_of('.');
+  if (pos == absl::string_view::npos) {
+    return path;
+  }
+  return absl::ClippedSubstr(path, pos + 1);
+}
 
 }  // namespace
 
@@ -76,41 +104,40 @@ int main(int argc, char* argv[]) {
     return 1;
   }
 
-  if (output_file.substr(output_file.size() - 4, 4) != "json") {
-    LOG(WARNING) << "Please specify output format to be JSON.";
+  absl::string_view output_extension = GetExtension(output_file);
+  if (output_extension != "json") {
+    LOG(ERROR) << "Please specify output format to be JSON.";
+    return 1;
   }
 
-  auto dot_idx = input_file.rfind('.');
-  int n = input_file.size();
   ModelFormat model_format;
-  if (dot_idx == std::string::npos) {
+  absl::string_view input_basename = GetBasename(input_file);
+  absl::string_view input_extension = GetExtension(input_file);
+  if (input_extension.empty()) {
     // TF or JAX SavedModel
-    if (disable_mlir) {
-      model_format = kSavedModelDirect;
-    } else if (use_tf_v2) {
+    if (use_tf_v2) {
       model_format = kSavedModelV2;
     } else {
       model_format = kSavedModelV1;
     }
-  } else {
-    std::string extension = input_file.substr(dot_idx, n - dot_idx);
-    if (extension == ".tflite") {
-      // TFLite Flatbuffer
-      if (disable_mlir) {
-        model_format = kFlatbufferDirect;
-      } else {
-        model_format = kFlatbuffer;
-      }
-    } else if (extension == ".mlirbc" || extension == ".mlir") {
-      // StableHLO module represented using MLIR textual or bytecode format.
-      model_format = kStablehloMlir;
-    } else if (extension == ".pb" || extension == ".pbtxt" ||
-               extension == ".graphdef") {
-      model_format = kGraphDefDirect;
+  } else if (input_basename == "saved_model.pb") {
+    model_format = kSavedModelDirect;
+  } else if (input_extension == "tflite") {
+    // TFLite Flatbuffer
+    if (disable_mlir) {
+      model_format = kFlatbufferDirect;
     } else {
-      LOG(ERROR) << "Unsupported model format.";
-      return 1;
+      model_format = kFlatbuffer;
     }
+  } else if (input_extension == ".mlirbc" || input_extension == ".mlir") {
+    // StableHLO module represented using MLIR textual or bytecode format.
+    model_format = kStablehloMlir;
+  } else if (input_extension == ".pb" || input_extension == ".pbtxt" ||
+             input_extension == ".graphdef") {
+    model_format = kGraphDefDirect;
+  } else {
+    LOG(ERROR) << "Unsupported model format.";
+    return 1;
   }
 
   // Creates visualization config.

@@ -22,10 +22,11 @@ absl::StatusOr<std::string> ConvertGraphDefDirectlyToJsonImpl(
 absl::StatusOr<std::string> ConvertGraphDefDirectlyToJson(
     const VisualizeConfig& config, absl::string_view model_path);
 
-// An alternative signature that takes the path to a SavedModel. Again, no
-// conversion to MLIR nor preparing model for execution takes place.
+// An alternative signature that takes the path to a SavedModel Proto
+// `saved_model.pb`. Again, no conversion to MLIR nor preparing model for
+// execution takes place.
 absl::StatusOr<std::string> ConvertSavedModelDirectlyToJson(
-    const VisualizeConfig& config, absl::string_view model_path);
+    const VisualizeConfig& config, absl::string_view saved_model_pb_path);
 
 }  // namespace visualization_client
 }  // namespace tooling
