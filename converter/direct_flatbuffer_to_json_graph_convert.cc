@@ -194,8 +194,8 @@ absl::StatusOr<std::string> GenerateNodeName(
   const std::string node_label_substr =
       absl::StrReplaceAll(node_label, {{"_", ""}});
 
-  // Iterates backwards to find if the last chunk of sub_name contains the node
-  // label in the end hierarchy.
+  // Iterates backwards to find if the last chunk of candidate_name contains the
+  // node label in the end hierarchy.
   for (auto name_it = std::rbegin(candidate_names);
        name_it != std::rend(candidate_names); ++name_it) {
     const auto start_pos = name_it->find_last_of('/');
@@ -211,8 +211,9 @@ absl::StatusOr<std::string> GenerateNodeName(
     }
   }
 
-  // If there is no match in `sub_names` vector, we return the last candidate
-  // name by default. Skipping "pseudo_const" node to reduce verbosity.
+  // If there is no match in `candidate_names` vector, we return the last
+  // candidate name by default. Skipping "pseudo_const" node to reduce
+  // verbosity.
   if (node_label != kPseudoConst) {
     LOG(WARNING) << "No matched name for node \"" << node_label << "\" at "
                  << node_id_str << ", using the last node name by default.";
@@ -343,23 +344,23 @@ absl::Status AddAuxiliaryNode(
     return absl::InvalidArgumentError("Tensor indices cannot be empty.");
   }
   EdgeType edge_type;
-  std::string node_id_str, node_label, node_name;
+  std::string node_label, node_name;
+  const std::string node_id_str = absl::StrCat(node_ids.size());
   switch (node_type) {
     case NodeType::kInputNode: {
       edge_type = EdgeType::kOutput;
-      node_id_str = kGraphInputs;
       node_label = kGraphInputs;
+      node_name = kGraphInputs;
       break;
     }
     case NodeType::kOutputNode: {
       edge_type = EdgeType::kInput;
-      node_id_str = kGraphOutputs;
       node_label = kGraphOutputs;
+      node_name = kGraphOutputs;
       break;
     }
     case NodeType::kConstNode: {
       edge_type = EdgeType::kOutput;
-      node_id_str = absl::StrCat(node_ids.size());
       node_label = kPseudoConst;
       ASSIGN_OR_RETURN(node_name, GenerateNodeName(node_id_str, node_label,
                                                    tensor_indices, tensors));
@@ -476,20 +477,19 @@ absl::Status AddOptionsToNodeAttribute(
 
 // Adds a node to Subgraph.
 absl::Status AddNode(
-    const OperatorT& op, const OperatorCodes& op_codes,
+    const int node_index, const OperatorT& op, const OperatorCodes& op_codes,
     const std::vector<std::string>& op_names, const Tensors& tensors,
     const Buffers& buffers,
     const std::optional<const SignatureNameMap>& signature_name_map,
     const std::unique_ptr<FlatBufferModel>& model_ptr,
     const int const_element_count_limit, std::vector<std::string>& node_ids,
     EdgeMap& edge_map, mlir::Builder mlir_builder, Subgraph& subgraph) {
-  const std::string node_id_str = absl::StrCat(node_ids.size());
-  node_ids.push_back(node_id_str);
   if (op.opcode_index >= op_names.size()) {
     return absl::InvalidArgumentError(
         absl::StrCat("Opcode index ", op.opcode_index,
-                     " matches no op name for node ", node_id_str));
+                     " matches no op name for node ", node_index));
   }
+  const std::string node_id_str = node_ids[node_index];
   absl::string_view node_label = op_names[op.opcode_index];
   ASSIGN_OR_RETURN(
       const std::string node_name,
@@ -576,6 +576,11 @@ absl::Status AddSubgraph(
   std::vector<std::string> node_ids;
   const Buffers& buffers = model->buffers;
   const OperatorCodes& op_codes = model->operator_codes;
+  // Reserves the node ids for original nodes stored in Flatbuffer.
+  node_ids.reserve(subgraph_t.operators.size());
+  for (int i = 0; i < subgraph_t.operators.size(); ++i) {
+    node_ids.push_back(absl::StrCat(i));
+  }
 
   // Adds GraphInputs node to the subgraph.
   RETURN_IF_ERROR(AddAuxiliaryNode(
@@ -586,7 +591,7 @@ absl::Status AddSubgraph(
   for (int i = 0; i < subgraph_t.operators.size(); ++i) {
     auto& op = subgraph_t.operators[i];
     const Tensors& tensors = subgraph_t.tensors;
-    RETURN_IF_ERROR(AddNode(*op, op_codes, op_names, tensors, buffers,
+    RETURN_IF_ERROR(AddNode(i, *op, op_codes, op_names, tensors, buffers,
                             signature_name_map, model_ptr,
                             config.const_element_count_limit, node_ids,
                             edge_map, mlir_builder, subgraph));
