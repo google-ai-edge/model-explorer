@@ -268,7 +268,8 @@ llvm::StringRef GenerateTfliteNodeName(llvm::StringRef node_id_str,
   llvm::SmallVector<llvm::StringRef, 4> candidate_names;
   for (const llvm::StringRef tensor_name : tensor_names) {
     llvm::SmallVector<llvm::StringRef, 4> tmp_names;
-    tensor_name.split(tmp_names, kSemicolonSeparator, /*KeepEmpty=*/false);
+    tensor_name.split(tmp_names, kSemicolonSeparator, /*MaxSplit=*/-1,
+                      /*KeepEmpty=*/false);
     for (const llvm::StringRef name : tmp_names) {
       candidate_names.push_back(name);
     }
