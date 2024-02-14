@@ -538,13 +538,14 @@ absl::Status AddNode(
   return absl::OkStatus();
 }
 
-void ValidateSubgraph(const std::vector<std::string>& node_ids,
+void ValidateSubgraph(absl::string_view subgraph_name,
+                      const std::vector<std::string>& node_ids,
                       const EdgeMap& edge_map) {
   absl::flat_hash_set<std::string> node_ids_set(node_ids.begin(),
                                                 node_ids.end());
   if (node_ids_set.size() != node_ids.size()) {
     LOG(INFO) << "Node ids: " << absl::StrJoin(node_ids, ",");
-    LOG(ERROR) << "Node ids are not unique.";
+    LOG(ERROR) << "Node ids are not unique in " << subgraph_name;
   }
 
   bool has_incomplete_edges = false;
@@ -558,20 +559,20 @@ void ValidateSubgraph(const std::vector<std::string>& node_ids,
     }
   }
   if (has_incomplete_edges) {
-    LOG(ERROR) << "EdgeMap has incomplete EdgeInfo.";
+    LOG(ERROR) << "EdgeMap has incomplete EdgeInfo in " << subgraph_name;
   }
 }
 
 // Adds a subgraph to Graph.
 absl::Status AddSubgraph(
-    const VisualizeConfig& config, const SubGraphT& subgraph_t,
-    const std::vector<std::string>& op_names,
+    const VisualizeConfig& config, absl::string_view subgraph_name,
+    const SubGraphT& subgraph_t, const std::vector<std::string>& op_names,
     const std::optional<const SignatureNameMap>& signature_name_map,
     const std::unique_ptr<ModelT>& model,
     const std::unique_ptr<FlatBufferModel>& model_ptr,
     mlir::Builder mlir_builder, Graph& graph) {
   // Creates a Model Explorer subgraph.
-  Subgraph subgraph(subgraph_t.name);
+  Subgraph subgraph((std::string(subgraph_name)));
   EdgeMap edge_map;
   std::vector<std::string> node_ids;
   const Buffers& buffers = model->buffers;
@@ -603,9 +604,17 @@ absl::Status AddSubgraph(
       signature_name_map, model_ptr, config.const_element_count_limit, node_ids,
       edge_map, mlir_builder, subgraph));
 
-  ValidateSubgraph(node_ids, edge_map);
+  ValidateSubgraph(subgraph_name, node_ids, edge_map);
   graph.subgraphs.push_back(subgraph);
   return absl::OkStatus();
+}
+
+std::string GetSubgraphName(int subgraph_index, const SubGraphT& subgraph_t) {
+  if (!subgraph_t.name.empty()) {
+    return subgraph_t.name;
+  }
+  return (subgraph_index == 0) ? "main"
+                               : absl::StrCat("subgraph_", subgraph_index);
 }
 
 }  // namespace
@@ -640,13 +649,14 @@ absl::StatusOr<std::string> ConvertFlatbufferDirectlyToJson(
 
   for (int i = 0; i < model->subgraphs.size(); ++i) {
     const auto& subgraph = model->subgraphs[i];
+    const std::string subgraph_name = GetSubgraphName(i, *subgraph);
     auto signature_name_it = signature_map.find(i);
     if (signature_name_it != signature_map.end()) {
-      RETURN_IF_ERROR(AddSubgraph(config, *subgraph, op_names,
+      RETURN_IF_ERROR(AddSubgraph(config, subgraph_name, *subgraph, op_names,
                                   signature_name_it->second, model, model_ptr,
                                   mlir_builder, graph));
     } else {
-      RETURN_IF_ERROR(AddSubgraph(config, *subgraph, op_names,
+      RETURN_IF_ERROR(AddSubgraph(config, subgraph_name, *subgraph, op_names,
                                   /*signature_name_map=*/std::nullopt, model,
                                   model_ptr, mlir_builder, graph));
     }
