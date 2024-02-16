@@ -25,11 +25,13 @@
 #include "llvm/Support/FormatVariadic.h"
 #include "llvm/Support/JSON.h"
 #include "llvm/Support/raw_ostream.h"
+#include "mlir/Dialect/Func/Extensions/AllExtensions.h"
 #include "mlir/IR/Attributes.h"
 #include "mlir/IR/Builders.h"
 #include "mlir/IR/BuiltinAttributes.h"
 #include "mlir/IR/BuiltinTypes.h"
 #include "mlir/IR/MLIRContext.h"
+#include "stablehlo/dialect/StablehloOps.h"
 #include "formats/schema_structs.h"
 #include "graphnode_builder.h"
 #include "status_macros.h"
@@ -40,6 +42,7 @@
 #include "tensorflow/compiler/mlir/lite/ir/tfl_ops.h"
 #include "tensorflow/compiler/mlir/lite/offset_buffer.h"
 #include "tensorflow/compiler/mlir/lite/utils/const_tensor_utils.h"
+#include "tensorflow/compiler/mlir/tensorflow/ir/tf_dialect.h"
 #include "tensorflow/compiler/mlir/tensorflow/ir/tf_types.h"
 #include "tensorflow/lite/core/model_builder.h"
 #include "tensorflow/lite/schema/schema_generated.h"
@@ -88,6 +91,17 @@ using SignatureMap = absl::flat_hash_map<int, SignatureNameMap>;
 using Tensors = std::vector<std::unique_ptr<TensorT>>;
 using OperatorCodes = std::vector<std::unique_ptr<OperatorCodeT>>;
 using Buffers = std::vector<std::unique_ptr<tflite::BufferT>>;
+
+// Returns true if the string is printable.
+bool IsPrintable(absl::string_view str) {
+  for (const char& c : str) {
+    unsigned char uc = static_cast<unsigned char>(c);
+    if ((uc < 0x20) || (uc > 0x7E)) {
+      return false;
+    }
+  }
+  return true;
+}
 
 std::string EdgeInfoDebugString(const EdgeInfo& edge_info) {
   return absl::StrCat("sourceNodeId: ", edge_info.source_node_id,
@@ -432,9 +446,11 @@ void CustomOptionsToAttributes(
   std::string content;
   content.assign(reinterpret_cast<const char*>(custom_options.data()),
                  custom_options.size());
+  if (!IsPrintable(content)) {
+    content = "<binary>";
+  }
   attributes.emplace_back(mlir_builder.getNamedAttr(
-      "custom_option",
-      mlir::TFL::ConstBytesAttr::get(mlir_builder.getContext(), content)));
+      "custom_option", mlir_builder.getStringAttr(content)));
 }
 
 // Adds builtin and custom options to node attribute. Logic is referred from
@@ -630,7 +646,16 @@ absl::StatusOr<std::string> ConvertFlatbufferDirectlyToJson(
                                                 model_content.length());
 
   mlir::MLIRContext mlir_context;
+  mlir::DialectRegistry registry;
+  registry.insert<mlir::TFL::TensorFlowLiteDialect, mlir::TF::TensorFlowDialect,
+                  mlir::stablehlo::StablehloDialect>();
+  mlir::func::registerAllExtensions(registry);
+  mlir_context.appendDialectRegistry(registry);
+  mlir_context.loadDialect<mlir::TFL::TensorFlowLiteDialect,
+                           mlir::TF::TensorFlowDialect,
+                           mlir::stablehlo::StablehloDialect>();
   mlir::Builder mlir_builder(&mlir_context);
+
   Graph graph;
   std::unique_ptr<ModelT> model(model_ptr->GetModel()->UnPack());
   const std::vector<std::string> op_names = GetOpNames(model->operator_codes);
