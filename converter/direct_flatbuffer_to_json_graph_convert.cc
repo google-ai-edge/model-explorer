@@ -317,11 +317,41 @@ absl::StatusOr<mlir::ElementsAttr> ConvertBufferToAttr(
   return value;
 }
 
-absl::Status AddConstantToNodeAttr(const TensorT& tensor,
-                                   const std::vector<uint8_t>& buffer,
-                                   const int const_element_count_limit,
-                                   mlir::Builder mlir_builder,
-                                   GraphNodeBuilder& builder) {
+absl::StatusOr<std::vector<uint8_t>> GetBuffer(
+    const TensorT& tensor, const Buffers& buffers,
+    const std::unique_ptr<FlatBufferModel>& model_ptr) {
+  const uint64_t buffer_offset = buffers[tensor.buffer]->offset;
+  const uint64_t buffer_size = buffers[tensor.buffer]->size;
+  // Check if constant tensor is stored outside of the flatbuffers.
+  if (tflite::IsValidBufferOffset(buffer_offset)) {
+    if (!buffers[tensor.buffer]->data.empty()) {
+      return absl::InvalidArgumentError(
+          "Buffer data and offset cannot be set at the same time.");
+    }
+    const uint8_t* file_begin_ptr =
+        reinterpret_cast<const uint8_t*>(model_ptr->allocation()->base());
+    if (buffer_offset + buffer_size > model_ptr->allocation()->bytes()) {
+      return absl::InvalidArgumentError(
+          absl::StrCat("Constant buffer of tensor \"", tensor.name,
+                       "\" specified an out of range offset."));
+    }
+    return std::vector<uint8_t>(file_begin_ptr + buffer_offset,
+                                file_begin_ptr + buffer_offset + buffer_size);
+  }
+  return buffers[tensor.buffer]->data;
+}
+
+absl::Status AddConstantToNodeAttr(
+    const TensorT& tensor, const Buffers& buffers,
+    const int const_element_count_limit,
+    const std::unique_ptr<FlatBufferModel>& model_ptr,
+    mlir::Builder mlir_builder, GraphNodeBuilder& builder) {
+  ASSIGN_OR_RETURN(std::vector<uint8_t> buffer,
+                   GetBuffer(tensor, buffers, model_ptr));
+  if (buffer.empty()) {
+    return absl::InvalidArgumentError(
+        absl::StrCat("Buffer data for tensor \"", tensor.name, "\" is empty."));
+  }
   ASSIGN_OR_RETURN(mlir::ElementsAttr elem_attr,
                    ConvertBufferToAttr(tensor, buffer, mlir_builder));
   std::string value;
@@ -329,21 +359,6 @@ absl::Status AddConstantToNodeAttr(const TensorT& tensor,
   PrintAttribute(elem_attr, const_element_count_limit, sstream);
   builder.AppendNodeAttribute(/*key=*/kValue, /*value=*/value);
   return absl::OkStatus();
-}
-
-std::vector<uint8_t> GetBuffer(
-    const TensorT& tensor, const Buffers& buffers,
-    const std::unique_ptr<FlatBufferModel>& model_ptr) {
-  // Check if constant tensor is stored outside of the flatbuffers.
-  if (tflite::IsValidBufferOffset(buffers[tensor.buffer]->offset)) {
-    const uint8_t* file_begin_ptr =
-        reinterpret_cast<const uint8_t*>(model_ptr->allocation()->base());
-    return std::vector<uint8_t>(file_begin_ptr + buffers[tensor.buffer]->offset,
-                                file_begin_ptr +
-                                    buffers[tensor.buffer]->offset +
-                                    buffers[tensor.buffer]->size);
-  }
-  return buffers[tensor.buffer]->data;
 }
 
 // Creates and adds a GraphInputs, GraphOutputs or const node into Subgraph.
@@ -390,9 +405,9 @@ absl::Status AddAuxiliaryNode(
 
   if (node_type == NodeType::kConstNode) {
     const TensorT& tensor = *tensors[tensor_indices[0]];
-    std::vector<uint8_t> buffer = GetBuffer(tensor, buffers, model_ptr);
-    absl::Status status = AddConstantToNodeAttr(
-        tensor, buffer, const_element_count_limit, mlir_builder, builder);
+    absl::Status status =
+        AddConstantToNodeAttr(tensor, buffers, const_element_count_limit,
+                              model_ptr, mlir_builder, builder);
     // Logs the error and continues to add the node to the graph.
     if (!status.ok()) {
       LOG(ERROR) << status;
