@@ -377,6 +377,7 @@ absl::Status AddGraphInputsNode(
 
 absl::Status AddGraphOutputsNode(
     const tensorflow::FunctionDef& func_def,
+    const absl::flat_hash_map<std::string, int>& input_to_idx,
     absl::flat_hash_map<std::string, std::string>& node_to_id,
     size_t* next_node_id, Subgraph& subgraph) {
   const tensorflow::OpDef& signature = func_def.signature();
@@ -394,8 +395,8 @@ absl::Status AddGraphOutputsNode(
     }
     ASSIGN_OR_RETURN(
         const EdgeInfo edge_info,
-        ComputeEdgeInfoFromInput(node_name_it->second,
-                                 /*input_to_idx=*/{}, node_to_id, builder));
+        ComputeEdgeInfoFromInput(node_name_it->second, input_to_idx, node_to_id,
+                                 builder));
     builder.AppendEdgeInfo(edge_info.source_node_id,
                            edge_info.source_node_output_id,
                            /*target_node_input_id_str=*/absl::StrCat(i));
@@ -461,8 +462,8 @@ absl::Status AddSubgraph(
   }
 
   if (func_def.has_value()) {
-    RETURN_IF_ERROR(
-        AddGraphOutputsNode(*func_def, node_to_id, &next_node_id, subgraph));
+    RETURN_IF_ERROR(AddGraphOutputsNode(*func_def, input_to_idx, node_to_id,
+                                        &next_node_id, subgraph));
   }
 
   graph->subgraphs.push_back(subgraph);
