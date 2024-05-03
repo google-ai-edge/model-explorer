@@ -17,7 +17,7 @@ limitations under the License.
 
 #include <string>
 
-#include "tensorflow/lite/schema/schema_generated.h"
+#include "tensorflow/compiler/mlir/lite/schema/schema_generated.h"
 
 namespace tooling {
 namespace visualization_client {

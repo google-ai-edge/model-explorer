@@ -22,7 +22,7 @@ cc_library(
     name = "convert_type",
     srcs = ["convert_type.cc"],
     hdrs = ["convert_type.h"],
-    deps = ["@org_tensorflow//tensorflow/lite/schema:schema_fbs"],
+    deps = ["@org_tensorflow//tensorflow/compiler/mlir/lite/schema:schema_fbs"],
 )
 
 cc_library(
