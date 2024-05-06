@@ -1,0 +1,40 @@
+[project]
+name = "model-explorer"
+version = "0.0.88"
+authors = [
+  { name="Google LLC", email="opensource@google.com" },
+]
+description = "A modern model graph visualizer and debugger"
+readme = "README.md"
+requires-python = ">=3.9"
+classifiers = [
+   "Programming Language :: Python :: 3.9",
+   "Programming Language :: Python :: 3.10",
+   "Programming Language :: Python :: 3.11",
+   "Programming Language :: Python :: 3.12",
+   "License :: OSI Approved :: Apache Software License",
+]
+dependencies = [
+  "flask",
+  "ipython",
+  "model-explorer-adapter == 0.3.8",
+  "packaging",
+  "portpicker",
+  "requests",
+  "termcolor",
+  "typing-extensions",
+  "torch",
+  "numpy",
+]
+
+[project.scripts]
+model_explorer = "model_explorer.cmdline:main"
+model-explorer = "model_explorer.cmdline:main"
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+# Include all files in "web_app" dir.
+[tool.setuptools.package-data]
+"model_explorer.web_app" = ["**/*"]

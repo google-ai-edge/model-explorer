@@ -1,0 +1,53 @@
+{
+  "chars": [
+    {
+      "char": "0xe5d4",
+      "width": 10.0,
+      "height": 20.0,
+      "x": 35.5,
+      "y": 0.5,
+      "xoffset": 0,
+      "yoffset": 0,
+      "xadvance": 0
+    },
+    {
+      "char": "0xe5d6",
+      "width": 14.0,
+      "height": 20.0,
+      "x": 46.5,
+      "y": 0.5,
+      "xoffset": 0,
+      "yoffset": 0,
+      "xadvance": 0
+    },
+    {
+      "char": "0xe5d7",
+      "width": 14.0,
+      "height": 21.0,
+      "x": 0.5,
+      "y": 0.5,
+      "xoffset": 0,
+      "yoffset": 0,
+      "xadvance": 0
+    },
+    {
+      "char": "0xe5da",
+      "width": 19.0,
+      "height": 21.0,
+      "x": 15.5,
+      "y": 0.5,
+      "xoffset": 0,
+      "yoffset": 0,
+      "xadvance": 0
+    }
+  ],
+  "info": {
+    "size": 20
+  },
+  "common": {
+    "scaleW": 256
+  },
+  "distanceField": {
+    "distanceRange": 6
+  }
+}
