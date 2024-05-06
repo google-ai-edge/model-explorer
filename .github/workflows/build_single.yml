@@ -1,0 +1,80 @@
+# YAML schema for GitHub Actions:
+# https://help.github.com/en/actions/automating-your-workflow-with-github-actions/workflow-syntax-for-github-actions
+#
+# Helpful YAML parser to clarify YAML syntax:
+# https://yaml-online-parser.appspot.com/
+#
+
+name: PyPI Build Single Platform & Python Version Adapters
+
+on:
+  workflow_dispatch:
+    inputs:
+      runner:
+        description: 'Hosted Runner'
+        required: true
+        default: Ubuntu_22.04_16Core_64GB
+        type: choice
+        options:
+          - Ubuntu_22.04_16Core_64GB
+          - macos-latest
+          - macos-14
+
+      python-version:
+        description: 'Python Version'
+        required: true
+        default: '3.11'
+        type: choice
+        options:
+          - '3.12'
+          - '3.11'
+          - '3.10'
+          - '3.9'
+
+      package-version:
+        description: 'Package Version'
+        required: true
+        default: '0.0.0'
+        type: string
+
+env:
+  TWINE_PASSWORD: ${{ secrets.PYPI_API_KEY }}
+
+jobs:
+  build_release:
+    runs-on: ${{ github.event.inputs.runner }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ github.event.inputs.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ github.event.inputs.python-version }}
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip setuptools
+          python -m pip install wheel numpy twine
+
+      - name: Build Package
+        run: |
+          cd ./src/builtin-adapter
+          ./python/pip_package/build_pip_package.sh ${{ github.event.inputs.package-version }}
+
+      - name: Verify the Distribution
+        run: twine check ./src/builtin-adapter/gen/adapter_pip/dist/*
+
+      - name: Check Directory Output
+        run: ls -l ./src/builtin-adapter/gen/adapter_pip/dist/*.whl
+
+      - name: Get Current Date
+        id: date
+        run: echo "date=$(date +'%Y%m%d')" >> "$GITHUB_OUTPUT"
+
+      - name: Upload Release Asset
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ./src/builtin-adapter/gen/adapter_pip/dist/*.whl
+          prerelease: true
+          tag_name: adapter-v${{ github.event.inputs.package-version }}-${{ github.event.inputs.runner }}-cp${{ github.event.inputs.python-version }}-${{ steps.date.outputs.date }}
