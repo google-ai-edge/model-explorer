@@ -13,10 +13,10 @@ on:
       runner:
         description: 'Hosted Runner'
         required: true
-        default: Ubuntu_22.04_16Core_64GB
+        default: ubuntu-latest-16core
         type: choice
         options:
-          - Ubuntu_22.04_16Core_64GB
+          - ubuntu-latest-16core
           - macos-latest
           - macos-14
 
