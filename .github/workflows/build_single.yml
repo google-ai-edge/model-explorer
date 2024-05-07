@@ -17,7 +17,6 @@ on:
         type: choice
         options:
           - Linux_runner_8_core
-          - ubuntu-latest-16-cores
           - macos-latest
           - macos-14
 
@@ -75,4 +74,4 @@ jobs:
         with:
           files: ./src/builtin-adapter/gen/adapter_pip/dist/*.whl
           prerelease: true
-          tag_name: adapter-v${{ github.event.inputs.package-version }}-${{ github.event.inputs.runner }}-cp${{ github.event.inputs.python-version }}-${{ steps.date.outputs.date }}
+          tag_name: adapter-v${{ github.event.inputs.package-version }}-${{ steps.date.outputs.date }}
