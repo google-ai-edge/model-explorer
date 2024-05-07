@@ -1,6 +1,6 @@
 [project]
 name = "model-explorer"
-version = "0.0.88"
+version = "0.0.89"
 authors = [
   { name="Google LLC", email="opensource@google.com" },
 ]
@@ -17,7 +17,7 @@ classifiers = [
 dependencies = [
   "flask",
   "ipython",
-  "model-explorer-adapter == 0.3.8",
+  "model-explorer-adapter == 0.3.10",
   "packaging",
   "portpicker",
   "requests",
