@@ -20,10 +20,10 @@ jobs:
   build_release:
     strategy:
       matrix:
-        runner: [Linux_runner_8_core, macos-latest, macos-14]
+        runner: [Linux_runner_8_core, macos-latest, macos-13]
         python-version: ['3.9', '3.10', '3.11', '3.12']
         exclude:
-          - runner: macos-14
+          - runner: macos-latest
             python-version: '3.9'
     runs-on: ${{ matrix.runner }}
 
@@ -63,7 +63,7 @@ jobs:
           tag_name: adapter-v${{ github.event.inputs.package-version }}-${{ steps.date.outputs.date }}
 
   build_macos_arm64_cp39:
-    runs-on: macos-14
+    runs-on: macos-latest
 
     steps:
       - uses: actions/checkout@v4
