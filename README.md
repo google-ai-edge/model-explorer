@@ -10,7 +10,7 @@ graph rendering, among others. It currently supports TFLite, TF, TFJS, and
 PyTorch (Exported Program) model format, and provides an extension framework for
 developers to easily add support for additional formats.
 
-<img width="900" alt="Home page screenshot" src="https://github.com/google-edge-ai/model-explorer/assets/8752427/bb08c9cb-6a6d-4216-8c4c-264d7ec08f9e">
+<img width="890" alt="Home page screenshot" src="screenshots/main_ui.png">
 
 <br>
 <br>
