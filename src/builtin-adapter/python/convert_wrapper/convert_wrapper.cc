@@ -13,10 +13,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
+#include <stdexcept>
+#include <string>
+
+#include "absl/status/statusor.h"
 #include "absl/strings/string_view.h"
 #include "pybind11/pybind11.h"
-#include "pybind11_abseil/import_status_module.h"
-#include "pybind11_abseil/status_casters.h"  // IWYU pragma : keep
 #include "direct_flatbuffer_to_json_graph_convert.h"
 #include "direct_saved_model_to_json_graph_convert.h"
 #include "model_json_graph_convert.h"
@@ -27,8 +29,6 @@ using tooling::visualization_client::VisualizeConfig;
 namespace pybind11 {
 
 PYBIND11_MODULE(_pywrap_convert_wrapper, m) {
-  pybind11::google::ImportStatusModule();
-
   class_<VisualizeConfig>(m, "VisualizeConfig")
       .def(init<>())
       .def_readwrite("const_element_count_limit",
@@ -36,58 +36,87 @@ PYBIND11_MODULE(_pywrap_convert_wrapper, m) {
 
   m.def(
       "ConvertSavedModelToJson",
-      [](const VisualizeConfig& config, absl::string_view model_path) {
-        return ::tooling::visualization_client::ConvertSavedModelToJson(
-            config, model_path);
+      [](const VisualizeConfig& config,
+         absl::string_view model_path) -> std::string {
+        const absl::StatusOr<std::string> json_or_status =
+            ::tooling::visualization_client::ConvertSavedModelToJson(
+                config, model_path);
+        if (!json_or_status.ok()) {
+          throw std::runtime_error(json_or_status.status().ToString());
+        }
+        return json_or_status.value();
       },
       R"pbdoc(
       Converts a SavedModel to visualizer JSON string through tf dialect MLIR 
-      module if succeeded, otherwise raises `StatusNotOk` exception.
+      module if succeeded, otherwise raises `RuntimeError` exception.
       )pbdoc");
 
   m.def(
       "ConvertFlatbufferToJson",
       [](const VisualizeConfig& config, absl::string_view model_path,
-         bool is_modelpath) {
-        return ::tooling::visualization_client::ConvertFlatbufferToJson(
-            config, model_path, is_modelpath);
+         bool is_modelpath) -> std::string {
+        const absl::StatusOr<std::string> json_or_status =
+            ::tooling::visualization_client::ConvertFlatbufferToJson(
+                config, model_path, is_modelpath);
+        if (!json_or_status.ok()) {
+          throw std::runtime_error(json_or_status.status().ToString());
+        }
+        return json_or_status.value();
       },
       R"pbdoc(
       Converts a Flatbuffer to visualizer JSON string through tfl dialect MLIR 
-      module if succeeded, otherwise raises `StatusNotOk` exception.
+      module if succeeded, otherwise raises `RuntimeError` exception.
       )pbdoc");
 
   m.def(
       "ConvertFlatbufferDirectlyToJson",
-      [](const VisualizeConfig& config, absl::string_view model_path) {
-        return ::tooling::visualization_client::ConvertFlatbufferDirectlyToJson(
-            config, model_path);
+      [](const VisualizeConfig& config,
+         absl::string_view model_path) -> std::string {
+        const absl::StatusOr<std::string> json_or_status =
+            ::tooling::visualization_client::ConvertFlatbufferDirectlyToJson(
+                config, model_path);
+        if (!json_or_status.ok()) {
+          throw std::runtime_error(json_or_status.status().ToString());
+        }
+        return json_or_status.value();
       },
       R"pbdoc(
       Converts a Flatbuffer directly to visualizer JSON string without MLIR or
-      execution. Raises `StatusNotOk` exception if failed.
+      execution. Raises `RuntimeError` exception if failed.
       )pbdoc");
 
   m.def(
       "ConvertSavedModelDirectlyToJson",
-      [](const VisualizeConfig& config, absl::string_view model_path) {
-        return ::tooling::visualization_client::ConvertSavedModelDirectlyToJson(
-            config, model_path);
+      [](const VisualizeConfig& config,
+         absl::string_view model_path) -> std::string {
+        const absl::StatusOr<std::string> json_or_status =
+            ::tooling::visualization_client::ConvertSavedModelDirectlyToJson(
+                config, model_path);
+        if (!json_or_status.ok()) {
+          throw std::runtime_error(json_or_status.status().ToString());
+        }
+        return json_or_status.value();
       },
       R"pbdoc(
       Converts a SavedModel directly to visualizer JSON string without MLIR or
-      execution. Raises `StatusNotOk` exception if failed.
+      execution. Raises `RuntimeError` exception if failed.
       )pbdoc");
 
   m.def(
       "ConvertGraphDefDirectlyToJson",
-      [](const VisualizeConfig& config, absl::string_view model_path) {
-        return ::tooling::visualization_client::ConvertGraphDefDirectlyToJson(
-            config, model_path);
+      [](const VisualizeConfig& config,
+         absl::string_view model_path) -> std::string {
+        const absl::StatusOr<std::string> json_or_status =
+            ::tooling::visualization_client::ConvertGraphDefDirectlyToJson(
+                config, model_path);
+        if (!json_or_status.ok()) {
+          throw std::runtime_error(json_or_status.status().ToString());
+        }
+        return json_or_status.value();
       },
       R"pbdoc(
       Converts a GraphDef directly to visualizer JSON string without MLIR or
-      execution. Raises `StatusNotOk` exception if failed.
+      execution. Raises `RuntimeError` exception if failed.
       )pbdoc");
 }
 

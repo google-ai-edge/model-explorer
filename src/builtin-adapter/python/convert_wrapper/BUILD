@@ -16,10 +16,9 @@ pybind_extension(
         "_pywrap_convert_wrapper.pyi",
     ],
     deps = [
+        "@com_google_absl//absl/status:statusor",
         "@com_google_absl//absl/strings:string_view",
         "@pybind11",
-        "@pybind11_abseil//pybind11_abseil:import_status_module",
-        "@pybind11_abseil//pybind11_abseil:status_casters",
         "//:direct_flatbuffer_to_json_graph_convert",
         "//:direct_saved_model_to_json_graph_convert",
         "//:model_json_graph_convert",
