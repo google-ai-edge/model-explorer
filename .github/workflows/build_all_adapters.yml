@@ -1,0 +1,112 @@
+# YAML schema for GitHub Actions:
+# https://help.github.com/en/actions/automating-your-workflow-with-github-actions/workflow-syntax-for-github-actions
+#
+# Helpful YAML parser to clarify YAML syntax:
+# https://yaml-online-parser.appspot.com/
+#
+
+name: PyPI Build Release All Backend Adapters
+
+on:
+  workflow_dispatch:
+    inputs:
+      package-version:
+        description: 'Package Version'
+        required: true
+        default: '0.0.0'
+        type: string
+
+jobs:
+  build_release:
+    strategy:
+      matrix:
+        runner: [Linux_runner_8_core, macos-latest, macos-14]
+        python-version: ['3.9', '3.10', '3.11', '3.12']
+        exclude:
+          - runner: macos-14
+            python-version: '3.9'
+    runs-on: ${{ matrix.runner }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip setuptools
+          python -m pip install wheel numpy twine
+
+      - name: Build Package
+        run: |
+          cd ./src/builtin-adapter
+          ./python/pip_package/build_pip_package.sh ${{ github.event.inputs.package-version }}
+
+      - name: Verify the Distribution
+        run: twine check ./src/builtin-adapter/gen/adapter_pip/dist/*
+
+      - name: Check Directory Output
+        run: ls -l ./src/builtin-adapter/gen/adapter_pip/dist/*.whl
+
+      - name: Get Current Date
+        id: date
+        run: echo "date=$(date +'%Y%m%d')" >> "$GITHUB_OUTPUT"
+
+      - name: Upload Release Asset
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ./src/builtin-adapter/gen/adapter_pip/dist/*.whl
+          prerelease: true
+          tag_name: adapter-v${{ github.event.inputs.package-version }}-${{ steps.date.outputs.date }}
+
+  build_macos_arm64_cp39:
+    runs-on: macos-14
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Python
+        run: |
+          brew update
+          brew install python@3.9
+
+      - name: Install Pip
+        run: |
+          curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
+          python3.9 get-pip.py
+
+      - name: Install Poetry
+        run: python3.9 -m pip install poetry
+
+      - name: Install Dependencies
+        run: |
+          python3.9 -m pip install --upgrade pip setuptools
+          python3.9 -m pip install wheel numpy twine
+
+      - name: Build Package
+        run: |
+          cd ./src/builtin-adapter
+          ./python/pip_package/build_cp39_package.sh ${{ github.event.inputs.package-version }}
+
+      - name: Verify the Distribution
+        run: twine check ./src/builtin-adapter/gen/adapter_pip/dist/*
+
+      - name: Check Directory Output
+        run: ls -l ./src/builtin-adapter/gen/adapter_pip/dist/*.whl
+
+      - name: Get Current Date
+        id: date
+        run: echo "date=$(date +'%Y%m%d')" >> "$GITHUB_OUTPUT"
+
+      - name: Upload Release Asset
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ./src/builtin-adapter/gen/adapter_pip/dist/*.whl
+          prerelease: true
+          tag_name: adapter-v${{ github.event.inputs.package-version }}-${{ steps.date.outputs.date }}
+
+    
+  
