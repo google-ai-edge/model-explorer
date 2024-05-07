@@ -17,6 +17,7 @@ on:
         type: choice
         options:
           - Linux_runner_8_core
+          - ubuntu-latest-16-cores
           - macos-latest
           - macos-14
 
@@ -36,9 +37,6 @@ on:
         required: true
         default: '0.0.0'
         type: string
-
-env:
-  TWINE_PASSWORD: ${{ secrets.PYPI_API_KEY }}
 
 jobs:
   build_release:
