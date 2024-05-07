@@ -179,8 +179,8 @@ absl::Status AddTensorInfo(absl::string_view attr_name,
   const std::string data_type = tensorflow::DataTypeString(tensor.dtype());
   const std::string shape =
       absl::StrCat(data_type, tensor.shape().DebugString());
-  RETURN_IF_ERROR(builder.AppendAttrToMetadata(EdgeType::kOutput, relative_idx,
-                                               kTensorShape, shape));
+  builder.AppendAttrToMetadata(EdgeType::kOutput, relative_idx, kTensorShape,
+                               shape);
   return absl::OkStatus();
 }
 
@@ -404,7 +404,7 @@ absl::StatusOr<EdgeInfo> ComputeEdgeInfoFromInput(
   return edge_info;
 }
 
-absl::Status AddGraphInputsNode(
+void AddGraphInputsNode(
     const tensorflow::OpDef& signature,
     absl::flat_hash_map<std::string, int>& input_to_idx,
     absl::flat_hash_map<std::string, std::string>& node_to_id,
@@ -418,11 +418,10 @@ absl::Status AddGraphInputsNode(
     const tensorflow::OpDef::ArgDef& arg_def = signature.input_arg(i);
     // TODO: b/322649392 - Add tensor index and tensor shape.
     input_to_idx.emplace(arg_def.name(), i);
-    RETURN_IF_ERROR(builder.AppendAttrToMetadata(EdgeType::kOutput, i,
-                                                 kTensorName, arg_def.name()));
+    builder.AppendAttrToMetadata(EdgeType::kOutput, i, kTensorName,
+                                 arg_def.name());
   }
   subgraph.nodes.push_back(std::move(builder).Build());
-  return absl::OkStatus();
 }
 
 absl::Status AddGraphOutputsNode(
@@ -469,8 +468,8 @@ absl::Status AddSubgraph(
   absl::flat_hash_map<std::string, std::string> node_to_id;
   size_t next_node_id = 0;
   if (func_def.has_value()) {
-    RETURN_IF_ERROR(AddGraphInputsNode(func_def->signature(), input_to_idx,
-                                       node_to_id, &next_node_id, subgraph));
+    AddGraphInputsNode(func_def->signature(), input_to_idx, node_to_id,
+                       &next_node_id, subgraph);
   }
   // Compute integer IDs for all nodes.
   for (const tensorflow::NodeDef& node_def : node_defs) {

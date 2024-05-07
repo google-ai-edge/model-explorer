@@ -98,8 +98,6 @@ cc_library(
     srcs = ["graphnode_builder.cc"],
     hdrs = ["graphnode_builder.h"],
     deps = [
-        ":status_macros",
-        "@com_google_absl//absl/status",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/strings:string_view",
         "//formats:schema_structs",

@@ -230,16 +230,14 @@ absl::Status AddGraphInputsNode(mlir::func::FuncOp& fop, Counter& index_counter,
   // Iterates over block arguments of this function op and adds tensor types and
   // shapes. If there are names of model inputs, we also add them to metadata.
   for (const auto& it : llvm::enumerate(fop.getArgumentTypes())) {
-    RETURN_IF_ERROR(builder.AppendAttrToMetadata(
-        EdgeType::kOutput, it.index(), kTensorIndex,
-        absl::StrCat(index_counter.increment())));
+    builder.AppendAttrToMetadata(EdgeType::kOutput, it.index(), kTensorIndex,
+                                 absl::StrCat(index_counter.increment()));
     if (it.index() < input_names.size()) {
-      RETURN_IF_ERROR(builder.AppendAttrToMetadata(
-          EdgeType::kOutput, it.index(), kTensorName, input_names[it.index()]));
+      builder.AppendAttrToMetadata(EdgeType::kOutput, it.index(), kTensorName,
+                                   input_names[it.index()]);
     }
-    RETURN_IF_ERROR(builder.AppendAttrToMetadata(EdgeType::kOutput, it.index(),
-                                                 kTensorShape,
-                                                 GetTypeString(it.value())));
+    builder.AppendAttrToMetadata(EdgeType::kOutput, it.index(), kTensorShape,
+                                 GetTypeString(it.value()));
   }
   subgraph.nodes.push_back(std::move(builder).Build());
   return absl::OkStatus();
@@ -442,13 +440,12 @@ absl::Status TfFunctionToSubgraph(const VisualizeConfig& config, FuncOp& fop,
     // JSON graph.
     for (int output_index = 0; output_index < operation.getNumResults();
          ++output_index) {
-      RETURN_IF_ERROR(builder.AppendAttrToMetadata(
+      builder.AppendAttrToMetadata(
           EdgeType::kOutput, output_index, kTensorIndex,
-          absl::StrCat(tensor_idx_counter.increment())));
+          absl::StrCat(tensor_idx_counter.increment()));
       mlir::Value val = operation.getResult(output_index);
-      RETURN_IF_ERROR(builder.AppendAttrToMetadata(
-          EdgeType::kOutput, output_index, kTensorShape,
-          GetTypeString(val.getType())));
+      builder.AppendAttrToMetadata(EdgeType::kOutput, output_index,
+                                   kTensorShape, GetTypeString(val.getType()));
     }
     subgraph.nodes.push_back(std::move(builder).Build());
   }
@@ -464,14 +461,14 @@ absl::Status AddTensorTags(absl::string_view op_label, const OpdefsMap& op_defs,
   const OpMetadata& op_metadata = op_defs.at(op_label);
   if (op_metadata.arguments.size() <= op.getNumOperands()) {
     for (int i = 0; i < op_metadata.arguments.size(); ++i) {
-      RETURN_IF_ERROR(builder.AppendAttrToMetadata(
-          EdgeType::kInput, i, kTensorTag, op_metadata.arguments[i]));
+      builder.AppendAttrToMetadata(EdgeType::kInput, i, kTensorTag,
+                                   op_metadata.arguments[i]);
     }
   }
   if (op_metadata.results.size() <= op.getNumResults()) {
     for (int i = 0; i < op_metadata.results.size(); ++i) {
-      RETURN_IF_ERROR(builder.AppendAttrToMetadata(
-          EdgeType::kOutput, i, kTensorTag, op_metadata.results[i]));
+      builder.AppendAttrToMetadata(EdgeType::kOutput, i, kTensorTag,
+                                   op_metadata.results[i]);
     }
   }
   return absl::OkStatus();
@@ -533,18 +530,16 @@ absl::Status TfliteFunctionToSubgraph(const VisualizeConfig& config,
         GetTfliteTensorNames(operation);
     for (int output_index = 0; output_index < operation.getNumResults();
          ++output_index) {
-      RETURN_IF_ERROR(builder.AppendAttrToMetadata(
+      builder.AppendAttrToMetadata(
           EdgeType::kOutput, output_index, kTensorIndex,
-          absl::StrCat(tensor_idx_counter.increment())));
+          absl::StrCat(tensor_idx_counter.increment()));
       mlir::Value val = operation.getResult(output_index);
       if (output_index < tensor_names.size()) {
-        RETURN_IF_ERROR(builder.AppendAttrToMetadata(
-            EdgeType::kOutput, output_index, kTensorName,
-            tensor_names[output_index]));
+        builder.AppendAttrToMetadata(EdgeType::kOutput, output_index,
+                                     kTensorName, tensor_names[output_index]);
       }
-      RETURN_IF_ERROR(builder.AppendAttrToMetadata(
-          EdgeType::kOutput, output_index, kTensorShape,
-          GetTypeString(val.getType())));
+      builder.AppendAttrToMetadata(EdgeType::kOutput, output_index,
+                                   kTensorShape, GetTypeString(val.getType()));
       // TODO(b/293348398): Tensor indices are not matched to indices in
       // Flatbuffer. Further investigation is needed.
     }
@@ -609,13 +604,12 @@ absl::Status StablehloJaxFunctionToSubgraph(const VisualizeConfig& config,
     // JSON graph.
     for (int output_index = 0; output_index < operation.getNumResults();
          ++output_index) {
-      RETURN_IF_ERROR(builder.AppendAttrToMetadata(
+      builder.AppendAttrToMetadata(
           EdgeType::kOutput, output_index, kTensorIndex,
-          absl::StrCat(tensor_idx_counter.increment())));
+          absl::StrCat(tensor_idx_counter.increment()));
       mlir::Value val = operation.getResult(output_index);
-      RETURN_IF_ERROR(builder.AppendAttrToMetadata(
-          EdgeType::kOutput, output_index, kTensorShape,
-          GetTypeString(val.getType())));
+      builder.AppendAttrToMetadata(EdgeType::kOutput, output_index,
+                                   kTensorShape, GetTypeString(val.getType()));
     }
     subgraph.nodes.push_back(std::move(builder).Build());
   }

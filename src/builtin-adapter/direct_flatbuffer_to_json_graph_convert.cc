@@ -90,6 +90,7 @@ constexpr absl::string_view kTensorName = "tensor_name";
 constexpr absl::string_view kTensorShape = "tensor_shape";
 constexpr absl::string_view kTensorTag = "__tensor_tag";
 constexpr absl::string_view kValue = "__value";
+constexpr absl::string_view kQuantization = "quantization";
 constexpr absl::string_view kSignatureName = "signature_name";
 
 struct EdgeInfo {
@@ -251,30 +252,28 @@ std::string GenerateNodeName(absl::string_view node_id_str,
   return candidate_names[0];
 }
 
-absl::Status AppendMetadata(
+void AppendMetadata(
     const EdgeType edge_type, const int metadata_id, const int tensor_index,
     const Tensors& tensors,
     const std::optional<const SignatureNameMap>& signature_name_map,
     GraphNodeBuilder& builder) {
   // Appends tensor index.
-  RETURN_IF_ERROR(builder.AppendAttrToMetadata(
-      edge_type, metadata_id, kTensorIndex, absl::StrCat(tensor_index)));
+  builder.AppendAttrToMetadata(edge_type, metadata_id, kTensorIndex,
+                               absl::StrCat(tensor_index));
   // Appends tensor name.
-  RETURN_IF_ERROR(builder.AppendAttrToMetadata(
-      edge_type, metadata_id, kTensorName, tensors[tensor_index]->name));
+  builder.AppendAttrToMetadata(edge_type, metadata_id, kTensorName,
+                               tensors[tensor_index]->name);
   // Appends tensor shape.
-  RETURN_IF_ERROR(builder.AppendAttrToMetadata(
-      edge_type, metadata_id, kTensorShape,
-      StringifyTensorShape(*tensors[tensor_index])));
+  builder.AppendAttrToMetadata(edge_type, metadata_id, kTensorShape,
+                               StringifyTensorShape(*tensors[tensor_index]));
   // Appends tensor signature name.
   if (signature_name_map.has_value()) {
     auto name_it = signature_name_map->find(tensor_index);
     if (name_it != signature_name_map->end()) {
-      RETURN_IF_ERROR(builder.AppendAttrToMetadata(
-          edge_type, metadata_id, kSignatureName, name_it->second));
+      builder.AppendAttrToMetadata(edge_type, metadata_id, kSignatureName,
+                                   name_it->second);
     }
   }
-  return absl::OkStatus();
 }
 
 // Converts the buffer data to an ElementsAttr. Logic is referred from
@@ -456,8 +455,8 @@ absl::Status AddAuxiliaryNode(
       }
       AppendIncomingEdge(edge_map.at(tensor_index), builder);
     } else {
-      RETURN_IF_ERROR(AppendMetadata(EdgeType::kOutput, i, tensor_index,
-                                     tensors, signature_name_map, builder));
+      AppendMetadata(EdgeType::kOutput, i, tensor_index, tensors,
+                     signature_name_map, builder);
 
       PopulateEdgeInfo(tensor_index,
                        {.source_node_id = node_id_str,
@@ -670,17 +669,42 @@ absl::Status AddTensorTags(const OperatorT& op, absl::string_view op_label,
   const OpMetadata& op_metadata = op_defs.at(op_label);
   if (op_metadata.arguments.size() <= op.inputs.size()) {
     for (int i = 0; i < op_metadata.arguments.size(); ++i) {
-      RETURN_IF_ERROR(builder.AppendAttrToMetadata(
-          EdgeType::kInput, i, kTensorTag, op_metadata.arguments[i]));
+      builder.AppendAttrToMetadata(EdgeType::kInput, i, kTensorTag,
+                                   op_metadata.arguments[i]);
     }
   }
   if (op_metadata.results.size() <= op.outputs.size()) {
     for (int i = 0; i < op_metadata.results.size(); ++i) {
-      RETURN_IF_ERROR(builder.AppendAttrToMetadata(
-          EdgeType::kOutput, i, kTensorTag, op_metadata.results[i]));
+      builder.AppendAttrToMetadata(EdgeType::kOutput, i, kTensorTag,
+                                   op_metadata.results[i]);
     }
   }
   return absl::OkStatus();
+}
+
+void AddQuantizationParameters(const std::unique_ptr<TensorT>& tensor,
+                               const EdgeType edge_type, const int rel_idx,
+                               GraphNodeBuilder& builder) {
+  if (tensor->quantization == nullptr) return;
+  const std::unique_ptr<tflite::QuantizationParametersT>& quant =
+      tensor->quantization;
+  if (quant->scale.size() != quant->zero_point.size()) {
+    LOG(ERROR) << absl::StrCat(
+        "Quantization parameters must have the same size: scale(",
+        quant->scale.size(), ") != zero point(", quant->zero_point.size(), ")");
+    return;
+  }
+  if (quant->scale.empty()) return;
+
+  std::vector<std::string> parameters;
+  parameters.reserve(quant->scale.size());
+  for (int i = 0; i < quant->scale.size(); ++i) {
+    // Parameters will be shown as "[scale] * (q + [zero_point])"
+    parameters.push_back(
+        absl::StrCat(quant->scale[i], " * (q + ", quant->zero_point[i], ")"));
+  }
+  std::string json = absl::StrCat("[", absl::StrJoin(parameters, ", "), "]");
+  builder.AppendAttrToMetadata(edge_type, rel_idx, kQuantization, json);
 }
 
 // Adds a node to Subgraph.
@@ -729,16 +753,21 @@ absl::Status AddNode(
           node_ids, edge_map, mlir_builder, subgraph));
     }
     AppendIncomingEdge(edge_map.at(tensor_index), builder);
+    AddQuantizationParameters(tensors[tensor_index], EdgeType::kInput, i,
+                              builder);
   }
 
   for (int i = 0; i < op.outputs.size(); ++i) {
     const int tensor_index = op.outputs[i];
-    RETURN_IF_ERROR(AppendMetadata(EdgeType::kOutput, i, tensor_index, tensors,
-                                   signature_name_map, builder));
+    AppendMetadata(EdgeType::kOutput, i, tensor_index, tensors,
+                   signature_name_map, builder);
     PopulateEdgeInfo(tensor_index,
                      {.source_node_id = node_id_str,
                       .source_node_output_id = absl::StrCat(i)},
                      edge_map);
+
+    AddQuantizationParameters(tensors[tensor_index], EdgeType::kOutput, i,
+                              builder);
   }
 
   status = AddTensorTags(op, node_label, op_defs, builder);
