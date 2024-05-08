@@ -5,7 +5,7 @@ from importlib import import_module
 from typing import Any, Dict, Union
 
 from .adapter_runner import AdapterRunner
-from .consts import PACKAGE_NAME
+from .consts import MODULE_NAME
 from .extension_class_processor import ExtensionClassProcessor
 from .registered_extension import RegisteredExtension
 from .singleton import Singleton
@@ -87,7 +87,7 @@ class ExtensionManager(object, metaclass=Singleton):
   def _import_extensions(self):
     # Built-in pywrapped c++ extensions + custom extensions.
     for module in ExtensionManager.BUILTIN_ADAPTER_MODULES + self.custom_extension_modules:
-      module_full_name = f'{PACKAGE_NAME}{module}'
+      module_full_name = f'{MODULE_NAME}{module}'
 
       # Get the registered extension from cache if it has already been
       # registered.
@@ -97,7 +97,7 @@ class ExtensionManager(object, metaclass=Singleton):
       # Import the extension module if it has not been registered.
       else:
         try:
-          import_module(module, PACKAGE_NAME)
+          import_module(module, MODULE_NAME)
         except Exception as err:
           print(f'! Failed to load extension module "{module}":')
           print(err)
