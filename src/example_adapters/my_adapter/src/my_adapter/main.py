@@ -8,7 +8,7 @@ class MyAdapter(Adapter):
   """A simple adapter that returns a hard-coded graph.
 
   See more info at:
-  https://github.com/google/model-explorer/wiki/6.-Develop-Adapter-Extension
+  https://github.com/google-ai-edge/model-explorer/wiki/6.-Develop-Adapter-Extension
   """
 
   metadata = AdapterMetadata(id='my-adapter',

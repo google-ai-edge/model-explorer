@@ -1,5 +1,5 @@
 This is an example adapter extension used in the
-[Develop Adapter Extension](https://github.com/google/model-explorer/wiki/6.-Develop-Adapter-Extension)
+[Develop Adapter Extension](https://github.com/google-ai-edge/model-explorer/wiki/6.-Develop-Adapter-Extension)
 wiki.
 
 This adapter adds support for a imaginary `.test` model format and always

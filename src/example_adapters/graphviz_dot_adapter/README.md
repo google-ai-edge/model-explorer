@@ -6,7 +6,7 @@ features in DOT, including node labels, edge connections, and
 subgraphs/clusters.
 
 Check out the
-[Develop Adapter Extension](https://github.com/google/model-explorer/wiki/6.-Develop-Adapter-Extension)
+[Develop Adapter Extension](https://github.com/google-ai-edge/model-explorer/wiki/6.-Develop-Adapter-Extension)
 wiki to learn more.
 
 <img src="screenshots/graphviz_dot_adapter.png" width="890">
