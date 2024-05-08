@@ -703,8 +703,8 @@ void AddQuantizationParameters(const std::unique_ptr<TensorT>& tensor,
     parameters.push_back(
         absl::StrCat(quant->scale[i], " * (q + ", quant->zero_point[i], ")"));
   }
-  std::string json = absl::StrCat("[", absl::StrJoin(parameters, ", "), "]");
-  builder.AppendAttrToMetadata(edge_type, rel_idx, kQuantization, json);
+  const std::string quant_str = absl::StrJoin(parameters, ",");
+  builder.AppendAttrToMetadata(edge_type, rel_idx, kQuantization, quant_str);
 }
 
 // Adds a node to Subgraph.
