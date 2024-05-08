@@ -29,6 +29,7 @@ limitations under the License.
 #include "absl/strings/str_split.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
+#include "llvm/Support/Casting.h"
 #include "llvm/Support/SMLoc.h"
 #include "llvm/Support/SourceMgr.h"
 #include "llvm/Support/raw_ostream.h"
@@ -37,9 +38,11 @@ limitations under the License.
 #include "mlir/Dialect/SCF/IR/SCF.h"
 #include "mlir/Dialect/Shape/IR/Shape.h"
 #include "mlir/IR/AsmState.h"
+#include "mlir/IR/Block.h"
 #include "mlir/IR/BuiltinOps.h"
 #include "mlir/IR/Location.h"
 #include "mlir/IR/MLIRContext.h"
+#include "mlir/IR/Operation.h"
 #include "mlir/IR/OwningOpRef.h"
 #include "mlir/IR/Verifier.h"
 #include "mlir/Parser/Parser.h"
@@ -57,6 +60,7 @@ limitations under the License.
 #include "tensorflow/compiler/mlir/lite/ir/tfl_ops.h"
 #include "tensorflow/compiler/mlir/lite/stablehlo/transforms/legalize_tf_xla_call_module_to_stablehlo_pass.h"
 #include "tensorflow/compiler/mlir/lite/stablehlo/transforms/rename_entrypoint_to_main.h"
+#include "tensorflow/compiler/mlir/tensorflow/ir/tf_dialect.h"
 #include "tensorflow/compiler/mlir/tensorflow/ir/tf_ops.h"
 #include "tensorflow/compiler/mlir/tensorflow/transforms/passes.h"
 #include "tensorflow/compiler/mlir/tensorflow/translate/mlir_import_options.h"
@@ -70,6 +74,12 @@ limitations under the License.
 namespace tooling {
 namespace visualization_client {
 namespace {
+
+enum class MlirDialect {
+  kTf,
+  kTflite,
+  kStablehlo,
+};
 
 // Referred logic from lite/python/flatbuffer_to_mlir.cc.
 static mlir::OwningOpRef<mlir::ModuleOp> FlatBufferFileToMlirTranslation(
@@ -181,41 +191,27 @@ absl::Status ConvertToStablehloModule(mlir::ModuleOp module_op) {
   return absl::OkStatus();
 }
 
-}  // namespace
-
-absl::StatusOr<std::string> ConvertStablehloMlirToJson(
-    const VisualizeConfig& config, absl::string_view model_path) {
-  mlir::DialectRegistry registry;
-  // Note: This is more dialects than is currently visualized, but does include
-  // what is commonly produced by different frameworks. So this would parse
-  // correctly but then fail in visualization. This should result in a better
-  // user experience than failing to parse here.
-  registry.insert<mlir::stablehlo::StablehloDialect, mlir::chlo::ChloDialect,
-                  mlir::mhlo::MhloDialect, mlir::vhlo::VhloDialect,
-                  mlir::func::FuncDialect, mlir::arith::ArithDialect,
-                  mlir::shape::ShapeDialect, mlir::TFL::TensorFlowLiteDialect,
-                  mlir::scf::SCFDialect>();
-  mlir::MLIRContext context(registry);
-  mlir::ParserConfig parser_config(&context);
-  std::string model_content;
-  RETURN_IF_ERROR(tsl::ReadFileToString(
-      tsl::Env::Default(), std::string(model_path), &model_content));
-  auto module_op =
-      mlir::parseSourceString<::mlir::ModuleOp>(model_content, parser_config);
-  if (!module_op) return absl::InternalError("Unable to parse module");
-
-  // Converts StableHLO MLIR module to JSON string.
-  std::string json_output;
-  llvm::raw_string_ostream json_ost(json_output);
-  mlir::LogicalResult result =
-      JaxConvertedMlirToJsonTranslate(*module_op, json_ost);
-  if (mlir::failed(result)) {
-    return absl::InternalError(
-        "Failed to convert JAX converted MLIR module to JSON string.");
+absl::StatusOr<MlirDialect> GetMlirDialect(mlir::ModuleOp module_op) {
+  auto fn_range = module_op.getOps<mlir::func::FuncOp>();
+  if (fn_range.empty()) {
+    return absl::InvalidArgumentError("Module is empty");
   }
-
-  return json_output;
+  mlir::func::FuncOp fn = *fn_range.begin();
+  mlir::Block& first_block = fn.getBody().front();
+  mlir::Operation& first_op = first_block.front();
+  mlir::Dialect* dialect = first_op.getDialect();
+  if (llvm::isa<mlir::TF::TensorFlowDialect>(dialect)) {
+    return MlirDialect::kTf;
+  } else if (llvm::isa<mlir::TFL::TensorFlowLiteDialect>(dialect)) {
+    return MlirDialect::kTflite;
+  } else if (llvm::isa<mlir::stablehlo::StablehloDialect>(dialect)) {
+    return MlirDialect::kStablehlo;
+  } else {
+    return absl::InvalidArgumentError("Unsupported dialect");
+  }
 }
+
+}  // namespace
 
 absl::StatusOr<std::string> ConvertSavedModelToJson(
     const VisualizeConfig& config, absl::string_view model_path) {
@@ -329,6 +325,55 @@ absl::StatusOr<std::string> ConvertFlatbufferToJson(
       TfliteMlirToJsonTranslateImpl(config, *module_op, json_ost);
   if (mlir::failed(result)) {
     return absl::InternalError("Failed to convert MLIR module to JSON string.");
+  }
+
+  return json_output;
+}
+
+absl::StatusOr<std::string> ConvertMlirToJson(const VisualizeConfig& config,
+                                              absl::string_view model_path) {
+  mlir::DialectRegistry registry;
+  // Note: This is more dialects than is currently visualized, but does include
+  // what is commonly produced by different frameworks. So this would parse
+  // correctly but then fail in visualization. This should result in a better
+  // user experience than failing to parse here.
+  registry.insert<mlir::TFL::TensorFlowLiteDialect, mlir::TF::TensorFlowDialect,
+                  mlir::stablehlo::StablehloDialect, mlir::chlo::ChloDialect,
+                  mlir::mhlo::MhloDialect, mlir::vhlo::VhloDialect,
+                  mlir::func::FuncDialect, mlir::arith::ArithDialect,
+                  mlir::shape::ShapeDialect, mlir::scf::SCFDialect>();
+  mlir::MLIRContext context(registry);
+  mlir::ParserConfig parser_config(&context);
+  std::string model_content;
+  RETURN_IF_ERROR(tsl::ReadFileToString(
+      tsl::Env::Default(), std::string(model_path), &model_content));
+  auto module_op =
+      mlir::parseSourceString<::mlir::ModuleOp>(model_content, parser_config);
+  if (!module_op) return absl::InternalError("Unable to parse module");
+
+  std::string json_output;
+  llvm::raw_string_ostream json_ost(json_output);
+
+  ASSIGN_OR_RETURN(MlirDialect dialect, GetMlirDialect(*module_op));
+  if (dialect == MlirDialect::kTf || dialect == MlirDialect::kStablehlo) {
+    if (HasXlaCallModule(*module_op)) {
+      RETURN_IF_ERROR(ConvertToStablehloModule(*module_op));
+    }
+    mlir::LogicalResult result =
+        JaxConvertedMlirToJsonTranslate(*module_op, json_ost);
+    if (mlir::failed(result)) {
+      return absl::InternalError(
+          "Failed to convert TF or StableHLO MLIR module to JSON string.");
+    }
+  } else if (dialect == MlirDialect::kTflite) {
+    mlir::LogicalResult result =
+        TfliteMlirToJsonTranslateImpl(config, *module_op, json_ost);
+    if (mlir::failed(result)) {
+      return absl::InternalError(
+          "Failed to convert TFL MLIR module to JSON string.");
+    }
+  } else {
+    return absl::InvalidArgumentError("Unsupported dialect");
   }
 
   return json_output;

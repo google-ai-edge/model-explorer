@@ -118,6 +118,22 @@ PYBIND11_MODULE(_pywrap_convert_wrapper, m) {
       Converts a GraphDef directly to visualizer JSON string without MLIR or
       execution. Raises `RuntimeError` exception if failed.
       )pbdoc");
+  m.def(
+      "ConvertMlirToJson",
+      [](const VisualizeConfig& config,
+         absl::string_view model_path) -> std::string {
+        const absl::StatusOr<std::string> json_or_status =
+            ::tooling::visualization_client::ConvertMlirToJson(config,
+                                                               model_path);
+        if (!json_or_status.ok()) {
+          throw std::runtime_error(json_or_status.status().ToString());
+        }
+        return json_or_status.value();
+      },
+      R"pbdoc(
+      Converts a MLIR textual/bytecode file to visualizer JSON string.
+      Raises `RuntimeError` exception if failed.
+      )pbdoc");
 }
 
 }  // namespace pybind11

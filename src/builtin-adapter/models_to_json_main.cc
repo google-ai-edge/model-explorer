@@ -42,7 +42,7 @@ using ::tooling::visualization_client::ConvertSavedModelToJson;
 enum ModelFormat {
   kFlatbuffer,
   kSavedModel,
-  kStablehloMlir,
+  kMlir,
   kFlatbufferDirect,
   kSavedModelDirect,
   kGraphDefDirect,
@@ -108,7 +108,7 @@ int main(int argc, char* argv[]) {
       }
     } else if (extension == ".mlirbc" || extension == ".mlir") {
       // StableHLO module represented using MLIR textual or bytecode format.
-      model_format = kStablehloMlir;
+      model_format = kMlir;
     } else if (extension == ".pb" || extension == ".pbtxt" ||
                extension == ".graphdef") {
       model_format = kGraphDefDirect;
@@ -129,8 +129,8 @@ int main(int argc, char* argv[]) {
           ConvertFlatbufferToJson(config, input_file, /*is_modelpath=*/true);
       break;
     }
-    case kStablehloMlir: {
-      json_output = ConvertStablehloMlirToJson(config, input_file);
+    case kMlir: {
+      json_output = ConvertMlirToJson(config, input_file);
       break;
     }
     case kSavedModel: {
