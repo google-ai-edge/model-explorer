@@ -1,5 +1,5 @@
 [project]
-name = "model-explorer"
+name = "ai-edge-model-explorer"
 version = "0.0.89"
 authors = [
   { name="Google LLC", email="opensource@google.com" },

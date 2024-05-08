@@ -85,8 +85,11 @@ class GraphNode:
 
   # Metadata for inputs.
   #
-  # Currently we only store the "__tensor_tag" metadata item here to identify
-  # the name of a node's input tensors.
+  # The following data is stored in this field:
+  #
+  # - __tensor_tag: identify the name of a node's input tensors.
+  # - quantization: the quantization parameter for tflite models when using
+  #   tflite direct adapter.
   #
   # (optional)
   inputsMetadata: list['MetadataItem'] = field(default_factory=list)

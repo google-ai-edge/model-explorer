@@ -10,7 +10,7 @@ graph rendering, among others. It currently supports TFLite, TF, TFJS, and
 PyTorch (Exported Program) model format, and provides an extension framework for
 developers to easily add support for additional formats.
 
-<img width="890" alt="Home page screenshot" src="screenshots/main_ui.png">
+![](https://raw.githubusercontent.com/google-ai-edge/model-explorer/main/screenshots/main_ui.png)
 
 <br>
 <br>
@@ -24,7 +24,3 @@ more details:
 - [API Guide](https://github.com/google-ai-edge/model-explorer/wiki/4.-API-Guide)
 - [Run in Colab Notebook](https://github.com/google-ai-edge/model-explorer/wiki/5.-Run-in-Colab-Notebook)
 - [Develop Adapter Extension](https://github.com/google-ai-edge/model-explorer/wiki/6.-Develop-Adapter-Extension)
-
-## Contributions
-
-We are not accepting contributions to Model Explorer at this time. The Model Explorer team will contribute to this repository.
