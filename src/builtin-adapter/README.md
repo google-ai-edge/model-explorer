@@ -2,13 +2,13 @@
 
 ## Install from TestPyPI
 
-Install `model-explorer-adapter` via pip from TestPyPI. For example, in a
-Python virtual environment:
+Install `ai-edge-model-explorer-adapter` via pip from TestPyPI. For example, in
+a Python virtual environment:
 
 ```
 % python3 -m venv ~/tmp/venv
 % source ~/tmp/venv/bin/activate
-(venv) $ pip install -i https://test.pypi.org/simple/ model-explorer-converter
+(venv) $ pip install -i https://test.pypi.org/simple/ ai-edge-model-explorer-adapter
 ```
 
 ## Use the Package
@@ -17,7 +17,7 @@ example:
 
 ```
 (venv) $ python3
->>> from model_explorer_adapter import _pywrap_convert_wrapper as convert_wrapper
+>>> from ai_edge_model_explorer_adapter import _pywrap_convert_wrapper as convert_wrapper
 >>> config = convert_wrapper.VisualizeConfig()
 >>> model_path = 'foo.tflite'
 >>> json = convert_wrapper.ConvertFlatbufferToJson(config, model_path, True)
@@ -37,8 +37,8 @@ package version, which should be a string of the form "x.x.x". For example:
 
 % tree gen/adapter_pip/dist
 gen/adapter_pip/dist
-├── model_explorer_adapter-0.1.0-cp311-cp311-linux_x86_64.whl
-└── model-explorer-adapter-0.1.0.linux-x86_64.tar.gz
+├── ai_edge_model_explorer_adapter-0.1.0-cp311-cp311-linux_x86_64.whl
+└── ai-edge-model-explorer-adapter-0.1.0.linux-x86_64.tar.gz
 ```
 
 ### Install
@@ -49,7 +49,7 @@ environment:
 ```
 % python3 -m venv ~/tmp/venv
 % source ~/tmp/venv/bin/activate
-(venv) $ pip install gen/adapter_pip/dist/model_explorer_adapter-0.1.0-cp311-cp311-linux_x86_64.whl
+(venv) $ pip install gen/adapter_pip/dist/ai_edge_model_explorer_adapter-0.1.0-cp311-cp311-linux_x86_64.whl
 ```
 
 The package should now be importable and usable.

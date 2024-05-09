@@ -45,17 +45,17 @@ PYTHON_VERSION="$(${PYTHON} --version | cut -d " " -f 2)"
 IFS='.' read -ra VERSION_PARTS <<< "${PYTHON_VERSION}"
 # TF only supports python version ["3.9", "3.10", "3.11", "3.12"].
 export TF_PYTHON_VERSION="${VERSION_PARTS[0]}.${VERSION_PARTS[1]}"
-export PROJECT_NAME=${WHEEL_PROJECT_NAME:-model_explorer_adapter}
+export PROJECT_NAME=${WHEEL_PROJECT_NAME:-ai_edge_model_explorer_adapter}
 BUILD_DIR="gen/adapter_pip"
 BAZEL_FLAGS="--copt=-O3"
 ARCH="$(uname -m)"
 
 # Build source tree.
-rm -rf "${BUILD_DIR}" && mkdir -p "${BUILD_DIR}/model_explorer_adapter"
+rm -rf "${BUILD_DIR}" && mkdir -p "${BUILD_DIR}/ai_edge_model_explorer_adapter"
 cp -r "${SCRIPT_DIR}/MANIFEST.in" \
       "${BUILD_DIR}"
 cp  "${SCRIPT_DIR}/setup_with_binary.py" "${BUILD_DIR}/setup.py"
-echo "__version__ = '${PACKAGE_VERSION}'" >> "${BUILD_DIR}/model_explorer_adapter/__init__.py"
+echo "__version__ = '${PACKAGE_VERSION}'" >> "${BUILD_DIR}/ai_edge_model_explorer_adapter/__init__.py"
 
 # Build python _pywrap_convert_wrapper.
 
@@ -88,12 +88,12 @@ esac
 bazel build -c opt -s --config=monolithic --config=noaws --config=nogcp --config=nohdfs --config=nonccl \
   ${BAZEL_FLAGS} python/convert_wrapper:_pywrap_convert_wrapper
 cp "bazel-bin/python/convert_wrapper/_pywrap_convert_wrapper${LIBRARY_EXTENSION}" \
-   "${BUILD_DIR}/model_explorer_adapter"
+   "${BUILD_DIR}/ai_edge_model_explorer_adapter"
 
 # Bazel generates the wrapper library with r-x permissions for user.
 # At least on Windows, we need write permissions to delete the file.
 # Without this, setuptools fails to clean the build directory.
-chmod u+w "${BUILD_DIR}/model_explorer_adapter/_pywrap_convert_wrapper${LIBRARY_EXTENSION}"
+chmod u+w "${BUILD_DIR}/ai_edge_model_explorer_adapter/_pywrap_convert_wrapper${LIBRARY_EXTENSION}"
 
 # Build python wheel.
 cd "${BUILD_DIR}"
