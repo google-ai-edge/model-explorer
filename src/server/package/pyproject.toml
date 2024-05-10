@@ -1,6 +1,6 @@
 [project]
 name = "ai-edge-model-explorer"
-version = "0.0.94"
+version = "0.0.95"
 authors = [
   { name="Google LLC", email="opensource@google.com" },
 ]
@@ -28,7 +28,6 @@ dependencies = [
 ]
 
 [project.scripts]
-model_explorer = "model_explorer.cmdline:main"
 model-explorer = "model_explorer.cmdline:main"
 
 [build-system]
