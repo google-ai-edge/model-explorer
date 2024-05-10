@@ -13,7 +13,14 @@ developers to easily add support for additional formats.
 <img width="890" alt="Home page screenshot" src="screenshots/main_ui.png">
 
 <br>
-<br>
+
+To start use Model Explorer, run:
+
+```shell
+$ pip install ai-edge-model-explorer
+$ model-explorer
+```
+
 
 Please check out our [Wiki](https://github.com/google-ai-edge/model-explorer/wiki) for
 more details:
