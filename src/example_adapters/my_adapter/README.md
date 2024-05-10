@@ -18,7 +18,7 @@ Run the following commands under the top `my_adapter` directory:
 $ python3 -m venv venv
 $ source venv/bin/activate
 
-# Run Model Explorer with "my_adapter" extension.
+# Run Model Explorer with the "my_adapter" extension.
 #
 # Note the "." at the end.
 $ pip install -e .
