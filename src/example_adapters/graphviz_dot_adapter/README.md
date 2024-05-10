@@ -18,6 +18,12 @@ wiki to learn more.
 Run the following commands under the top `graphviz_dot_adapter` directory:
 
 ```shell
+# Setup python venv.
+$ python3 -m venv venv
+$ source venv/bin/activate
+
+# Run Model Explorer with the "graphviz_dot_adapter" extension.
+#
 # Note the "." at the end.
 $ pip install -e .
 $ model-explorer example.dot --extension=graphviz_dot_adapter
