@@ -52,6 +52,7 @@ limitations under the License.
 #include "stablehlo/dialect/ChloOps.h"
 #include "stablehlo/dialect/StablehloOps.h"
 #include "stablehlo/dialect/VhloOps.h"
+#include "stablehlo/transforms/Passes.h"
 #include "tensorflow/cc/saved_model/reader.h"
 #include "status_macros.h"
 #include "translations.h"
@@ -137,6 +138,16 @@ absl::Status AssignTagsAndExportedNames(
         exported_names.push_back(child.local_name());
       }
     }
+  }
+  return absl::OkStatus();
+}
+
+absl::Status DeserializeVhloToStablehlo(mlir::ModuleOp module_op) {
+  mlir::PassManager pm(module_op.getContext());
+  mlir::stablehlo::createStablehloDeserializePipeline(pm);
+  mlir::LogicalResult result = pm.run(module_op);
+  if (mlir::failed(result)) {
+    return absl::InternalError("Failed to run stablehlo deserialize pipeline.");
   }
   return absl::OkStatus();
 }
@@ -350,6 +361,7 @@ absl::StatusOr<std::string> ConvertMlirToJson(const VisualizeConfig& config,
   auto module_op =
       mlir::parseSourceString<::mlir::ModuleOp>(model_content, parser_config);
   if (!module_op) return absl::InternalError("Unable to parse module");
+  RETURN_IF_ERROR(DeserializeVhloToStablehlo(*module_op));
 
   std::string json_output;
   llvm::raw_string_ostream json_ost(json_output);

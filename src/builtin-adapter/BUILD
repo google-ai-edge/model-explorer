@@ -71,6 +71,7 @@ cc_library(
         "@llvm-project//mlir:Support",
         "@stablehlo//:chlo_ops",
         "@stablehlo//:stablehlo_ops",
+        "@stablehlo//:stablehlo_passes",
         "@stablehlo//:vhlo_ops",
         "@org_tensorflow//tensorflow/cc/saved_model:reader",
         "@org_tensorflow//tensorflow/compiler/mlir/lite:flatbuffer_import",
