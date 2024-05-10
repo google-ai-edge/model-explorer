@@ -14,7 +14,7 @@ developers to easily add support for additional formats.
 
 <br>
 
-To start use Model Explorer, run:
+To start using Model Explorer, run:
 
 ```shell
 $ pip install ai-edge-model-explorer
