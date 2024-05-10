@@ -12,18 +12,23 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
-"""TensorFlow Lite is for mobile and embedded devices.
+"""Model Explorer offers an intuitive and hierarchical visualization of model graphs.
 
-TensorFlow Lite is the official solution for running machine learning models on
-mobile and embedded devices. It enables on-device machine learning inference
-with low latency and a small binary size on Android, iOS, and other operating
-systems.
+It organizes model operations into nested layers, enabling users to dynamically
+expand or collapse these layers. It also provides a range of features to
+facilitate model exploration and debugging, including the ability to highlight
+input and output operations, overlay metadata on nodes, display layers in
+interactive pop-ups, perform searches, show identical layers, GPU-accelerated
+graph rendering, among others. It currently supports TFLite, TF, TFJS, MLIR, and
+PyTorch (Exported Program) model format, and provides an extension framework for
+developers to easily add support for additional formats.
 """
 
 import os
 
 from setuptools import find_packages
 from setuptools import setup
+
 PACKAGE_NAME = os.environ['PROJECT_NAME']
 PACKAGE_VERSION = os.environ['PACKAGE_VERSION']
 DOCLINES = __doc__.split('\n')

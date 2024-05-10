@@ -1,14 +1,14 @@
 # Model Explorer Adapter
 
-## Install from TestPyPI
+## Install from PyPI
 
-Install `ai-edge-model-explorer-adapter` via pip from TestPyPI. For example, in
+Install `ai-edge-model-explorer-adapter` via pip from PyPI. For example, in
 a Python virtual environment:
 
 ```
 % python3 -m venv ~/tmp/venv
 % source ~/tmp/venv/bin/activate
-(venv) $ pip install -i https://test.pypi.org/simple/ ai-edge-model-explorer-adapter
+(venv) $ pip install ai-edge-model-explorer-adapter
 ```
 
 ## Use the Package
@@ -37,8 +37,8 @@ package version, which should be a string of the form "x.x.x". For example:
 
 % tree gen/adapter_pip/dist
 gen/adapter_pip/dist
-├── ai_edge_model_explorer_adapter-0.1.0-cp311-cp311-linux_x86_64.whl
-└── ai-edge-model-explorer-adapter-0.1.0.linux-x86_64.tar.gz
+├── ai_edge_model_explorer_adapter-0.1.0-cp311-cp311-manylinux_2_17_x86_64.whl
+└── ai-edge-model-explorer-adapter-0.1.0.manylinux_2_17_x86_64.tar.gz
 ```
 
 ### Install
@@ -49,7 +49,7 @@ environment:
 ```
 % python3 -m venv ~/tmp/venv
 % source ~/tmp/venv/bin/activate
-(venv) $ pip install gen/adapter_pip/dist/ai_edge_model_explorer_adapter-0.1.0-cp311-cp311-linux_x86_64.whl
+(venv) $ pip install gen/adapter_pip/dist/ai_edge_model_explorer_adapter-0.1.0-cp311-cp311-manylinux_2_17_x86_64.whl
 ```
 
 The package should now be importable and usable.
