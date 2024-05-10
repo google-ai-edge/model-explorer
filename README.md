@@ -24,6 +24,7 @@ more details:
 - [API Guide](https://github.com/google-ai-edge/model-explorer/wiki/4.-API-Guide)
 - [Run in Colab Notebook](https://github.com/google-ai-edge/model-explorer/wiki/5.-Run-in-Colab-Notebook)
 - [Develop Adapter Extension](https://github.com/google-ai-edge/model-explorer/wiki/6.-Develop-Adapter-Extension)
+- [Limitations and Known Issues](https://github.com/google-ai-edge/model-explorer/wiki/7.-Limitations-and-Known-Issues)
 
 ## Contributions
 
