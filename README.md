@@ -1,4 +1,4 @@
-# Model Explorer
+# Model Explorer [![PyPI version](https://badge.fury.io/py/ai-edge-model-explorer.svg)](https://badge.fury.io/py/ai-edge-model-explorer)
 
 Model Explorer offers an intuitive and hierarchical visualization of model
 graphs. It organizes model operations into nested layers, enabling users to
