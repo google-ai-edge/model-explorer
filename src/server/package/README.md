@@ -6,7 +6,7 @@ dynamically expand or collapse these layers. It also provides a range of
 features to facilitate model exploration and debugging, including the ability to
 highlight input and output operations, overlay metadata on nodes, display layers
 in interactive pop-ups, perform searches, show identical layers, GPU-accelerated
-graph rendering, among others. It currently supports TFLite, TF, TFJS, and
+graph rendering, among others. It currently supports TFLite, TF, TFJS, MLIR, and
 PyTorch (Exported Program) model format, and provides an extension framework for
 developers to easily add support for additional formats.
 
