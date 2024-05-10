@@ -20,16 +20,16 @@ from ai_edge_model_explorer_adapter import \
 
 from .adapter import Adapter, AdapterMetadata
 from .types import ModelExplorerGraphs
-from .utils import convert_builtin_resp, ensure_tf_model_name
+from .utils import convert_builtin_resp
 
 
-class BuiltinTfDirectAdapter(Adapter):
-  """Built-in tf adapter by parsing .pb file."""
+class BuiltinMlirAdapter(Adapter):
+  """Built-in MLIR adapter."""
 
-  metadata = AdapterMetadata(id='builtin_tf_direct',
-                             name='TF adapter (direct)',
-                             description='A built-in adapter that converts a TF saved model to Model Explorer format by directly parsing the .pb file.',
-                             fileExts=['pb'])
+  metadata = AdapterMetadata(id='builtin_mlir',
+                             name='MLIR adapter',
+                             description='A built-in adapter that converts MLIR file to Model Explorer format.',
+                             fileExts=['mlir', 'mlirbc'])
 
   def __init__(self):
     super().__init__()
@@ -40,12 +40,7 @@ class BuiltinTfDirectAdapter(Adapter):
     if 'const_element_count_limit' in settings:
       config.const_element_count_limit = settings['const_element_count_limit']
 
-    # Normalize model_path
-    model_dir = model_path
-    if model_path.endswith('.pb'):
-      model_dir = ensure_tf_model_name(model_path)
-
     # Run
-    resp_json_str = convert_wrapper.ConvertSavedModelDirectlyToJson(
-        config, model_dir)
+    resp_json_str = convert_wrapper.ConvertMlirToJson(
+        config, model_path)
     return {'graphCollections': convert_builtin_resp(resp_json_str)}
