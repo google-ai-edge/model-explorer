@@ -1,6 +1,6 @@
 [project]
 name = "ai-edge-model-explorer"
-version = "0.0.96"
+version = "0.0.97"
 authors = [
   { name="Google LLC", email="opensource@google.com" },
 ]
@@ -17,7 +17,7 @@ classifiers = [
 dependencies = [
   "flask",
   "ipython",
-  "ai-edge-model-explorer-adapter == 0.1.0",
+  "ai-edge-model-explorer-adapter == 0.1.1",
   "packaging",
   "portpicker",
   "requests",
