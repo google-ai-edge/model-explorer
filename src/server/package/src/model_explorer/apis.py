@@ -13,7 +13,9 @@
 # limitations under the License.
 # ==============================================================================
 
-from typing import Any, Callable, Tuple, Union
+from typing import Union
+
+import torch
 
 from . import server
 from .config import ModelExplorerConfig
@@ -56,8 +58,7 @@ def visualize(
 
 def visualize_pytorch(
         name: str,
-        model: Callable,
-        inputs: Tuple[Any, ...],
+        exported_program: torch.export.ExportedProgram,
         host=DEFAULT_HOST,
         port=DEFAULT_PORT,
         colab_height=DEFAULT_COLAB_HEIGHT) -> None:
@@ -65,15 +66,14 @@ def visualize_pytorch(
 
   Args:
     name: The name of the model for display purpose.
-    model: The callable to trace.
-    inputs: Example positional inputs.
+    exported_program: The ExportedProgram from torch.export.export.
     host: The host of the server. Default to localhost.
     port: The port of the server. Default to 8080.
     colab_height: The height of the embedded iFrame when running in colab.
   """
   # Construct config.
   cur_config = config()
-  cur_config.add_model_from_pytorch(name, model, inputs)
+  cur_config.add_model_from_pytorch(name, exported_program=exported_program)
 
   # Start server.
   server.start(

@@ -20,7 +20,7 @@ from .config import ModelExplorerConfig
 from .consts import DEFAULT_HOST, DEFAULT_PORT
 
 parser = argparse.ArgumentParser(
-    prog='model_explorer',
+    prog='model-explorer',
     description='A modern model graph visualizer and debugger',
     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 parser.add_argument('model_paths',

@@ -65,19 +65,16 @@ class ModelExplorerConfig:
 
   def add_model_from_pytorch(self,
                              name: str,
-                             model: Callable,
-                             inputs: Tuple[Any, ...]) -> 'ModelExplorerConfig':
+                             exported_program: torch.export.ExportedProgram) -> 'ModelExplorerConfig':
     """Adds the given pytorch model.
 
     Args:
       name: the name of the model for display purpose.
-      model: the callable to trace.
-      inputs: Example positional inputs.
+      exported_program: the ExportedProgram from torch.export.export.
     """
     # Convert the given model to model explorer graphs.
     print('Converting pytorch model to model explorer graphs...')
-    exported = torch.export.export(model, inputs)
-    adapter = PytorchExportedProgramAdapterImpl(exported)
+    adapter = PytorchExportedProgramAdapterImpl(exported_program)
     graphs = adapter.convert()
     graphs_index = len(self.graphs_list)
     self.graphs_list.append(graphs)
