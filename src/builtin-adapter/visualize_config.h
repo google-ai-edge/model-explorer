@@ -28,6 +28,11 @@ struct VisualizeConfig {
   // exceeds this threshold, the rest of data will be elided. The default
   // threshold is set to 16 (use -1 to print all).
   int const_element_count_limit = 16;
+
+  // The maximum number of quantization parameters to be displayed. If the
+  // number exceeds this threshold, the rest of data will be elided. The default
+  // threshold is set to 16 (use -1 to print all).
+  int quant_params_count_limit = 16;
 };
 
 }  // namespace visualization_client

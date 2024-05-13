@@ -15,6 +15,8 @@ limitations under the License.
 
 #include "direct_flatbuffer_to_json_graph_convert.h"
 
+#include <algorithm>
+#include <cstddef>
 #include <cstdint>
 #include <cstring>
 #include <memory>
@@ -649,6 +651,7 @@ absl::Status AddTensorTags(const OperatorT& op, absl::string_view op_label,
 }
 
 void AddQuantizationParameters(const std::unique_ptr<TensorT>& tensor,
+                               const size_t size_limit,
                                const EdgeType edge_type, const int rel_idx,
                                GraphNodeBuilder& builder) {
   if (tensor->quantization == nullptr) return;
@@ -662,9 +665,13 @@ void AddQuantizationParameters(const std::unique_ptr<TensorT>& tensor,
   }
   if (quant->scale.empty()) return;
 
+  const unsigned num_params = (size_limit < 0)
+                                  ? quant->scale.size()
+                                  : std::min(quant->scale.size(), size_limit);
+  if (num_params == 0) return;
   std::vector<std::string> parameters;
-  parameters.reserve(quant->scale.size());
-  for (int i = 0; i < quant->scale.size(); ++i) {
+  parameters.reserve(num_params);
+  for (int i = 0; i < num_params; ++i) {
     // Parameters will be shown as "[scale] * (q + [zero_point])"
     parameters.push_back(
         absl::StrCat(quant->scale[i], " * (q + ", quant->zero_point[i], ")"));
@@ -680,7 +687,7 @@ absl::Status AddNode(
     const Buffers& buffers, const std::vector<std::string>& func_names,
     const std::optional<const SignatureNameMap>& signature_name_map,
     const OpdefsMap& op_defs, const std::unique_ptr<FlatBufferModel>& model_ptr,
-    const int const_element_count_limit, std::vector<std::string>& node_ids,
+    const VisualizeConfig& config, std::vector<std::string>& node_ids,
     EdgeMap& edge_map, mlir::Builder mlir_builder, Subgraph& subgraph) {
   if (op.opcode_index >= op_names.size()) {
     return absl::InvalidArgumentError(
@@ -713,14 +720,16 @@ absl::Status AddNode(
     // when the input tensor is constant and not an output of a node. Thus we
     // create an auxiliary constant node to align with graph structure.
     if (EdgeInfoIncomplete(edge_map.at(tensor_index))) {
-      RETURN_IF_ERROR(AddAuxiliaryNode(
-          NodeType::kConstNode, std::vector<int>{tensor_index}, tensors,
-          buffers, signature_name_map, model_ptr, const_element_count_limit,
-          node_ids, edge_map, mlir_builder, subgraph));
+      RETURN_IF_ERROR(
+          AddAuxiliaryNode(NodeType::kConstNode, std::vector<int>{tensor_index},
+                           tensors, buffers, signature_name_map, model_ptr,
+                           config.const_element_count_limit, node_ids, edge_map,
+                           mlir_builder, subgraph));
     }
     AppendIncomingEdge(edge_map.at(tensor_index), builder);
-    AddQuantizationParameters(tensors[tensor_index], EdgeType::kInput, i,
-                              builder);
+    AddQuantizationParameters(tensors[tensor_index],
+                              config.quant_params_count_limit, EdgeType::kInput,
+                              i, builder);
   }
 
   for (int i = 0; i < op.outputs.size(); ++i) {
@@ -732,8 +741,9 @@ absl::Status AddNode(
                       .source_node_output_id = absl::StrCat(i)},
                      edge_map);
 
-    AddQuantizationParameters(tensors[tensor_index], EdgeType::kOutput, i,
-                              builder);
+    AddQuantizationParameters(tensors[tensor_index],
+                              config.quant_params_count_limit,
+                              EdgeType::kOutput, i, builder);
   }
 
   status = AddTensorTags(op, node_label, op_defs, builder);
@@ -802,8 +812,8 @@ absl::Status AddSubgraph(
     const Tensors& tensors = subgraph_t.tensors;
     RETURN_IF_ERROR(AddNode(i, *op, op_codes, op_names, tensors, buffers,
                             func_names, signature_name_map, op_defs, model_ptr,
-                            config.const_element_count_limit, node_ids,
-                            edge_map, mlir_builder, subgraph));
+                            config, node_ids, edge_map, mlir_builder,
+                            subgraph));
   }
 
   // Adds GraphOutputs node to the subgraph.

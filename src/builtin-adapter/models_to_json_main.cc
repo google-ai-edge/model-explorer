@@ -29,6 +29,7 @@ constexpr char kInputFileFlag[] = "i";
 constexpr char kOutputFileFlag[] = "o";
 constexpr char kConstElementCountLimitFlag[] = "const_element_count_limit";
 constexpr char kDisableMlirFlag[] = "disable_mlir";
+constexpr char kQuantParamsCountLimitFlag[] = "quant_params_count_limit";
 
 namespace {
 
@@ -42,6 +43,7 @@ int main(int argc, char* argv[]) {
   // Creates and parses flags.
   std::string input_file, output_file;
   int const_element_count_limit = 16;
+  int quant_params_count_limit = 16;
   bool disable_mlir = false;
 
   std::vector<mlir::Flag> flag_list = {
@@ -61,6 +63,12 @@ int main(int argc, char* argv[]) {
           "Disable the MLIR-based conversion. If set to true, the conversion "
           "becomes from model directly to graph json",
           mlir::Flag::kOptional),
+      mlir::Flag::CreateFlag(
+          kQuantParamsCountLimitFlag, &quant_params_count_limit,
+          "The maximum number of quant parameters. If the number exceeds this "
+          "threshold, the rest of data will be elided. If the flag is not set, "
+          "the default threshold is 16 (use -1 to print all)",
+          mlir::Flag::kOptional),
   };
   mlir::Flags::Parse(&argc, const_cast<const char**>(argv), flag_list);
 
@@ -76,6 +84,7 @@ int main(int argc, char* argv[]) {
   // Creates visualization config.
   tooling::visualization_client::VisualizeConfig config(
       const_element_count_limit);
+  config.quant_params_count_limit = quant_params_count_limit;
 
   const absl::StatusOr<std::string> json_output =
       ConvertModelToJson(config, input_file, disable_mlir);
