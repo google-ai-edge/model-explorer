@@ -33,6 +33,8 @@ more details:
 - [Develop Adapter Extension](https://github.com/google-ai-edge/model-explorer/wiki/6.-Develop-Adapter-Extension)
 - [Limitations and Known Issues](https://github.com/google-ai-edge/model-explorer/wiki/7.-Limitations-and-Known-Issues)
 
+We invite you to participate in our future research studies on Model Explorer. Sign up [here](https://docs.google.com/forms/d/e/1FAIpQLScGOkQOIKmIzkt3P0ywhSfwbl-TRb2epEV5J8NTXEesZqc3vw/viewform).
+
 ## Contributions
 
 We are not accepting contributions to Model Explorer at this time. The Model Explorer team will contribute to this repository.
