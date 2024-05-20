@@ -31,11 +31,11 @@ from .types import ModelExplorerGraphs
 
 class PytorchExportedProgramAdapterImpl:
 
-  def __init__(self, ep: torch.export.ExportedProgram, setting: Dict):
+  def __init__(self, ep: torch.export.ExportedProgram, settings: Dict):
     self.ep = ep
     self.gm = self.ep.graph_module
     self.inputs_map = self.get_inputs_map()
-    self.setting = setting
+    self.settings = settings
 
   def legacy_graph_module_flat_inputs(
       self, ep: torch.export.ExportedProgram, args, kwargs
@@ -182,7 +182,7 @@ class PytorchExportedProgramAdapterImpl:
             KeyValue(
                 key='__value',
                 value=self.print_tensor(
-                    tensor_spec[1], self.setting['const_element_count_limit']
+                    tensor_spec[1], self.settings['const_element_count_limit']
                 ),
             )
         )
