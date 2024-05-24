@@ -157,9 +157,9 @@ class PytorchExportedProgramAdapterImpl:
     for dim in shape:
       total_size *= dim
     if size_limit < 0 or size_limit > total_size:
-      return json.dumps(tensor.detach().numpy().tolist())
+      return json.dumps(tensor.cpu().detach().numpy().tolist())
 
-    return json.dumps((tensor.detach().numpy().flatten())[:size_limit].tolist())
+    return json.dumps((tensor.cpu().detach().numpy().flatten())[:size_limit].tolist())
 
   def add_node_attrs(self, fx_node: torch.fx.node.Node, node: GraphNode):
     if hasattr(fx_node.target, '_schema'):
