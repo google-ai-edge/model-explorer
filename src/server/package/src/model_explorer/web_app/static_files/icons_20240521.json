@@ -39,6 +39,16 @@
       "xoffset": 0,
       "yoffset": 0,
       "xadvance": 0
+    },
+    {
+      "char": "0xe876",
+      "width": 21.0,
+      "height": 18.0,
+      "x": 61.5,
+      "y": 0.5,
+      "xoffset": 0,
+      "yoffset": 0,
+      "xadvance": 0
     }
   ],
   "info": {
