@@ -15,7 +15,7 @@
 
 import json
 import types
-from typing import Dict
+from typing import Dict, Union
 
 import torch
 import torch.fx
@@ -31,10 +31,15 @@ from .types import ModelExplorerGraphs
 
 class PytorchExportedProgramAdapterImpl:
 
-  def __init__(self, ep: torch.export.ExportedProgram, settings: Dict):
+  def __init__(self, ep: torch.export.ExportedProgram, settings: Union[Dict, None]):
     self.ep = ep
     self.gm = self.ep.graph_module
     self.inputs_map = self.get_inputs_map()
+    if settings is None:
+      # Assigns the default values
+      settings = {
+        'const_element_count_limit': 16,
+      }
     self.settings = settings
 
   def legacy_graph_module_flat_inputs(
@@ -158,7 +163,7 @@ class PytorchExportedProgramAdapterImpl:
     total_size = 1
     for dim in shape:
       total_size *= dim
-    if size_limit < 0 or size_limit > total_size:
+    if size_limit < 0 or size_limit >= total_size:
       return json.dumps(tensor.detach().numpy().tolist())
 
     return json.dumps((tensor.detach().numpy().flatten())[:size_limit].tolist())
