@@ -31,14 +31,16 @@ from .types import ModelExplorerGraphs
 
 class PytorchExportedProgramAdapterImpl:
 
-  def __init__(self, ep: torch.export.ExportedProgram, settings: Union[Dict, None]):
+  def __init__(
+      self, ep: torch.export.ExportedProgram, settings: Union[Dict, None]
+  ):
     self.ep = ep
     self.gm = self.ep.graph_module
     self.inputs_map = self.get_inputs_map()
     if settings is None:
       # Assigns the default values
       settings = {
-        'const_element_count_limit': 16,
+          'const_element_count_limit': 16,
       }
     self.settings = settings
 
