@@ -69,16 +69,22 @@ class ModelExplorerConfig:
       self,
       name: str,
       exported_program: torch.export.ExportedProgram,
-      settings: Dict,
+      settings: Union[Dict, None],
   ) -> 'ModelExplorerConfig':
     """Adds the given pytorch model.
 
     Args:
       name: the name of the model for display purpose.
       exported_program: the ExportedProgram from torch.export.export.
-      settings: the settings that config the visualization. Note it only
-        supports 'const_element_count_limit' for now.
+      settings: Optional. The settings that config the visualization. Note it
+        only supports 'const_element_count_limit' for now.
     """
+    # Assigns the default settings if not provided.
+    if settings is None:
+      settings = {
+          'const_element_count_limit': 16,
+      }
+
     # Convert the given model to model explorer graphs.
     print('Converting pytorch model to model explorer graphs...')
     adapter = PytorchExportedProgramAdapterImpl(exported_program, settings)
