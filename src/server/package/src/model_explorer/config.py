@@ -15,24 +15,25 @@
 
 import json
 import os
-from typing import Any, Callable, Tuple, TypedDict, Union
+from typing import Any, Callable, Dict, Tuple, TypedDict, Union
 from urllib.parse import quote
 
 import torch
 from typing_extensions import NotRequired
 
+from .consts import DEFAULT_SETTINGS
 from .node_data_builder import GraphNodeData, ModelNodeData, NodeData
-from .pytorch_exported_program_adater_impl import \
-    PytorchExportedProgramAdapterImpl
+from .pytorch_exported_program_adater_impl import PytorchExportedProgramAdapterImpl
 from .types import ModelExplorerGraphs
 
 ModelSource = TypedDict(
-    'ModelSource', {'url': str, 'adapterId': NotRequired[str]})
+    'ModelSource', {'url': str, 'adapterId': NotRequired[str]}
+)
 
 EncodedUrlData = TypedDict(
-    'EncodedUrlData', {
-        'models': list[ModelSource],
-        'nodeData': NotRequired[list[str]]})
+    'EncodedUrlData',
+    {'models': list[ModelSource], 'nodeData': NotRequired[list[str]]},
+)
 
 
 class ModelExplorerConfig:
@@ -44,13 +45,15 @@ class ModelExplorerConfig:
     self.node_data_sources: list[str] = []
     self.node_data_list: list[NodeData] = []
 
-  def add_model_from_path(self, path: str, adapterId: str = '') -> 'ModelExplorerConfig':
+  def add_model_from_path(
+      self, path: str, adapterId: str = ''
+  ) -> 'ModelExplorerConfig':
     """Adds a model path to the config.
 
     Args:
       path: the model path to add.
       adapterId: the id of the adapter to use. Default is empty string meaning
-          it will use the default adapter.
+        it will use the default adapter.
     """
     # Get the absolute path (after expanding home dir path "~").
     abs_model_path = os.path.abspath(os.path.expanduser(path))
@@ -63,18 +66,22 @@ class ModelExplorerConfig:
 
     return self
 
-  def add_model_from_pytorch(self,
-                             name: str,
-                             exported_program: torch.export.ExportedProgram) -> 'ModelExplorerConfig':
+  def add_model_from_pytorch(
+      self,
+      name: str,
+      exported_program: torch.export.ExportedProgram,
+      settings=DEFAULT_SETTINGS,
+  ) -> 'ModelExplorerConfig':
     """Adds the given pytorch model.
 
     Args:
       name: the name of the model for display purpose.
       exported_program: the ExportedProgram from torch.export.export.
+      settings: The settings that config the visualization.
     """
     # Convert the given model to model explorer graphs.
     print('Converting pytorch model to model explorer graphs...')
-    adapter = PytorchExportedProgramAdapterImpl(exported_program)
+    adapter = PytorchExportedProgramAdapterImpl(exported_program, settings)
     graphs = adapter.convert()
     graphs_index = len(self.graphs_list)
     self.graphs_list.append(graphs)
@@ -101,7 +108,9 @@ class ModelExplorerConfig:
 
     return self
 
-  def add_node_data(self, name: str, node_data: NodeData) -> 'ModelExplorerConfig':
+  def add_node_data(
+      self, name: str, node_data: NodeData
+  ) -> 'ModelExplorerConfig':
     """Adds the given node data object.
 
     Args:
@@ -121,9 +130,7 @@ class ModelExplorerConfig:
   def to_url_param_value(self) -> str:
     """Converts the config to the url param value."""
     # Construct url data.
-    encoded_url_data: EncodedUrlData = {
-        'models': self.model_sources
-    }
+    encoded_url_data: EncodedUrlData = {'models': self.model_sources}
 
     if self.node_data_sources:
       encoded_url_data['nodeData'] = self.node_data_sources
