@@ -21,6 +21,7 @@ from urllib.parse import quote
 import torch
 from typing_extensions import NotRequired
 
+from .consts import DEFAULT_SETTINGS
 from .node_data_builder import GraphNodeData, ModelNodeData, NodeData
 from .pytorch_exported_program_adater_impl import PytorchExportedProgramAdapterImpl
 from .types import ModelExplorerGraphs
@@ -69,22 +70,15 @@ class ModelExplorerConfig:
       self,
       name: str,
       exported_program: torch.export.ExportedProgram,
-      settings: Union[Dict, None],
+      settings=DEFAULT_SETTINGS,
   ) -> 'ModelExplorerConfig':
     """Adds the given pytorch model.
 
     Args:
       name: the name of the model for display purpose.
       exported_program: the ExportedProgram from torch.export.export.
-      settings: Optional. The settings that config the visualization. Note it
-        only supports 'const_element_count_limit' for now.
+      settings: The settings that config the visualization.
     """
-    # Assigns the default settings if not provided.
-    if settings is None:
-      settings = {
-          'const_element_count_limit': 16,
-      }
-
     # Convert the given model to model explorer graphs.
     print('Converting pytorch model to model explorer graphs...')
     adapter = PytorchExportedProgramAdapterImpl(exported_program, settings)

@@ -19,7 +19,7 @@ import torch
 
 from . import server
 from .config import ModelExplorerConfig
-from .consts import DEFAULT_COLAB_HEIGHT, DEFAULT_HOST, DEFAULT_PORT
+from .consts import DEFAULT_COLAB_HEIGHT, DEFAULT_HOST, DEFAULT_PORT, DEFAULT_SETTINGS
 
 
 def config() -> ModelExplorerConfig:
@@ -61,7 +61,8 @@ def visualize_pytorch(
         exported_program: torch.export.ExportedProgram,
         host=DEFAULT_HOST,
         port=DEFAULT_PORT,
-        colab_height=DEFAULT_COLAB_HEIGHT) -> None:
+        colab_height=DEFAULT_COLAB_HEIGHT,
+        settings=DEFAULT_SETTINGS) -> None:
   """Visualizes a pytorch model.
 
   Args:
@@ -70,10 +71,11 @@ def visualize_pytorch(
     host: The host of the server. Default to localhost.
     port: The port of the server. Default to 8080.
     colab_height: The height of the embedded iFrame when running in colab.
+    settings: The settings that config the visualization.
   """
   # Construct config.
   cur_config = config()
-  cur_config.add_model_from_pytorch(name, exported_program=exported_program)
+  cur_config.add_model_from_pytorch(name, exported_program=exported_program, settings=settings)
 
   # Start server.
   server.start(
