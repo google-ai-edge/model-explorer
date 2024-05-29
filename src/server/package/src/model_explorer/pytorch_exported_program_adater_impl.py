@@ -15,6 +15,7 @@
 
 import json
 import types
+from typing import Dict
 
 import torch
 import torch.fx
@@ -30,10 +31,11 @@ from .types import ModelExplorerGraphs
 
 class PytorchExportedProgramAdapterImpl:
 
-  def __init__(self, ep: torch.export.ExportedProgram):
+  def __init__(self, ep: torch.export.ExportedProgram, settings: Dict):
     self.ep = ep
     self.gm = self.ep.graph_module
     self.inputs_map = self.get_inputs_map()
+    self.settings = settings
 
   def legacy_graph_module_flat_inputs(
       self, ep: torch.export.ExportedProgram, args, kwargs
@@ -156,7 +158,8 @@ class PytorchExportedProgramAdapterImpl:
     total_size = 1
     for dim in shape:
       total_size *= dim
-    if size_limit < 0 or size_limit > total_size:
+      
+    if size_limit < 0 or size_limit >= total_size:
       return json.dumps(tensor.cpu().detach().numpy().tolist())
 
     return json.dumps((tensor.cpu().detach().numpy().flatten())[:size_limit].tolist())
@@ -177,7 +180,12 @@ class PytorchExportedProgramAdapterImpl:
       if tensor_spec:
         node.attrs.append(KeyValue(key='target', value=str(tensor_spec[0])))
         node.attrs.append(
-            KeyValue(key='__value', value=self.print_tensor(tensor_spec[1]))
+            KeyValue(
+                key='__value',
+                value=self.print_tensor(
+                    tensor_spec[1], self.settings['const_element_count_limit']
+                ),
+            )
         )
 
   def add_outputs_metadata(self, fx_node: torch.fx.node.Node, node: GraphNode):

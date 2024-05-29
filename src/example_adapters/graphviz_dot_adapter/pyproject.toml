@@ -3,6 +3,6 @@ name = "graphviz-dot-adapter"
 version = "0.0.1"
 
 dependencies = [
-  "model_explorer",
+  "ai-edge-model-explorer",
   "pydot",
 ]

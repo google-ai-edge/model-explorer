@@ -41,4 +41,4 @@ class BuiltinPytorchExportedProgramAdapter(Adapter):
 
   def convert(self, model_path: str, settings: Dict) -> ModelExplorerGraphs:
     ep = torch.export.load(model_path)
-    return PytorchExportedProgramAdapterImpl(ep).convert()
+    return PytorchExportedProgramAdapterImpl(ep, settings).convert()
