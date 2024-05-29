@@ -33,12 +33,12 @@ more details:
 - [Develop Adapter Extension](https://github.com/google-ai-edge/model-explorer/wiki/6.-Develop-Adapter-Extension)
 - [Limitations and Known Issues](https://github.com/google-ai-edge/model-explorer/wiki/7.-Limitations-and-Known-Issues)
 
-We invite you to participate in our future research studies on Model Explorer. Sign up [here](https://docs.google.com/forms/d/e/1FAIpQLScGOkQOIKmIzkt3P0ywhSfwbl-TRb2epEV5J8NTXEesZqc3vw/viewform).
+We invite you to participate in research studies on Model Explorer. Sign up [here](https://docs.google.com/forms/d/e/1FAIpQLScGOkQOIKmIzkt3P0ywhSfwbl-TRb2epEV5J8NTXEesZqc3vw/viewform).
 
-## Custom Adapters
+## Community-contributed adapters
 
 - ONNX Adapter: https://github.com/justinchuby/model-explorer-onnx
 
 ## Contributions
 
-Developers are invited to create custom adapters to extend support for additional model formats. Please refer to our [Develop Adapter Extension](https://github.com/google-ai-edge/model-explorer/wiki/6.-Develop-Adapter-Extension) guide. We will gladly accept pull requests to add links to the GitHub repository and PyPI package of your custom adapter to our README.
+You are invited to create custom adapters to add support for additional model formats. Please refer to our [Develop Adapter Extension](https://github.com/google-ai-edge/model-explorer/wiki/6.-Develop-Adapter-Extension) guide. We will gladly consider pull requests to add links to your adapter's GitHub repository and PyPI package to this README.
