@@ -46,4 +46,4 @@ You are invited to create custom adapters to add support for additional model fo
 ## Resources
 
 - [Introduction video](https://youtu.be/DgkLKybBVcs?si=eLmNTE66RlKkLQcT) on Youtube
-- [Research blog post](https://research.google/blog/model-explorer/)
+- [Google research blog post](https://research.google/blog/model-explorer/)
