@@ -42,3 +42,8 @@ We invite you to participate in research studies on Model Explorer. Sign up [her
 ## Contributions
 
 You are invited to create custom adapters to add support for additional model formats. Please refer to our [Develop Adapter Extension](https://github.com/google-ai-edge/model-explorer/wiki/6.-Develop-Adapter-Extension) guide. We will gladly consider pull requests to add links to your adapter's GitHub repository and PyPI package to this README.
+
+## Resources
+
+- [Introduction video](https://youtu.be/DgkLKybBVcs?si=eLmNTE66RlKkLQcT) on Youtube
+- [Research blog post](https://research.google/blog/model-explorer/)
