@@ -110,7 +110,8 @@ def start(
         no_open_in_browser: bool = False,
         extensions: list[str] = [],
         colab_height: int = DEFAULT_COLAB_HEIGHT,
-        cors_host: Union[str, None] = None):
+        cors_host: Union[str, None] = None,
+        skip_health_check: bool = False):
   """Starts the local server that serves the web app.
 
   Args:
@@ -122,6 +123,7 @@ def start(
     colab_height: The height of the embedded iFrame when running in colab.
     cors_host: The value of the Access-Control-Allow-Origin header. The header
         won't be present if it is None.
+    skip_health_check: Whether to skip the health check after server starts.
   """
   # Check whether it is running in colab.
   colab = 'google.colab' in sys.modules or os.getenv('COLAB_RELEASE_TAG')
@@ -270,20 +272,21 @@ def start(
     return response
 
   def start_server():
-    """Starts the server in none-colab environment."""
+    """Starts the server in non-colab environment."""
     app_thread = threading.Thread(target=lambda: app.run(host=host, port=port))
     app_thread.daemon = True
     app_thread.start()
 
     # Wait for server to start
-    while True:
-      try:
-        response = requests.get(f'http://{host}:{port}/')
-      except:
-        continue
+    if not skip_health_check:
+      while True:
+        try:
+          response = requests.get(f'http://{host}:{port}/')
+        except:
+          continue
 
-      if response.status_code == 200:
-        break
+        if response.status_code == 200:
+          break
 
     # Server is ready.
     server_address = f'http://{host}:{port}'
