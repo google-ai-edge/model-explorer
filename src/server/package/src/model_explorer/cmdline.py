@@ -42,6 +42,9 @@ parser.add_argument('--extensions',
                     help='comma separated extension module names')
 parser.add_argument('--cors_host',
                     help='the host of the Access-Control-Allow-Origin header')
+parser.add_argument('--skip_health_check',
+                    action='store_true',
+                    help='Whether to skip the health check after server starts')
 args = parser.parse_args()
 
 
@@ -72,4 +75,5 @@ def main():
                config=config,
                extensions=extensions,
                cors_host=args.cors_host,
-               no_open_in_browser=args.no_open_in_browser)
+               no_open_in_browser=args.no_open_in_browser,
+               skip_health_check=args.skip_health_check)
