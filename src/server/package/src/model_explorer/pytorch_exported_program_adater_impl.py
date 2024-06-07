@@ -21,11 +21,7 @@ import torch
 import torch.fx
 from torch.fx import _pytree as fx_pytree
 
-from .graph_builder import Graph
-from .graph_builder import GraphNode
-from .graph_builder import IncomingEdge
-from .graph_builder import KeyValue
-from .graph_builder import MetadataItem
+from .graph_builder import Graph, GraphNode, IncomingEdge, KeyValue, MetadataItem
 from .types import ModelExplorerGraphs
 
 
@@ -100,7 +96,8 @@ class PytorchExportedProgramAdapterImpl:
     for input_spec, tensor in zip(
         self.ep.graph_signature.input_specs, input_tensors
     ):
-      inputs_map[input_spec.arg.name] = [input_spec.target, tensor]
+      if hasattr(input_spec.arg, 'name'):
+        inputs_map[input_spec.arg.name] = [input_spec.target, tensor]
     return inputs_map
 
   def is_arg_node(self, fx_node: torch.fx.node.Node):
@@ -158,11 +155,13 @@ class PytorchExportedProgramAdapterImpl:
     total_size = 1
     for dim in shape:
       total_size *= dim
-      
+
     if size_limit < 0 or size_limit >= total_size:
       return json.dumps(tensor.cpu().detach().numpy().tolist())
 
-    return json.dumps((tensor.cpu().detach().numpy().flatten())[:size_limit].tolist())
+    return json.dumps(
+        (tensor.cpu().detach().numpy().flatten())[:size_limit].tolist()
+    )
 
   def add_node_attrs(self, fx_node: torch.fx.node.Node, node: GraphNode):
     if hasattr(fx_node.target, '_schema'):
@@ -202,13 +201,20 @@ class PytorchExportedProgramAdapterImpl:
         shape = json.dumps(val.shape)
         metadata.attrs.append(KeyValue(key='tensor_shape', value=dtype + shape))
         node.outputsMetadata.append(metadata)
-    else:
+    elif isinstance(out_vals, torch.Tensor):
       dtype = str(out_vals.dtype)
       shape = json.dumps(out_vals.shape)
       metadata = MetadataItem(
           id='0', attrs=[KeyValue(key='tensor_shape', value=dtype + shape)]
       )
       node.outputsMetadata.append(metadata)
+    elif isinstance(out_vals, bool):
+      metadata = MetadataItem(
+          id='0', attrs=[KeyValue(key='tensor_shape', value='bool[1]')]
+      )
+      node.outputsMetadata.append(metadata)
+    else:
+      raise ValueError(f'Unsupported output type: {type(out_vals)}')
 
   def create_node(self, fx_node: torch.fx.node.Node):
     node = GraphNode(
