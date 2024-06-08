@@ -27,6 +27,7 @@ cc_library(
         "//tools:attribute_printer",
         "//tools:load_opdefs",
         "@org_tensorflow//tensorflow/compiler/mlir/tensorflow:tensorflow_types",
+        # copybara:uncomment "@org_tensorflow//tensorflow_text:ops_lib",
     ],
 )
 
