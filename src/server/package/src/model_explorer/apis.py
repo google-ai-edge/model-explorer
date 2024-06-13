@@ -53,7 +53,7 @@ def visualize(
 
   # Start server.
   server.start(
-      host=host, port=port, config=cur_config, colab_height=colab_height
+      host=host, port=port, config=cur_config, colab_height=colab_height, extensions=extensions
   )
 
 
@@ -62,6 +62,7 @@ def visualize_pytorch(
     exported_program: torch.export.ExportedProgram,
     host=DEFAULT_HOST,
     port=DEFAULT_PORT,
+    extensions: list[str] = [],
     colab_height=DEFAULT_COLAB_HEIGHT,
     settings=DEFAULT_SETTINGS,
 ) -> None:
@@ -72,6 +73,7 @@ def visualize_pytorch(
     exported_program: The ExportedProgram from torch.export.export.
     host: The host of the server. Default to localhost.
     port: The port of the server. Default to 8080.
+    extensions: List of extension names to be run with model explorer.
     colab_height: The height of the embedded iFrame when running in colab.
     settings: The settings that config the visualization.
   """
@@ -83,7 +85,7 @@ def visualize_pytorch(
 
   # Start server.
   server.start(
-      host=host, port=port, config=cur_config, colab_height=colab_height
+      host=host, port=port, config=cur_config, colab_height=colab_height, extensions=extensions
   )
 
 
