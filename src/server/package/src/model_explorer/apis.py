@@ -31,6 +31,7 @@ def visualize(
     model_paths: Union[str, list[str]] = [],
     host=DEFAULT_HOST,
     port=DEFAULT_PORT,
+    extensions: list[str] = [],
     colab_height=DEFAULT_COLAB_HEIGHT,
 ) -> None:
   """Starts the ME local server and visualizes the models by the given paths.
@@ -39,6 +40,7 @@ def visualize(
     model_paths: A model path or a list of model paths to visualize.
     host: The host of the server. Default to localhost.
     port: The port of the server. Default to 8080.
+    extensions: List of extension names to be run with model explorer.
     colab_height: The height of the embedded iFrame when running in colab.
   """
   # Construct config.
@@ -100,6 +102,7 @@ def visualize_from_config(
     config: the object that stores the models to be visualized.
     host: The host of the server. Default to localhost.
     port: The port of the server. Default to 8080.
+    extensions: List of extension names to be run with model explorer.
     cors_host: The value of the Access-Control-Allow-Origin header. The header
       won't be present if it is None.
     no_open_in_browser: Don't open the web app in browser after server starts.
