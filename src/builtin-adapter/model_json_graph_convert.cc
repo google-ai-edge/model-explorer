@@ -277,7 +277,7 @@ absl::StatusOr<std::string> ConvertSavedModelToJson(
     RETURN_IF_ERROR(ConvertToStablehloModule(*module_op));
 
     mlir::LogicalResult result =
-        JaxConvertedMlirToJsonTranslate(*module_op, json_ost);
+        JaxConvertedMlirToJsonTranslateImpl(config, *module_op, json_ost);
     if (mlir::failed(result)) {
       return absl::InternalError(
           "Failed to convert JAX converted MLIR module to JSON string.");
@@ -372,7 +372,7 @@ absl::StatusOr<std::string> ConvertMlirToJson(const VisualizeConfig& config,
       RETURN_IF_ERROR(ConvertToStablehloModule(*module_op));
     }
     mlir::LogicalResult result =
-        JaxConvertedMlirToJsonTranslate(*module_op, json_ost);
+        JaxConvertedMlirToJsonTranslateImpl(config, *module_op, json_ost);
     if (mlir::failed(result)) {
       return absl::InternalError(
           "Failed to convert TF or StableHLO MLIR module to JSON string.");
