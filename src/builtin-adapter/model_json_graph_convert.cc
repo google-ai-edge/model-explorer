@@ -64,7 +64,7 @@ limitations under the License.
 #include "tensorflow/compiler/mlir/tensorflow/ir/tf_dialect.h"
 #include "tensorflow/compiler/mlir/tensorflow/ir/tf_ops.h"
 #include "tensorflow/compiler/mlir/tensorflow/transforms/passes.h"
-#include "tensorflow/compiler/mlir/tensorflow/translate/mlir_import_options.h"
+#include "tensorflow/compiler/mlir/tensorflow/translate/saved_model_import_options.h"
 #include "tensorflow/compiler/mlir/tensorflow/translate/tf_mlir_translate.h"
 #include "xla/mlir_hlo/mhlo/IR/hlo_ops.h"
 #include "tensorflow/core/protobuf/saved_model.pb.h"
@@ -246,7 +246,7 @@ absl::StatusOr<std::string> ConvertSavedModelToJson(
   mlir::OwningOpRef<mlir::ModuleOp> module_op;
   if (tf_version == 1) {
     LOG(INFO) << "Converting SavedModel V1 to MLIR module...";
-    tensorflow::MLIRImportOptions import_options;
+    tensorflow::SavedModelImportOptions import_options;
     import_options.upgrade_legacy = true;
 
     // Converts SavedModel V1 to MLIR module.
