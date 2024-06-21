@@ -126,10 +126,10 @@ class GraphVizAdapter(Adapter):
       target_graph_node.incomingEdges.append(
           graph_builder.IncomingEdge(sourceNodeId=source_node))
 
-      # Recursive on subgraphs.
-      subgraphs = cur_gv_graph.get_subgraphs()
-      for subgraph in subgraphs:
-        self._gen_graph_edges(subgraph, node_to_graph_node)
+    # Recursive on subgraphs.
+    subgraphs = cur_gv_graph.get_subgraphs()
+    for subgraph in subgraphs:
+      self._gen_graph_edges(subgraph, node_to_graph_node)
 
   def _create_graph_node(self, node_name: str,
                          node_label: str,
