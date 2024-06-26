@@ -52,6 +52,7 @@ limitations under the License.
 #include "stablehlo/dialect/ChloOps.h"
 #include "stablehlo/dialect/StablehloOps.h"
 #include "stablehlo/dialect/VhloOps.h"
+#include "stablehlo/tests/CheckOps.h"
 #include "stablehlo/transforms/Passes.h"
 #include "tensorflow/cc/saved_model/reader.h"
 #include "status_macros.h"
@@ -352,7 +353,8 @@ absl::StatusOr<std::string> ConvertMlirToJson(const VisualizeConfig& config,
                   mlir::stablehlo::StablehloDialect, mlir::chlo::ChloDialect,
                   mlir::mhlo::MhloDialect, mlir::vhlo::VhloDialect,
                   mlir::func::FuncDialect, mlir::arith::ArithDialect,
-                  mlir::shape::ShapeDialect, mlir::scf::SCFDialect>();
+                  mlir::shape::ShapeDialect, mlir::scf::SCFDialect,
+                  mlir::stablehlo::check::CheckDialect>();
   mlir::MLIRContext context(registry);
   mlir::ParserConfig parser_config(&context);
   std::string model_content;
