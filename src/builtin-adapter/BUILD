@@ -156,6 +156,7 @@ cc_library(
         "@org_tensorflow//tensorflow/compiler/mlir/lite:flatbuffer_tflite_operator_lib",
         "@org_tensorflow//tensorflow/compiler/mlir/lite:offset_buffer",
         "@org_tensorflow//tensorflow/compiler/mlir/lite:tensorflow_lite",
+        "@org_tensorflow//tensorflow/compiler/mlir/lite/core:light_model_builder",
         "//formats:schema_structs",
         "//tools:attribute_printer",
         "//tools:convert_type",
@@ -163,7 +164,6 @@ cc_library(
         "@org_tensorflow//tensorflow/compiler/mlir/lite/schema:schema_fbs",
         "@org_tensorflow//tensorflow/compiler/mlir/tensorflow:tensorflow_types",
         "@org_tensorflow//tensorflow/core:lib",
-        "@org_tensorflow//tensorflow/lite/core:model_builder",
         "@org_tensorflow//tensorflow/lite/schema:schema_utils",
     ],
 )
