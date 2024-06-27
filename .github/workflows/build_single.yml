@@ -65,13 +65,9 @@ jobs:
       - name: Check Directory Output
         run: ls -l ./src/builtin-adapter/gen/adapter_pip/dist/*.whl
 
-      - name: Get Current Date
-        id: date
-        run: echo "date=$(date +'%Y%m%d')" >> "$GITHUB_OUTPUT"
-
       - name: Upload Release Asset
         uses: softprops/action-gh-release@v2
         with:
           files: ./src/builtin-adapter/gen/adapter_pip/dist/*.whl
           prerelease: true
-          tag_name: adapter-v${{ github.event.inputs.package-version }}-${{ steps.date.outputs.date }}
+          tag_name: adapter-v${{ github.event.inputs.package-version }}
