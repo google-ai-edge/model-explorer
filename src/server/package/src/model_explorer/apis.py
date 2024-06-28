@@ -31,6 +31,7 @@ def visualize(
     model_paths: Union[str, list[str]] = [],
     host=DEFAULT_HOST,
     port=DEFAULT_PORT,
+    extensions: list[str] = [],
     colab_height=DEFAULT_COLAB_HEIGHT,
 ) -> None:
   """Starts the ME local server and visualizes the models by the given paths.
@@ -39,6 +40,7 @@ def visualize(
     model_paths: A model path or a list of model paths to visualize.
     host: The host of the server. Default to localhost.
     port: The port of the server. Default to 8080.
+    extensions: List of extension names to be run with model explorer.
     colab_height: The height of the embedded iFrame when running in colab.
   """
   # Construct config.
@@ -51,7 +53,7 @@ def visualize(
 
   # Start server.
   server.start(
-      host=host, port=port, config=cur_config, colab_height=colab_height
+      host=host, port=port, config=cur_config, colab_height=colab_height, extensions=extensions
   )
 
 
@@ -60,6 +62,7 @@ def visualize_pytorch(
     exported_program: torch.export.ExportedProgram,
     host=DEFAULT_HOST,
     port=DEFAULT_PORT,
+    extensions: list[str] = [],
     colab_height=DEFAULT_COLAB_HEIGHT,
     settings=DEFAULT_SETTINGS,
 ) -> None:
@@ -70,6 +73,7 @@ def visualize_pytorch(
     exported_program: The ExportedProgram from torch.export.export.
     host: The host of the server. Default to localhost.
     port: The port of the server. Default to 8080.
+    extensions: List of extension names to be run with model explorer.
     colab_height: The height of the embedded iFrame when running in colab.
     settings: The settings that config the visualization.
   """
@@ -81,7 +85,7 @@ def visualize_pytorch(
 
   # Start server.
   server.start(
-      host=host, port=port, config=cur_config, colab_height=colab_height
+      host=host, port=port, config=cur_config, colab_height=colab_height, extensions=extensions
   )
 
 
@@ -89,6 +93,7 @@ def visualize_from_config(
     config: Union[ModelExplorerConfig, None] = None,
     host=DEFAULT_HOST,
     port=DEFAULT_PORT,
+    extensions: list[str] = [],
     cors_host: Union[str, None] = None,
     no_open_in_browser: bool = False,
     colab_height=DEFAULT_COLAB_HEIGHT,
@@ -99,6 +104,7 @@ def visualize_from_config(
     config: the object that stores the models to be visualized.
     host: The host of the server. Default to localhost.
     port: The port of the server. Default to 8080.
+    extensions: List of extension names to be run with model explorer.
     cors_host: The value of the Access-Control-Allow-Origin header. The header
       won't be present if it is None.
     no_open_in_browser: Don't open the web app in browser after server starts.
@@ -109,6 +115,7 @@ def visualize_from_config(
       host=host,
       port=port,
       config=config,
+      extensions=extensions,
       cors_host=cors_host,
       no_open_in_browser=no_open_in_browser,
       colab_height=colab_height,
