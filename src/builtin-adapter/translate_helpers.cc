@@ -402,9 +402,36 @@ absl::Status PopulateInputEdgeInfo(
   return absl::OkStatus();
 }
 
-// Converts a tf dialect function op to a subgraph.
-absl::Status TfFunctionToSubgraph(const VisualizeConfig& config, FuncOp& fop,
-                                  Subgraph& subgraph) {
+// Adds tensor tags to the graph node.
+// If the op name is not found in the opdefs map, we will return an error.
+// Likely it means the opdefs map is not up to date, and we need to update it.
+absl::Status AddTensorTags(absl::string_view op_label, const OpdefsMap& op_defs,
+                           Operation& op, GraphNodeBuilder& builder) {
+  if (!op_defs.contains(op_label)) {
+    return absl::InvalidArgumentError(
+        absl::StrCat("No op def found for op: ", op_label));
+  }
+  const OpMetadata& op_metadata = op_defs.at(op_label);
+  if (op_metadata.arguments.size() <= op.getNumOperands()) {
+    for (int i = 0; i < op_metadata.arguments.size(); ++i) {
+      builder.AppendAttrToMetadata(EdgeType::kInput, i, kTensorTag,
+                                   op_metadata.arguments[i]);
+    }
+  }
+  if (op_metadata.results.size() <= op.getNumResults()) {
+    for (int i = 0; i < op_metadata.results.size(); ++i) {
+      builder.AppendAttrToMetadata(EdgeType::kOutput, i, kTensorTag,
+                                   op_metadata.results[i]);
+    }
+  }
+  return absl::OkStatus();
+}
+
+}  // namespace
+
+absl::StatusOr<Subgraph> TfFunctionToSubgraph(const VisualizeConfig& config,
+                                              FuncOp& fop) {
+  Subgraph subgraph(fop.getSymName().str());
   absl::flat_hash_map<Operation*, std::string> seen_ops;
   Counter tensor_idx_counter;
   RETURN_IF_ERROR(AddGraphInputsNode(fop, tensor_idx_counter, subgraph));
@@ -449,34 +476,12 @@ absl::Status TfFunctionToSubgraph(const VisualizeConfig& config, FuncOp& fop,
     }
     subgraph.nodes.push_back(std::move(builder).Build());
   }
-  return absl::OkStatus();
+  return subgraph;
 }
 
-absl::Status AddTensorTags(absl::string_view op_label, const OpdefsMap& op_defs,
-                           Operation& op, GraphNodeBuilder& builder) {
-  if (!op_defs.contains(op_label)) {
-    return absl::InvalidArgumentError(
-        absl::StrCat("No op def found for op: ", op_label));
-  }
-  const OpMetadata& op_metadata = op_defs.at(op_label);
-  if (op_metadata.arguments.size() <= op.getNumOperands()) {
-    for (int i = 0; i < op_metadata.arguments.size(); ++i) {
-      builder.AppendAttrToMetadata(EdgeType::kInput, i, kTensorTag,
-                                   op_metadata.arguments[i]);
-    }
-  }
-  if (op_metadata.results.size() <= op.getNumResults()) {
-    for (int i = 0; i < op_metadata.results.size(); ++i) {
-      builder.AppendAttrToMetadata(EdgeType::kOutput, i, kTensorTag,
-                                   op_metadata.results[i]);
-    }
-  }
-  return absl::OkStatus();
-}
-
-// Converts a tfl dialect function op to a subgraph.
-absl::Status TfliteFunctionToSubgraph(const VisualizeConfig& config,
-                                      FuncOp& fop, Subgraph& subgraph) {
+absl::StatusOr<Subgraph> TfliteFunctionToSubgraph(const VisualizeConfig& config,
+                                                  FuncOp& fop) {
+  Subgraph subgraph(fop.getSymName().str());
   absl::flat_hash_map<Operation*, std::string> seen_ops;
   Counter tensor_idx_counter;
   OpdefsMap op_defs = LoadTfliteOpdefs();
@@ -543,20 +548,22 @@ absl::Status TfliteFunctionToSubgraph(const VisualizeConfig& config,
       // TODO(b/293348398): Tensor indices are not matched to indices in
       // Flatbuffer. Further investigation is needed.
     }
-
-    absl::Status status =
-        AddTensorTags(node_label, op_defs, operation, builder);
-    if (!status.ok()) {
-      llvm::errs() << status.message() << "\n";
+    // GraphOutputs node is an auxiliary node and doesn't have tensor tags.
+    if (node_label != kGraphOutputs) {
+      absl::Status status =
+          AddTensorTags(node_label, op_defs, operation, builder);
+      if (!status.ok()) {
+        llvm::errs() << status.message() << "\n";
+      }
     }
     subgraph.nodes.push_back(std::move(builder).Build());
   }
-  return absl::OkStatus();
+  return subgraph;
 }
 
-// Converts a stablehlo dialect of JAX function op to a subgraph.
-absl::Status StablehloJaxFunctionToSubgraph(const VisualizeConfig& config,
-                                            FuncOp& fop, Subgraph& subgraph) {
+absl::StatusOr<Subgraph> StablehloFunctionToSubgraph(
+    const VisualizeConfig& config, FuncOp& fop) {
+  Subgraph subgraph(fop.getSymName().str());
   absl::flat_hash_map<Operation*, std::string> seen_ops;
   Counter tensor_idx_counter;
   RETURN_IF_ERROR(AddGraphInputsNode(fop, tensor_idx_counter, subgraph));
@@ -613,10 +620,8 @@ absl::Status StablehloJaxFunctionToSubgraph(const VisualizeConfig& config,
     }
     subgraph.nodes.push_back(std::move(builder).Build());
   }
-  return absl::OkStatus();
+  return subgraph;
 }
-
-}  // namespace
 
 absl::StatusOr<Graph> TfMlirToGraph(const VisualizeConfig& config,
                                     Operation* module) {
@@ -630,13 +635,12 @@ absl::StatusOr<Graph> TfMlirToGraph(const VisualizeConfig& config,
     if (func_name == "NoOp") {
       return mlir::WalkResult::skip();
     }
-    Subgraph subgraph(func_name.str());
-    absl::Status status = TfFunctionToSubgraph(config, fop, subgraph);
-    if (!status.ok()) {
-      llvm::errs() << status.message() << "\n";
+    absl::StatusOr<Subgraph> subgraph = TfFunctionToSubgraph(config, fop);
+    if (!subgraph.ok()) {
+      llvm::errs() << subgraph.status().message() << "\n";
       return mlir::WalkResult::interrupt();
     }
-    result.subgraphs.push_back(subgraph);
+    result.subgraphs.push_back(*std::move(subgraph));
     return mlir::WalkResult::advance();
   });
 
@@ -653,45 +657,18 @@ absl::StatusOr<Graph> TfliteMlirToGraph(const VisualizeConfig& config,
     return absl::InvalidArgumentError("Given module is not valid.");
   }
   Graph result;
-  // Entry functions for signature defs.
-  std::vector<FuncOp> entry_functions;
-  std::vector<FuncOp> non_entry_functions;
-  FuncOp main_fn = module_op.lookupSymbol<FuncOp>("main");
-  if (main_fn != nullptr) {
-    // Treat the main function as a signature def when the given main function
-    // contains on the tf.entry_function attribute.
-    auto attrs =
-        main_fn->getAttrOfType<mlir::DictionaryAttr>("tf.entry_function");
-    if (attrs && !attrs.empty()) {
-      entry_functions.push_back(main_fn);
-    } else {
-      non_entry_functions.push_back(main_fn);
+  auto walk_result = module->walk([&](FuncOp fop) -> mlir::WalkResult {
+    absl::StatusOr<Subgraph> subgraph = TfliteFunctionToSubgraph(config, fop);
+    if (!subgraph.ok()) {
+      llvm::errs() << subgraph.status().message() << "\n";
+      return mlir::WalkResult::interrupt();
     }
-  }
-
-  // Walk over the module collection ops with functions and while ops.
-  module_op.walk([&](FuncOp fn) {
-    if (main_fn == fn) return mlir::WalkResult::advance();
-    auto attrs = fn->getAttrOfType<mlir::DictionaryAttr>("tf.entry_function");
-    if (attrs && !attrs.empty()) {
-      entry_functions.push_back(fn);
-    } else {
-      non_entry_functions.push_back(fn);
-    }
+    result.subgraphs.push_back(*subgraph);
     return mlir::WalkResult::advance();
   });
 
-  // We intentionally process the entry functions first and then the rest to
-  // match the order of tensor index in TFLite converter.
-  for (FuncOp fop : entry_functions) {
-    Subgraph subgraph(fop.getSymName().str());
-    RETURN_IF_ERROR(TfliteFunctionToSubgraph(config, fop, subgraph));
-    result.subgraphs.push_back(subgraph);
-  }
-  for (FuncOp fop : non_entry_functions) {
-    Subgraph subgraph(fop.getSymName().str());
-    RETURN_IF_ERROR(TfliteFunctionToSubgraph(config, fop, subgraph));
-    result.subgraphs.push_back(subgraph);
+  if (walk_result.wasInterrupted()) {
+    return absl::InternalError("Module walk interrupted.");
   }
   return result;
 }
@@ -708,25 +685,24 @@ absl::StatusOr<Graph> JaxConvertedMlirToGraph(const VisualizeConfig& config,
     if (func_name == "NoOp") {
       return mlir::WalkResult::skip();
     }
-    Subgraph subgraph(func_name.str());
 
     // Since the ops in the each function can either be tf or stablehlo dialect,
     // we check the first operation in the function to decide which dialect this
     // function is.
     mlir::Block& block = fop.getBody().front();
     mlir::Operation& first_op = block.front();
+    absl::StatusOr<Subgraph> subgraph;
     if (llvm::isa<mlir::TF::TensorFlowDialect>(first_op.getDialect())) {
-      absl::Status status = TfFunctionToSubgraph(config, fop, subgraph);
-      if (!status.ok()) {
-        llvm::errs() << status.message() << "\n";
+      subgraph = TfFunctionToSubgraph(config, fop);
+      if (!subgraph.ok()) {
+        llvm::errs() << subgraph.status().message() << "\n";
         return mlir::WalkResult::interrupt();
       }
     } else if (llvm::isa<mlir::stablehlo::StablehloDialect>(
                    first_op.getDialect())) {
-      absl::Status status =
-          StablehloJaxFunctionToSubgraph(config, fop, subgraph);
-      if (!status.ok()) {
-        llvm::errs() << status.message() << "\n";
+      subgraph = StablehloFunctionToSubgraph(config, fop);
+      if (!subgraph.ok()) {
+        llvm::errs() << subgraph.status().message() << "\n";
         return mlir::WalkResult::interrupt();
       }
     } else {
@@ -736,7 +712,7 @@ absl::StatusOr<Graph> JaxConvertedMlirToGraph(const VisualizeConfig& config,
                    << ", we skip serializing this function.\n";
       return mlir::WalkResult::skip();
     }
-    result.subgraphs.push_back(subgraph);
+    result.subgraphs.push_back(*subgraph);
     return mlir::WalkResult::advance();
   });
 

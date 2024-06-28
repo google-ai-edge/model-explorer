@@ -30,6 +30,8 @@ limitations under the License.
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "llvm/Support/Casting.h"
+#include "llvm/Support/FormatVariadic.h"
+#include "llvm/Support/JSON.h"
 #include "llvm/Support/SMLoc.h"
 #include "llvm/Support/SourceMgr.h"
 #include "llvm/Support/raw_ostream.h"
@@ -45,6 +47,7 @@ limitations under the License.
 #include "mlir/IR/Operation.h"
 #include "mlir/IR/OwningOpRef.h"
 #include "mlir/IR/Verifier.h"
+#include "mlir/IR/Visitors.h"
 #include "mlir/Parser/Parser.h"
 #include "mlir/Pass/PassManager.h"
 #include "mlir/Support/FileUtilities.h"
@@ -55,7 +58,9 @@ limitations under the License.
 #include "stablehlo/tests/CheckOps.h"
 #include "stablehlo/transforms/Passes.h"
 #include "tensorflow/cc/saved_model/reader.h"
+#include "formats/schema_structs.h"
 #include "status_macros.h"
+#include "translate_helpers.h"
 #include "translations.h"
 #include "visualize_config.h"
 #include "tensorflow/compiler/mlir/lite/flatbuffer_import.h"
@@ -177,18 +182,24 @@ absl::Status RunStandardPipeline(mlir::ModuleOp module_op) {
   return absl::OkStatus();
 }
 
-// Checks if module has tf.XlaCallModule ops.
+// Iterates through all functions in the module and returns true if any of them
+// has tf.XlaCallModule op.
 bool HasXlaCallModule(mlir::ModuleOp module) {
-  for (auto fn : module.getOps<mlir::func::FuncOp>()) {
-    auto it = fn.getOps<mlir::TF::XlaCallModuleOp>();
-    if (!it.empty()) {
-      return true;
-    }
+  const auto walk_result =
+      module->walk([&](mlir::func::FuncOp fop) -> mlir::WalkResult {
+        auto it = fop.getOps<mlir::TF::XlaCallModuleOp>();
+        if (!it.empty()) {
+          return mlir::WalkResult::interrupt();
+        }
+        return mlir::WalkResult::advance();
+      });
+  if (walk_result.wasInterrupted()) {
+    return true;
   }
   return false;
 }
 
-// Deserializes tf.XlaCallModule ops and convert it to stablehlo module. Input
+// Deserializes tf.XlaCallModule ops and converts it to stablehlo module. Input
 // module op is assumed to be already a tf dialect module.
 absl::Status ConvertToStablehloModule(mlir::ModuleOp module_op) {
   mlir::PassManager bridge(module_op.getContext());
@@ -203,24 +214,9 @@ absl::Status ConvertToStablehloModule(mlir::ModuleOp module_op) {
   return absl::OkStatus();
 }
 
-absl::StatusOr<MlirDialect> GetMlirDialect(mlir::ModuleOp module_op) {
-  auto fn_range = module_op.getOps<mlir::func::FuncOp>();
-  if (fn_range.empty()) {
-    return absl::InvalidArgumentError("Module is empty");
-  }
-  mlir::func::FuncOp fn = *fn_range.begin();
-  mlir::Block& first_block = fn.getBody().front();
-  mlir::Operation& first_op = first_block.front();
-  mlir::Dialect* dialect = first_op.getDialect();
-  if (llvm::isa<mlir::TF::TensorFlowDialect>(dialect)) {
-    return MlirDialect::kTf;
-  } else if (llvm::isa<mlir::TFL::TensorFlowLiteDialect>(dialect)) {
-    return MlirDialect::kTflite;
-  } else if (llvm::isa<mlir::stablehlo::StablehloDialect>(dialect)) {
-    return MlirDialect::kStablehlo;
-  } else {
-    return absl::InvalidArgumentError("Unsupported dialect");
-  }
+mlir::WalkResult PrintErrorAndInterupt(const absl::Status& status) {
+  llvm::errs() << status.message() << "\n";
+  return mlir::WalkResult::interrupt();
 }
 
 }  // namespace
@@ -244,6 +240,9 @@ absl::StatusOr<std::string> ConvertSavedModelToJson(
   absl::Span<std::string> exported_names(exported_names_vector);
 
   mlir::MLIRContext context;
+  // Enable parsing of MLIR modules with unregistered dialects. This is safe as
+  // Model Explorer does not execute operations, only visualizes them.
+  context.allowUnregisteredDialects(true);
   mlir::OwningOpRef<mlir::ModuleOp> module_op;
   if (tf_version == 1) {
     LOG(INFO) << "Converting SavedModel V1 to MLIR module...";
@@ -320,6 +319,9 @@ absl::StatusOr<std::string> ConvertFlatbufferToJson(
 
   mlir::MLIRContext context;
   context.printOpOnDiagnostic(true);
+  // Enable parsing of MLIR modules with unregistered dialects. This is safe as
+  // Model Explorer does not execute operations, only visualizes them.
+  context.allowUnregisteredDialects(true);
   llvm::SourceMgr sourceMgr;
   sourceMgr.AddNewSourceBuffer(std::move(input), llvm::SMLoc());
 
@@ -356,6 +358,9 @@ absl::StatusOr<std::string> ConvertMlirToJson(const VisualizeConfig& config,
                   mlir::shape::ShapeDialect, mlir::scf::SCFDialect,
                   mlir::stablehlo::check::CheckDialect>();
   mlir::MLIRContext context(registry);
+  // Enable parsing of MLIR modules with unregistered dialects. This is safe as
+  // Model Explorer does not execute operations, only visualizes them.
+  context.allowUnregisteredDialects(true);
   mlir::ParserConfig parser_config(&context);
   std::string model_content;
   RETURN_IF_ERROR(tsl::ReadFileToString(
@@ -368,27 +373,50 @@ absl::StatusOr<std::string> ConvertMlirToJson(const VisualizeConfig& config,
   std::string json_output;
   llvm::raw_string_ostream json_ost(json_output);
 
-  ASSIGN_OR_RETURN(MlirDialect dialect, GetMlirDialect(*module_op));
-  if (dialect == MlirDialect::kTf || dialect == MlirDialect::kStablehlo) {
-    if (HasXlaCallModule(*module_op)) {
-      RETURN_IF_ERROR(ConvertToStablehloModule(*module_op));
-    }
-    mlir::LogicalResult result =
-        JaxConvertedMlirToJsonTranslateImpl(config, *module_op, json_ost);
-    if (mlir::failed(result)) {
-      return absl::InternalError(
-          "Failed to convert TF or StableHLO MLIR module to JSON string.");
-    }
-  } else if (dialect == MlirDialect::kTflite) {
-    mlir::LogicalResult result =
-        TfliteMlirToJsonTranslateImpl(config, *module_op, json_ost);
-    if (mlir::failed(result)) {
-      return absl::InternalError(
-          "Failed to convert TFL MLIR module to JSON string.");
-    }
-  } else {
-    return absl::InvalidArgumentError("Unsupported dialect");
+  if (HasXlaCallModule(*module_op)) {
+    RETURN_IF_ERROR(ConvertToStablehloModule(*module_op));
   }
+  Graph graph;
+
+  // Iterates through all functions in the module, each function is converted
+  // into a subgraph in Model Explorer. We use the simple heuristic that the
+  // first op in the function is used to determine the dialect of the function.
+  // Different dialects are handled by different helper functions. Currently
+  // supported dialects are tf, stablehlo and tfl.
+  const auto walk_result =
+      (*module_op)->walk([&](mlir::func::FuncOp fop) -> mlir::WalkResult {
+        mlir::Block& block = fop.getBody().front();
+        mlir::Operation& first_op = block.front();
+        absl::StatusOr<Subgraph> subgraph;
+        if (llvm::isa<mlir::stablehlo::StablehloDialect>(
+                first_op.getDialect())) {
+          subgraph = StablehloFunctionToSubgraph(config, fop);
+        } else if (llvm::isa<mlir::TF::TensorFlowDialect>(
+                       first_op.getDialect())) {
+          subgraph = TfFunctionToSubgraph(config, fop);
+        } else if (llvm::isa<mlir::TFL::TensorFlowLiteDialect>(
+                       first_op.getDialect())) {
+          subgraph = TfliteFunctionToSubgraph(config, fop);
+        } else {
+          llvm::errs() << "Unknown dialect: "
+                       << first_op.getDialect()->getNamespace()
+                       << " in function: " << fop.getSymName()
+                       << ", we skip serializing this function.\n";
+          return mlir::WalkResult::skip();
+        }
+        if (!subgraph.ok()) {
+          return PrintErrorAndInterupt(subgraph.status());
+        }
+        graph.subgraphs.push_back(*std::move(subgraph));
+        return mlir::WalkResult::advance();
+      });
+  if (walk_result.wasInterrupted()) {
+    return absl::InternalError("Module walk interrupted.");
+  }
+  GraphCollection collection;
+  collection.graphs.push_back(std::move(graph));
+  llvm::json::Value json_result(collection.Json());
+  json_ost << llvm::formatv("{0:2}", json_result);
 
   return json_output;
 }

@@ -53,6 +53,7 @@ cc_library(
     hdrs = ["model_json_graph_convert.h"],
     deps = [
         ":status_macros",
+        ":translate_helpers",
         ":translations",
         ":visualize_config",
         "@com_google_absl//absl/log",
@@ -78,6 +79,7 @@ cc_library(
         "@org_tensorflow//tensorflow/cc/saved_model:reader",
         "@org_tensorflow//tensorflow/compiler/mlir/lite:flatbuffer_import",
         "@org_tensorflow//tensorflow/compiler/mlir/lite:tensorflow_lite",
+        "//formats:schema_structs",
         "@org_tensorflow//tensorflow/compiler/mlir/lite/stablehlo:legalize_tf_xla_call_module_to_stablehlo_pass",
         "@org_tensorflow//tensorflow/compiler/mlir/lite/stablehlo:rename_entrypoint_to_main",
         "@org_tensorflow//tensorflow/compiler/mlir/tensorflow",

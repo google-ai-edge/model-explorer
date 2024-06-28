@@ -17,12 +17,25 @@ limitations under the License.
 #define TENSORFLOW_COMPILER_MLIR_LITE_EXPERIMENTAL_GOOGLE_TOOLING_TRANSLATE_HELPERS_H_
 
 #include "absl/status/statusor.h"
+#include "mlir/Dialect/Func/IR/FuncOps.h"
 #include "mlir/IR/Value.h"
 #include "formats/schema_structs.h"
 #include "visualize_config.h"
 
 namespace tooling {
 namespace visualization_client {
+
+// Converts a tf dialect function op to a subgraph.
+absl::StatusOr<Subgraph> TfFunctionToSubgraph(const VisualizeConfig& config,
+                                              mlir::func::FuncOp& fop);
+
+// Converts a tfl dialect function op to a subgraph.
+absl::StatusOr<Subgraph> TfliteFunctionToSubgraph(const VisualizeConfig& config,
+                                                  mlir::func::FuncOp& fop);
+
+// Converts a stablehlo dialect function op to a subgraph.
+absl::StatusOr<Subgraph> StablehloFunctionToSubgraph(
+    const VisualizeConfig& config, mlir::func::FuncOp& fop);
 
 // Converts a tf dialect MLIR module to a JSON graph.
 absl::StatusOr<Graph> TfMlirToGraph(const VisualizeConfig& config,
