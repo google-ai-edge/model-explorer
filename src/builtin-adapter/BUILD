@@ -125,8 +125,8 @@ cc_binary(
         "@com_google_absl//absl/log",
         "@com_google_absl//absl/status:statusor",
         "@org_tensorflow//tensorflow/compiler/mlir:init_mlir",
+        "@org_tensorflow//tensorflow/compiler/mlir/lite/tools:command_line_flags",
         "@org_tensorflow//tensorflow/core:lib",
-        "@org_tensorflow//tensorflow/lite/tools:command_line_flags",
     ],
 )
 

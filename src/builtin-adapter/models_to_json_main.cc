@@ -23,8 +23,8 @@ limitations under the License.
 #include "direct_saved_model_to_json_graph_convert.h"
 #include "model_json_graph_convert.h"
 #include "visualize_config.h"
+#include "tensorflow/compiler/mlir/lite/tools/command_line_flags.h"
 #include "tensorflow/core/platform/logging.h"
-#include "tensorflow/lite/tools/command_line_flags.h"
 #include "tsl/platform/env.h"
 
 constexpr char kInputFileFlag[] = "i";
