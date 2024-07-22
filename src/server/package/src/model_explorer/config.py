@@ -32,7 +32,9 @@ ModelSource = TypedDict(
 
 EncodedUrlData = TypedDict(
     'EncodedUrlData',
-    {'models': list[ModelSource], 'nodeData': NotRequired[list[str]]},
+    {'models': list[ModelSource],
+     'nodeData': NotRequired[list[str]],
+     'nodeDataTargets': NotRequired[list[str]]},
 )
 
 
@@ -43,6 +45,9 @@ class ModelExplorerConfig:
     self.model_sources: list[ModelSource] = []
     self.graphs_list: list[ModelExplorerGraphs] = []
     self.node_data_sources: list[str] = []
+    # List of model names to apply node data to. For the meaning of
+    # "model name", see comments in `add_node_data_from_path` method below.
+    self.node_data_target_models: list[str] = []
     self.node_data_list: list[NodeData] = []
 
   def add_model_from_path(
@@ -95,27 +100,51 @@ class ModelExplorerConfig:
 
     return self
 
-  def add_node_data_from_path(self, path: str) -> 'ModelExplorerConfig':
+  def add_node_data_from_path(
+          self,
+          path: str,
+          model_name: Union[str, None] = None) -> 'ModelExplorerConfig':
     """Adds node data file to the config.
 
     Args:
       path: the path of the node data json file to add.
+      model_name: the name of the model. If not set, the node data will be
+          applied to the first model added to the config by default.
+
+          To set this parameter:
+          For non-pytorch model, this should be the name of the model file
+          (e.g. model.tflite). For pytorch model, it should be the `name`
+          parameter used to call the `add_model_from_pytorch` api.
     """
     # Get the absolute path (after expanding home dir path "~").
     abs_model_path = os.path.abspath(os.path.expanduser(path))
 
     self.node_data_sources.append(abs_model_path)
+    if model_name is None:
+      self.node_data_target_models.append('')
+    else:
+      self.node_data_target_models.append(model_name)
 
     return self
 
   def add_node_data(
-      self, name: str, node_data: NodeData
+      self,
+      name: str,
+      node_data: NodeData,
+      model_name: Union[str, None] = None
   ) -> 'ModelExplorerConfig':
     """Adds the given node data object.
 
     Args:
       name: the name of the NodeData for display purpose.
       node_data: the NodeData object to add.
+      model_name: the name of the model. If not set, the node data will be
+          applied to the first model added to the config by default.
+
+          To set this parameter:
+          For non-pytorch model, this should be the name of the model file
+          (e.g. model.tflite). For pytorch model, it should be the `name`
+          parameter used to call the `add_model_from_pytorch` api.
     """
     node_data_index = len(self.node_data_list)
     self.node_data_list.append(node_data)
@@ -125,6 +154,10 @@ class ModelExplorerConfig:
     # The node data source has a special format, in the form of:
     # node_data://{name}//{index}
     self.node_data_sources.append(f'node_data://{name}/{node_data_index}')
+    if model_name is None:
+      self.node_data_target_models.append('')
+    else:
+      self.node_data_target_models.append(model_name)
     return self
 
   def to_url_param_value(self) -> str:
@@ -134,6 +167,8 @@ class ModelExplorerConfig:
 
     if self.node_data_sources:
       encoded_url_data['nodeData'] = self.node_data_sources
+    if self.node_data_target_models:
+      encoded_url_data['nodeDataTargets'] = self.node_data_target_models
 
     # Return its json string.
     return quote(json.dumps(encoded_url_data))
