@@ -23,8 +23,8 @@ limitations under the License.
 #include "direct_saved_model_to_json_graph_convert.h"
 #include "model_json_graph_convert.h"
 #include "visualize_config.h"
+#include "tensorflow/compiler/mlir/lite/tools/command_line_flags.h"
 #include "tensorflow/core/platform/logging.h"
-#include "tensorflow/lite/tools/command_line_flags.h"
 #include "tsl/platform/env.h"
 
 constexpr char kInputFileFlag[] = "i";
@@ -58,25 +58,25 @@ int main(int argc, char* argv[]) {
   int const_element_count_limit = 16;
   bool disable_mlir = false;
 
-  std::vector<tflite::Flag> flag_list = {
-      tflite::Flag::CreateFlag(kInputFileFlag, &input_file,
-                               "Input filename or directory",
-                               tflite::Flag::kRequired),
-      tflite::Flag::CreateFlag(kOutputFileFlag, &output_file, "Output filename",
-                               tflite::Flag::kRequired),
-      tflite::Flag::CreateFlag(
+  std::vector<mlir::Flag> flag_list = {
+      mlir::Flag::CreateFlag(kInputFileFlag, &input_file,
+                             "Input filename or directory",
+                             mlir::Flag::kRequired),
+      mlir::Flag::CreateFlag(kOutputFileFlag, &output_file, "Output filename",
+                             mlir::Flag::kRequired),
+      mlir::Flag::CreateFlag(
           kConstElementCountLimitFlag, &const_element_count_limit,
           "The maximum number of constant elements. If the number exceeds this "
           "threshold, the rest of data will be elided. If the flag is not set, "
           "the default threshold is 16 (use -1 to print all)",
-          tflite::Flag::kOptional),
-      tflite::Flag::CreateFlag(
+          mlir::Flag::kOptional),
+      mlir::Flag::CreateFlag(
           kDisableMlirFlag, &disable_mlir,
           "Disable the MLIR-based conversion. If set to true, the conversion "
           "becomes from model directly to graph json",
-          tflite::Flag::kOptional),
+          mlir::Flag::kOptional),
   };
-  tflite::Flags::Parse(&argc, const_cast<const char**>(argv), flag_list);
+  mlir::Flags::Parse(&argc, const_cast<const char**>(argv), flag_list);
 
   if (input_file.empty() || output_file.empty()) {
     LOG(ERROR) << "Input or output files cannot be empty.";
