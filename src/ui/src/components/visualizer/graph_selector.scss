@@ -1,0 +1,234 @@
+/**
+ * @license
+ * Copyright 2024 The Model Explorer Authors. All Rights Reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ==============================================================================
+ */
+
+.container {
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  line-height: 14px;
+  position: relative;
+
+  .collection-label {
+    font-weight: 700;
+    margin-right: 6px;
+  }
+
+  .select-form {
+    height: 0;
+    max-height: 0;
+    position: absolute;
+    top: 26px;
+    right: 28px;
+
+    ::ng-deep > * {
+      height: 0;
+    }
+  }
+
+  .selector-label-content {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-grow: 1;
+  }
+
+  .option-label {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    margin-right: 2px;
+  }
+
+  .node-count-label {
+    color: #999;
+    margin-left: 12px;
+  }
+
+  .triangle {
+    font-size: 10px;
+    margin-left: 8px;
+  }
+
+  .graph-selector-label {
+    font-size: 12px;
+    border: 1px solid #aaa;
+    border-radius: 3px;
+    padding: 2px 4px;
+    cursor: pointer;
+    flex-grow: 1;
+    height: 24px;
+    display: flex;
+    box-sizing: border-box;
+
+    .selector-label-container {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-grow: 1;
+    }
+
+    &:hover {
+      border-color: #ea8600;
+    }
+  }
+
+  .mat-icon-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: 4px;
+    cursor: pointer;
+    opacity: 0.6;
+
+    &:hover {
+      opacity: 1;
+    }
+  }
+}
+
+::ng-deep .graph-selector-panel {
+  background-color: white;
+
+  mat-option {
+    height: 24px;
+    font-size: 12px;
+    min-height: unset;
+    padding: 1px 0;
+    /* stylelint-disable-next-line declaration-no-important -- override MDC */
+    padding-left: 20px !important;
+    /* stylelint-disable-next-line declaration-no-important -- override MDC */
+    background-color: none !important;
+
+    .option-wrapper {
+      display: flex;
+      align-items: center;
+    }
+
+    .option-container {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      letter-spacing: normal;
+      font-family: 'Google Sans Text', Arial, Helvetica, sans-serif;
+      flex-grow: 1;
+
+      .option-label {
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+        /* stylelint-disable-next-line declaration-no-important -- override MDC */
+        color: black !important;
+      }
+
+      .node-count-label {
+        color: #999;
+      }
+    }
+
+    .action-button {
+      flex-shrink: 0;
+      width: 16px;
+      height: 16px;
+      display: flex;
+      align-items: center;
+      margin-left: 4px;
+      opacity: 0.8;
+      cursor: pointer;
+
+      &:hover {
+        opacity: 1;
+      }
+
+      .block-container {
+        border-radius: 3px;
+        border: 1px solid #999;
+        height: 100%;
+        width: 100%;
+        box-sizing: border-box;
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        padding: 1px;
+
+        .right-block {
+          height: 100%;
+          width: 50%;
+          background-color: #999;
+          border-top-right-radius: 2px;
+          border-bottom-right-radius: 2px;
+        }
+      }
+    }
+
+    span {
+      /* stylelint-disable-next-line declaration-no-important -- override MDC */
+      white-space: break-spaces !important;
+      word-break: break-all;
+      /* stylelint-disable-next-line declaration-no-important -- override MDC */
+      line-height: 14px !important;
+      width: 100%;
+      box-sizing: border-box;
+      padding-right: 10px;
+    }
+
+    mat-pseudo-checkbox {
+      display: none;
+    }
+
+    &.selected {
+      /* stylelint-disable-next-line declaration-no-important -- override MDC */
+      background-color: #fff1de !important;
+    }
+  }
+
+  mat-optgroup {
+    span {
+      min-height: unset;
+      font-size: 12px;
+      font-weight: 700;
+      padding-left: 8px;
+    }
+
+    &.graph-search-optgroup {
+      pointer-events: none;
+
+      span {
+        padding: 0;
+      }
+
+      mat-option {
+        /* stylelint-disable-next-line declaration-no-important -- override MDC */
+        padding-left: 16px !important;
+        /* stylelint-disable-next-line declaration-no-important -- override MDC */
+        padding-right: 12px !important;
+        height: 28px;
+      }
+
+      input {
+        font-size: 12px;
+        width: 100%;
+        box-sizing: border-box;
+        pointer-events: all;
+        border: 1px solid #ccc;
+        height: 20px;
+        border-radius: 4px;
+        padding: 0 2px;
+      }
+    }
+  }
+}

@@ -1,0 +1,275 @@
+/**
+ * @license
+ * Copyright 2024 The Model Explorer Authors. All Rights Reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ==============================================================================
+ */
+
+@import 'variables';
+
+.container {
+  padding-top: 12px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+
+  .index-number {
+    font-size: 10px;
+    width: 16px;
+    height: 16px;
+    border-radius: 8px;
+    box-sizing: border-box;
+    border: 1px solid #999;
+    background-color: #eee;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .icon-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    opacity: 0.3;
+    cursor: pointer;
+
+    &.selected {
+      opacity: 1;
+      cursor: default;
+
+      mat-icon {
+        color: #e1a011;
+      }
+    }
+
+    &.hide {
+      visibility: hidden;
+    }
+
+    &.action {
+      opacity: 0.7;
+      margin-left: 4px;
+
+      &:hover {
+        opacity: 1;
+      }
+    }
+
+    &.visibility {
+      margin-left: 4px;
+    }
+
+    mat-icon {
+      font-size: 16px;
+      width: 16px;
+      height: 16px;
+      line-height: 16px;
+      color: black;
+    }
+  }
+
+  .index-container {
+    .index-row {
+      display: flex;
+      align-items: center;
+      overflow: hidden;
+      padding: 2px 8px;
+
+      &.selected {
+        background-color: #fff2d5;
+      }
+
+      .index-number-container {
+        width: 16px;
+        height: 16px;
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 6px;
+      }
+
+      .run-name {
+        flex-grow: 1;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .action-icons-container {
+        display: flex;
+        align-items: center;
+        flex-shrink: 0;
+      }
+    }
+  }
+
+  select {
+    width: 100%;
+  }
+
+  .running {
+    display: flex;
+    align-items: center;
+    margin-top: 16px;
+
+    mat-spinner {
+      margin-right: 4px;
+    }
+
+    .label {
+      color: #777;
+    }
+  }
+
+  .error {
+    width: 16px;
+    height: 16px;
+
+    mat-icon {
+      font-size: 16px;
+      height: 16px;
+      width: 16px;
+      color: #a00;
+    }
+  }
+
+  .table-container {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 8px;
+    margin-top: 2px;
+    display: flex;
+    flex-direction: column;
+    transition: max-height 150ms ease-out;
+    overflow: hidden;
+
+    &.collapsed {
+      /* stylelint-disable-next-line declaration-no-important -- override element style */
+      max-height: 30px !important;
+    }
+
+    .table-title-container {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      line-height: 22px;
+
+      .title-label-container {
+        display: flex;
+        align-items: center;
+        cursor: pointer;
+        user-select: none;
+        line-height: 15px;
+
+        mat-icon {
+          margin-left: -4px;
+        }
+      }
+    }
+
+    paginator {
+      align-self: flex-end;
+    }
+  }
+
+  table {
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    width: 100%;
+    box-sizing: border-box;
+    user-select: none;
+    background-color: #fdfdfd;
+    overflow: hidden;
+
+    thead {
+      height: 24px;
+      background-color: #f2f2f2;
+
+      .header {
+        font-weight: 500;
+      }
+    }
+
+    tbody {
+      font-size: 11px;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    tr:hover {
+      outline: 1px solid #999;
+    }
+
+    td,
+    th {
+      padding: 1px 4px;
+      text-align: left;
+
+      &.node-label {
+        border-left: 1px solid #ddd;
+      }
+
+      &.value-col {
+        border-left: 1px solid #ddd;
+        max-width: 80px;
+        text-overflow: ellipsis;
+        overflow: hidden;
+      }
+    }
+
+    .header-content {
+      height: 100%;
+      display: flex;
+      align-items: center;
+
+      mat-icon.sort {
+        font-size: 12px;
+        width: 12px;
+        height: 12px;
+        color: #999;
+        margin-left: 4px;
+      }
+
+      .stat-label {
+        margin-left: 6px;
+        white-space: nowrap;
+      }
+    }
+
+    th {
+      cursor: pointer;
+    }
+
+    td.node-label {
+      cursor: pointer;
+
+      &:hover {
+        text-decoration: underline dotted #0085f2;
+      }
+    }
+
+    td.input {
+      color: $incoming-edge-color;
+      font-weight: 500;
+    }
+
+    td.output {
+      color: $outgoing-edge-color;
+      font-weight: 500;
+    }
+  }
+}

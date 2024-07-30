@@ -1,0 +1,133 @@
+<!--
+@license
+Copyright 2024 The Model Explorer Authors. All Rights Reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+==============================================================================
+-->
+
+<mat-tree #tree [dataSource]="dataSource"
+    [treeControl]="treeControl" class="io-tree"
+    [@transformPanel]="'showing'"
+    [@.disabled]="!solidBackground"
+    [class.solid-background]="solidBackground">
+  <!-- This is the tree node template for leaf nodes -->
+  <mat-tree-node *matTreeNodeDef="let node"
+      class="leaf"
+      [class.has-locator]="node.showLocator"
+      [class.has-values]="showHoverForValuesLabel(node)"
+      [class.highlight]="node.highlight"
+      [class.has-metadata]="hasMetadata(node)"
+      [attr.data-id]="node.nodeId"
+      [bubble]="constValuesPopup"
+      [overlaySize]="constValuesPopupSize"
+      [overlayPositions]="constValuesPopupPosition"
+      [hoverDelayMs]="50"
+      [bubbleDisabled]="!showHoverForValuesLabel(node)"
+      matTreeNodePadding
+      [matTreeNodePaddingIndent]="treeItemPadding">
+    <div class="edge-node"
+        (click)="handleLocateNode(node, $event.altKey)">
+      <div class="label-and-metadata" [class.has-extra-data]="node.extraData != null">
+        <div class="label-container">
+          <div class="label">
+            <span class="node-label" [class.color-bold]="colorBoldNodeLabel"
+                [class.search-match]="isSearchMatched(node.label, node.boldLabel)">
+              @if (node.boldLabel) {
+                {{node.boldLabel}} ({{node.label}})
+              } @else {
+                {{node.label}}
+              }
+            </span>
+            @if (node.extraData) {
+              <ng-container *ngTemplateOutlet="matchTypes; context:{node}">
+              </ng-container>
+            }
+          </div>
+        </div>
+        <table class="metadata-table" *ngIf="hasMetadata(node)">
+          <tr *ngFor="let key of getSortedMetadataKeys(node)"
+              [class.search-match]="isSearchMatched(node.metadata[key])">
+            <td class="key"><mat-icon class="bullet">circle</mat-icon> {{key}}</td>
+            <td class="value">{{node.metadata[key]}}</td>
+          </tr>
+        </table>
+      </div>
+      <div class="locator-container"
+          *ngIf="node.showLocator && showLocator"
+          [matTooltip]="locatorTooltip"
+          matTooltipClass="multiline-tooltip-left"
+          [matTooltipPosition]="tooltipPosition">
+        <mat-icon class="locator-icon">my_location</mat-icon>
+      </div>
+    </div>
+
+    <ng-template #constValuesPopup>
+      <div class="model-explorer-const-values-popup">
+        @if (getMaxConstValueCount() !== 0) {
+          <div class="values-count-msg">
+            Showing at most {{getMaxConstValueCount()}} elements
+          </div>
+        }
+        <div class="content">{{getConstValues(node)}}</div>
+      </div>
+    </ng-template>
+
+  </mat-tree-node>
+
+  <!-- This is the tree node template for expandable nodes -->
+  <mat-tree-node *matTreeNodeDef="let node;when: hasChild"
+      [class.has-locator]="node.showLocator"
+      [attr.data-id]="node.nodeId"
+      matTreeNodePadding
+      [matTreeNodePaddingIndent]="treeItemPadding">
+    <div class="expandable-tree-node"
+        [class.highlight]="node.highlightGroupLabel"
+        (click)="handleLocateNode(node, $event.altKey)">
+      <div class="label-container" [class.has-extra-data]="node.extraData != null">
+        <button mat-icon-button matTreeNodeToggle
+            class="expand-icon-button"
+            [attr.aria-label]="'Toggle ' + node.label">
+          <mat-icon class="expander">
+            {{treeControl.isExpanded(node) ? 'keyboard_arrow_down' : 'chevron_right'}}
+          </mat-icon>
+        </button>
+        <div class="label">
+          {{node.label}}
+          @if (node.extraData) {
+            <ng-container *ngTemplateOutlet="matchTypes; context:{node}">
+            </ng-container>
+          }
+        </div>
+      </div>
+      <div class="locator-container"
+          *ngIf="node.showLocator && showLocator"
+          [matTooltip]="locatorTooltip"
+          matTooltipClass="multiline-tooltip-left"
+          [matTooltipPosition]="tooltipPosition">
+        <mat-icon class="locator-icon">my_location</mat-icon>
+      </div>
+    </div>
+  </mat-tree-node>
+</mat-tree>
+
+<ng-template #matchTypes let-node='node'>
+  <div class="match-types-container">
+    @for (matchType of node.extraData.matchTypes; track matchType) {
+      <div class='extra-label-container'
+          [matTooltip]="getExtraLabelTooltip(matchType)">
+        <mat-icon>{{matchType}}</mat-icon>
+      </div>
+    }
+  </div>
+</ng-template>

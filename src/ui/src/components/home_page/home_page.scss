@@ -1,0 +1,285 @@
+/**
+ * @license
+ * Copyright 2024 The Model Explorer Authors. All Rights Reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ==============================================================================
+ */
+
+$card_width: 1016px;
+
+.container {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+
+  &.dragover .dragover-overlay {
+    display: flex;
+  }
+
+  .dragover-overlay {
+    display: none;
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.1);
+    pointer-events: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    z-index: 500;
+
+    .msg {
+      margin-bottom: 16px;
+      color: white;
+      padding: 4px 12px;
+      border-radius: 99px;
+      background-color: #4285f4;
+    }
+  }
+
+  @keyframes rotate {
+    0% {
+      transform: rotate(0deg);
+    }
+    30% {
+      transform: rotate(180deg);
+    }
+    60% {
+      transform: rotate(360deg);
+    }
+    100% {
+      transform: rotate(360deg);
+    }
+  }
+
+  @keyframes goUp {
+    0% {
+      transform: translate(0, 10%);
+      opacity: 0;
+    }
+    30% {
+      transform: translate(0, 0);
+      opacity: 1;
+    }
+    100% {
+      transform: translate(0, -25%);
+      opacity: 0;
+    }
+  }
+
+  .title {
+    padding: 8px 12px;
+    box-sizing: border-box;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    color: #444746;
+    border-bottom: 1px solid transparent;
+
+    &.hide {
+      display: none;
+    }
+
+    .name {
+      display: flex;
+      align-items: center;
+      font-size: 20px;
+
+      me-logo {
+        margin-right: 6px;
+      }
+
+      new-version-chip {
+        margin-left: 16px;
+      }
+    }
+
+    .icons-container {
+      display: flex;
+      align-items: center;
+
+      a {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: black;
+      }
+
+      open-in-new-tab-button {
+        margin-left: 8px;
+      }
+    }
+  }
+
+  .content {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    position: relative;
+    margin-top: 16px;
+    overflow: hidden;
+
+    &.hide {
+      display: none;
+    }
+
+    .welcome-card-container {
+      width: $card_width;
+      flex-shrink: 0;
+      position: relative;
+
+      .icon-container {
+        position: absolute;
+        top: 6px;
+        right: 6px;
+        cursor: pointer;
+        opacity: 0.5;
+
+        &:hover {
+          opacity: 0.8;
+        }
+
+        mat-icon {
+          font-size: 16px;
+          width: 16px;
+          height: 16px;
+        }
+      }
+    }
+
+    .loading-adapter-extension-container {
+      margin-top: 20px;
+    }
+
+    .model-source-input-container {
+      width: $card_width;
+      margin-top: 20px;
+      overflow: hidden;
+      z-index: 100;
+      background-color: white;
+    }
+
+    .padding {
+      width: 100%;
+      flex-grow: 1;
+      min-height: 12px;
+    }
+
+    .cover {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 5000;
+      color: #333;
+      background-color: rgba(255, 255, 255, 0.9);
+      backdrop-filter: blur(10px);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+
+      .loading-subtitle {
+        font-size: 14px;
+        color: #999;
+        margin-top: 20px;
+      }
+    }
+
+    .loading {
+      .wait-icon {
+        display: inline-block;
+        margin: 0 8px;
+        animation: rotate 2s ease-in-out 0s infinite;
+      }
+    }
+
+    .uploading {
+      .upload-icon {
+        display: inline-block;
+        margin: 0 8px;
+        animation: goUp 1s ease-in-out 0s infinite;
+      }
+    }
+  }
+
+  .utos {
+    position: absolute;
+    right: 12px;
+    bottom: 12px;
+    font-size: 12px;
+    color: #999;
+
+    a {
+      color: #999;
+    }
+  }
+
+  model-graph-visualizer {
+    width: 100%;
+    height: 100%;
+  }
+
+  .bug-report {
+    position: absolute;
+    bottom: 8px;
+    left: 8px;
+    display: inline-block;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: black;
+    opacity: 0.5;
+
+    &:hover {
+      opacity: 0.8;
+    }
+  }
+
+  .btns-container {
+    display: flex;
+    align-items: center;
+
+    .share-button-container {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .divider {
+      border-left: 1px solid #ccc;
+      height: 28px;
+      box-sizing: border-box;
+      margin-left: 8px;
+      margin-right: 8px;
+    }
+  }
+}
+
+::ng-deep .model-explorer-version {
+  font-size: 12px;
+  text-align: right;
+  padding: 8px 16px 0;
+  color: #999;
+}

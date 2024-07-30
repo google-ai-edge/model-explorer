@@ -1,0 +1,164 @@
+/**
+ * @license
+ * Copyright 2024 The Model Explorer Authors. All Rights Reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ==============================================================================
+ */
+
+*:not(mat-icon) {
+  font-family: 'Google Sans Text', Arial, Helvetica, sans-serif;
+}
+
+.title-container {
+  border-bottom: 1px solid #ddd;
+}
+
+.title {
+  font-size: 24px;
+  font-weight: 500;
+  margin-top: -16px;
+}
+
+.local-storage-info {
+  font-size: 12px;
+  color: #777;
+  margin-top: 6px;
+}
+
+.dialog-content {
+  padding-bottom: 0;
+}
+
+.settings-container {
+  font-size: 13px;
+  color: black;
+  margin-top: 20px;
+  margin-bottom: 10px;
+}
+
+.setting-item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  margin-bottom: 24px;
+
+  .setting-label {
+    line-height: 16px;
+    margin-bottom: 4px;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    .icon-container {
+      width: 16px;
+      height: 16px;
+      margin-left: 12px;
+      opacity: 0.4;
+      cursor: pointer;
+
+      &:hover {
+        opacity: 0.6;
+      }
+
+      mat-icon {
+        font-size: 16px;
+        width: 16px;
+        height: 16px;
+      }
+    }
+  }
+
+  input,
+  textarea {
+    box-sizing: border-box;
+    width: 100%;
+  }
+
+  // Hide up/down arrows for number input.
+  input::-webkit-outer-spin-button,
+  input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+
+  .reset {
+    color: #999;
+    cursor: pointer;
+    margin-top: 2px;
+    text-decoration: underline;
+    user-select: none;
+
+    &:hover {
+      color: #777;
+    }
+  }
+}
+
+.color-picker-container {
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  border-radius: 2px;
+  border: 1px solid rgb(118, 118, 118);
+  width: 100%;
+  background-color: white;
+  box-sizing: border-box;
+  height: 24px;
+  position: relative;
+
+  &:focus-within {
+    border-color: #1a73e8;
+    outline: 1px solid #1a73e8;
+  }
+
+  label {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    margin: 2px;
+    background-color: red;
+    border-radius: 4px;
+    cursor: pointer;
+    border: 1px solid #ddd;
+
+    input {
+      visibility: hidden;
+    }
+  }
+
+  input[type='text'] {
+    border: none;
+    height: 100%;
+    background-color: transparent;
+    outline: none;
+  }
+}
+
+.buttons-container {
+  border-top: 1px solid #ddd;
+}
+
+::ng-deep {
+  .model-explorer-settings-help-popup {
+    font-size: 12px;
+    padding: 8px;
+    background-color: white;
+    line-height: normal;
+
+    .bold {
+      font-weight: 700;
+    }
+  }
+}

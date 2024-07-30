@@ -1,0 +1,118 @@
+<!--
+@license
+Copyright 2024 The Model Explorer Authors. All Rights Reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+==============================================================================
+-->
+
+<div class="container">
+  @for (query of curQueries; track query; let queryIndex = $index) {
+    <div class="query-container">
+      @switch (query.type) {
+        @case (NodeQueryType.REGEX) {
+          <div class="model-explorer-regex-icon"
+              matTooltip="Regex"n
+              matTooltipPosition="left">
+            <div class="r">R</div>
+            <div class="e">E</div>
+          </div>
+          <input class="regex common-input" #queryInput
+              placeholder="Regex"
+              [value]="query.queryRegex"
+              (change)="handleRegexQueryChanged(queryIndex, queryInput.value)">
+          <div class="targets-container">
+            @for (option of allSearchMatchTypeOptions; track option.type) {
+              <div class="icon-container match-type" [matTooltip]="option.tooltip"
+                  [class.selected]="getIsMatchTypeSelected(query, option.type)"
+                  [class.disabled]="getDisableMatchType(query, option.type)"
+                  (click)="handleToggleMatchType(queryIndex, option.type)">
+                <mat-icon>{{option.type}}</mat-icon>
+              </div>
+            }
+          </div>
+        }
+        @case (NodeQueryType.ATTR_VALUE_RANGE) {
+          <div class="model-explorer-attr-value-range-icon"
+              matTooltip="Attribute value range"
+              matTooltipPosition="left">
+            [··]
+          </div>
+          <div class="attrs-value-range-container">
+            <input class="common-input attr-name" placeholder="Attr name"
+                [value]="query.attrName"
+                #inputAttrName
+                (change)="handleAttrValueRangeQueryChanged(queryIndex, inputAttrName.value.trim(), inputMin.value.trim(), inputMax.value.trim())">
+            <div class="colon">:</div>
+            <input class="common-input min" placeholder="min"
+                [value]="getAttrValueRangeString(query.min)"
+                #inputMin
+                (change)="handleAttrValueRangeQueryChanged(queryIndex, inputAttrName.value.trim(), inputMin.value.trim(), inputMax.value.trim())">
+            <div class="to">,</div>
+            <input class="common-input max" placeholder="max"
+                [value]="getAttrValueRangeString(query.max)"
+                #inputMax
+                (change)="handleAttrValueRangeQueryChanged(queryIndex, inputAttrName.value.trim(), inputMin.value.trim(), inputMax.value.trim())">
+          </div>
+        }
+        @case (NodeQueryType.NODE_TYPE) {
+          <div class="model-explorer-node-type-icon"
+              matTooltip="Node type"
+              matTooltipPosition="left">
+            <mat-icon>device_hub</mat-icon>
+          </div>
+          <select class="node-type-selector" #select
+              (change)="handleNodeTypeChanged(queryIndex, select.value)">
+            @for (option of allSearchNodeTypes; track option.type) {
+              <option [value]="option.type" [selected]="option.type === query.nodeType">
+                {{option.label}}
+              </option>
+            }
+          </select>
+        }
+      }
+      @if (getShowDeleteQueryButton(query)) {
+        <div class="icon-container delete"
+            matTooltip="Delete query"
+            matTooltipPosition="right"
+            (click)="handleDeleteQuery(queryIndex)">
+          <mat-icon>delete</mat-icon>
+        </div>
+      }
+    </div>
+  }
+  <div class="btn-add-query" [matMenuTriggerFor]="menu">
+    <mat-icon>add</mat-icon>
+    Add query
+  </div>
+  <mat-menu #menu="matMenu" class="model-explorer-add-query-menu">
+    @for (option of allQueryTypes; track option.type) {
+      <div class="menu-item" (click)="handleAddQuery(option.type)">
+        @switch (option.type) {
+          @case (NodeQueryType.REGEX) {
+            <div class="model-explorer-regex-icon">
+              <div class="r">R</div>
+              <div class="e">E</div>
+            </div>
+          }
+          @case (NodeQueryType.ATTR_VALUE_RANGE) {
+            <div class="model-explorer-attr-value-range-icon">
+              [··]
+            </div>
+          }
+        } 
+        <div class="label">{{option.label}}</div>
+      </div>
+    }
+  </mat-menu>
+</div>

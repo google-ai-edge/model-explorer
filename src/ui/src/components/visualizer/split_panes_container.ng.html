@@ -1,0 +1,106 @@
+<!--
+@license
+Copyright 2024 The Model Explorer Authors. All Rights Reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+==============================================================================
+-->
+
+<div class="container" #panesContainer>
+  <div class="pane-container"
+      *ngFor="let pane of panes(); let i = index; trackBy: trackByPaneId"
+      [attr.data-pane-id]="pane.id"
+      [class.selected]="isPaneSelected(pane)"
+      [style.width.%]="getPaneWidthPct(i)">
+    @if (getShowLoading(pane)) {
+      <div class="loading"
+          @hideProcessingPanel
+          [@.disabled]="disableAnimation">
+        @if (getProcessingError(pane); as error) {
+          <div class="error-msg">
+            {{error}}
+          </div>
+        } @else {
+          <div class="processing-msg-container">
+            @if (getProcessingError(pane)) {
+              <mat-icon>error</mat-icon>
+            } @else {
+              <mat-spinner color="primary" diameter="18">
+              </mat-spinner>
+            }
+            Processing graph...
+          </div>
+          <div class="stay-on-page-info">
+            Please remain on this page while the model is being processed
+          </div>
+          <div class="progress-bar-wrapper">
+            <div class="progress-bar-container">
+              <div class="progress-bar-body" [style.width.%]="getProgressPct(pane.id)">
+              </div>
+            </div>
+            <div class="icon-container"
+                [bubble]="progressPopup"
+                [hoverDelayMs]="100">
+              <mat-icon>info</mat-icon>
+            </div>
+            <ng-template #progressPopup>
+              <div class="model-explorer-processing-tasks-container">
+                @for (task of getProcessingTasksForPane(pane.id); track task.label) {
+                  <div class="processing-task-container">
+                    @if (task.processing) {
+                      <mat-spinner color="primary" diameter="16">
+                      </mat-spinner>
+                    } @else {
+                      <mat-icon>check_circle</mat-icon>
+                    }
+                    <div class="task-label">
+                      {{task.label}}
+                    </div>
+                  </div>
+                }
+              </div>
+            </ng-template>
+          </div>
+        }
+      </div>
+    }
+
+    <div class="pane-title-container" *ngIf="hasSplitPane">
+      <div class="pane-title">
+        {{getPaneTitle(pane)}}
+      </div>
+      <div class="buttons-container">
+        <div class="icon-container swap" (click)="handleClickSwapPane()"
+            (mousedown)="$event.stopPropagation()"
+            matTooltip="Swap pane">
+          <mat-icon>swap_horiz</mat-icon>
+        </div>
+        <div class="icon-container close" (click)="handleClickClosePane(pane)"
+            (mousedown)="$event.stopPropagation()"
+            matTooltip="Close pane">
+          <mat-icon>close</mat-icon>
+        </div>
+      </div>
+    </div>
+    <split-pane #splitPane [pane]="pane">
+    </split-pane>
+  </div>
+
+  <!-- Resizer in the middle -->
+  <div class="resizer split-pane"
+      *ngIf="hasSplitPane"
+      [style.left]="resizerLeft"
+      (mousedown)="handleMouseDownResizer($event, panesContainer)">
+    <div class="resizer-line"></div>
+  </div>
+</div>

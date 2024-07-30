@@ -1,0 +1,313 @@
+/**
+ * @license
+ * Copyright 2024 The Model Explorer Authors. All Rights Reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ==============================================================================
+ */
+
+*:not(mat-icon) {
+  /* stylelint-disable-next-line declaration-no-important -- override MDC */
+  font-family: 'Google Sans Text', Arial, Helvetica, sans-serif !important;
+  /* stylelint-disable-next-line declaration-no-important -- override MDC */
+  letter-spacing: normal !important;
+}
+
+.title-container {
+  position: relative;
+}
+
+.title {
+  font-size: 24px;
+  font-weight: 500;
+  margin-top: -30px;
+}
+
+.description {
+  line-height: 14px;
+  font-size: 12px;
+  color: #777;
+  margin-top: 6px;
+  margin-bottom: 4px;
+  font-weight: normal;
+}
+
+.btns-container {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+}
+
+.action-button {
+  height: 30px;
+  padding: 0 10px;
+  font-size: 13px;
+
+  mat-icon {
+    margin-right: 2px;
+  }
+}
+
+.import-rules-input {
+  display: none;
+}
+
+.dialog-content {
+  padding: 0;
+  box-sizing: border-box;
+  border-top: 1px solid #e6e6e6;
+  border-bottom: 1px solid #e6e6e6;
+  background-color: #f9f9f9;
+  overflow: hidden auto;
+
+  .no-rules-message {
+    padding: 12px 24px;
+    font-size: 12px;
+    color: #777;
+  }
+}
+
+.common-input {
+  padding: 0 4px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  height: 22px;
+  box-sizing: border-box;
+  outline: none;
+
+  &:focus {
+    border-color: #1a73e8;
+    outline: 1px solid #1a73e8;
+  }
+}
+
+.rules-table {
+  width: 100%;
+  font-size: 12px;
+
+  th:not(.action-btns),
+  td:not(.action-btns) {
+    border-right: 1px solid #e6e6e6;
+  }
+
+  tr td {
+    border-bottom: 1px solid #e6e6e6;
+  }
+
+  thead {
+    text-align: left;
+    height: 32px;
+    position: sticky;
+    top: 0;
+    background-color: #f1f1f1;
+    z-index: 100;
+
+    th {
+      font-weight: 500;
+      border-bottom: 1px solid #e6e6e6;
+
+      &.query {
+        padding-left: 24px;
+        width: 410px;
+
+        .query-header-container {
+          display: flex;
+          align-items: center;
+
+          .icon-container {
+            width: 16px;
+            height: 16px;
+            opacity: .6;
+            cursor: pointer;
+            margin-left: 4px;
+
+            &:hover {
+              opacity: 1;
+            }
+
+            mat-icon {
+              font-size: 16px;
+              width: 16px;
+              height: 16px;
+            }
+          }
+        }
+      }
+
+      &.target {
+        padding-left: 12px;
+      }
+
+      &.styles {
+        padding-left: 12px;
+        min-width: 254px;
+      }
+    }
+  }
+
+  tbody {
+    td {
+      padding-top: 8px;
+      padding-bottom: 8px;
+
+      &.query {
+        padding-left: 24px;
+        padding-right: 12px;
+        vertical-align: top;
+
+        .node-list-viewers-container {
+          display: flex;
+          gap: 12px;
+        }
+
+        .node-list-viewer-container {
+          display: flex;
+          flex-direction: column;
+          width: fit-content;
+          margin-top: 12px;
+
+          .label {
+            line-height: 18px;
+          }
+        }
+      }
+
+      &.target {
+        vertical-align: top;
+        padding-left: 12px;
+        padding-right: 12px;
+      }
+
+      &.styles {
+        padding-left: 12px;
+        padding-right: 18px;
+        vertical-align: top;
+
+        .styles-container {
+          display: flex;
+          flex-direction: column;
+          gap: 2px;
+        }
+      }
+
+      &.action-btns {
+        vertical-align: top;
+        padding-right: 12px;
+        width: 80px;
+
+        .action-buttons-container {
+          display: flex;
+          justify-content: flex-end;
+          gap: 2px;
+        }
+
+        .icon-container {
+          display: flex;
+          opacity: 0.6;
+          cursor: pointer;
+          margin-top: 2px;
+
+          &:hover {
+            opacity: 1;
+          }
+
+          mat-icon {
+            font-size: 16px;
+            width: 16px;
+            height: 16px;
+          }
+        }
+      }
+    }
+
+    .color-style-container {
+      display: flex;
+      align-items: center;
+
+      .style-name-container {
+        display: flex;
+        align-items: center;
+        cursor: pointer;
+        user-select: none;
+        width: 100px;
+
+        input {
+          cursor: pointer;
+        }
+      }
+
+      .color-picker-container {
+        display: flex;
+        align-items: center;
+        overflow: hidden;
+        border-radius: 4px;
+        border: 1px solid #ccc;
+        margin-left: 4px;
+        width: fit-content;
+        background-color: white;
+        box-sizing: border-box;
+        height: 24px;
+        position: relative;
+
+        &:focus-within {
+          border-color: #1a73e8;
+          outline: 1px solid #1a73e8;
+        }
+
+        label {
+          display: inline-block;
+          width: 16px;
+          height: 16px;
+          margin: 2px;
+          background-color: red;
+          border-radius: 4px;
+          cursor: pointer;
+          border: 1px solid #ddd;
+
+          input {
+            visibility: hidden;
+          }
+        }
+
+        input[type='text'] {
+          width: 100px;
+          border: none;
+          height: 100%;
+          background-color: transparent;
+          outline: none;
+        }
+      }
+
+      .number-editor-container {
+        display: flex;
+        align-items: center;
+        overflow: hidden;
+        margin-left: 4px;
+        width: fit-content;
+
+        input {
+          width: 80px;
+          height: 28px;
+          border: 1px solid #ccc;
+          border-radius: 4px;
+          background-color: transparent;
+          box-sizing: border-box;
+          padding: 0 4px;
+          outline: none;
+        }
+      }
+    }
+  }
+}

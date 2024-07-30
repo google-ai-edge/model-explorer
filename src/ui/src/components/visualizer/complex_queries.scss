@@ -1,0 +1,215 @@
+/**
+ * @license
+ * Copyright 2024 The Model Explorer Authors. All Rights Reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ==============================================================================
+ */
+
+.query-container {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 4px;
+  position: relative;
+  padding-right: 36px;
+
+  input {
+    height: 22px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-sizing: border-box;
+    padding: 0 4px;
+    outline: none;
+  }
+
+  input.regex {
+    flex-grow: 1;
+  }
+
+  .attrs-value-range-container {
+    display: flex;
+    align-items: center;
+    width: 240px;
+
+    .colon,
+    .to {
+      font-weight: 700;
+      margin: 0 2px;
+      height: 22px;
+    }
+
+    input {
+      min-width: 0;
+
+      &.attr-name {
+        flex-grow: 1;
+      }
+
+      &.min,
+      &.max {
+        width: 50px;
+      }
+    }
+  }
+
+  .node-type-selector {
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    outline: none;
+    height: 23px;
+    cursor: pointer;
+    box-sizing: border-box;
+    width: 160px;
+  }
+
+  .icon-container.delete {
+    display: flex;
+    position: absolute;
+    right: 0;
+    top: 4px;
+    cursor: pointer;
+    opacity: 0.6;
+
+    &:hover {
+      opacity: 1;
+    }
+
+    mat-icon {
+      font-size: 16px;
+      width: 16px;
+      height: 16px;
+    }
+  }
+}
+
+.targets-container {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+
+  .icon-container.match-type {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #ddd;
+    border-radius: 4px;
+    cursor: pointer;
+    padding: 4px;
+
+    &.selected {
+      background-color: #a3c9ff;
+    }
+
+    &.disabled {
+      cursor: default;
+    }
+
+    mat-icon {
+      font-size: 14px;
+      width: 14px;
+      height: 14px;
+      color: #333;
+    }
+  }
+}
+
+.btn-add-query {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  width: fit-content;
+  line-height: 16px;
+  opacity: 0.6;
+  white-space: nowrap;
+  margin-top: 2px;
+  user-select: none;
+  margin-left: 19px;
+
+  &:hover {
+    opacity: 1;
+  }
+
+  mat-icon {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+    margin-right: 2px;
+  }
+}
+
+::ng-deep .model-explorer-add-query-menu {
+  .menu-item {
+    /* stylelint-disable-next-line declaration-no-important -- override MDC */
+    letter-spacing: normal !important;
+    /* stylelint-disable-next-line declaration-no-important -- override MDC */
+    font-family: 'Google Sans Text', Arial, Helvetica, sans-serif !important;
+    font-size: 12px;
+    padding: 0 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+
+    .label {
+      margin-left: 6px;
+    }
+
+    &:hover {
+      background-color: #eee;
+    }
+  }
+}
+
+::ng-deep .model-explorer-regex-icon {
+  display: flex;
+  width: 16px;
+  height: 16px;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  user-select: none;
+  color: #aaa;
+
+  .r {
+    font-size: 12px;
+  }
+
+  .e {
+    font-size: 8px;
+    margin-top: 2px;
+  }
+}
+
+::ng-deep .model-explorer-attr-value-range-icon {
+  display: flex;
+  width: 16px;
+  height: 16px;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 700;
+  user-select: none;
+  color: #aaa;
+}
+
+::ng-deep .model-explorer-node-type-icon {
+  width: 16px;
+  height: 16px;
+
+  mat-icon {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+    color: #aaa;
+  }
+}

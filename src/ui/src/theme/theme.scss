@@ -1,0 +1,120 @@
+/**
+ * @license
+ * Copyright 2024 The Model Explorer Authors. All Rights Reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ==============================================================================
+ */
+
+@use 'sass:map';
+@use '@angular/material' as mat;
+
+$hue-undefined: 'undefined';
+$blue-palette: (
+  50: #e8f0fe,
+  100: #d2e3fc,
+  200: #aecbfa,
+  300: #8ab4f8,
+  400: #669df6,
+  500: #4285f4,
+  600: #1a73e8,
+  700: #1967d2,
+  800: #185abc,
+  900: #174ea6,
+  A100: $hue-undefined,
+  A200: $hue-undefined,
+  A400: $hue-undefined,
+  A700: $hue-undefined,
+  contrast: (
+    50: #174ea6,
+    100: #174ea6,
+    200: #174ea6,
+    300: #174ea6,
+    400: #174ea6,
+    500: white,
+    600: white,
+    700: white,
+    800: white,
+    900: white,
+    A100: $hue-undefined,
+    A200: $hue-undefined,
+    A400: $hue-undefined,
+    A700: $hue-undefined,
+  ),
+);
+
+// Angular Material theme file.
+// See https://material.angular.io/guide/theming for more details.
+
+/// Mixin that applies this application's Angular Material theme.
+/// This mixin should be applied as part of your application's
+/// global styles.
+@mixin light-mode() {
+  // The `mat.core` mixin applies common styles used by multiple
+  // components, such ripples, overlays, high contrast mode, etc.
+  @include mat.core();
+
+  // Define the application's color palettes.
+  $primary: mat.m2-define-palette($blue-palette, 600);
+  $accent: mat.m2-define-palette($blue-palette, 600);
+
+  // Create a typography config
+  $typography-config: mat.m2-define-typography-config();
+
+  // Create a theme definition that specifies color palettes,
+  // typography config, and default density level.
+  $theme: mat.m2-define-light-theme(
+    (
+      color: (
+        primary: $primary,
+        accent: $accent,
+      ),
+      typography: $typography-config,
+      density: 0,
+    )
+  );
+  $color-palette: map.get($theme, 'color');
+  $background-colors: map.get($color-palette, 'background');
+  $foreground-colors: map.get($color-palette, 'foreground');
+
+  // Include theme-specific styles for "core" features like ripples and elevation.
+  @include mat.core-theme($theme);
+
+  // Include the optional typography hierachy CSS classes.
+  // See go/mat-typography-hierarchy-classes for a list of the emitted classes.
+  @include mat.typography-hierarchy($typography-config);
+
+  // Include theme styles for each component used in the application.
+  @include mat.autocomplete-theme($theme);
+  @include mat.button-theme($theme);
+  @include mat.card-theme($theme);
+  @include mat.checkbox-theme($theme);
+  @include mat.dialog-theme($theme);
+  @include mat.form-field-theme($theme);
+  @include mat.icon-button-theme($theme);
+  @include mat.icon-theme($theme);
+  @include mat.list-theme($theme);
+  @include mat.menu-theme($theme);
+  @include mat.progress-spinner-theme($theme);
+  @include mat.select-theme($theme);
+  @include mat.sidenav-theme($theme);
+  @include mat.slide-toggle-theme($theme);
+  @include mat.snack-bar-theme($theme);
+  @include mat.tooltip-theme($theme);
+  @include mat.tree-theme($theme);
+
+  body {
+    @include mat.m2-typography-level($typography-config, body-1);
+    background-color: map.get($background-colors, 'background');
+  }
+}

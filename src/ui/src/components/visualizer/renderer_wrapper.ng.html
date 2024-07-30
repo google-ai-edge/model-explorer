@@ -1,0 +1,199 @@
+<!--
+@license
+Copyright 2024 The Model Explorer Authors. All Rights Reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+==============================================================================
+-->
+
+<div class="container">
+  <webgl-renderer 
+      #webglRenderer
+      [modelGraph]="modelGraph"
+      [rendererId]="rendererId"
+      [paneId]="paneId"
+      [rootNodeId]="rootNodeId"
+      [inPopup]="inPopup"
+      (openInPopupClicked)="handleOpenOnPopupClicked($event)">
+  </webgl-renderer>
+
+  @if (showToolBar) {
+    <div class="toolbar" [class.in-popup]="inPopup"
+        [class.pushed-down]="showSubgraphBreadcrumbs">
+      <!-- Search -->
+      <ng-container *ngIf="showSearchBar">
+        <search-bar
+            [curModelGraph]="modelGraph"
+            [rendererId]="rendererId">
+        </search-bar>
+        <div class="vertical-divider"></div>
+      </ng-container>
+
+      <!-- View -->
+      <view-on-node
+          [rendererId]="rendererId"
+          [paneId]="paneId"
+          [inPopup]="inPopup">
+      </view-on-node>
+      <div class="vertical-divider"></div>
+
+      <!-- Zoom to fit -->
+      <div class="mat-icon-container zoom-fit"
+          [bubble]="helpZoomToFit"
+          [overlaySize]="helpPopupSize"
+          [hoverDelayMs]="10"
+          (click)="handleClickZoomFitIcon()">
+        <mat-icon class="toolbar-icon">fit_screen</mat-icon>
+      </div>
+      <div class="vertical-divider"></div>
+      <ng-template #helpZoomToFit>
+        <div class="model-explorer-help-popup">
+          Zoom to fit
+          <div class="shortcut">
+            <mat-icon>keyboard</mat-icon>
+            Shortcut: SPACE
+          </div>
+        </div>
+      </ng-template>
+
+      <!-- Expand/collapse all -->
+      @if (showExpandCollapseAllLayers) {
+        <div class="mat-icon-container expand-all"
+            [bubble]="helpExpandAll"
+            [overlaySize]="helpPopupSize"
+            [hoverDelayMs]="10"
+            [class.disable]="disableExpandCollapseAllButton"
+            (click)="handleClickExpandAllLayers()">
+          <mat-icon class="toolbar-icon expand-all">unfold_more_double</mat-icon>
+        </div>
+        <ng-template #helpExpandAll>
+          <div class="model-explorer-help-popup">
+            Expand all layers in the graph
+          </div>
+        </ng-template>
+        <div class="mat-icon-container collapse-all"
+            [bubble]="helpCollapseAll"
+            [overlaySize]="helpPopupSize"
+            [hoverDelayMs]="10"
+            [class.disable]="disableExpandCollapseAllButton"
+            (click)="handleClickCollapseAllLayers()">
+          <mat-icon class="toolbar-icon collapse-all">unfold_less_double</mat-icon>
+        </div>
+        <ng-template #helpCollapseAll>
+          <div class="model-explorer-help-popup">
+            Collapse all layers in the graph
+          </div>
+        </ng-template>
+        <div class="vertical-divider"></div>
+      }
+
+      <!-- Flatten all layers -->
+      @if (showFlattenLayers) {
+        <div class="mat-icon-container flatten-layers"
+            [bubble]="helpFlattenLayers"
+            [overlaySize]="helpPopupSize"
+            [hoverDelayMs]="10"
+            [class.enabled]="flattenAllLayers()"
+            (click)="handleClickFlattenAllLayers()">
+          <mat-icon class="toolbar-icon flatten-layers">layers_clear</mat-icon>
+        </div>
+        <div class="vertical-divider"></div>
+        <ng-template #helpFlattenLayers>
+          <div class="model-explorer-help-popup">
+            Flatten all layers in the graph
+            <div class="description">
+              Nodes will be laid out without any layers data 
+            </div>
+          </div>
+        </ng-template>
+      }
+
+      <!-- Trace IO -->
+      <div class="mat-icon-container trace-io"
+          [bubble]="helpTraceIO"
+          [overlaySize]="helpPopupSize"
+          [hoverDelayMs]="10"
+          [class.enabled]="tracing"
+          (click)="handleClickTrace()">
+        <mat-icon class="toolbar-icon trace">
+          multiple_stop
+        </mat-icon>
+      </div>
+      <ng-template #helpTraceIO>
+        <div class="model-explorer-help-popup">
+          @if (tracing) {
+            <span>Disable inputs/outputs tracing</span>
+          } @else {
+            <span>Enable inputs/outputs tracing</span>
+          }
+          <div class="description">
+            Highlight selected op node's ancestors and descendants and dim the rest
+          </div>
+        </div>
+      </ng-template>
+
+      <!-- Download png -->
+      @if (showDownloadPng) {
+        <div class="vertical-divider"></div>
+        <div class="mat-icon-container download-png"
+            [bubble]="helpDownloadPng"
+            [overlaySize]="helpPopupSize"
+            [hoverDelayMs]="10"
+            [bubbleDisabled]="disableDownloadPngHelpPopup"
+            [matMenuTriggerFor]="menu"
+            (menuOpened)="disableDownloadPngHelpPopup=true"
+            (menuClosed)="disableDownloadPngHelpPopup=false">
+          <mat-icon class="toolbar-icon download-png">
+            image
+          </mat-icon>
+        </div>
+        <ng-template #helpDownloadPng>
+          <div class="model-explorer-help-popup">
+            Download graph as PNG
+            <div class="description">
+              The maximum PNG size is limited to 5000 x 5000
+            </div>
+          </div>
+        </ng-template>
+        <mat-menu #menu="matMenu" class="model-explorer-download-png-menu">
+          <div class="menu-item"
+              (click)="handleClickDownloadAsPng(false)">
+            Graph in current viewport
+          </div>
+          <div class="menu-item"
+              (click)="handleClickDownloadAsPng(true)">
+            Full graph
+          </div>
+          <div class="transparent-background-toggle"
+              (click)="handleClickToggleTransparentPngBackground($event)">
+            <input type="checkbox" [formControl]="transparentPngBackground">
+            Transparent background
+          </div>
+        </mat-menu>
+      }
+
+      <!-- Snapshot -->
+      <ng-container *ngIf="showSnapshotManager">
+        <div class="vertical-divider"></div>
+        <snapshot-manager
+            [rendererId]="rendererId"
+            [paneId]="paneId">
+        </snapshot-manager>
+      </ng-container>
+    </div>
+  }
+
+  <!-- subgraph breadcrumbs -->
+  <subgraph-breadcrumbs [paneId]="paneId" *ngIf="showSubgraphBreadcrumbs">
+  </subgraph-breadcrumbs>
+</div>

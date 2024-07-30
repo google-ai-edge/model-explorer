@@ -1,0 +1,243 @@
+<!--
+@license
+Copyright 2024 The Model Explorer Authors. All Rights Reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+==============================================================================
+-->
+
+<div class="container">
+  <div class="content"
+      [class.no-models]="modelItems.length === 0">
+    <div class="title">
+      Select Models
+    </div>
+
+    <div class="description-container">
+      <div class="description">
+        Select models from your comupter or enter the file paths directly (up to 10 in total).<br>
+        Supported model formats:
+        <a href="https://www.tensorflow.org/" target="_blank">TF</a> (.pb, .pbtxt, .graphdef),
+        <a href="https://www.tensorflow.org/lite" target="_blank">TFLite</a> (.tflite),
+        <a href="https://www.tensorflow.org/js" target="_blank">TFJS</a> (.json),
+        <a href="https://www.tensorflow.org/guide/jax2tf" target="_blank">JAX</a> (.pb),
+        <a href="https://github.com/google-ai-edge/model-explorer/wiki/2.-User-Guide#how-to-select-pytorch-models" target="_blank">PyTorch ExportedProgram</a> (.pt2),
+        <span class="help-trigger external"
+            [bubble]="externalMlirHelp"
+            [overlaySize]="modelFormatHelpPopupSize"
+            [hoverDelayMs]="50">
+          MLIR
+        </span> (.mlir, .mlirbc).
+      </div>
+    </div>
+
+    <div class="source-input-container" [class.reverse]="isExternal">
+      <!-- User entered model paths -->
+      <div class="input-container">
+        <mat-autocomplete #auto="matAutocomplete"
+            class="model-path-autocomplete"
+            (optionSelected)="handleAutocompleteOptionSelected($event)">
+          @for (option of filteredModelInputAutocompleteOptions; track option; let i = $index) {
+            <mat-option [value]="option">
+              <div class="option-container">
+                {{option}}
+                <div class="icons-container">
+                  <div class="mat-icon-container"
+                      (click)="handleEditAutocompleteModelPath($event, i)">
+                    <mat-icon>edit</mat-icon>
+                  </div>
+                  <div class="mat-icon-container"
+                      (click)="handleClickDeleteAutocompleteModelPath($event, i)">
+                    <mat-icon>delete</mat-icon>
+                  </div>
+                </div>
+              </div>
+            </mat-option>
+          }
+        </mat-autocomplete>
+        <input [placeholder]="modelPathInputPlaceholder"
+            #modelPathInput
+            [formControl]="curFilePath"
+            [matAutocomplete]="auto"
+            (keydown.enter)="!disableAddEnteredModelPathButton && handleClickAddEnteredModelPath()">
+        <button class="btn-add-model-path" mat-raised-button
+            [disabled]="disableAddEnteredModelPathButton || loading()"
+            (click)="handleClickAddEnteredModelPath()">
+          Add
+        </button>
+      </div>
+
+      <!-- Or -->
+      <div class="or-label">or</div>
+
+      <!-- Upload button -->
+      <button
+          mat-flat-button
+          class="btn-upload"
+          (click)="uploadInput.click()"
+          [disabled]="hasReachedMaxModelsCount || loading()">
+        Select from your computer
+      </button>
+      <input class="upload-input" type="file" multiple #uploadInput
+          (change)="handleClickUpload(uploadInput)">
+    </div>
+
+    <!-- Warning message when maximum models count has been reached. -->
+    @if (hasReachedMaxModelsCount) {
+      <div class="model-count-warning">
+        You have selected maximum number of models
+      </div>
+    }
+
+    <!-- Models table -->
+    @if (modelItems.length > 0) {
+      <div class="models-table">
+        <table>
+          <thead>
+            <tr>
+              <th class="model-name-col">Model name</th>
+              <th>Status</th>
+              <th>
+                <div class="adapter-header">
+                  Adapter
+                  <div class="icon-container"
+                      [bubble]="adapterHelp"
+                      [overlayPositions]="adapterHelpPopupPosition"
+                      [hoverDelayMs]="100">
+                    <mat-icon fontSet='google-material-icons'>help_outline</mat-icon>
+                  </div>
+                </div>
+              </th>
+              <th>Delete</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let item of modelItems; trackBy: trackByModelData; let i = index">
+              <!-- Model name -->
+              <td>
+                <div class="model-name-container"
+                    [class.disabled]="!hasSupportedAdapter(item)">
+                  <mat-checkbox #checkbox
+                      [checked]="item.selected"
+                      [disabled]="!hasSupportedAdapter(item) || loading()"
+                      (change)="handleModelSelectionChanged(item, $event.checked)">
+                  </mat-checkbox>
+                  <div class="model-path"
+                      [class.disabled]="!hasSupportedAdapter(item) || loading()"
+                      (click)="handleModelSelectionChanged(item, !checkbox.checked)">
+                    {{item.path}}
+                  </div>
+                </div>
+              </td>
+
+              <!-- Status -->
+              <td>
+                <div class="model-status-container">
+                  @if (showSpinner(item)) {
+                    <mat-spinner color="primary" diameter="16">
+                    </mat-spinner>
+                  }
+                  <div class="model-status-label-container"
+                      [class.done]="item.status() === ModelItemStatus.DONE"
+                      [class.error]="hasError(item)">
+                    {{getModelItemStatusString(item)}}
+                  </div>
+                  @if (hasError(item)) {
+                    <div class="error-info-container"
+                        [bubble]="errorInfo"
+                        [overlaySize]="errorInfoPopupSize"
+                        [hoverDelayMs]="50">
+                      <mat-icon>info</mat-icon>
+                    </div>
+                    <ng-template #errorInfo>
+                      <div class="model-explorer-error-info-popup">
+                        {{item.errorMessage}}
+                      </div>
+                    </ng-template>
+                  }
+                </div>
+              </td>
+
+              <!-- Adapter -->
+              <td>
+                @if (hasSupportedAdapter(item)) {
+                  <div class="selected-adapter-container" #selector
+                      [class.disabled]="loading()"
+                      (click)="handleClickOpenAdapterDropdown(item, selector)">
+                    <div class="selected-adapter-label">
+                      {{getSelectedAdapterName(item)}}
+                    </div>
+                    <mat-icon>arrow_drop_down</mat-icon>
+                  </div>
+                } @else {
+                  <div class="no-supported-adapter-msg">
+                    No supported adapter
+                  </div>
+                }
+              </td>
+
+              <!-- Delete -->
+              <td>
+                <button mat-icon-button class="btn-delete-model-item"
+                    [disabled]="loading()"
+                    (click)="handleDeleteModel(i)">
+                  <mat-icon>delete</mat-icon>
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    }
+  </div>
+
+  <!-- Action bar below the table -->
+  @if (modelItems.length > 0) {
+    <div class="table-action-bar">
+      <div class="selection-status" [class.hide]="selectedModelsCount === 0">
+        <button mat-icon-button class="btn-deselect-all"
+          [disabled]="loading()"
+          (click)="handleDeselectAllModels()">
+          <mat-icon>close</mat-icon>
+        </button>
+        {{selectedModelsCount}} selected
+      </div>
+      <button mat-flat-button class="btn-view-models" color="primary"
+          (click)="handleClickViewSelectedModels()"
+          [disabled]="selectedModelsCount === 0 || loading()">
+        View selected models
+      </button>
+    </div>
+  }
+</div>
+
+<ng-template #externalMlirHelp>
+  <div class="model-explorer-model-format-help-popup">
+    <div>
+      Support TF, TFL and StableHLO dialect.
+    </div>
+  </div>
+</ng-template>
+
+<ng-template #adapterHelp>
+  <div class="model-explorer-adapter-help-popup">
+    <span class="bold">Adapters</span> transform model files into an intermediate format
+    that Model Explorer can understand and visualize. For certain model types, multiple
+    adapters may exist, offering different transformation approaches. 
+    The "default" adapter should cover the majority of common scenarios.
+    <br>
+    <br>
+    You can also create your own <span class="bold">adapter extensions</span> to add
+    support for more model formats. See <a href="https://github.com/google-ai-edge/model-explorer/wiki/6.-Develop-Adapter-Extension" target="_blank">this guide</a> for instructions.
+  </div>
+</ng-template>

@@ -1,0 +1,74 @@
+<!--
+@license
+Copyright 2024 The Model Explorer Authors. All Rights Reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+==============================================================================
+-->
+
+<div class="container" #container
+    [style.background-color]="bgColor"
+    [style.color]="textColor"
+    [class.has-bg-color]="hasBgColor"
+    [class.has-overflow]="hasOverflow"
+    [class.expanded]="expanded"
+    (click)="handleToggleExpand($event, true)">
+  <div class="expanded-text">
+    @if (type === 'values') {
+      @if (getMaxConstValueCount() > 0) {
+        <div class="info-msg">
+          Showing at most
+          <span class="underline"
+              matTooltip="configurable in Settings in homepage"
+              [matTooltipShowDelay]="300"
+              matTooltipPosition='above'>
+            {{getMaxConstValueCount()}} elements
+          </span>
+        </div>
+      } @else if (getMaxConstValueCount() < 0) {
+        <div class="info-msg">
+          Showing
+          <span class="underline"
+              matTooltip="configurable in Settings in homepage"
+              [matTooltipShowDelay]="300"
+              matTooltipPosition='above'>
+            all elements
+          </span>
+        </div>
+      }
+      <div class="monospace-content">{{text}}</div>
+    } @else if (type === 'namespace') {
+      <div class="info-msg">
+        Namespace hierarchy
+      </div>
+      <div class="namespace-content">
+        @for(ns of namespaceComponents; let i = $index; track $index) {
+          <div class="namespace-row">
+            <div class="index">{{i}}</div>
+            <div class="namespace">{{ns}}</div>
+          </div>
+        }
+      </div>
+    } @else if (type === 'quantization') {
+      <div class="monospace-content">{{formatQuantization}}</div>
+    } @else {
+      {{text}}
+    }
+  </div>
+  <div class="one-line-text" #oneLineText>
+    {{text}}
+  </div>
+  <div class="icon-container toggle" (click)="handleToggleExpand($event)">
+    <mat-icon>{{iconName}}</mat-icon>
+  </div>
+</div>

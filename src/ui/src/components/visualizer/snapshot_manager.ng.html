@@ -1,0 +1,75 @@
+<!--
+@license
+Copyright 2024 The Model Explorer Authors. All Rights Reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+==============================================================================
+-->
+
+<div class="container">
+  <!-- The button to take snapshot -->
+  <div class="mat-icon-container take-snapshot"
+      [bubble]="help"
+      [overlaySize]="helpPopupSize"
+      [hoverDelayMs]="10"
+      [class.disabled]="disableAddSnapshotButton"
+      (click)="handleClickAddSnapshot()">
+    <mat-icon class="toolbar-icon">bookmark_add</mat-icon>
+  </div>
+
+  <ng-template #help>
+    <div class="model-explorer-help-popup">
+      @if (disableAddSnapshotButton) {
+        Maximum state count reached
+      } @else {
+        Save the current graph state
+      }
+      <div class="description">
+        The saved state can be restored by clicking the corresponding state number.
+        You can save up to 9 states.
+      </div>
+    </div>
+  </ng-template>
+
+  <!-- Snapshots list -->
+  <div class="snapshots-container" *ngIf="hasSnapshots">
+    <div class="snapshot"
+        *ngFor="let snapshot of curSnapshots; let i = index; trackBy: trackBySnapshotId;"
+        [bubble]="snapshotPopup"
+        #dialog="bubble"
+        #trigger
+        [overlaySize]="snapshotPopupSize"
+        [overlayPositions]="snapshotPopupPosition"
+        [hoverDelayMs]="150"
+        (opened)="handleSnapshotPopupOpened(snapshot)"
+        (click)="handleClickSnapshot(i)">
+      {{i+1}}
+      <ng-template #snapshotPopup>
+        <div class="model-explorer-snapshot-popup">
+          <div class="info-row">
+            <div>Shortcut key: {{i+1}}</div>
+            <div class="icon-container delete"
+                (click)="handleClickDeleteSnapshot(i)">
+              <mat-icon>delete</mat-icon>
+              Delete
+            </div>
+          </div>
+          <canvas
+              [style.width.px]="getSnapshotCanvasWidth(snapshot, true)"
+              [style.height.px]="getSnapshotCanvasHeight(snapshot, true)">
+          </canvas>
+        </div>
+      </ng-template>
+    </div>
+  </div>
+</div>

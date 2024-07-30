@@ -1,0 +1,222 @@
+/**
+ * @license
+ * Copyright 2024 The Model Explorer Authors. All Rights Reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ==============================================================================
+ */
+
+.container {
+  flex-grow: 1;
+  display: flex;
+  position: relative;
+  width: 100%;
+  height: 100%;
+
+  .pane-container {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+
+    .pane-title-container {
+      height: 24px;
+      box-sizing: border-box;
+      background-color: #eee;
+      padding: 0 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 12px;
+      color: #999;
+      cursor: pointer;
+      flex-shrink: 0;
+
+      .buttons-container {
+        display: flex;
+        align-items: center;
+      }
+
+      .icon-container {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        color: #999;
+        opacity: 0.8;
+        margin-left: 6px;
+
+        &:hover {
+          opacity: 1;
+        }
+
+        mat-icon {
+          font-size: 18px;
+          height: 18px;
+          width: 18px;
+        }
+      }
+    }
+
+    split-pane {
+      width: 100%;
+      flex-grow: 1;
+      display: flex;
+      overflow: hidden;
+    }
+
+    &.selected {
+      mat-icon {
+        color: white;
+      }
+
+      .pane-title-container {
+        background-color: #ea8600;
+        color: white;
+      }
+    }
+
+    .loading {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 150;
+      color: #999;
+      background-color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+
+      .processing-msg-container {
+        display: flex;
+        align-items: center;
+
+        mat-spinner {
+          margin-right: 8px;
+        }
+      }
+
+      .progress-bar-wrapper {
+        display: flex;
+        align-items: center;
+        margin-top: 18px;
+        margin-right: -30px;
+
+        .icon-container {
+          cursor: pointer;
+          opacity: 0.8;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+
+          &:hover {
+            opacity: 1;
+          }
+
+          mat-icon {
+            color: #ccc;
+            font-size: 18px;
+            width: 18px;
+            height: 18px;
+            margin-left: 6px;
+          }
+        }
+      }
+
+      .progress-bar-container {
+        height: 7px;
+        width: 280px;
+        border: 1px solid #ccc;
+        border-radius: 99px;
+        box-sizing: border-box;
+        overflow: hidden;
+
+        .progress-bar-body {
+          height: 100%;
+          transition: width 100ms;
+          background-color: #ccc;
+        }
+      }
+
+      .stay-on-page-info {
+        font-size: 12px;
+        width: 100%;
+        display: flex;
+        justify-content: center;
+        margin-top: 4px;
+      }
+
+      .error-msg {
+        font-size: 13px;
+        padding: 16px;
+        color: #a00;
+      }
+    }
+  }
+
+  .resizer {
+    height: 100%;
+    width: 10px;
+    top: 0;
+    left: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: absolute;
+    padding-left: 1px;
+    cursor: ew-resize;
+    z-index: 200;
+
+    &:hover {
+      background-color: rgba(0, 0, 0, 0.04);
+
+      .resizer-line {
+        border-color: #fcc986;
+      }
+    }
+
+    .resizer-line {
+      height: 100%;
+      width: 1px;
+      border-left: 1px solid #999;
+    }
+  }
+}
+
+::ng-deep .model-explorer-processing-tasks-container {
+  display: flex;
+  flex-direction: column;
+  padding: 12px;
+
+  .processing-task-container {
+    display: flex;
+    align-items: center;
+    font-size: 13px;
+    margin: 2px 0;
+
+    mat-spinner {
+      margin-right: 8px;
+      width: 16px;
+    }
+
+    mat-icon {
+      color: #0a0;
+      font-size: 16px;
+      width: 16px;
+      height: 16px;
+      margin-right: 8px;
+    }
+  }
+}

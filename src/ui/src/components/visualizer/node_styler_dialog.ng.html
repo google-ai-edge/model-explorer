@@ -1,0 +1,204 @@
+<!--
+@license
+Copyright 2024 The Model Explorer Authors. All Rights Reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+==============================================================================
+-->
+
+<div mat-dialog-title
+    cdkDrag
+    cdkDragRootElement=".cdk-overlay-pane"
+    cdkDragHandle
+    class="title-container">
+  <!-- title -->
+  <div class="title">Node styler</div>
+  <div class="description">
+    Use the buttons below to apply styling rules to this graph
+  </div>
+</div>
+
+<div mat-dialog-content class="dialog-content">
+  @if (hasRules()) {
+    <!-- Table for showing all the rules. -->
+    <table border="0" cellspacing="0" cellpadding="0" class="rules-table">
+      <thead>
+        <th class="query">
+          <div class="query-header-container">
+            Queries to match nodes
+            <div class="icon-container"
+                [bubble]="helpQuery"
+                [overlaySize]="helpPopupSize"
+                [hoverDelayMs]="10">
+              <mat-icon>help_outline</mat-icon>
+            </div>
+            <ng-template #helpQuery>
+              <div class="model-explorer-help-popup">
+                Rules use your defined queries to match nodes for styling. All queries within a
+                rule are connected with <span class="bold">AND</span> logic.
+              </div>
+            </ng-template>
+          </div>
+        </th>
+        <th class="styles">Styles to apply</th>
+        <th class="action-btns"></th>
+      </thead>
+      <tbody>
+        @for (rule of rules(); track rule; let ruleIndex = $index; let first = $first; let last = $last) {
+          <tr>
+            <!-- Query -->
+            <td class="query">
+              <complex-queries
+                  [queries]="rule.queries"
+                  (queriesUpdated)="handleQueriesUpdated(ruleIndex, $event)">
+              </complex-queries>
+
+              <div class="node-list-viewers-container">
+                @if (panesCount === 1) {
+                  <div class="node-list-viewer-container">
+                    <node-list-viewer
+                        [nodes]="getMatchedNodes(ruleIndex, 0)"
+                        [rendererId]="leftPaneRendererId"
+                        labelSuffix="matched node">
+                    </node-list-viewer>
+                  </div>
+                } @else if (panesCount === 2) {
+                  <div class="node-list-viewer-container">
+                    <div class="label">Left pane</div>
+                    <node-list-viewer
+                        [nodes]="getMatchedNodes(ruleIndex, 0)"
+                        [rendererId]="leftPaneRendererId"
+                        labelSuffix="matched node">
+                    </node-list-viewer>
+                  </div>
+                  <div class="node-list-viewer-container">
+                    <div class="label">Right pane</div>
+                    <node-list-viewer
+                        [nodes]="getMatchedNodes(ruleIndex, 1)"
+                        [rendererId]="rightPaneRendererId"
+                        labelSuffix="matched node">
+                    </node-list-viewer>
+                  </div>
+                }
+              </div>
+            </td>
+
+            <!-- Styles for matched nodes -->
+            <td class="styles">
+              <div class="styles-container">
+                @for (style of allStyles; track style.id) {
+                  <div class="color-style-container">
+                    <div class="style-name-container">
+                      <input type="checkbox" [checked]="getIsStyleEnabled(rule, style)" #cb
+                          (change)="handleToggleStyle(ruleIndex, style, cb.checked)">
+                      <div (click)="handleToggleStyle(ruleIndex, style)">
+                        {{style.label}}
+                      </div>
+                    </div>
+                  @switch (style.type) {
+                    @case (StyleType.COLOR) {
+                      @if (getIsStyleEnabled(rule, style)) {
+                        <div class="color-picker-container">
+                          <label [style.background-color]="getSerializedStyleValue(rule, style)">
+                            <input type="color" [value]="getSerializedStyleValue(rule, style)"
+                                #colorPicker
+                                (change)="handleStyleColorChanged(ruleIndex, style, colorPicker.value)">
+                          </label>
+                          <input type="text" [value]="getSerializedStyleValue(rule, style)"
+                              #colorInput
+                              (change)="handleStyleColorChanged(ruleIndex, style, colorInput.value)">
+                        </div>
+                      }
+                    }
+                    @case (StyleType.NUMBER) {
+                      @if (getIsStyleEnabled(rule, style)) {
+                        <div class="number-editor-container">
+                          <input [value]="getSerializedStyleValue(rule, style)"
+                              #numberInput
+                              (change)="handleStyleColorChanged(ruleIndex, style, numberInput.value)">
+                        </div>
+                      }
+                    }
+                  }
+                  </div>
+                }
+              </div>
+            </td>
+
+            <!-- Action buttons -->
+            <td class="action-btns">
+              <div class="action-buttons-container">
+                @if (!first) {
+                  <div class="icon-container move-up" (click)="handleMoveUpRule(ruleIndex)"
+                      matTooltip="Move up">
+                    <mat-icon>arrow_upward_alt</mat-icon>
+                  </div>
+                }
+                @if (!last) {
+                  <div class="icon-container move-down" (click)="handleMoveDownRule(ruleIndex)"
+                      matTooltip="Move down">
+                    <mat-icon>arrow_downward_alt</mat-icon>
+                  </div>
+                }
+                <div class="icon-container duplicate-rule" (click)="handleDuplicateRule(ruleIndex)"
+                    matTooltip="Duplicate rule">
+                  <mat-icon>content_copy</mat-icon>
+                </div>
+                <div class="icon-container delete-rule" (click)="handleDeleteRule(ruleIndex)"
+                    matTooltip="Delete rule">
+                  <mat-icon>delete</mat-icon>
+                </div>
+              </div>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  }
+  @else {
+    <div class="no-rules-message">
+      No rules configured. Click the "Add rule" button below to get started.
+    </div>
+  }
+</div>
+<div mat-dialog-actions class="btns-container">
+  <div class="left-btns">
+    <!-- Add rule button -->
+    <button mat-flat-button color="primary" class="action-button add-rule"
+        (click)="handleClickAddRule()">
+      <mat-icon>add</mat-icon>
+      Add rule
+    </button>
+
+    <!-- Import rules button -->
+    <button mat-flat-button color="primary" class="action-button load-rules"
+        (click)="input.click()">
+      <mat-icon>file_upload</mat-icon>
+      Import rules
+    </button>
+
+    <!-- Export rules button -->
+    <button mat-flat-button color="primary" class="action-button save-rules"
+        (click)="handleClickExportRules()">
+      <mat-icon>file_download</mat-icon>
+      Export rules
+    </button>
+
+    <input class="import-rules-input"
+            type="file" #input
+            accept="application/JSON"
+            (change)="handleClickImportRules(input)">
+  </div>
+
+  <button mat-button mat-dialog-close class="close">Done</button>
+</div>

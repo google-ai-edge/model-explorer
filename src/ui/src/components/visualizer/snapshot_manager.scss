@@ -1,0 +1,124 @@
+/**
+ * @license
+ * Copyright 2024 The Model Explorer Authors. All Rights Reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ==============================================================================
+ */
+
+.container {
+  display: flex;
+  align-items: center;
+  margin-right: 3px;
+
+  .mat-icon-container {
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+
+    &.disabled {
+      cursor: default;
+      opacity: 0.5;
+
+      mat-icon:hover {
+        opacity: 0.6;
+      }
+    }
+  }
+
+  mat-icon.toolbar-icon {
+    font-size: 20px;
+    width: 20px;
+    height: 20px;
+    opacity: 0.6;
+
+    &:hover {
+      opacity: 0.9;
+    }
+  }
+
+  .snapshots-container {
+    display: flex;
+    align-items: center;
+    font-size: 11px;
+    margin-left: 6px;
+    margin-right: 6px;
+    gap: 2px;
+
+    .snapshot {
+      width: 16px;
+      height: 16px;
+      border-radius: 8px;
+      background-color: #7cacf8;
+      color: white;
+      box-sizing: border-box;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 500;
+      cursor: pointer;
+
+      &:hover,
+      &.clicked {
+        background-color: #0b57d0;
+        color: white;
+      }
+    }
+  }
+}
+
+::ng-deep .model-explorer-snapshot-popup {
+  font-size: 11px;
+  line-height: 12px;
+  background-color: white;
+
+  .info-row {
+    color: #333;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background-color: #f6f6f6;
+    padding: 4px 8px;
+    border-bottom: 1px solid #ddd;
+
+    .icon-container {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      opacity: 0.8;
+
+      &:hover {
+        opacity: 1;
+      }
+
+      mat-icon {
+        font-size: 18px;
+        width: 18px;
+        height: 19px;
+      }
+    }
+  }
+
+  canvas {
+    opacity: 0;
+    transition: opacity 200ms ease-out;
+
+    &.show {
+      opacity: 1;
+    }
+  }
+}

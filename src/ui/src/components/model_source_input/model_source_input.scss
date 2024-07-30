@@ -1,0 +1,579 @@
+/**
+ * @license
+ * Copyright 2024 The Model Explorer Authors. All Rights Reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ==============================================================================
+ */
+
+$table_border_color: #c4c7c5;
+$warning_text_color: #ab6c17;
+$warning_bg_color: #ffefd9;
+
+.container {
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  display: flex;
+  align-items: flex-start;
+  flex-direction: column;
+  border: 1px solid #dadce0;
+  border-radius: 8px;
+  overflow: hidden;
+
+  .content {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 24px;
+    padding-bottom: 0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+
+    &.no-models {
+      padding-bottom: 24px;
+    }
+  }
+
+  .title {
+    color: #1f1f1f;
+    font-size: 24px;
+  }
+
+  .description-container {
+    color: #444746;
+    font-size: 14px;
+    margin-top: 8px;
+
+    .description {
+      line-height: 20px;
+
+      .tfhub {
+        display: inline-block;
+        text-decoration: underline;
+        text-decoration-color: #aaa;
+        cursor: help;
+      }
+
+      .help-trigger {
+        display: inline-block;
+        margin-right: 6px;
+        text-decoration: underline;
+        text-decoration-color: #aaa;
+        cursor: help;
+
+        &.external {
+          margin-right: 0;
+        }
+      }
+
+      a {
+        color: inherit;
+      }
+    }
+  }
+
+  .source-input-container {
+    display: flex;
+    height: 56px;
+    box-sizing: border-box;
+    width: 100%;
+    margin-top: 8px;
+    padding: 8px 0;
+    align-items: center;
+    flex-shrink: 0;
+
+    &.reverse {
+      flex-direction: row-reverse;
+    }
+
+    .input-container {
+      height: 100%;
+      box-sizing: border-box;
+      background-color: #f0f4f9;
+      border-radius: 99px;
+      flex-grow: 1;
+      display: flex;
+      align-items: center;
+      padding-left: 18px;
+
+      input {
+        height: 100%;
+        flex-grow: 1;
+        border: none;
+        outline: none;
+        background-color: transparent;
+        color: #444746;
+        font-size: 14px;
+        margin-right: 16px;
+      }
+
+      .btn-add-model-path {
+        background-color: white;
+        border-radius: 99px;
+        color: #0b57d0;
+        height: 40px;
+
+        &[disabled] {
+          background-color: rgba(31, 31, 31, 0.12);
+          color: rgba(31, 31, 31, 0.38);
+        }
+      }
+    }
+
+    .or-label {
+      font-size: 14px;
+      margin: 0 20px;
+      color: #5f6368;
+    }
+
+    .btn-upload {
+      height: 100%;
+      background-color: #c2e7ff;
+      border-radius: 99px;
+      color: #001d35;
+
+      &[disabled] {
+        background-color: rgba(31, 31, 31, 0.12);
+        color: rgba(31, 31, 31, 0.38);
+      }
+    }
+
+    .upload-input {
+      display: none;
+    }
+  }
+
+  .model-count-warning {
+    color: $warning_text_color;
+    background-color: $warning_bg_color;
+    margin: 4px 0;
+    width: fit-content;
+    padding: 2px 9px;
+    border-radius: 4px;
+    font-size: 13px;
+    font-weight: 500;
+  }
+
+  .models-table {
+    width: 100%;
+    color: #1f1f1f;
+    font-size: 14px;
+    margin-top: 18px;
+    overflow: hidden auto;
+
+    table {
+      width: 100%;
+      border-spacing: 0;
+      border-collapse: collapse;
+      padding: 0;
+
+      thead {
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        box-shadow: inset 0 -1px 0 $table_border_color;
+        background-color: white;
+
+        .model-name-col {
+          width: 100%;
+        }
+
+        .adapter-header {
+          display: flex;
+          align-items: center;
+          gap: 4px;
+
+          .icon-container {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            opacity: 0.8;
+
+            &:hover {
+              opacity: 1;
+            }
+          }
+
+          mat-icon {
+            font-size: 20px;
+            width: 20px;
+            height: 20px;
+            color: #777;
+          }
+        }
+      }
+
+      th {
+        height: 49px;
+        text-align: left;
+        padding: 0;
+        font-weight: 500;
+      }
+
+      tr {
+        height: 49px;
+        text-align: left;
+        padding: 0;
+
+        &:not(:last-child) {
+          border-bottom: 1px solid $table_border_color;
+        }
+      }
+
+      td {
+        padding: 0;
+      }
+
+      .model-name-container {
+        display: flex;
+        align-items: center;
+        padding-left: 12px;
+        margin-right: 12px;
+        word-break: break-all;
+
+        &.disabled {
+          pointer-events: none;
+        }
+
+        mat-checkbox {
+          margin-right: 2px;
+
+          // Uncomment below to make the checkbox gray on select.
+          /*
+          ::ng-deep .mdc-checkbox__ripple {
+            display: none;
+          }
+
+          ::ng-deep .mdc-checkbox__background {
+            background-color: white;
+            border-color: #80868B;
+
+            svg {
+              color: #80868B;
+            }
+          }
+          */
+        }
+
+        .model-path {
+          cursor: pointer;
+          line-height: 16px;
+          padding: 8px 0;
+
+          &.disabled {
+            pointer-events: none;
+          }
+        }
+      }
+
+      .selected-adapter-container {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        cursor: pointer;
+        height: 48px;
+        margin-right: 24px;
+        white-space: nowrap;
+
+        &.disabled {
+          opacity: 0.5;
+          pointer-events: none;
+        }
+
+        &:hover mat-icon {
+          opacity: 1;
+        }
+
+        mat-icon {
+          opacity: 0.7;
+        }
+      }
+
+      .no-supported-adapter-msg {
+        color: $warning_text_color;
+        background-color: $warning_bg_color;
+        padding: 2px 8px;
+        width: fit-content;
+        border-radius: 4px;
+        font-size: 12px;
+        margin-right: 24px;
+        white-space: nowrap;
+        font-weight: 500;
+      }
+
+      .model-status-container {
+        display: flex;
+        align-items: center;
+        margin-right: 32px;
+
+        mat-spinner {
+          margin-right: 4px;
+        }
+
+        .model-status-label-container {
+          font-size: 12px;
+          padding: 2px 8px;
+          background-color: #f1f3f4;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: #3c4043;
+          width: fit-content;
+          border-radius: 4px;
+          white-space: nowrap;
+          font-weight: 500;
+
+          &.done {
+            color: #0d652d;
+            background-color: #e6f4ea;
+          }
+
+          &.error {
+            color: #a50e0e;
+            background-color: #fce8e6;
+          }
+        }
+
+        .error-info-container {
+          width: 20px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          margin-left: 4px;
+          cursor: pointer;
+
+          mat-icon {
+            width: 20px;
+            height: 20px;
+            font-size: 20px;
+          }
+        }
+      }
+
+      .btn-delete-model-item {
+        width: 36px;
+        height: 36px;
+        padding: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        &[disabled] {
+          opacity: 0.5;
+        }
+
+        ::ng-deep mat-icon {
+          font-size: 20px;
+          width: 20px;
+          height: 20px;
+          color: #444746;
+        }
+      }
+    }
+  }
+
+  .table-action-bar {
+    flex-shrink: 0;
+    height: 60px;
+    width: 100%;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background-color: #f0f4f9;
+    padding: 0 24px 0 38px;
+
+    .selection-status {
+      display: flex;
+      align-items: center;
+      font-size: 14px;
+      color: #444746;
+
+      &.hide {
+        visibility: hidden;
+      }
+    }
+
+    .btn-deselect-all {
+      width: 36px;
+      height: 36px;
+      padding: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      ::ng-deep mat-icon {
+        font-size: 20px;
+        width: 20px;
+        height: 20px;
+        color: #444746;
+      }
+    }
+
+    .btn-view-models {
+      height: 40px;
+      border-radius: 99px;
+    }
+  }
+
+  .instructions-container {
+    font-size: 13px;
+    color: #555;
+    margin-top: 24px;
+    display: none;
+
+    mat-icon {
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+      margin-right: 4px;
+    }
+
+    .instruction-title {
+      display: flex;
+      align-items: center;
+
+      .model-format {
+        color: #333;
+        margin-right: 4px;
+        margin-left: 4px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        padding: 2px 4px;
+        cursor: pointer;
+
+        &:hover {
+          background-color: #eee;
+        }
+      }
+    }
+  }
+}
+
+::ng-deep .model-explorer-upload-help-popup {
+  padding: 12px;
+  font-weight: normal;
+  color: #555;
+  line-height: 14px;
+  font-size: 12px;
+  font-family: 'Google Sans Text', Arial, Helvetica, sans-serif;
+}
+
+::ng-deep .model-explorer-adapter-help-popup {
+  padding: 12px;
+  font-weight: normal;
+  color: #555;
+  line-height: 15px;
+  font-size: 12px;
+  font-family: 'Google Sans Text', Arial, Helvetica, sans-serif;
+
+  &::ng-deep.bold {
+    font-weight: 700;
+  }
+}
+
+::ng-deep .model-explorer-model-format-help-popup {
+  padding: 12px;
+  font-weight: normal;
+  color: #555;
+  line-height: 15px;
+  font-size: 12px;
+  font-family: 'Google Sans Text', Arial, Helvetica, sans-serif;
+  letter-spacing: normal;
+
+  a {
+    color: inherit;
+  }
+
+  .example {
+    margin-top: 8px;
+    color: #aaa;
+
+    ul {
+      margin: 4px 0;
+      padding-inline-start: 28px;
+    }
+
+    li {
+      margin-top: 4px;
+    }
+  }
+
+  .info {
+    display: inline-block;
+    background-color: #ffd1a8;
+  }
+}
+
+::ng-deep .model-explorer-error-info-popup {
+  padding: 12px;
+  font-weight: normal;
+  background-color: #f0f4f9;
+  line-height: 14px;
+  font-size: 12px;
+  font-family: 'Google Sans Text', Arial, Helvetica, sans-serif;
+}
+
+::ng-deep .model-path-autocomplete {
+  mat-option {
+    min-height: 13px;
+    font-size: 13px;
+    line-height: 13px;
+    padding-top: 5px;
+    padding-bottom: 5px;
+
+    &:hover .option-container .mat-icon-container {
+      visibility: visible;
+    }
+
+    > span {
+      width: 100%;
+    }
+
+    .option-container {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      word-break: break-all;
+
+      .icons-container {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        min-width: 50px;
+        justify-content: flex-end;
+      }
+
+      .mat-icon-container {
+        visibility: hidden;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0.6;
+        width: 18px;
+
+        &:hover {
+          opacity: 1;
+        }
+
+        mat-icon {
+          font-size: 18px;
+          width: 18px;
+          height: 18px;
+        }
+      }
+    }
+  }
+}

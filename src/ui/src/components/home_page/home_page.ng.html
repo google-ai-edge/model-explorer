@@ -1,0 +1,116 @@
+<!--
+@license
+Copyright 2024 The Model Explorer Authors. All Rights Reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+==============================================================================
+-->
+
+<div class="container"
+    [class.dragover]="dragOver"
+    (dragover)="handleDragOver($event)"
+    (dragleave)="handleDragLeave()"
+    (dragend)="handleDragLeave()"
+    (drop)="handleDrop($event)">
+  <!-- Title bar. -->
+  <div class="title" [class.hide]="loadedGraphCollections() != null || benchmark">
+    <div (click)="handleClickTitle(true)" class="name">
+      <me-logo></me-logo>
+      Model Explorer
+      <new-version-chip></new-version-chip>
+    </div>
+    <div class="icons-container">
+      <button mat-icon-button aria-label="settings" matTooltip="Advanced settings"
+          (click)="handleClickSettings()">
+        <mat-icon>settings</mat-icon>
+      </button>
+      <a href="https://github.com/google-ai-edge/model-explorer" target="_blank">
+        <button mat-icon-button aria-label="doc" matTooltip="GitHub">
+          <mat-icon>article</mat-icon>
+        </button>
+      </a>
+      <a href="https://github.com/google-ai-edge/model-explorer/issues" target="_blank">
+        <button mat-icon-button aria-label="bug"
+            matTooltip="File issue or feature request">
+          <mat-icon>bug_report</mat-icon>
+        </button>
+      </a>
+
+      <button mat-icon-button aria-label="about" matTooltip="About"
+          [matMenuTriggerFor]="menu">
+        <mat-icon>info_outline</mat-icon>
+      </button>
+      <mat-menu #menu="matMenu">
+        <button mat-menu-item (click)="handleClickShowThirdPartyLibraries()">
+          Open source libraries
+        </button>
+        <div class="model-explorer-version">v{{runningVersion()}}</div>
+      </mat-menu>
+      <open-in-new-tab-button></open-in-new-tab-button>
+    </div>
+  </div>
+
+  <!-- Main content. -->
+  <div class="content" [class.hide]="loadedGraphCollections() != null || benchmark">
+    <!-- Welcome -->
+    @if (showWelcomeCard) {
+      <div class="welcome-card-container">
+        <welcome-card></welcome-card>
+        <div class="icon-container" matTooltip="Dismiss" (click)="handleClickDismissWelcomeCard()">
+          <mat-icon>close</mat-icon>
+        </div>
+      </div>
+    }
+
+    <!-- Model source input -->
+    @if (loadingExtensions()) {
+      <div class="loading-adapter-extension-container">
+        <mat-spinner color="primary" diameter="24">
+        </mat-spinner>
+      </div>
+    } @else {
+      <div class="model-source-input-container">
+        <model-source-input #modelSourceInput></model-source-input>
+      </div>
+    }
+
+    <div class="padding"></div>
+  </div>
+
+  @if (loadedGraphCollections() == null && !benchmark) {
+    <div class="utos">The
+      <a href="https://policies.google.com/terms?hl=en-US#toc-intro" target="_blank">
+        Google Terms of Service
+      </a>
+      apply to your use of this offering
+    </div>
+  }
+
+  <model-graph-visualizer
+      *ngIf="loadedGraphCollections() != null || benchmark"
+      #modelGraphVisualizer
+      [graphCollections]="benchmark ? [] : loadedGraphCollections()!"
+      [benchmark]="benchmark"
+      [config]="curConfig"
+      [initialUiState]="initialUiState"
+      [nodeDataSources]="remoteNodeDataPaths"
+      (titleClicked)="handleClickTitle()"
+      (modelGraphProcessed)="handleModelGraphProcessed($event)"
+      (uiStateChanged)="handleUiStateChanged($event)"
+      (remoteNodeDataPathsChanged)="handleRemoteNodeDataPathsChanged($event)">
+  </model-graph-visualizer>
+
+  <div class="dragover-overlay">
+    <div class="msg">Drop to add model files</div>
+  </div>
+</div>

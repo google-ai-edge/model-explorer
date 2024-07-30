@@ -1,0 +1,185 @@
+/**
+ * @license
+ * Copyright 2024 The Model Explorer Authors. All Rights Reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ==============================================================================
+ */
+
+$resizer-size: 8px;
+
+:host {
+  position: absolute;
+  user-select: none;
+}
+
+.container {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  font-size: 13px;
+  outline: 2px solid transparent;
+  position: relative;
+  background-color: white;
+  border-radius: 4px;
+  overflow: hidden;
+  border: 2px solid #aaa;
+  cursor: pointer;
+
+  .title {
+    height: 27px;
+    border-bottom: 1px solid #ccc;
+    box-sizing: border-box;
+    background-color: #e7f3ff;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+    overflow: hidden;
+    border-top-left-radius: 2px;
+    border-top-right-radius: 2px;
+    white-space: nowrap;
+
+    .label {
+      flex-grow: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      box-sizing: border-box;
+      padding-left: 8px;
+      padding-right: 4px;
+    }
+
+    .icons-container {
+      display: flex;
+      align-items: center;
+    }
+
+    .mat-icon-container {
+      width: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0.6;
+      cursor: pointer;
+
+      &:hover {
+        opacity: 1;
+      }
+
+      mat-icon {
+        font-size: 16px;
+        font-weight: 700;
+        width: 16px;
+        height: 16px;
+      }
+    }
+  }
+
+  renderer-wrapper {
+    flex-grow: 1;
+    min-height: 0;
+  }
+}
+
+.container.selected {
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+
+  .title {
+    background-color: #ea8600;
+    color: white;
+  }
+}
+
+.container.minimized {
+  svg-renderer {
+    display: none;
+  }
+}
+
+.resize-box {
+  position: absolute;
+  inset: calc($resizer-size / -2);
+  pointer-events: none;
+  z-index: 100;
+
+  &.disabled [data-position] {
+    pointer-events: none;
+  }
+
+  div {
+    position: absolute;
+    pointer-events: all;
+    background-color: transparent;
+  }
+
+  [data-position='top'] {
+    top: 0;
+    width: 100%;
+    height: $resizer-size;
+    cursor: ns-resize;
+  }
+
+  [data-position='bottom'] {
+    bottom: 0;
+    width: 100%;
+    height: $resizer-size;
+    cursor: ns-resize;
+  }
+
+  [data-position='left'] {
+    left: 0;
+    height: 100%;
+    width: $resizer-size;
+    cursor: ew-resize;
+  }
+
+  [data-position='right'] {
+    right: 0;
+    height: 100%;
+    width: $resizer-size;
+    cursor: ew-resize;
+  }
+
+  [data-position='top-right'] {
+    top: 0;
+    right: 0;
+    height: $resizer-size;
+    width: $resizer-size;
+    cursor: nesw-resize;
+  }
+
+  [data-position='top-left'] {
+    top: 0;
+    left: 0;
+    height: $resizer-size;
+    width: $resizer-size;
+    cursor: nwse-resize;
+  }
+
+  [data-position='bottom-left'] {
+    bottom: 0;
+    left: 0;
+    height: $resizer-size;
+    width: $resizer-size;
+    cursor: nesw-resize;
+  }
+
+  [data-position='bottom-right'] {
+    bottom: 0;
+    right: 0;
+    height: $resizer-size;
+    width: $resizer-size;
+    cursor: nwse-resize;
+  }
+}

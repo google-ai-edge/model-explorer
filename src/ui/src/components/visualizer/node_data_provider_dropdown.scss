@@ -1,0 +1,184 @@
+/**
+ * @license
+ * Copyright 2024 The Model Explorer Authors. All Rights Reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ==============================================================================
+ */
+
+.container {
+  .icon-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: #666;
+
+    // These are for positioning the dropdown menu better.
+    padding-bottom: 12px;
+    margin-bottom: -12px;
+
+    mat-icon {
+      margin-right: 4px;
+    }
+
+    mat-spinner {
+      margin-right: 6px;
+    }
+
+    .label {
+      font-size: 13px;
+    }
+
+    &:hover {
+      color: #444;
+    }
+  }
+}
+
+::ng-deep .model-explorer-node-data-provider-dropdown {
+  font-size: 12px;
+  background-color: white;
+  display: flex;
+  flex-direction: column;
+  padding-bottom: 8px;
+
+  .section-label {
+    padding: 8px 12px;
+    font-size: 11px;
+    background: #f1f1f1;
+    font-weight: 500;
+    text-transform: uppercase;
+
+    .address-container {
+      text-transform: none;
+      font-weight: normal;
+      letter-spacing: normal;
+      color: #777;
+      line-height: 12px;
+      padding-bottom: 5px;
+      display: flex;
+      align-items: flex-start;
+      margin-top: -4px;
+      margin-left: -2px;
+
+      .address-label {
+        overflow: hidden;
+        line-break: anywhere;
+        line-height: 12px;
+        flex-grow: 1;
+        padding-top: 3px;
+      }
+
+      .settings-icon-container {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 4px;
+        pointer-events: all;
+        cursor: pointer;
+        opacity: 0.7;
+
+        &:hover {
+          opacity: 1;
+        }
+
+        mat-icon {
+          font-size: 16px;
+          width: 16px;
+          height: 16px;
+        }
+      }
+    }
+
+    &.upload {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      min-width: 180px;
+
+      a {
+        font-size: 11px;
+        letter-spacing: normal;
+        text-transform: none;
+        pointer-events: all;
+      }
+    }
+  }
+
+  .description {
+    font-size: 12px;
+    color: #777;
+    line-height: 18px;
+    letter-spacing: normal;
+  }
+
+  .upload-container {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 0 16px;
+    margin-top: 12px;
+  }
+
+  .upload-json-file-button {
+    margin: 4px 0;
+    width: 90px;
+    height: 30px;
+    /* stylelint-disable-next-line declaration-no-important -- override MDC */
+    font-size: 12px !important;
+    /* stylelint-disable-next-line declaration-no-important -- override MDC */
+    letter-spacing: normal !important;
+
+    &.upload {
+      margin-top: 2px;
+    }
+
+    ::ng-deep .mat-mdc-button-touch-target {
+      display: none;
+    }
+  }
+
+  .or-divider {
+    height: 1px;
+    border-top: 1px solid #eee;
+    position: relative;
+    margin-top: 12px;
+
+    .or-label {
+      font-size: 10px;
+      top: -9px;
+      color: #aaa;
+      position: absolute;
+      padding: 2px;
+      background-color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 16px;
+      left: calc(50% - 8px);
+    }
+  }
+
+  .upload-per-node-data-input {
+    display: none;
+  }
+
+  .no-extension,
+  .loading-extension {
+    padding: 12px 0 4px 16px;
+    color: #999;
+    font-size: 13px;
+    letter-spacing: normal;
+  }
+}

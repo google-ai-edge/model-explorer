@@ -1,0 +1,104 @@
+<!--
+@license
+Copyright 2024 The Model Explorer Authors. All Rights Reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+==============================================================================
+-->
+
+<div class="container"
+    [bubble]="help"
+    [overlaySize]="helpPopupSize"
+    [hoverDelayMs]="10">
+  <div class="mat-icon-container view"
+      [bubbleClick]="viewPopup"
+      [overlaySize]="viewPopupSize"
+      (opened)="opened=true"
+      (closed)="opened=false"
+      (click)="handleClickOnViewOnNode($event)">
+    <mat-icon class="toolbar-icon">visibility</mat-icon>
+  </div>
+</div>
+
+<ng-template #help>
+  <div class="model-explorer-help-popup">
+    Select data to view on nodes / edges
+  </div>
+</ng-template>
+
+<ng-template #viewPopup>
+  <div class="model-explorer-view-popup">
+    <div class="label">
+      <div>View on nodes</div>
+      <div class="icon-container close" bubbleClose>
+        <mat-icon>close</mat-icon>
+      </div>
+    </div>
+    @for (item of showOnNodeItems; track item.type) {
+      <div class="show-on-node-item" (click)="handleToggleShowOnNode(item)">
+        <input type="checkbox" [checked]="item.selected"/>
+        {{item.type}}
+      </div>
+      @if (getIsAttrs(item)) {
+        <div class="show-on-node-filter">
+          <input class="input-attrs-filter"
+            placeholder="Filter by regex" [disabled]="!item.selected"
+            [value]="curAttrsFilterText"
+            (keydown.enter)="input.blur()"
+            (input)="curAttrsFilterText = input.value"
+            (change)="handleAttrsFilterChanged(item)"
+            #input>
+          <div class="icon-container"
+              [bubble]="helpPopup"
+              [hoverDelayMs]="100">
+            <mat-icon>help_outline</mat-icon>
+          </div>
+          <div class="icon-container ok" (click)="input.blur()">
+            <mat-icon>done</mat-icon>
+          </div>
+        </div>
+      }
+    }
+    <div class="label">
+      <div>View on edges</div>
+    </div>
+    @for (item of showOnEdgeItems; track item.type) {
+      <div class="show-on-node-item" (click)="handleToggleShowOnEdge(item)">
+        <input type="checkbox" [checked]="item.selected"/>
+        {{item.type}}
+      </div>
+    }
+  </div>
+</ng-template>
+
+<ng-template #helpPopup>
+  <div class="model-explorer-view-on-node-help-popup">
+    Use regex to match
+    <span class="code">{{'{'}}key{{'}'}}:{{'{'}}value{{'}'}}</span> or
+    <span class="code">{{'{'}}key{{'}'}}={{'{'}}value{{'}'}}</span>.
+    <br>
+    <br>
+    Examples:<br>
+    <ul>
+      <li>
+        <span class="code regex">axis:</span> will match attributes whose key is
+        <span class="code">axis</span>.
+      </li>
+      <li>
+        <span class="code regex">padding=[SAME|VALID]</span> will match attributes whose key is
+        <span class="code">padding</span> and value is either <span class="code">SAME</span> or
+        <span class="code">VALID</span>.
+      </li>
+    </ul>
+  </div>
+</ng-template>

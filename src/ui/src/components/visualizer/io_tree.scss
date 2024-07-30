@@ -1,0 +1,298 @@
+/**
+ * @license
+ * Copyright 2024 The Model Explorer Authors. All Rights Reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ==============================================================================
+ */
+
+@import 'variables';
+
+.io-tree {
+  background-color: transparent;
+  padding-top: 4px;
+
+  &.solid-background {
+    transform-origin: top center;
+    background-color: white;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    padding-bottom: 8px;
+    min-width: 270px;
+    box-shadow:
+      0 4px 6px -1px rgb(0 0 0 / 0.1),
+      0 2px 4px -2px rgb(0 0 0 / 0.1);
+  }
+
+  mat-tree-node {
+    &.has-locator,
+    &.has-values {
+      cursor: pointer;
+
+      &:hover {
+        background-color: #f3f3f3;
+      }
+    }
+
+    &.highlight {
+      .label {
+        color: #00639b;
+        font-weight: 500;
+      }
+    }
+
+    &:not(:last-child).has-metadata.leaf {
+      margin-bottom: 6px;
+    }
+  }
+
+  .edge-node {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    width: 100%;
+    box-sizing: border-box;
+    padding-right: 12px;
+    padding-left: 27px;
+
+    &:hover .locator-container {
+      opacity: 0.8;
+    }
+
+    .label-and-metadata {
+      &.has-extra-data {
+        width: 100%;
+
+        .label {
+          width: 100%;
+          justify-content: space-between;
+        }
+      }
+
+      .label-container {
+        display: flex;
+        align-items: center;
+
+        .label {
+          display: flex;
+          align-items: center;
+        }
+
+        .node-label.color-bold {
+          color: #00639b;
+          font-weight: 500;
+        }
+
+        .node-label.search-match {
+          background-color: $search-match-color;
+        }
+      }
+
+      .hover-for-values-label {
+        text-decoration: underline;
+        text-decoration-style: dotted;
+        color: #999;
+        margin-left: 8px;
+      }
+
+      .metadata-table {
+        border-spacing: 0;
+        border-collapse: collapse;
+        padding: 0;
+        font-size: 11px;
+        margin-top: 2px;
+
+        tr {
+          vertical-align: text-top;
+
+          &.search-match {
+            background-color: $search-match-color;
+          }
+
+          mat-icon.bullet {
+            font-size: 4px;
+            width: 5px;
+            height: 5px;
+            color: #bbb;
+            margin-right: 2px;
+          }
+        }
+
+        td.key {
+          color: #999;
+          padding-right: 4px;
+          white-space: nowrap;
+          line-height: 12px;
+        }
+
+        td.value {
+          line-height: 12px;
+        }
+      }
+    }
+  }
+
+  .expandable-tree-node,
+  mat-tree-node {
+    font-size: 13px;
+    min-height: 22px;
+    word-break: break-word;
+  }
+
+  .expandable-tree-node {
+    color: #999;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    box-sizing: border-box;
+    padding-right: 12px;
+    padding-left: 4px;
+
+    &.highlight {
+      color: rgba(0, 0, 0, 0.87);
+    }
+
+    &:hover .locator-container {
+      opacity: 0.8;
+    }
+
+    mat-icon.expander {
+      color: #999;
+    }
+
+    .label-container {
+      display: flex;
+      align-items: center;
+
+      &.has-extra-data {
+        width: 100%;
+
+        .label {
+          flex-grow: 1;
+          justify-content: space-between;
+        }
+      }
+
+      .label {
+        display: flex;
+        align-items: center;
+      }
+    }
+  }
+
+  .expand-icon-button {
+    padding: 0;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    mat-icon {
+      font-size: 18px;
+      margin-top: 6px;
+    }
+  }
+
+  .locator-container {
+    height: 18px;
+    opacity: 0.5;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+
+    mat-icon.locator-icon {
+      color: #333;
+      font-size: 16px;
+      width: 16px;
+      height: 16px;
+    }
+
+    &:hover {
+      opacity: 0.8;
+    }
+  }
+
+  .match-types-container {
+    display: flex;
+    align-items: center;
+    justify-self: center;
+    gap: 2px;
+    margin-left: 8px;
+  }
+
+  .extra-label-container {
+    display: flex;
+    align-items: center;
+    justify-self: center;
+    padding: 4px;
+    border-radius: 99px;
+    background-color: #e8f0fe;
+    box-sizing: border-box;
+
+    mat-icon {
+      font-size: 12px;
+      width: 12px;
+      height: 12px;
+      color: #9da3a9;
+    }
+  }
+
+  ::ng-deep .mat-mdc-button-touch-target {
+    width: 24px;
+    height: 24px;
+  }
+}
+
+.io-tree-invisible {
+  display: none;
+}
+
+.io-tree ul,
+.io-tree li {
+  margin-top: 0;
+  margin-bottom: 0;
+  list-style-type: none;
+}
+
+// This padding sets alignment of the nested nodes.
+.io-tree .mat-nested-tree-node div[role='group'] {
+  padding-left: 8px;
+}
+
+// Padding for leaf node.
+.io-tree div[role='group'] > .mat-tree-node {
+  padding-left: 16px;
+}
+
+::ng-deep bubble-container:has(.model-explorer-const-values-popup) {
+  width: 100%;
+}
+
+::ng-deep .model-explorer-const-values-popup {
+  padding: 8px;
+  font-size: 11px;
+  line-height: 12px;
+  background-color: white;
+
+  .values-count-msg {
+    margin-bottom: 8px;
+    color: #999;
+  }
+
+  .content {
+    white-space: pre-wrap;
+    font-family: monospace;
+  }
+}

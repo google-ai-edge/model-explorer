@@ -1,0 +1,98 @@
+<!--
+@license
+Copyright 2024 The Model Explorer Authors. All Rights Reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+==============================================================================
+-->
+
+<div class="container">
+  <!-- The collection label. -->
+  <div class="collection-label">
+    {{selectedGraphCollectionLabel}}
+  </div>
+
+  <!-- Currently selected graph. -->
+  <div class="graph-selector-label" #selector
+       (click)="handleClickOpenGraphDropdown(selector)">
+    <div class="selector-label-container">
+      <div class="selector-label-content">
+        <div class="option-label">{{selectedGraph.value?.id || '-'}}</div>
+        <div class="node-count-label" *ngIf="selectedGraph.value">
+          {{selectedGraphNodeCount}} nodes
+        </div>
+      </div>
+      <div class="triangle">▼</div>
+    </div>
+  </div>
+
+  <div class="mat-icon-container" matTooltip="Download processed graphs json"
+      (click)="handleClickDownloadGraphJson()">
+    <mat-icon>download</mat-icon>
+  </div>
+
+  @if (enableExportToResource) {
+    <div class="mat-icon-container" matTooltip="Export to resource"
+        (click)="handleClickExportGraphJsonToResource()">
+      <mat-icon>drive_folder_upload</mat-icon>
+    </div>
+  }
+
+  <!--
+    A hidden mat-select. It is here so that clicking the currently selected
+    label can open the dropdown menu provided by this mat-select.
+  -->
+  <mat-form-field class="select-form">
+    <mat-label>Select an option</mat-label>
+    <mat-select color="primary" panelClass="graph-selector-panel"
+        [formControl]="selectedGraph"
+        (selectionChange)="handleGraphSelected()"
+        (openedChange)="handleGraphSelectorOpenedChanged($event)">
+      <mat-optgroup class="graph-search-optgroup"
+          *ngIf="graphsCount() > 1">
+        <mat-option>
+          <input placeholder="Filter graphs" #input
+              (click)="$event.stopPropagation()"
+              (keydown.space)="$event.stopPropagation()"
+              (input)="handleFilterTextChanged(input.value)">
+        </mat-option>
+      </mat-optgroup>
+      <mat-optgroup *ngFor="let collection of graphCollectionItems()"
+          [label]="collection.label">
+        <mat-option *ngFor="let graphItem of collection.graphs"
+            [class.selected]="graphItem.graph === selectedGraph.value"
+            [attr.data-id]="graphItem.id"
+            [value]="graphItem.graph">
+          <div class="option-wrapper">
+            <div class="option-container">
+              <div class="option-label">{{graphItem.id}}</div>
+              <div class="node-count-label">
+                {{graphItem.nonHiddenNodeCount}} nodes
+              </div>
+            </div>
+            <!-- Button for opening this graph in a split pane. -->
+            <div class="action-button"
+                *ngIf="showOpenInSplitPane"
+                matTooltip="Open in split pane"
+                matTooltipPosition="right"
+                (click)="handleClickOpenInSplitPane($event, graphItem)">
+              <div class="block-container">
+                <div class="right-block"></div>
+              </div>
+            </div>
+          </div>
+        </mat-option>
+      </mat-optgroup>
+    </mat-select>
+  </mat-form-field>
+</div>

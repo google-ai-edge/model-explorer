@@ -1,0 +1,146 @@
+<!--
+@license
+Copyright 2024 The Model Explorer Authors. All Rights Reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+==============================================================================
+-->
+
+<div class="container" #container
+    (mouseleave)="handleMouseLeaveRenderer($event)">
+  <canvas class="main" #canvas
+      (mousedown)="handleMouseDownCanvas($event)"
+      (contextmenu)="$event.preventDefault()">
+  </canvas>
+  <canvas class="snapshot" #snapshotCanvas></canvas>
+  <canvas class="download-png" #pngDownloaderCanvas></canvas>
+
+  <div class="group-node-icon"
+      [style.top.px]="groupNodeIcon.top"
+      [style.left.px]="groupNodeIcon.left"
+      [style.width.px]="groupNodeIcon.width"
+      [style.height.px]="groupNodeIcon.height"
+      (mouseenter)="handleMouseEnterGroupNodeIcon()"
+      (mouseleave)="handleMouseLeaveGroupNodeIcon()"
+      (mousedown)="handleClickGroupNodeIcon($event)">
+  </div>
+  <div class="group-node-icon-tooltip" #groupNodeIconMatTooltip="matTooltip"
+      [style.top.px]="groupNodeIcon.top"
+      [style.left.px]="groupNodeIcon.left"
+      [style.width.px]="groupNodeIcon.width"
+      [style.height.px]="groupNodeIcon.height"
+      [matTooltip]="groupNodeIcon.tooltip || ''"
+      [matTooltipShowDelay]="200"
+      [matTooltipDisabled]="groupNodeIcon.tooltip == null"
+      matTooltipPosition="above">
+  </div>
+
+  <!-- Hidden menu trigger for showing more actions dropdown -->
+  <div class="more-actions-menu-trigger"
+      #moreActionsMenuTrigger="matMenuTrigger"
+      [matMenuTriggerFor]="moreActionsMenu"
+      [style.top.px]="groupNodeIcon.top + groupNodeIcon.height"
+      [style.left.px]="groupNodeIcon.left">
+  </div>
+
+  <!-- More actions menu -->
+  <mat-menu #moreActionsMenu="matMenu">
+    <div class="model-explorer-menu-item-with-icon expand-all"
+        (click)="handleClickExpandAll(hoveredNodeIdWhenClickingMoreActions)">
+      <mat-icon>unfold_more_double</mat-icon>
+      Expand layer & all sub-layers
+    </div>
+    <div class="model-explorer-menu-item-with-icon collapse-all"
+        *ngIf="getShowCollapseAllButton(hoveredNodeIdWhenClickingMoreActions)"
+        (click)="handleClickCollapseAll(hoveredNodeIdWhenClickingMoreActions)">
+      <mat-icon>unfold_less_double</mat-icon>
+      Collapse layer & all sub-layers
+    </div>
+    <div class="model-explorer-menu-item-with-icon open-in-popup"
+        *ngIf="showOpenInPopupButton"
+        (click)="handleClickOpenGroupNodeInPopup($event, hoveredNodeIdWhenClickingMoreActions)">
+      <mat-icon>open_in_new</mat-icon>
+      Open layer in popup
+    </div>
+  </mat-menu>
+
+  <!-- IO picker -->
+  <div class="io-picker" #ioPicker
+      [style.top.px]="ioPickerTop"
+      [style.left.px]="ioPickerLeft"
+      [style.width.px]="ioPickerWidth"
+      [style.height.px]="ioPickerHeight"
+      (mousedown)="handleClickIoPicker($event)"
+      (mouseenter)="handleMouseEnterIoPicker()"
+      (mouseleave)="handleMouseLeaveIoPicker()">
+  </div>
+  <div class="io-picker-tooltip" #ioPickerMatTooltip="matTooltip"
+      [style.top.px]="ioPickerTop"
+      [style.left.px]="ioPickerLeft"
+      [style.width.px]="ioPickerWidth"
+      [style.height.px]="ioPickerHeight"
+      [matTooltip]="ioPickerTooltip"
+      matTooltipPosition="above">
+  </div>
+
+  <!-- Subgraph indicator -->
+  <div class="subgraph-indicator" #subgraphIndicator
+      [style.top.px]="subgraphIndicatorTop"
+      [style.left.px]="subgraphIndicatorLeft"
+      [style.width.px]="subgraphIndicatorWidth"
+      [style.height.px]="subgraphIndicatorHeight"
+      matTooltip="Jump to subgraph"
+      matTooltipPosition="above"
+      (mousedown)="$event.stopPropagation()"
+      (click)="handleClickSubgraphIndicator()">
+  </div>
+
+  <!-- Hidden menu trigger for subgraph dropdown -->
+  <div class="subgraph-indicator-menu-trigger"
+      #subgraphMenuTrigger="matMenuTrigger"
+      [matMenuTriggerFor]="menu"
+      [style.top.px]="subgraphIndicatorTop + subgraphIndicatorHeight"
+      [style.left.px]="subgraphIndicatorLeft">
+  </div>
+
+  <!-- Subgraph menu -->
+  <mat-menu #menu="matMenu">
+    @for (subgraphId of curSubgraphIdsForMenu; track subgraphId) {
+      <div class="model-explorer-menu-item-with-icon"
+          (click)="handleClickSubgraphId(subgraphId)">
+        <mat-icon>subdirectory_arrow_right</mat-icon>
+        {{subgraphId}}
+      </div>
+    }
+  </mat-menu>
+
+  <!-- Range zoom -->
+  <drag-area #rangeZoomDragArea
+      bgColor="rgba(97, 175, 252, 0.2)"
+      borderColor="#1976d2">
+  </drag-area>
+
+  <!-- Drag to select -->
+  <drag-area #dragToSelectDragArea
+      bgColor="rgba(9, 184, 62, 0.2)"
+      borderColor="#09b83e">
+  </drag-area>
+
+  <!-- Flashing border to show when clicking "add snapshot" -->
+  <div class="flash" [class.flashing]="flashing"></div>
+
+  <!-- FPS counter -->
+  @if (benchmark) {
+    <div class="fps">FPS: {{fps}}</div>
+  }
+</div>

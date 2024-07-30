@@ -1,0 +1,58 @@
+<!--
+@license
+Copyright 2024 The Model Explorer Authors. All Rights Reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+==============================================================================
+-->
+
+<div class="container" [@transformPanel]="'showing'">
+  <input placeholder="Filter graphs" #input
+      (input)="handleFilterTextChanged(input.value)">
+  <div *ngFor="let collection of curGraphCollectionItems; trackBy: trackByCollection"
+      class="collection-container">
+    <div class="collection-label">
+      {{collection.label}}
+    </div>
+    <div *ngFor="let graph of collection.graphs; trackBy: trackByGraph"
+        class="graph-item-container"
+        [attr.data-id]="graph.id">
+      <div class="graph-item" [style.padding-left.px]="getGraphItemPaddingLeft(graph)"
+          [class.selected]="graph.id === selectedGraphId()">
+        <div class="graph-info-wrapper" (click)="handleSelectGraph(graph)">
+          <div class="graph-label-wrapper">
+            <mat-icon class="indent-symbol" *ngIf="showIndentSymbol(graph)">
+              turn_left
+            </mat-icon>
+            <div class="graph-label">
+              {{graph.id}}
+            </div>
+          </div>
+          <div class="node-count-label">
+            {{getGraphNonHiddenNodeCountLabel(graph.nonHiddenNodeCount)}}
+          </div>
+        </div>
+        <!-- Button for opening this graph in a split pane. -->
+        <div class="action-button"
+            *ngIf="showOpenInSplitPane"
+            matTooltip="Open in split pane"
+            matTooltipPosition="right"
+            (click)="handleClickOpenInSplitPane($event, graph)">
+          <div class="block-container">
+            <div class="right-block"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

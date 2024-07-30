@@ -1,0 +1,99 @@
+<!--
+@license
+Copyright 2024 The Model Explorer Authors. All Rights Reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+==============================================================================
+-->
+
+<div mat-dialog-title class="title-container">
+  <div class="title">Advanced settings</div>
+  <div class="local-storage-info">
+    Settings are stored in current browser's local storage
+  </div>
+</div>
+<div mat-dialog-content class="dialog-content">
+  <div class="settings-container">
+    <div class="setting-item" *ngFor="let setting of allSettings">
+      <ng-container [ngSwitch]="setting.type">
+        <div class="setting-label">
+          {{setting.label}}
+          @if (setting.help) {
+            <div class="icon-container"
+                [bubble]="helpPopup"
+                [overlaySize]="helpPopupSize"
+                [overlayPositions]="helpPopupPosition"
+                [hoverDelayMs]="100">
+              <mat-icon fontSet='google-material-icons'>help_outline</mat-icon>
+            </div>
+            <ng-template #helpPopup>
+              <div class="model-explorer-settings-help-popup">
+                @if (setting.key === 'disallow_vertical_edge_labels') {
+                  When <a href="https://github.com/google-ai-edge/model-explorer/wiki/2.-User-Guide#overlay-data-on-nodesedges" target="_blank">View tensor shape on edge</a>
+                  is turned on, Model Explorer will try to position the shape along the edge curve.
+                  When the edge is close to vertical, the shape may be hard to read. Enabling this
+                  option will force the shapes to be rendered horizontally in such situations to
+                  improve readbility.
+                } @else {
+                  {{setting.help}}
+                }
+              </div>
+            </ng-template>
+          }
+        </div>
+        <!-- Boolean setting -->
+        <ng-container *ngSwitchCase="SettingType.BOOLEAN">
+          <mat-slide-toggle [checked]="settingsService.getBooleanValue(setting)"
+              (change)="settingsService.saveBooleanValue($event.checked, setting.key)">
+          </mat-slide-toggle>
+        </ng-container>
+
+        <!-- Number setting -->
+        <ng-container *ngSwitchCase="SettingType.NUMBER">
+          <input type="number" [value]="settingsService.getNumberValue(setting)"
+              #input
+              (focus)="input.select()"
+              (change)="settingsService.saveNumberValue(input.valueAsNumber, setting.key)">
+          <div class="reset" (click)="handleClickResetToDefaultNumber(setting)">Reset to default</div>
+        </ng-container>
+
+        <!-- Multiline text -->
+        <ng-container *ngSwitchCase="SettingType.TEXT_MULTILINE">
+          <textarea type="number" [value]="settingsService.getStringValue(setting)"
+              #input
+              (focus)="input.select()"
+              (change)="settingsService.saveStringValue(input.value, setting.key)"></textarea>
+          <div class="reset" (click)="handleClickResetToDefaultText(setting)">Reset to default</div>
+        </ng-container>
+
+        <!-- Color picker -->
+        <ng-container *ngSwitchCase="SettingType.COLOR">
+          <div class="color-picker-container">
+            <label [style.background-color]="settingsService.getStringValue(setting)">
+              <input type="color" [value]="settingsService.getStringValue(setting)"
+                  #colorPicker
+                  (change)="settingsService.saveStringValue(colorPicker.value, setting.key)">
+            </label>
+            <input type="text" [value]="settingsService.getStringValue(setting)"
+                #colorInput
+                (change)="settingsService.saveStringValue(colorPicker.value, setting.key)">
+          </div>
+          <div class="reset" (click)="handleClickResetToDefaultText(setting)">Reset to default</div>
+        </ng-container>
+      </ng-container>
+    </div>
+  </div>
+</div>
+<div mat-dialog-actions align="end" class="buttons-container">
+  <button mat-button mat-dialog-close>Close</button>
+</div>

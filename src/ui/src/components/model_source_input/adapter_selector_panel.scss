@@ -1,0 +1,68 @@
+/**
+ * @license
+ * Copyright 2024 The Model Explorer Authors. All Rights Reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ==============================================================================
+ */
+
+.container {
+  box-shadow:
+    0px 2px 6px 2px rgba(0, 0, 0, 0.15),
+    0px 1px 2px 0px rgba(0, 0, 0, 0.3);
+  transform-origin: top center;
+  font-size: 13px;
+  padding: 8px 0;
+  border-radius: 8px;
+  background-color: white;
+
+  .candidate-container {
+    padding: 8px 16px;
+
+    &.selected {
+      background-color: #c2e7ff;
+    }
+
+    &:hover:not(.selected) {
+      background-color: #f2f2f2;
+      cursor: pointer;
+    }
+
+    .name {
+      font-size: 14px;
+      color: #1f1f1f;
+      line-height: 20px;
+      margin-bottom: 2px;
+      display: flex;
+      align-items: center;
+
+      .default-label {
+        display: inline-block;
+        padding: 0px 10px;
+        box-sizing: border-box;
+        background-color: #f3e0b4;
+        color: #70571e;
+        border: 1px solid #dbac41;
+        font-size: 11px;
+        line-height: 14px;
+        border-radius: 99px;
+        margin-left: 8px;
+      }
+    }
+
+    .description {
+      font-size: 12px;
+      color: #444746;
+    }
+  }
+}

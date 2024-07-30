@@ -1,0 +1,232 @@
+<!--
+@license
+Copyright 2024 The Model Explorer Authors. All Rights Reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+==============================================================================
+-->
+
+<div class="container">
+  <div class="index-container">
+    <div class="index-row" *ngFor="let runItem of runItems; let i = index; trackBy: trackByRunId"
+        [class.selected]="isRunItemSelected(runItem)">
+      <div class="index-number-container">
+        <div class="index-number" *ngIf="runItem.done">{{i + 1}}</div>
+        <mat-spinner color="primary" diameter="16" *ngIf="!runItem.done">
+        </mat-spinner>
+      </div>
+      <div class="run-name">{{runItem.runName}}</div>
+      <div class="action-icons-container">
+        <div class="error" *ngIf="runItem.error"
+            [matTooltip]="runItem.error"
+            [matTooltipDisabled]="!runItem.error">
+          <mat-icon>error</mat-icon>
+        </div>
+        <div class="icon-container visibility"
+            *ngIf="!runItem.error"
+            [class.selected]="isRunItemSelected(runItem)"
+            [class.hide]="!runItem.done"
+            [matTooltip]="getVisibleToggleTooltip(runItem)"
+            (click)="handleClickToggleVisibility(runItem, $event)">
+          <mat-icon>{{getIconName(runItem)}}</mat-icon>
+        </div>
+        <div class="icon-container action"
+            *ngIf="runItem.done"
+            [matTooltip]="'Delete'"
+            (click)="handleClickDelete(runItem)">
+          <mat-icon>delete</mat-icon>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Stats table -->
+  <div class="table-container" #statsTableContainer
+      [class.collapsed]="statsTableCollapsed">
+    <div class="table-title-container">
+      <div class="title-label-container"
+          (click)="handleToggleExpandCollapseStatsTable(statsTableContainer)">
+        <mat-icon>{{statsTableTitleIcon}}</mat-icon>
+        {{statsTableTitle}}
+      </div>
+    </div>
+    <table border="0" cellspacing="0" cellpadding="0" *ngIf="showResults">
+      <thead>
+        <tr>
+          <th class="stats">
+            Stat
+          </th>
+          <th *ngFor="let runItem of runItems; let i = index"
+              class="value-col">
+            <div class="header-content">
+              <div class="index-number">{{i + 1}}</div>
+            </div>
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let row of curStatRows; trackBy: trackByStat">
+          <td>{{row.stat}}</td>
+          <td *ngFor="let value of row.values"
+              class="value-col">
+            {{getStatValue(value)}}
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  
+  <!-- Children stats table -->
+  <div class="table-container children-stats" #childrenStatsTableContainer
+      [class.collapsed]="childrenStatsTableCollapsed">
+    <div class="table-title-container">
+      <div class="title-label-container"
+          (click)="handleToggleExpandCollapseChildrenStatsTable(childrenStatsTableContainer)">
+        <mat-icon>{{childrenStatsTableTitleIcon}}</mat-icon>
+        {{childrenStatsTableTitle}}
+      </div>
+      @if (childrenStatRowsCount > tablePageSize && !childrenStatsTableCollapsed) {
+        <paginator #childrenStatsPaginator
+            [pageSize]="tablePageSize" [itemsCount]="childrenStatRowsCount"
+            (change)="handleChildrenStatsTablePaginatorChanged($event)">
+        </paginator>
+      }
+    </div>
+    <table class="children-stats-results" *ngIf="showResults"
+        border="0" cellspacing="0" cellpadding="0">
+      <thead>
+        <tr>
+          <th class="index"
+              (click)="handleClickChildrenStatsHeader(-2)">
+            <div class="header-content">
+              #
+              <mat-icon *ngIf="curChildrenStatSortingColIndex === -2" class="sort">
+                {{curChildrenStatSortingDirection === 'asc' ? 'arrow_upward' : 'arrow_downward'}}
+              </mat-icon>
+            </div>
+          </th>
+          <th class="header node-label"
+              (click)="handleClickChildrenStatsHeader(-1)">
+            <div class="header-content">
+              Node
+              <mat-icon *ngIf="curChildrenStatSortingColIndex === -1" class="sort">
+                {{curChildrenStatSortingDirection === 'asc' ? 'arrow_upward' : 'arrow_downward'}}
+              </mat-icon>
+            </div>
+          </th>
+          <th *ngFor="let col of childrenStatsCols" class="value-col"
+              (click)="handleClickChildrenStatsHeader(col.colIndex)">
+            <div class="header-content">
+              <div class="index-number">{{col.runIndex + 1}}</div>
+              <div class="stat-label">{{col.label}}</div>
+              <mat-icon *ngIf="col.colIndex === curChildrenStatSortingColIndex" class="sort">
+                {{curChildrenStatSortingDirection === 'asc' ? 'arrow_upward' : 'arrow_downward'}}
+              </mat-icon>
+            </div>
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let row of curPageChildrenStatRows; trackBy: trackByNodeId">
+          <td>{{row.index}}</td>
+          <td class="node-label"
+              (click)="handleClickNodeLabel(row.id)">
+            {{row.label}}
+          </td>
+          <td *ngFor="let strValue of row.colStrs" class="value-col">
+            {{strValue}}
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Results table -->
+  <div class="table-container results" #nodeDataTableContainer
+      [class.collapsed]="nodeDataTableCollapsed">
+    <div class="table-title-container">
+      <div class="title-label-container"
+          (click)="handleToggleExpandCollapseNodeDataTable(nodeDataTableContainer)">
+        <mat-icon>{{nodeDataTableTitleIcon}}</mat-icon>
+        {{nodeDataTableTitle}}
+      </div>
+      @if (rowsCount > tablePageSize && !nodeDataTableCollapsed) {
+        <paginator #paginator
+            [pageSize]="tablePageSize" [itemsCount]="rowsCount"
+            (change)="handleTablePaginatorChanged($event)">
+        </paginator>
+      }
+    </div>
+    <table class="results" *ngIf="showResults"
+        border="0" cellspacing="0" cellpadding="0">
+      <thead>
+        <tr>
+          <th class="index"
+              (click)="handleClickHeader(-2)">
+            <div class="header-content">
+              #
+              <mat-icon *ngIf="curSortingRunIndex === -2" class="sort">
+                {{curSortingDirection === 'asc' ? 'arrow_upward' : 'arrow_downward'}}
+              </mat-icon>
+            </div>
+          </th>
+          <th class="header node-label"
+              (click)="handleClickHeader(-1)">
+            <div class="header-content">
+              Node
+              <mat-icon *ngIf="curSortingRunIndex === -1" class="sort">
+                {{curSortingDirection === 'asc' ? 'arrow_upward' : 'arrow_downward'}}
+              </mat-icon>
+            </div>
+          </th>
+          <th *ngFor="let runItem of runItems; let i = index"
+              class="value-col"
+              (click)="handleClickHeader(i)">
+            <div class="header-content">
+              <div class="index-number">{{i + 1}}</div>
+              <div class="icon-container visibility"
+                  *ngIf="!runItem.error"
+                  [class.selected]="isRunItemSelected(runItem)"
+                  [class.hide]="!runItem.done"
+                  [matTooltip]="getVisibleToggleTooltip(runItem)"
+                  matTooltipPosition="above"
+                  (click)="handleClickToggleVisibility(runItem, $event)">
+                <mat-icon>{{getIconName(runItem)}}</mat-icon>
+              </div>
+              <mat-icon *ngIf="i === curSortingRunIndex" class="sort">
+                {{curSortingDirection === 'asc' ? 'arrow_upward' : 'arrow_downward'}}
+              </mat-icon>
+            </div>
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let row of curPageRows; trackBy: trackByNodeId">
+          <td>{{row.index}}</td>
+          <td class="node-label"
+              [class.input]="row.isInput"
+              [class.output]="row.isOutput"
+              (click)="handleClickNodeLabel(row.id)">
+            {{row.label}}
+          </td>
+          <td *ngFor="let col of row.cols"
+              class="value-col"
+              [style.background-color]="col.bgColor"
+              [style.color]="col.textColor">
+            {{col.strValue}}
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>

@@ -1,0 +1,114 @@
+<!--
+@license
+Copyright 2024 The Model Explorer Authors. All Rights Reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+==============================================================================
+-->
+
+<div class="container">
+  <div class="input-container">
+    <mat-icon class="search">search</mat-icon>
+    <input placeholder="Search nodes/layers by regex"
+        #searchInput
+        [formControl]="curSearchText">
+    <div class="btn-clear-container" *ngIf="showClearButton"
+        (click)="handleClickClearSearchText()">
+      <mat-icon class="clear">close</mat-icon>
+    </div>
+    <div class="icon-container"
+        [bubble]="helpPopup"
+        [hoverDelayMs]="100">
+      <mat-icon>help_outline</mat-icon>
+    </div>
+  </div>
+  <div class="search-results-container" *ngIf="showResultsPanel"
+      [style.max-height.px]="searchResultsContainerMaxHeight">
+    <div class="title-container">
+      <div class="title">
+        <div class="title-label">
+          {{searchResultsTitle}}
+        </div>
+        @if (showPaginator) {
+          <paginator [pageSize]="pageSize" [itemsCount]="resultsCount"
+              (change)="handlePaginatorChanged($event)">
+          </paginator>
+        }
+      </div>
+      <div class="search-result-type-selector-container">
+        <div class="options-container">
+          @for (option of searchResultTypes; track option) {
+            <div class="option-container"
+                [class.selected]="option.selected"
+                (click)="updateSelectedResultTypes(option)">
+              <div class="icon-container">
+                <mat-icon>{{option.matchType}}</mat-icon>
+              </div>
+              <div class="option-label">
+                {{option.label}}
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+    <div class="content" #content>
+      @if (resultsCount > 0) {
+        <io-tree
+            [data]="curSearchResultsData"
+            [rendererId]="rendererId"
+            [tooltipPosition]="'right'"
+            [showLocator]="false">
+        </io-tree>
+      } @else {
+        <div class="empty-results">
+          No matching results
+        </div>
+      }
+    </div>
+    <div class="footer">
+      <mat-icon>tips_and_updates</mat-icon>
+      Click to locate node. Alt+Click to locate and select node.
+    </div>
+  </div>
+
+  <div class="no-matches" *ngIf="showNoMatches">
+    No matching results
+  </div>
+</div>
+
+<ng-template #helpPopup>
+  <div class="model-explorer-search-help-popup">
+    Use regex to match nodes by label, attributes, input/output node label,
+    and input/output metadata.
+    <br>
+    <br>
+    For attributes and I/O metadata, regex will try to match 
+    <span class="code">{{'{'}}key{{'}'}}:{{'{'}}value{{'}'}}</span> or
+    <span class="code">{{'{'}}key{{'}'}}={{'{'}}value{{'}'}}</span>.
+    <br>
+    <br>
+    Examples:<br>
+    <ul>
+      <li>
+        <span class="code regex">axis:</span> will match attributes whose key is
+        <span class="code">axis</span>.
+      </li>
+      <li>
+        <span class="code regex">padding=[SAME|VALID]</span> will match attributes whose key is
+        <span class="code">padding</span> and value is either <span class="code">SAME</span> or
+        <span class="code">VALID</span>.
+      </li>
+    </ul>
+  </div>
+</ng-template>
