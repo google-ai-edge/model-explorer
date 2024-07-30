@@ -161,10 +161,10 @@ cc_library(
         "//tools:convert_type",
         "//tools:load_opdefs",
         "@org_tensorflow//tensorflow/compiler/mlir/lite/schema:schema_fbs",
+        "@org_tensorflow//tensorflow/compiler/mlir/lite/schema:schema_utils",
         "@org_tensorflow//tensorflow/compiler/mlir/tensorflow:tensorflow_types",
         "@org_tensorflow//tensorflow/core:lib",
         "@org_tensorflow//tensorflow/lite/core:model_builder",
-        "@org_tensorflow//tensorflow/lite/schema:schema_utils",
     ],
 )
 
