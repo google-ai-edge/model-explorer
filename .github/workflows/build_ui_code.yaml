@@ -11,6 +11,8 @@ on:
       - 'src/ui/**'
   pull_request:
     branches: [ "main" ]
+    paths:
+      - 'src/ui/**'
 
 jobs:
   angular:
