@@ -16,6 +16,9 @@ jobs:
   angular:
     name: Angular Build
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./src/ui
     strategy:
       matrix:
         node-version: ["18.19.1"]
