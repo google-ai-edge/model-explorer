@@ -1,0 +1,33 @@
+# This workflow will do a clean installation of node dependencies, cache/restore them, and build the UI code.
+# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-nodejs
+
+name: Build UI code
+
+on:
+  push:
+    branches: [ "main" ]
+    paths:
+      - 'src/ui/**'
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  angular:
+    name: Angular Build
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: ["18.19.1"]
+    steps:
+      - name: Checkout the source code
+        uses: actions/checkout@v3
+      - name: Setup Node.js 
+        uses: actions/setup-node@v3
+        with:
+          node-version: $
+          cache: 'npm'
+          cache-dependency-path: package-lock.json
+      - name: Install dependencies
+        run: npm ci
+      - name: Build
+        run: npm run build
