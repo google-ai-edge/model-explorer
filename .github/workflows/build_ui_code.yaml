@@ -30,6 +30,8 @@ jobs:
         with:
           node-version: '18.19.1'
       - name: Install dependencies
-        run: npm i
+        run: npm install
+      - name: Install rollup
+        run: npm install @rollup/rollup-linux-x64-gnu
       - name: Build
         run: npm run build
