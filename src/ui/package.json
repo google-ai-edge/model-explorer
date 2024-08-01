@@ -5,6 +5,7 @@
     "ng": "ng",
     "start": "ng serve",
     "build": "ng build",
+    "deploy": "./scripts/build_and_update_python_package.sh",
     "watch": "ng build --watch --configuration development",
     "test": "ng test"
   },

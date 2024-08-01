@@ -63,6 +63,15 @@ $ ng serve
 
 Then visit the demo page at http://localhost:4200/demo
 
+# Deployment
+
+Run the following command to build the Angular app and update the corresponding
+files in the python package (`src/server/package/src/model_explorer/web_app`).
+
+```
+$ npm run deploy
+```
+
 # Contributions
 
 We are not currently accepting community contributions to Model Explorer UI
