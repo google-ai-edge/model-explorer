@@ -17,6 +17,7 @@
  */
 
 import {
+  LAYOUT_MARGIN_X,
   MAX_IO_ROWS_IN_ATTRS_TABLE,
   NODE_ATTRS_TABLE_FONT_SIZE,
   NODE_ATTRS_TABLE_LABEL_VALUE_PADDING,
@@ -34,6 +35,7 @@ import {
   OpNode,
 } from '../common/model_graph';
 import {
+  GraphNodeConfig,
   KeyValueList,
   NodeDataProviderRunData,
   Point,
@@ -56,9 +58,6 @@ import {
 } from '../common/utils';
 
 import {Dagre, DagreGraphInstance} from './dagre_types';
-
-/** The margin for the left and right side of the layout. */
-export const LAYOUT_MARGIN_X = 20;
 
 /** The margin for the top and bottom side of the layout. */
 export const LAYOUT_MARGIN_TOP = 36;
@@ -85,6 +84,7 @@ export declare interface DagreNode {
   height: number;
   x?: number;
   y?: number;
+  config?: GraphNodeConfig;
 }
 
 interface LayoutGraph {
@@ -143,7 +143,11 @@ export class GraphLayout {
 
     // Set nodes/edges to dagre.
     for (const id of Object.keys(layoutGraph.nodes)) {
-      this.dagreGraph.setNode(id, layoutGraph.nodes[id]);
+      const dagreNode = layoutGraph.nodes[id];
+      if (dagreNode.config?.pinToGroupTop) {
+        continue;
+      }
+      this.dagreGraph.setNode(id, dagreNode);
     }
     for (const fromNodeId of Object.keys(layoutGraph.outgoingEdges)) {
       for (const toNodeId of layoutGraph.outgoingEdges[fromNodeId]) {
@@ -154,7 +158,8 @@ export class GraphLayout {
     // Run the layout algorithm.
     this.dagre.layout(this.dagreGraph);
 
-    // Set the results back to the original model nodes.
+    // Set the results back to the original model nodes and calculate the bound
+    // that contains all the nodes.
     let minX = Number.MAX_VALUE;
     let minY = Number.MAX_VALUE;
     let maxX = Number.NEGATIVE_INFINITY;
@@ -172,13 +177,17 @@ export class GraphLayout {
       node.localOffsetX = 0;
       node.localOffsetY = 0;
 
-      minX = Math.min(minX, node.x);
-      minY = Math.min(minY, node.y);
-      maxX = Math.max(maxX, node.x + node.width);
-      maxY = Math.max(maxY, node.y + node.height);
+      // Don't consider the bound of the node if it's pinned to the top of the
+      // group.
+      if (!dagreNode.config?.pinToGroupTop) {
+        minX = Math.min(minX, node.x);
+        minY = Math.min(minY, node.y);
+        maxX = Math.max(maxX, node.x + node.width);
+        maxY = Math.max(maxY, node.y + node.height);
+      }
     }
 
-    // Edges.
+    // Expand the bound to include all the edges.
     let minEdgeX = Number.MAX_VALUE;
     let minEdgeY = Number.MAX_VALUE;
     let maxEdgeX = Number.NEGATIVE_INFINITY;
@@ -511,6 +520,7 @@ export function getLayoutGraph(
             nodeDataProviderRuns,
             testMode,
           ),
+      config: isOpNode(node) ? node.config : undefined,
     };
     layoutGraph.nodes[node.id] = dagreNode;
   }
@@ -520,6 +530,15 @@ export function getLayoutGraph(
     modelGraph.layoutGraphEdges[rootGroupNodeId] || {};
   for (const [fromNodeId, toNodeIds] of Object.entries(curLayoutGraphEdges)) {
     for (const toNodeId of Object.keys(toNodeIds)) {
+      // Ignore edges from/to nodes pinned to group top.
+      const fromNode = modelGraph.nodesById[fromNodeId];
+      const toNode = modelGraph.nodesById[toNodeId];
+      if (fromNode && isOpNode(fromNode) && fromNode.config?.pinToGroupTop) {
+        continue;
+      }
+      if (toNode && isOpNode(toNode) && toNode.config?.pinToGroupTop) {
+        continue;
+      }
       addLayoutGraphEdge(layoutGraph, fromNodeId, toNodeId);
     }
   }

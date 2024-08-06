@@ -159,6 +159,9 @@ export class GraphProcessor {
       if (graphNode.style) {
         opNode.style = graphNode.style;
       }
+      if (graphNode.config) {
+        opNode.config = graphNode.config;
+      }
       modelGraph.nodes.push(opNode);
       modelGraph.nodesById[opNode.id] = opNode;
 
@@ -290,6 +293,9 @@ export class GraphProcessor {
         }
         if (!parentGroupNode.nsChildrenIds.includes(node.id)) {
           parentGroupNode.nsChildrenIds.push(node.id);
+          if (isOpNode(node) && node.config?.pinToGroupTop) {
+            parentGroupNode.pinToTopOpNode = node;
+          }
         }
       }
     }

@@ -17,6 +17,7 @@
  */
 
 import {
+  GraphNodeConfig,
   GraphNodeStyle,
   IncomingEdge,
   KeyValuePairs,
@@ -206,6 +207,9 @@ export declare interface OpNode extends ModelNodeBase {
 
   /** The style of the node. */
   style?: GraphNodeStyle;
+
+  /** Custom configs for the node. */
+  config?: GraphNodeConfig;
 }
 
 /**
@@ -237,6 +241,9 @@ export declare interface GroupNode extends ModelNodeBase {
    * nodes to layout.
    */
   sectionContainer?: boolean;
+
+  /** The op node that should be pinned to the top of the group. */
+  pinToTopOpNode?: OpNode;
 }
 
 /** A node in a model graph. */

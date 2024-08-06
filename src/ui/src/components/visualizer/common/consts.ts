@@ -88,6 +88,9 @@ export const TENSOR_VALUES_KEY = '__value';
 /** The key to store the tensor tag in i/o metadata. */
 export const TENSOR_TAG_METADATA_KEY = '__tensor_tag';
 
+/** The margin for the left and right side of the layout. */
+export const LAYOUT_MARGIN_X = 20;
+
 /** A map from color names to the corresponding hex color. */
 export const COLOR_NAME_TO_HEX: Record<string, string> = {
   'aliceblue': '#f0f8ff',

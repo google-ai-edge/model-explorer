@@ -48,6 +48,7 @@ import * as three from 'three';
 import {AppService} from './app_service';
 import {
   GLOBAL_KEY,
+  LAYOUT_MARGIN_X,
   NODE_LABEL_HEIGHT,
   WEBGL_ELEMENT_Y_FACTOR,
 } from './common/consts';
@@ -260,6 +261,7 @@ export class WebglRenderer implements OnInit, OnDestroy {
   readonly GROUP_NODE_BORDER_COLOR = new THREE.Color('#aaa');
   readonly GROUP_NODE_LABEL_SEPARATOR_COLOR = new THREE.Color('#DADCE0');
   readonly GROUP_NODE_ICON_COLOR = new THREE.Color('#444746');
+  readonly GROUP_NODE_PIN_TO_TOP_SEPARATOR_COLOR = new THREE.Color('#bbb');
   readonly EDGE_COLOR = new THREE.Color(
     this.appService.config()?.edgeColor || '#aaa',
   );
@@ -1776,7 +1778,7 @@ export class WebglRenderer implements OnInit, OnDestroy {
       }
       nodeBodyRectangles.push({
         id: node.id,
-        index: i,
+        index: nodeBodyRectangles.length,
         bound: {
           x: x + width / 2,
           y: y + height / 2,
@@ -1796,6 +1798,29 @@ export class WebglRenderer implements OnInit, OnDestroy {
           bgColor.g === 1 &&
           bgColor.b === 1,
       });
+
+      // Render separator between the pinned node and the rest of the nodes.
+      if (isGroupNode(node) && node.expanded && node.pinToTopOpNode) {
+        nodeBodyRectangles.push({
+          id: `${node.id}_pin_to_top_separator`,
+          index: nodeBodyRectangles.length,
+          bound: {
+            x: x + width / 2,
+            y:
+              (node.pinToTopOpNode.globalY || 0) +
+              (node.pinToTopOpNode.height || 0) / 2 +
+              12.5,
+            width: width - LAYOUT_MARGIN_X * 2,
+            height: 1,
+          },
+          yOffset: WEBGL_ELEMENT_Y_FACTOR * nodeIndex + 0.1,
+          isRounded: true,
+          borderColor: this.GROUP_NODE_PIN_TO_TOP_SEPARATOR_COLOR,
+          bgColor: this.GROUP_NODE_PIN_TO_TOP_SEPARATOR_COLOR,
+          borderWidth: 1,
+          opacity: 1,
+        });
+      }
 
       // Subgraph indicators.
       if (isOpNode(node) && node.subgraphIds) {

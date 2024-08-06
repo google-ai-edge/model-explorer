@@ -17,6 +17,7 @@
  */
 
 import {
+  GraphNodeConfig,
   GraphNodeStyle,
   IncomingEdge,
   KeyValueList,
@@ -136,4 +137,7 @@ export declare interface GraphNode {
 
   /** The default style of the node. */
   style?: GraphNodeStyle;
+
+  /** Custom configs for the node. */
+  config?: GraphNodeConfig;
 }

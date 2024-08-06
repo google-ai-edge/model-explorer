@@ -110,6 +110,12 @@ export declare interface GraphNodeStyle {
   hoveredBorderColor?: string;
 }
 
+/** Custom configs for a graph node. */
+export declare interface GraphNodeConfig {
+  /** Whether to pin the node to the top of the group it belongs to. */
+  pinToGroupTop?: boolean;
+}
+
 /** Data to pass along when clicking "open in popup" on a group node. */
 export interface PopupPanelData {
   id: string;
