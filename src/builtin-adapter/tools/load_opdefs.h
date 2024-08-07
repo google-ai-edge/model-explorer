@@ -22,6 +22,8 @@ struct OpMetadata {
 
 absl::flat_hash_map<std::string, OpMetadata> LoadTfliteOpdefs();
 
+absl::flat_hash_map<std::string, OpMetadata> LoadTfOpdefs();
+
 }  // namespace visualization_client
 }  // namespace tooling
 

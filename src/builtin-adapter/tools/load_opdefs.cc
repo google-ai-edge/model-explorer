@@ -332,5 +332,273 @@ absl::flat_hash_map<std::string, OpMetadata> LoadTfliteOpdefs() {
   return opdefs;
 }
 
+absl::flat_hash_map<std::string, OpMetadata> LoadTfOpdefs() {
+  absl::flat_hash_map<std::string, OpMetadata> opdefs;
+  opdefs.reserve(89);
+  opdefs.emplace("Case", OpMetadata({"branch_index", "input"}, {"output"}));
+  opdefs.emplace("CaseRegion", OpMetadata({"branch_index"}, {"output"}));
+  opdefs.emplace("Const", OpMetadata({}, {"output"}));
+  opdefs.emplace("EmptyTensorList",
+                 OpMetadata({"element_shape", "max_num_elements"}, {}));
+  opdefs.emplace("If", OpMetadata({"cond", "input"}, {"output"}));
+  opdefs.emplace("Yield", OpMetadata({}, {}));
+  opdefs.emplace("IfRegion", OpMetadata({"cond"}, {"output"}));
+  opdefs.emplace("GeneratorDatasetRegion",
+                 OpMetadata({"init_func_other_args", "next_func_other_args",
+                             "finalize_func_other_args"},
+                            {"handle"}));
+  opdefs.emplace("LegacyCall", OpMetadata({"args"}, {"output"}));
+  opdefs.emplace("ParseExample",
+                 OpMetadata({"serialized", "names", "sparse_keys", "dense_keys",
+                             "dense_defaults"},
+                            {}));
+  opdefs.emplace("ParseExampleV2",
+                 OpMetadata({"serialized", "names", "sparse_keys", "dense_keys",
+                             "ragged_keys", "dense_defaults"},
+                            {}));
+  opdefs.emplace("Placeholder", OpMetadata({}, {"output"}));
+  opdefs.emplace("PlaceholderWithDefault", OpMetadata({"input"}, {"output"}));
+  opdefs.emplace("StatefulPartitionedCall", OpMetadata({"args"}, {"output"}));
+  opdefs.emplace("While", OpMetadata({"input"}, {"output"}));
+  opdefs.emplace("WhileRegion", OpMetadata({"input"}, {"output"}));
+  opdefs.emplace("TensorListReserve",
+                 OpMetadata({"element_shape", "num_elements"}, {}));
+  opdefs.emplace("VarHandleOp", OpMetadata({}, {"resource"}));
+  opdefs.emplace("XlaSharding", OpMetadata({"input"}, {"output"}));
+  opdefs.emplace("InfeedDequeueTuple", OpMetadata({}, {"outputs"}));
+  opdefs.emplace("InfeedEnqueueTuple", OpMetadata({"inputs"}, {}));
+  opdefs.emplace("StringFormat", OpMetadata({"inputs"}, {"output"}));
+  opdefs.emplace("ReduceDataset", OpMetadata({"input_dataset", "initial_state",
+                                              "other_arguments"},
+                                             {"components"}));
+  opdefs.emplace("ToBool", OpMetadata({"input"}, {"output"}));
+  opdefs.emplace("BesselI0e", OpMetadata({"x"}, {"y"}));
+  opdefs.emplace("BesselI1e", OpMetadata({"x"}, {"y"}));
+  opdefs.emplace("TPUPartitionedCall",
+                 OpMetadata({"args", "device_ordinal"}, {"output"}));
+  opdefs.emplace("StatefulUniformFullInt",
+                 OpMetadata({"resource", "algorithm", "shape"}, {"output"}));
+  opdefs.emplace("StatefulUniformInt", OpMetadata({"resource", "algorithm",
+                                                   "shape", "minval", "maxval"},
+                                                  {"output"}));
+  opdefs.emplace("CloseSummaryWriter", OpMetadata({"writer"}, {}));
+  opdefs.emplace("CreateSummaryDbWriter",
+                 OpMetadata({"writer", "db_uri", "experiment_name", "run_name",
+                             "user_name"},
+                            {}));
+  opdefs.emplace("CreateSummaryFileWriter",
+                 OpMetadata({"writer", "logdir", "max_queue", "flush_millis",
+                             "filename_suffix"},
+                            {}));
+  opdefs.emplace("FlushSummaryWriter", OpMetadata({"writer"}, {}));
+  opdefs.emplace("ImportEvent", OpMetadata({"writer", "event"}, {}));
+  opdefs.emplace("SummaryWriter", OpMetadata({}, {"writer"}));
+  opdefs.emplace(
+      "WriteAudioSummary",
+      OpMetadata({"writer", "step", "tag", "tensor", "sample_rate"}, {}));
+  opdefs.emplace("WriteGraphSummary",
+                 OpMetadata({"writer", "step", "tensor"}, {}));
+  opdefs.emplace("WriteHistogramSummary",
+                 OpMetadata({"writer", "step", "tag", "values"}, {}));
+  opdefs.emplace(
+      "WriteImageSummary",
+      OpMetadata({"writer", "step", "tag", "tensor", "bad_color"}, {}));
+  opdefs.emplace("WriteRawProtoSummary",
+                 OpMetadata({"writer", "step", "tensor"}, {}));
+  opdefs.emplace("WriteScalarSummary",
+                 OpMetadata({"writer", "step", "tag", "value"}, {}));
+  opdefs.emplace(
+      "WriteSummary",
+      OpMetadata({"writer", "step", "tensor", "tag", "summary_metadata"}, {}));
+  opdefs.emplace("_TPUDeviceOrdinalPlaceholder",
+                 OpMetadata({}, {"device_ordinal"}));
+  opdefs.emplace("TPUPartitionedInput", OpMetadata({"inputs"}, {"output"}));
+  opdefs.emplace("TPUPartitionedInputV2", OpMetadata({"inputs"}, {"output"}));
+  opdefs.emplace("TPUPartitionedOutput", OpMetadata({"inputs"}, {"output"}));
+  opdefs.emplace("TPUPartitionedOutputV2", OpMetadata({"inputs"}, {"output"}));
+  opdefs.emplace("XlaHostCompute", OpMetadata({"inputs"}, {"outputs"}));
+  opdefs.emplace("ConfigureAndInitializeGlobalTPU", OpMetadata({}, {"output"}));
+  opdefs.emplace("ShutdownTPUSystem", OpMetadata({}, {"success"}));
+  opdefs.emplace("_InternalTestNonResourceValueSideEffects_",
+                 OpMetadata({"key"}, {}));
+  opdefs.emplace("_InternalTestMustExecuteTrait_", OpMetadata({}, {}));
+  opdefs.emplace("SetStaticDimensionBounds",
+                 OpMetadata({"input", "static_shape"}, {"output"}));
+  opdefs.emplace("TPUCompileMlirAndExecute",
+                 OpMetadata({"args", "static_shapes"},
+                            {"rendezvous_key_base", "results"}));
+  opdefs.emplace("CollateTPUEmbeddingMemory",
+                 OpMetadata({"memory_configs"}, {"merged_memory_config"}));
+  opdefs.emplace("BatchNormWithGlobalNormalization",
+                 OpMetadata({"x", "m", "v", "beta", "gamma"}, {"result"}));
+  opdefs.emplace(
+      "ClipByValue",
+      OpMetadata({"x", "clip_value_min", "clip_value_max"}, {"output"}));
+  opdefs.emplace("L2Loss", OpMetadata({"x"}, {"output"}));
+  opdefs.emplace("Select", OpMetadata({"condition", "then_value", "else_value"},
+                                      {"output"}));
+  opdefs.emplace(
+      "SelectV2",
+      OpMetadata({"condition", "then_value", "else_value"}, {"output"}));
+  opdefs.emplace("TPUCopyWithDynamicShape",
+                 OpMetadata({"tensors", "unpadded_sizes"}, {"tpu_tensors"}));
+  opdefs.emplace("TPUAnnotateTensorsWithDynamicShape",
+                 OpMetadata({"tensors"}, {"tpu_tensors"}));
+  opdefs.emplace("ConvertToCooTensor",
+                 OpMetadata({"indices_or_row_splits", "values", "weights"},
+                            {"row_ids", "col_ids", "gains"}));
+  opdefs.emplace("GlobalIterId", OpMetadata({}, {"iter_id"}));
+  opdefs.emplace("ResourceGatherNd",
+                 OpMetadata({"resource", "indices"}, {"output"}));
+  opdefs.emplace(
+      "XlaSparseCoreAdagrad",
+      OpMetadata({"indices", "gradient", "learning_rate", "accumulator",
+                  "embedding_table"},
+                 {"updated_embedding_table", "updated_accumulator"}));
+  opdefs.emplace(
+      "XlaSparseCoreAdagradMomentum",
+      OpMetadata({"indices", "gradient", "learning_rate", "beta_1", "epsilon",
+                  "accumulator", "momentum", "embedding_table"},
+                 {"updated_embedding_table", "updated_accumulator",
+                  "updated_momentum"}));
+  opdefs.emplace(
+      "XlaSparseCoreAdam",
+      OpMetadata(
+          {"embedding_table", "indices", "gradient", "learning_rate",
+           "momentum", "velocity", "beta_1", "beta_2", "epsilon"},
+          {"updated_embedding_table", "updated_velocity", "updated_momentum"}));
+  opdefs.emplace(
+      "XlaSparseCoreFtrl",
+      OpMetadata({"embedding_table", "accumulator", "linear", "learning_rate",
+                  "indices", "gradient", "beta", "learning_rate_power",
+                  "l2_regularization_strength"},
+                 {"updated_embedding_table", "updated_accumulator",
+                  "updated_linear"}));
+  opdefs.emplace(
+      "XlaSparseCoreSgd",
+      OpMetadata({"indices", "gradient", "learning_rate", "embedding_table"},
+                 {"updated_embedding_table"}));
+  opdefs.emplace(
+      "XlaSparseDenseMatmulWithCsrInput",
+      OpMetadata({"row_pointers", "sorted_sample_ids", "sorted_token_ids",
+                  "sorted_gains", "embedding_table",
+                  "num_minibatches_per_physical_sparse_core"},
+                 {"activations"}));
+  opdefs.emplace(
+      "XlaSparseDenseMatmulGradWithSgdAndCsrInput",
+      OpMetadata(
+          {"row_pointers", "sorted_sample_ids", "sorted_token_ids",
+           "sorted_gains", "activation_gradients", "learning_rate",
+           "embedding_table", "num_minibatches_per_physical_sparse_core"},
+          {"updated_embedding_table"}));
+  opdefs.emplace(
+      "XlaSparseDenseMatmulGradWithAdagradAndCsrInput",
+      OpMetadata({"row_pointers", "sorted_sample_ids", "sorted_token_ids",
+                  "sorted_gains", "activation_gradients", "learning_rate",
+                  "embedding_table", "accumulator",
+                  "num_minibatches_per_physical_sparse_core"},
+                 {"updated_embedding_table", "updated_accumulator"}));
+  opdefs.emplace(
+      "XlaSparseDenseMatmulGradWithAdagradMomentumAndCsrInput",
+      OpMetadata({"row_pointers", "sorted_sample_ids", "sorted_token_ids",
+                  "sorted_gains", "activation_gradients", "learning_rate",
+                  "embedding_table", "accumulator", "momenta",
+                  "num_minibatches_per_physical_sparse_core"},
+                 {"updated_embedding_table", "updated_accumulator",
+                  "updated_momenta"}));
+  opdefs.emplace(
+      "XlaSparseDenseMatmulGradWithAdamAndCsrInput",
+      OpMetadata(
+          {"row_pointers", "sorted_sample_ids", "sorted_token_ids",
+           "sorted_gains", "activation_gradients", "learning_rate",
+           "embedding_table", "momenta", "velocity",
+           "num_minibatches_per_physical_sparse_core"},
+          {"updated_embedding_table", "updated_momenta", "updated_velocity"}));
+  opdefs.emplace(
+      "XlaSparseDenseMatmulGradWithFtrlAndCsrInput",
+      OpMetadata({"row_pointers", "sorted_sample_ids", "sorted_token_ids",
+                  "sorted_gains", "activation_gradients", "learning_rate",
+                  "embedding_table", "accumulator", "linear",
+                  "num_minibatches_per_physical_sparse_core"},
+                 {"updated_embedding_table", "updated_accumulator",
+                  "updated_linear"}));
+  opdefs.emplace(
+      "GetMinibatchesInCsrWithPhysicalReplica",
+      OpMetadata(
+          {"program_key", "row_ids", "col_ids", "gains", "splits", "id_counts"},
+          {"row_pointers", "sorted_sample_ids", "sorted_token_ids",
+           "sorted_gains", "row_pointers_unpadded_size", "ids_unpadded_size",
+           "num_minibatches_per_physical_sparse_core"}));
+  opdefs.emplace("GetMinibatchSplitsWithPhysicalReplica",
+                 OpMetadata({"program_key", "row_ids", "col_ids", "gains"},
+                            {"sorted_row_ids", "sorted_col_ids", "sorted_gains",
+                             "splits", "id_counts", "max_ids", "max_uniques"}));
+  opdefs.emplace("StoreMinibatchStatisticsInFdo",
+                 OpMetadata({"program_key", "max_ids", "max_uniques"}, {}));
+  opdefs.emplace("ConvertToListOfSparseCoreCooTensors",
+                 OpMetadata({"indices_or_row_splits", "values", "weights"},
+                            {"row_ids_list", "col_ids_list", "gains_list"}));
+  opdefs.emplace("SortListOfSparseCoreCooTensors",
+                 OpMetadata({"row_ids_list", "col_ids_list", "gains_list"},
+                            {"sorted_row_ids", "sorted_col_ids", "sorted_gains",
+                             "id_counts"}));
+  opdefs.emplace(
+      "ConvertToSparseCoreCsrWrappedCooTensorOp",
+      OpMetadata({"sorted_row_ids_list", "sorted_col_ids_list",
+                  "sorted_gains_list", "id_counts_list", "splits"},
+                 {"row_pointers", "sorted_sample_ids", "sorted_token_ids",
+                  "sorted_gains", "row_pointers_unpadded_size",
+                  "ids_unpadded_size", "num_minibatches_per_sc"}));
+  opdefs.emplace("GetStatsFromListOfSparseCoreCooTensors",
+                 OpMetadata({"row_ids_list", "col_ids_list", "gains_list"},
+                            {"max_ids_per_sparse_core",
+                             "max_unique_ids_per_sparse_core"}));
+  opdefs.emplace(
+      "XlaSparseDenseMatmulWithStaticBufferSize",
+      OpMetadata({"row_pointers", "sorted_sample_ids", "sorted_token_ids",
+                  "sorted_gains", "embedding_table",
+                  "num_minibatches_per_physical_sparse_core"},
+                 {"activations"}));
+  opdefs.emplace(
+      "XlaSparseDenseMatmulGradWithSgdAndStaticBufferSize",
+      OpMetadata(
+          {"row_pointers", "sorted_sample_ids", "sorted_token_ids",
+           "sorted_gains", "activation_gradients", "learning_rate",
+           "embedding_table", "num_minibatches_per_physical_sparse_core"},
+          {"updated_embedding_table"}));
+  opdefs.emplace(
+      "XlaSparseDenseMatmulGradWithAdagradAndStaticBufferSize",
+      OpMetadata({"row_pointers", "sorted_sample_ids", "sorted_token_ids",
+                  "sorted_gains", "activation_gradients", "learning_rate",
+                  "embedding_table", "accumulator",
+                  "num_minibatches_per_physical_sparse_core"},
+                 {"updated_embedding_table", "updated_accumulator"}));
+  opdefs.emplace(
+      "XlaSparseDenseMatmulGradWithAdagradMomentumAndStaticBufferSize",
+      OpMetadata({"row_pointers", "sorted_sample_ids", "sorted_token_ids",
+                  "sorted_gains", "activation_gradients", "learning_rate",
+                  "embedding_table", "accumulator", "momenta",
+                  "num_minibatches_per_physical_sparse_core"},
+                 {"updated_embedding_table", "updated_accumulator",
+                  "updated_momenta"}));
+  opdefs.emplace(
+      "XlaSparseDenseMatmulGradWithAdamAndStaticBufferSize",
+      OpMetadata(
+          {"row_pointers", "sorted_sample_ids", "sorted_token_ids",
+           "sorted_gains", "activation_gradients", "learning_rate",
+           "embedding_table", "momenta", "velocity",
+           "num_minibatches_per_physical_sparse_core"},
+          {"updated_embedding_table", "updated_momenta", "updated_velocity"}));
+  opdefs.emplace(
+      "XlaSparseDenseMatmulGradWithFtrlAndStaticBufferSize",
+      OpMetadata({"row_pointers", "sorted_sample_ids", "sorted_token_ids",
+                  "sorted_gains", "activation_gradients", "learning_rate",
+                  "embedding_table", "accumulator", "linear",
+                  "num_minibatches_per_physical_sparse_core"},
+                 {"updated_embedding_table", "updated_accumulator",
+                  "updated_linear"}));
+  return opdefs;
+}
+
 }  // namespace visualization_client
 }  // namespace tooling
