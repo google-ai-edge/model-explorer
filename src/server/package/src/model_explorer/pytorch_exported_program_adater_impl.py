@@ -178,14 +178,15 @@ class PytorchExportedProgramAdapterImpl:
       tensor_spec = self.inputs_map.get(fx_node.name)
       if tensor_spec:
         node.attrs.append(KeyValue(key='target', value=str(tensor_spec[0])))
-        node.attrs.append(
-            KeyValue(
-                key='__value',
-                value=self.print_tensor(
-                    tensor_spec[1], self.settings['const_element_count_limit']
-                ),
-            )
-        )
+        if (tensor := tensor_spec[1]) is not None:
+          node.attrs.append(
+              KeyValue(
+                  key='__value',
+                  value=self.print_tensor(
+                      tensor, self.settings['const_element_count_limit']
+                  ),
+              )
+          )
 
   def add_outputs_metadata(self, fx_node: torch.fx.node.Node, node: GraphNode):
     out_vals = fx_node.meta.get('val')
