@@ -1376,6 +1376,19 @@ export class WebglRenderer implements OnInit, OnDestroy {
   }
 
   // Used by tests only.
+  getNodeIoChipScreenPositionRelativeToCenter(nodeId: string): Point {
+    const node = this.curModelGraph.nodesById[nodeId];
+    const x = this.getNodeX(node) + 5;
+    const y = this.getNodeY(node) - 3;
+    const pos = this.webglRendererThreejsService.convertScenePosToScreen(x, y);
+    const container = this.container.nativeElement;
+    return {
+      x: Math.floor(pos.x - container.clientWidth / 2),
+      y: Math.floor(pos.y - container.clientHeight / 2),
+    };
+  }
+
+  // Used by tests only.
   getNodeExpandIconPositionRelativeToCenter(nodeId: string): Point {
     const node = this.curModelGraph.nodesById[nodeId] as GroupNode;
     const x = this.getNodeX(node);
