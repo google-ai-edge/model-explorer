@@ -19,10 +19,7 @@ limitations under the License.
 #include "absl/log/log.h"
 #include "absl/status/statusor.h"
 #include "tensorflow/compiler/mlir/init_mlir.h"
-#include "direct_flatbuffer_to_json_graph_convert.h"
-#include "direct_saved_model_to_json_graph_convert.h"
-#include "model_json_graph_convert.h"
-#include "visualize_config.h"
+#include "models_to_json_lib.h"
 #include "tensorflow/compiler/mlir/lite/tools/command_line_flags.h"
 #include "tensorflow/core/platform/logging.h"
 #include "tsl/platform/env.h"
@@ -34,19 +31,7 @@ constexpr char kDisableMlirFlag[] = "disable_mlir";
 
 namespace {
 
-using ::tooling::visualization_client::ConvertFlatbufferDirectlyToJson;
-using ::tooling::visualization_client::ConvertFlatbufferToJson;
-using ::tooling::visualization_client::ConvertSavedModelDirectlyToJson;
-using ::tooling::visualization_client::ConvertSavedModelToJson;
-
-enum ModelFormat {
-  kFlatbuffer,
-  kSavedModel,
-  kMlir,
-  kFlatbufferDirect,
-  kSavedModelDirect,
-  kGraphDefDirect,
-};
+using ::tooling::visualization_client::ConvertModelToJson;
 
 }  // namespace
 
@@ -87,74 +72,8 @@ int main(int argc, char* argv[]) {
     LOG(WARNING) << "Please specify output format to be JSON.";
   }
 
-  auto dot_idx = input_file.rfind('.');
-  int n = input_file.size();
-  ModelFormat model_format;
-  if (dot_idx == std::string::npos) {
-    // TF or JAX SavedModel
-    if (disable_mlir) {
-      model_format = kSavedModelDirect;
-    } else {
-      model_format = kSavedModel;
-    }
-  } else {
-    std::string extension = input_file.substr(dot_idx, n - dot_idx);
-    if (extension == ".tflite") {
-      // TFLite Flatbuffer
-      if (disable_mlir) {
-        model_format = kFlatbufferDirect;
-      } else {
-        model_format = kFlatbuffer;
-      }
-    } else if (extension == ".mlirbc" || extension == ".mlir") {
-      // StableHLO module represented using MLIR textual or bytecode format.
-      model_format = kMlir;
-    } else if (extension == ".pb" || extension == ".pbtxt" ||
-               extension == ".graphdef") {
-      model_format = kGraphDefDirect;
-    } else {
-      LOG(ERROR) << "Unsupported model format.";
-      return 1;
-    }
-  }
-
-  // Creates visualization config.
-  tooling::visualization_client::VisualizeConfig config(
-      const_element_count_limit);
-
-  absl::StatusOr<std::string> json_output;
-  switch (model_format) {
-    case kFlatbuffer: {
-      json_output =
-          ConvertFlatbufferToJson(config, input_file, /*is_modelpath=*/true);
-      break;
-    }
-    case kMlir: {
-      json_output = ConvertMlirToJson(config, input_file);
-      break;
-    }
-    case kSavedModel: {
-      json_output = ConvertSavedModelToJson(config, input_file);
-      break;
-    }
-    case kFlatbufferDirect: {
-      json_output = ConvertFlatbufferDirectlyToJson(config, input_file);
-      break;
-    }
-    case kSavedModelDirect: {
-      json_output = ConvertSavedModelDirectlyToJson(config, input_file);
-      break;
-    }
-    case kGraphDefDirect: {
-      json_output = ConvertGraphDefDirectlyToJson(config, input_file);
-      break;
-    }
-    default: {
-      LOG(ERROR) << "Unknown model format.";
-      return 1;
-    }
-  }
-
+  const auto json_output =
+      ConvertModelToJson(input_file, const_element_count_limit, disable_mlir);
   if (!json_output.ok()) {
     LOG(ERROR) << json_output.status();
     return 1;
