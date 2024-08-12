@@ -72,6 +72,14 @@ files in the python package (`src/server/package/src/model_explorer/web_app`).
 $ npm run deploy
 ```
 
+<br>
+
+> [!NOTE]
+> On Linux host, install `rollup` manually if you see the
+> `Cannot find module @rollup/rollup-linux-x64-gnu` error.
+>
+> `$ npm install @rollup/rollup-linux-x64-gnu`
+
 # Contributions
 
 We are not currently accepting community contributions to Model Explorer UI
