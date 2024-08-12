@@ -116,6 +116,9 @@ class GraphNode:
   # (optional)
   style: Union['GraphNodeStyle', None] = None
 
+  # The custom configs for the node.
+  config: Union['GraphNodeConfig', None] = None
+
 
 @dataclass
 class IncomingEdge:
@@ -170,6 +173,15 @@ class GraphNodeStyle:
   #
   # (optional)
   hoveredBorderColor: str = ''
+
+
+@dataclass
+class GraphNodeConfig:
+  """Custom configs for the node."""
+  # Whether to pin the node to the top of the group it belongs to.
+  #
+  # (optional)
+  pinToGroupTop: bool = False
 
 
 @dataclass
