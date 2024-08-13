@@ -391,21 +391,16 @@ absl::StatusOr<std::string> ConvertMlirToJson(const VisualizeConfig& config,
         mlir::Block& block = fop.getBody().front();
         mlir::Operation& first_op = block.front();
         absl::StatusOr<Subgraph> subgraph;
-        if (llvm::isa<mlir::stablehlo::StablehloDialect>(
-                first_op.getDialect())) {
-          subgraph = StablehloFunctionToSubgraph(config, fop);
-        } else if (llvm::isa<mlir::TF::TensorFlowDialect>(
-                       first_op.getDialect())) {
+        if (llvm::isa<mlir::TF::TensorFlowDialect>(first_op.getDialect())) {
           subgraph = TfFunctionToSubgraph(config, fop);
         } else if (llvm::isa<mlir::TFL::TensorFlowLiteDialect>(
                        first_op.getDialect())) {
           subgraph = TfliteFunctionToSubgraph(config, fop);
         } else {
-          llvm::errs() << "Unknown dialect: "
-                       << first_op.getDialect()->getNamespace()
-                       << " in function: " << fop.getSymName()
-                       << ", we skip serializing this function.\n";
-          return mlir::WalkResult::skip();
+          // Use StableHLO adapter as default for all other dialects. It will do
+          // best effort for "hlo" family of dialects, but no guarantees for the
+          // others.
+          subgraph = StablehloFunctionToSubgraph(config, fop);
         }
         if (!subgraph.ok()) {
           return PrintErrorAndInterupt(subgraph.status());
