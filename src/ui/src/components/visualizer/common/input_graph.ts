@@ -19,6 +19,7 @@
 import {
   GraphNodeConfig,
   GraphNodeStyle,
+  GroupNodeAttributes,
   IncomingEdge,
   KeyValueList,
   MetadataItem,
@@ -67,6 +68,13 @@ export declare interface Graph {
 
   /** A list of nodes in the graph. */
   nodes: GraphNode[];
+
+  /**
+   * Attributes for group nodes.
+   *
+   * It is displayed in the side panel when the group is selected.
+   */
+  groupNodeAttributes?: GroupNodeAttributes;
 
   //////////////////////////////////////////////////////////////////////////////
   // The following fields are set by model explorer. Users don't need to set

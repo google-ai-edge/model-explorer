@@ -93,7 +93,7 @@ export class ExpandableInfoText implements AfterViewInit, OnDestroy, OnChanges {
   }
 
   handleToggleExpand(event: MouseEvent, fromExpandedText = false) {
-    if (!this.hasOverflow) {
+    if (!this.hasOverflow && !this.hasMultipleLines) {
       return;
     }
 
@@ -114,6 +114,10 @@ export class ExpandableInfoText implements AfterViewInit, OnDestroy, OnChanges {
   get hasOverflow(): boolean {
     this.updateHasOverflow();
     return this.hasOverflowInternal;
+  }
+
+  get hasMultipleLines(): boolean {
+    return this.type !== 'namespace' && this.text.includes('\n');
   }
 
   get iconName(): string {

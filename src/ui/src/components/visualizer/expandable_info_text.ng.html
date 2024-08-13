@@ -21,6 +21,7 @@ limitations under the License.
     [style.color]="textColor"
     [class.has-bg-color]="hasBgColor"
     [class.has-overflow]="hasOverflow"
+    [class.has-multiple-lines]="hasMultipleLines"
     [class.expanded]="expanded"
     (click)="handleToggleExpand($event, true)">
   <div class="expanded-text">
@@ -62,7 +63,7 @@ limitations under the License.
     } @else if (type === 'quantization') {
       <div class="monospace-content">{{formatQuantization}}</div>
     } @else {
-      {{text}}
+      <div class="text-content">{{text}}</div>
     }
   </div>
   <div class="one-line-text" #oneLineText>

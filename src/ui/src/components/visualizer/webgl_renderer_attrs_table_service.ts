@@ -29,6 +29,7 @@ import {
 import {ModelNode} from './common/model_graph';
 import {FontWeight, ShowOnNodeItemType} from './common/types';
 import {
+  getGroupNodeAttrsKeyValuePairsForAttrsTable,
   getGroupNodeFieldLabelsFromShowOnNodeItemTypes,
   getNodeInfoFieldValue,
   getOpNodeAttrsKeyValuePairsForAttrsTable,
@@ -168,6 +169,23 @@ export class WebglRendererAttrsTableService {
         for (const fieldId of fieldIds) {
           const value = getNodeInfoFieldValue(node, fieldId);
           keyValuePairs.push({key: fieldId, value});
+        }
+
+        // Attrs.
+        if (
+          this.webglRenderer.curShowOnNodeItemTypes[
+            ShowOnNodeItemType.LAYER_NODE_ATTRS
+          ]?.selected
+        ) {
+          keyValuePairs.push(
+            ...getGroupNodeAttrsKeyValuePairsForAttrsTable(
+              node,
+              this.webglRenderer.curModelGraph,
+              this.webglRenderer.curShowOnNodeItemTypes[
+                ShowOnNodeItemType.LAYER_NODE_ATTRS
+              ]?.filterRegex || '',
+            ),
+          );
         }
       }
 

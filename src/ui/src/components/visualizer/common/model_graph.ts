@@ -19,6 +19,7 @@
 import {
   GraphNodeConfig,
   GraphNodeStyle,
+  GroupNodeAttributes,
   IncomingEdge,
   KeyValuePairs,
   OutgoingEdge,
@@ -44,6 +45,9 @@ export declare interface ModelGraph {
 
   /** All nodes in the model graph. */
   nodes: ModelNode[];
+
+  /** Attributes for group nodes. */
+  groupNodeAttributes?: GroupNodeAttributes;
 
   /** Ids of all group nodes that are artificially created. */
   artificialGroupNodeIds?: string[];

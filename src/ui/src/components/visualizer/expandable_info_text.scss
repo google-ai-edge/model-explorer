@@ -26,7 +26,8 @@
   align-items: flex-start;
   position: relative;
 
-  &.has-overflow {
+  &.has-overflow,
+  &.has-multiple-lines {
     cursor: pointer;
 
     .icon-container {
@@ -69,6 +70,12 @@
         font-size: 11px;
         white-space: pre-wrap;
         font-family: monospace;
+        max-height: 500px;
+        overflow: auto;
+      }
+
+      .text-content {
+        white-space: pre-wrap;
         max-height: 500px;
         overflow: auto;
       }

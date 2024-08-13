@@ -678,7 +678,7 @@ export class GraphProcessor {
   }
 
   createEmptyModelGraph(): ModelGraph {
-    return {
+    const modelGraph: ModelGraph = {
       id: this.graph.id,
       collectionLabel: this.graph.collectionLabel || '',
       nodes: [],
@@ -689,6 +689,11 @@ export class GraphProcessor {
       minDescendantOpNodeCount: -1,
       maxDescendantOpNodeCount: -1,
     };
+    if (this.graph.groupNodeAttributes) {
+      modelGraph.groupNodeAttributes = this.graph.groupNodeAttributes;
+    }
+
+    return modelGraph;
   }
 
   private getAncestorNamespaces(ns: string): string[] {

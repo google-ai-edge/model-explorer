@@ -53,9 +53,9 @@ limitations under the License.
         <div class="show-on-node-filter">
           <input class="input-attrs-filter"
             placeholder="Filter by regex" [disabled]="!item.selected"
-            [value]="curAttrsFilterText"
+            [value]="getAttrsFilterText(item)"
             (keydown.enter)="input.blur()"
-            (input)="curAttrsFilterText = input.value"
+            (input)="setAttrsFilterText(item, input.value)"
             (change)="handleAttrsFilterChanged(item)"
             #input>
           <div class="icon-container"

@@ -86,6 +86,20 @@ export declare interface Rect {
   height: number;
 }
 
+/** Attributes for group nodes. */
+export declare interface GroupNodeAttributes {
+  /**
+   * From group's namespace to its attribuets (key-value pairs).
+   *
+   * Use empty group namespace for the model-level attributes (i.e. shown in
+   * side panel when no node is selected).
+   */
+  [namespaceName: string]: Record<string, GroupNodeAttributeItem>;
+}
+
+/** A single attribute item for group node. */
+export type GroupNodeAttributeItem = string;
+
 /** The style of the op node. */
 export declare interface GraphNodeStyle {
   /**
@@ -475,6 +489,7 @@ export enum ShowOnNodeItemType {
   OP_OUTPUTS = 'Op node outputs',
   LAYER_NODE_CHILDREN_COUNT = 'Layer node children count',
   LAYER_NODE_DESCENDANTS_COUNT = 'Layer node descendants count',
+  LAYER_NODE_ATTRS = 'Layer node attributes',
 }
 
 /** Item types to be shown on edge. */

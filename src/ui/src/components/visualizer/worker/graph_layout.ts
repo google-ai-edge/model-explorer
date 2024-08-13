@@ -45,6 +45,7 @@ import {
 } from '../common/types';
 import {
   generateCurvePoints,
+  getGroupNodeAttrsKeyValuePairsForAttrsTable,
   getGroupNodeFieldLabelsFromShowOnNodeItemTypes,
   getLabelWidth,
   getNodeInfoFieldValue,
@@ -271,6 +272,8 @@ export class GraphLayout {
     // Offset downwards if the root node has attrs table shown.
     if (rootNode && isGroupNode(rootNode)) {
       const attrsRowCount = getGroupNodeAttrsTableRowCount(
+        rootNode,
+        this.modelGraph,
         this.showOnNodeItemTypes,
       );
       if (attrsRowCount > 0) {
@@ -425,6 +428,19 @@ export function getNodeWidth(
       maxAttrLabelWidth = Math.max(maxAttrLabelWidth, attrLabelWidth);
       maxAttrValueWidth = Math.max(maxAttrValueWidth, attrValueWidth);
     }
+
+    // Attrs.
+    if (showOnNodeItemTypes[ShowOnNodeItemType.LAYER_NODE_ATTRS]?.selected) {
+      const keyValuePairs = getGroupNodeAttrsKeyValuePairsForAttrsTable(
+        node,
+        modelGraph,
+        showOnNodeItemTypes[ShowOnNodeItemType.LAYER_NODE_ATTRS]?.filterRegex ||
+          '',
+      );
+      const widths = getMaxAttrLabelAndValueWidth(keyValuePairs);
+      maxAttrLabelWidth = Math.max(maxAttrLabelWidth, widths.maxAttrLabelWidth);
+      maxAttrValueWidth = Math.max(maxAttrValueWidth, widths.maxAttrValueWidth);
+    }
   }
   maxAttrValueWidth = Math.min(
     maxAttrValueWidth,
@@ -467,7 +483,11 @@ export function getNodeHeight(
       nodeDataProviderRuns,
     );
   } else if (isGroupNode(node)) {
-    attrsTableRowCount = getGroupNodeAttrsTableRowCount(showOnNodeItemTypes);
+    attrsTableRowCount = getGroupNodeAttrsTableRowCount(
+      node,
+      modelGraph,
+      showOnNodeItemTypes,
+    );
   }
 
   return (
@@ -608,11 +628,24 @@ function getOpNodeAttrsTableRowCount(
 }
 
 function getGroupNodeAttrsTableRowCount(
+  node: GroupNode,
+  modelGraph: ModelGraph,
   showOnNodeItemTypes: Record<string, ShowOnNodeItemData>,
 ): number {
   const baiscFieldIds =
     getGroupNodeFieldLabelsFromShowOnNodeItemTypes(showOnNodeItemTypes);
-  return baiscFieldIds.length;
+
+  // Node attributes.
+  const attrsCount = showOnNodeItemTypes[ShowOnNodeItemType.LAYER_NODE_ATTRS]
+    ?.selected
+    ? getGroupNodeAttrsKeyValuePairsForAttrsTable(
+        node,
+        modelGraph,
+        showOnNodeItemTypes[ShowOnNodeItemType.LAYER_NODE_ATTRS]?.filterRegex ||
+          '',
+      ).length
+    : 0;
+  return baiscFieldIds.length + attrsCount;
 }
 
 function addLayoutGraphEdge(

@@ -73,6 +73,7 @@ enum SectionLabel {
   GRAPH_INFO = 'Graph info',
   NODE_INFO = 'Node info',
   LAYER_INFO = 'Layer info',
+  LAYER_ATTRS = 'Layer attributes',
   ATTRIBUTES = 'Attributes',
   NODE_DATA_PROVIDERS = 'Node data providers',
   IDENTICAL_GROUPS = 'Identical groups',
@@ -410,7 +411,9 @@ export class InfoPanel {
   }
 
   getSectionToggleIcon(sectionName: string): string {
-    return this.isSectionCollapsed(sectionName) ? 'expand_more' : 'expand_less';
+    return this.isSectionCollapsed(sectionName)
+      ? 'chevron_right'
+      : 'expand_more';
   }
 
   handleLocateNode(nodeId: string, event: MouseEvent) {
@@ -647,6 +650,18 @@ export class InfoPanel {
         value: String(layerCount),
       },
     );
+
+    // Custom attributes.
+    const graphAttributes = this.curModelGraph.groupNodeAttributes?.[''];
+    if (graphAttributes) {
+      for (const key of Object.keys(graphAttributes)) {
+        graphSection.items.push({
+          section: graphSection,
+          label: key,
+          value: graphAttributes[key],
+        });
+      }
+    }
   }
 
   private genInfoDataForSelectedOpNode() {
@@ -891,6 +906,27 @@ export class InfoPanel {
       canShowOnNode: true,
       showOnNode: this.curShowOnGroupNodeInfoIds.has(label),
     });
+
+    // Section for custom attributes.
+    const groupAttributes =
+      this.curModelGraph.groupNodeAttributes?.[
+        groupNode.id.replace('___group___', '')
+      ];
+    if (groupAttributes) {
+      const attrsSection: InfoSection = {
+        label: SectionLabel.LAYER_ATTRS,
+        sectionType: 'group',
+        items: [],
+      };
+      this.sections.push(attrsSection);
+      for (const key of Object.keys(groupAttributes)) {
+        attrsSection.items.push({
+          section: nodeSection,
+          label: key,
+          value: groupAttributes[key],
+        });
+      }
+    }
 
     // Section for identical groups.
     if (groupNode.identicalGroupIndex != null) {

@@ -398,8 +398,39 @@ export function getOpNodeAttrsKeyValuePairsForAttrsTable(
         processedValue = value.replace(/\s/gm, '');
       } else {
         // For other attributes, only remove newline chars.
-        processedValue = value.replace(/(\r\n|\n|\r)/gm, '');
+        processedValue = value.replace(/(\r\n|\n|\r)/gm, ' ');
       }
+      keyValuePairs.push({
+        key,
+        value: processedValue,
+      });
+    }
+  }
+  return keyValuePairs;
+}
+
+/**
+ * Gets the key value pairs for the given group node's attrs for attrs table.
+ */
+export function getGroupNodeAttrsKeyValuePairsForAttrsTable(
+  node: GroupNode,
+  modelGraph: ModelGraph,
+  filterRegex = '',
+) {
+  const attrs =
+    modelGraph.groupNodeAttributes?.[node.id.replace('___group___', '')] || {};
+  const keyValuePairs: KeyValueList = [];
+  const regex = new RegExp(filterRegex, 'i');
+  for (const attrId of Object.keys(attrs)) {
+    const key = attrId;
+    const value = attrs[attrId];
+    const matchTargets = [`${key}:${value}`, `${key}=${value}`];
+    if (
+      filterRegex.trim() === '' ||
+      matchTargets.some((matchTarget) => regex.test(matchTarget))
+    ) {
+      // Remove new line chars and spaces.
+      const processedValue = value.replace(/(\r\n|\n|\r)/gm, ' ');
       keyValuePairs.push({
         key,
         value: processedValue,
@@ -591,7 +622,7 @@ export function getRegexMatchesForNode(
   }
   // Attribute.
   if (shouldMatchTypes.has(SearchMatchType.ATTRIBUTE)) {
-    const attrs = getAttributesFromNode(node);
+    const attrs = getAttributesFromNode(node, modelGraph);
     for (const attrId of Object.keys(attrs)) {
       const value = attrs[attrId];
       const text1 = `${attrId}:${value}`;
@@ -724,7 +755,10 @@ export function getRegexMatchesForNode(
 }
 
 /** Gets the attributes from the given node. */
-export function getAttributesFromNode(node: ModelNode): KeyValuePairs {
+export function getAttributesFromNode(
+  node: ModelNode,
+  modelGraph: ModelGraph,
+): KeyValuePairs {
   let attrs: KeyValuePairs = {};
   if (isOpNode(node)) {
     attrs = {...(node.attrs || {})};
@@ -735,6 +769,10 @@ export function getAttributesFromNode(node: ModelNode): KeyValuePairs {
       '#descendants': `${(node.descendantsNodeIds || []).length}`,
       '#children': `${(node.nsChildrenIds || []).length}`,
     };
+    const customAttrs =
+      modelGraph.groupNodeAttributes?.[node.id.replace('___group___', '')] ||
+      {};
+    attrs = {...attrs, ...customAttrs};
   }
   return attrs;
 }
@@ -749,7 +787,7 @@ export function getAttrValueRangeMatchesForNode(
 ): SearchMatch[] {
   const matches: SearchMatch[] = [];
 
-  const attrs = getAttributesFromNode(node);
+  const attrs = getAttributesFromNode(node, modelGraph);
   const value = attrs[attrName];
   if (value != null) {
     const numValue = Number(value);

@@ -67,6 +67,7 @@ const ALL_SHOW_ON_NODE_ITEM_TYPES: ShowOnNodeItemType[] = [
   ShowOnNodeItemType.OP_OUTPUTS,
   ShowOnNodeItemType.LAYER_NODE_CHILDREN_COUNT,
   ShowOnNodeItemType.LAYER_NODE_DESCENDANTS_COUNT,
+  ShowOnNodeItemType.LAYER_NODE_ATTRS,
 ];
 
 const ALL_SHOW_ON_EDGE_ITEM_TYPES: ShowOnEdgeItemType[] = [
@@ -122,7 +123,8 @@ export class ViewOnNode {
 
   showOnNodeItems: ShowOnNodeItem[] = [];
   showOnEdgeItems: ShowOnEdgeItem[] = [];
-  curAttrsFilterText = '';
+  curOpAttrsFilterText = '';
+  curGroupAttrsFilterText = '';
   opened = false;
 
   constructor(
@@ -160,7 +162,12 @@ export class ViewOnNode {
           item.filterRegex =
             (curShowOnNodeItemTypes[this.rendererId] || {})[type]
               ?.filterRegex || '';
-          this.curAttrsFilterText = item.filterRegex;
+          this.curOpAttrsFilterText = item.filterRegex;
+        } else if (type === ShowOnNodeItemType.LAYER_NODE_ATTRS) {
+          item.filterRegex =
+            (curShowOnNodeItemTypes[this.rendererId] || {})[type]
+              ?.filterRegex || '';
+          this.curGroupAttrsFilterText = item.filterRegex;
         }
       }
 
@@ -227,15 +234,42 @@ export class ViewOnNode {
       this.paneId,
       this.rendererId,
       item.type,
-      this.curAttrsFilterText,
+      this.getAttrsFilterText(item),
     );
 
     // Save to local storage.
     this.saveShowOnNodeItemsToLocalStorage();
   }
 
+  getAttrsFilterText(item: ShowOnNodeItem): string {
+    switch (item.type) {
+      case ShowOnNodeItemType.OP_ATTRS:
+        return this.curOpAttrsFilterText;
+      case ShowOnNodeItemType.LAYER_NODE_ATTRS:
+        return this.curGroupAttrsFilterText;
+      default:
+        return '';
+    }
+  }
+
+  setAttrsFilterText(item: ShowOnNodeItem, text: string) {
+    switch (item.type) {
+      case ShowOnNodeItemType.OP_ATTRS:
+        this.curOpAttrsFilterText = text;
+        break;
+      case ShowOnNodeItemType.LAYER_NODE_ATTRS:
+        this.curGroupAttrsFilterText = text;
+        break;
+      default:
+        break;
+    }
+  }
+
   getIsAttrs(item: ShowOnNodeItem): boolean {
-    return item.type === ShowOnNodeItemType.OP_ATTRS;
+    return (
+      item.type === ShowOnNodeItemType.OP_ATTRS ||
+      item.type === ShowOnNodeItemType.LAYER_NODE_ATTRS
+    );
   }
 
   private saveShowOnNodeItemsToLocalStorage() {
