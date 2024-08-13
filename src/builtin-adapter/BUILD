@@ -114,13 +114,34 @@ cc_library(
     hdrs = ["status_macros.h"],
 )
 
-cc_binary(
-    name = "models_to_json",
-    srcs = ["models_to_json_main.cc"],
+cc_library(
+    name = "models_to_json_lib",
+    srcs = [
+        "models_to_json_lib.cc",
+    ],
+    hdrs = ["models_to_json_lib.h"],
     deps = [
         ":direct_flatbuffer_to_json_graph_convert",
         ":direct_saved_model_to_json_graph_convert",
         ":model_json_graph_convert",
+        ":status_macros",
+        ":visualize_config",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status:statusor",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/strings:string_view",
+        "@org_tensorflow//tensorflow/core:lib",
+    ],
+)
+
+cc_binary(
+    name = "models_to_json",
+    srcs = [
+        "models_to_json_main.cc",
+    ],
+    deps = [
+        ":models_to_json_lib",
         ":visualize_config",
         "@com_google_absl//absl/log",
         "@com_google_absl//absl/status:statusor",
