@@ -628,6 +628,19 @@ export class InfoPanel {
       items: [],
     };
     this.sections.push(graphSection);
+
+    // Custom attributes.
+    const graphAttributes = this.curModelGraph.groupNodeAttributes?.[''];
+    if (graphAttributes) {
+      for (const key of Object.keys(graphAttributes)) {
+        graphSection.items.push({
+          section: graphSection,
+          label: key,
+          value: graphAttributes[key],
+        });
+      }
+    }
+
     // Node count.
     let nodeCount = 0;
     let layerCount = 0;
@@ -650,18 +663,6 @@ export class InfoPanel {
         value: String(layerCount),
       },
     );
-
-    // Custom attributes.
-    const graphAttributes = this.curModelGraph.groupNodeAttributes?.[''];
-    if (graphAttributes) {
-      for (const key of Object.keys(graphAttributes)) {
-        graphSection.items.push({
-          section: graphSection,
-          label: key,
-          value: graphAttributes[key],
-        });
-      }
-    }
   }
 
   private genInfoDataForSelectedOpNode() {
