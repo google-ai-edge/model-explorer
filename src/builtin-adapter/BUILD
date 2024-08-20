@@ -152,6 +152,39 @@ cc_binary(
 )
 
 cc_library(
+    name = "direct_hlo_to_json_graph_convert",
+    srcs = ["direct_hlo_to_json_graph_convert.cc"],
+    hdrs = ["direct_hlo_to_json_graph_convert.h"],
+    deps = [
+        ":graphnode_builder",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status:statusor",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/strings:str_format",
+        "@llvm-project//llvm:Support",
+        "//formats:schema_structs",
+        "@org_tensorflow//tensorflow/compiler/xla:shape_util",
+        "@local_xla//xla/hlo/ir:hlo",
+        "@org_tensorflow//tensorflow/tsl/platform:errors",
+    ],
+)
+
+cc_test(
+    name = "direct_hlo_to_json_graph_convert_test",
+    srcs = ["direct_hlo_to_json_graph_convert_test.cc"],
+    deps = [
+        ":direct_hlo_to_json_graph_convert",
+        "//testing/base/public:gunit_main",
+        "@com_google_absl//absl/strings",
+        "@org_tensorflow//tensorflow/compiler/xla:shape_util",
+        "@local_xla//xla/hlo/ir:hlo",
+        "@local_xla//xla/service:hlo_module_config",
+        "@local_xla//xla/tests:hlo_test_base",
+        "@org_tensorflow//tensorflow/tsl/platform:statusor",
+    ],
+)
+
+cc_library(
     name = "direct_flatbuffer_to_json_graph_convert",
     srcs = ["direct_flatbuffer_to_json_graph_convert.cc"],
     hdrs = ["direct_flatbuffer_to_json_graph_convert.h"],
