@@ -16,6 +16,7 @@
  * ==============================================================================
  */
 
+import type { EditableAttributeTypes } from './input_graph.js';
 import {
   GraphNodeConfig,
   GraphNodeStyle,
@@ -191,6 +192,9 @@ export declare interface OpNode extends ModelNodeBase {
   /** The attributes of the node. */
   attrs?: KeyValuePairs;
 
+  /** The attributes which are editable */
+  editableAttrs?: KeyAttributePairs;
+
   /**
    * Metadata for inputs, indexed by input ids. Each input can have multiple
    * key-value pairs as its metadata.
@@ -263,3 +267,5 @@ export declare interface ModelEdge {
   // The following are for webgl rendering.
   curvePoints?: Point[];
 }
+
+export type KeyAttributePairs = Record<string, EditableAttributeTypes>;

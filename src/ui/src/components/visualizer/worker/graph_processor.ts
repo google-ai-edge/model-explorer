@@ -27,6 +27,7 @@ import {
   ModelNode,
   NodeType,
   OpNode,
+  type KeyAttributePairs,
 } from '../common/model_graph';
 import {
   KeyValuePairs,
@@ -141,10 +142,16 @@ export class GraphProcessor {
       }
       if (graphNode.attrs) {
         const attrs: KeyValuePairs = {};
+        const editableAttrs: KeyAttributePairs = {};
         for (const attr of graphNode.attrs) {
           attrs[attr.key] = this.processAttrValue(attr.key, attr.value);
+
+          if (attr.editable) {
+            editableAttrs[attr.key] = attr.editable;
+          }
         }
         opNode.attrs = attrs;
+        opNode.editableAttrs = editableAttrs;
       }
       if (graphNode.inputsMetadata) {
         opNode.inputsMetadata = this.processMetadataList(
