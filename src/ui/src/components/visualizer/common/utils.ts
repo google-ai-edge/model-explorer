@@ -41,6 +41,7 @@ import {
   NodeDataProviderRunData,
   NodeQuery,
   NodeQueryType,
+  NodeStyleId,
   NodeStylerRule,
   Point,
   ProcessedNodeQuery,
@@ -932,4 +933,20 @@ export function getHighQualityPixelRatio(): number {
   return window.devicePixelRatio === 1
     ? 1.5 /* This makes rendering result sharper on non-retina displays */
     : window.devicePixelRatio;
+}
+
+/** Get the value for the given style. */
+export function getNodeStyleValue(
+  rule: ProcessedNodeStylerRule | NodeStylerRule,
+  styleId: NodeStyleId,
+): string {
+  const curStyle = rule.styles[styleId];
+  if (curStyle) {
+    if (typeof curStyle === 'string') {
+      return curStyle;
+    } else {
+      return curStyle.value;
+    }
+  }
+  return '';
 }

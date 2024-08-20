@@ -16,7 +16,7 @@
  * ==============================================================================
  */
 
-import {RendererType} from './types';
+import {NodeStylerRule, RendererType} from './types';
 
 /** Configs for the visualizer. */
 export declare interface VisualizerConfig {
@@ -50,8 +50,13 @@ export declare interface VisualizerConfig {
   /** Whether to keep layers with a single child. */
   keepLayersWithASingleChild?: boolean;
 
+  /** The default node styler rules. */
+  nodeStylerRules?: NodeStylerRule[];
+
   /**
    * Default graph renderer.
+   *
+   * @deprecated This field is no longer used.
    */
   defaultRenderer?: RendererType;
 

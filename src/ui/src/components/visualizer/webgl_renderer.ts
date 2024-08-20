@@ -64,6 +64,7 @@ import {
   FontWeight,
   NodeDataProviderResultProcessedData,
   NodeDataProviderRunData,
+  NodeStyleId,
   NodeStylerRule,
   Point,
   PopupPanelData,
@@ -79,6 +80,7 @@ import {
 import {
   genUid,
   getHighQualityPixelRatio,
+  getNodeStyleValue,
   hasNonEmptyQueries,
   IS_MAC,
   isGroupNode,
@@ -97,7 +99,7 @@ import {
 import {DragArea} from './drag_area';
 import {genIoTreeData, IoTree} from './io_tree';
 import {NodeDataProviderExtensionService} from './node_data_provider_extension_service';
-import {NodeStylerService, StyleId} from './node_styler_service';
+import {NodeStylerService} from './node_styler_service';
 import {SplitPaneService} from './split_pane_service';
 import {SubgraphSelectionService} from './subgraph_selection_service';
 import {ThreejsService} from './threejs_service';
@@ -1767,17 +1769,24 @@ export class WebglRenderer implements OnInit, OnDestroy {
       // Node styler.
       for (const rule of this.curProcessedNodeStylerRules) {
         if (matchNodeForQueries(node, rule.queries, this.curModelGraph)) {
-          const nodeStylerBgColor =
-            rule.styles[StyleId.NODE_BG_COLOR]?.value || '';
+          const nodeStylerBgColor = getNodeStyleValue(
+            rule,
+            NodeStyleId.NODE_BG_COLOR,
+          );
           if (nodeStylerBgColor !== '') {
             bgColor = new THREE.Color(nodeStylerBgColor);
           }
-          const nodeBorderColor =
-            rule.styles[StyleId.NODE_BORDER_COLOR]?.value || '';
+          const nodeBorderColor = getNodeStyleValue(
+            rule,
+            NodeStyleId.NODE_BORDER_COLOR,
+          );
           if (nodeBorderColor !== '') {
             borderColor = new THREE.Color(nodeBorderColor);
           }
-          const textColor = rule.styles[StyleId.NODE_TEXT_COLOR]?.value || '';
+          const textColor = getNodeStyleValue(
+            rule,
+            NodeStyleId.NODE_TEXT_COLOR,
+          );
           if (textColor !== '') {
             groupNodeIconColor = new THREE.Color(textColor);
           }
@@ -2019,8 +2028,10 @@ export class WebglRenderer implements OnInit, OnDestroy {
       // Node styler.
       for (const rule of this.curProcessedNodeStylerRules) {
         if (matchNodeForQueries(node, rule.queries, this.curModelGraph)) {
-          const nodeStylerTextColor =
-            rule.styles[StyleId.NODE_TEXT_COLOR]?.value || '';
+          const nodeStylerTextColor = getNodeStyleValue(
+            rule,
+            NodeStyleId.NODE_TEXT_COLOR,
+          );
           if (nodeStylerTextColor !== '') {
             color = new THREE.Color(nodeStylerTextColor);
           }

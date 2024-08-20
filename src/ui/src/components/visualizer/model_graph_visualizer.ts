@@ -129,6 +129,7 @@ export class ModelGraphVisualizer implements OnInit, OnDestroy, OnChanges {
     private readonly threejsService: ThreejsService,
     private readonly uiStateService: UiStateService,
     private readonly nodeDataProviderExtensionService: NodeDataProviderExtensionService,
+    private readonly nodeStylerService: NodeStylerService,
   ) {
     effect(() => {
       const curUiState = this.uiStateService.curUiState();
@@ -184,6 +185,9 @@ export class ModelGraphVisualizer implements OnInit, OnDestroy, OnChanges {
     this.appService.config.set(this.config || {});
     this.appService.addGraphCollections(this.graphCollections);
     this.appService.curInitialUiState.set(this.initialUiState);
+    if (this.config?.nodeStylerRules) {
+      this.nodeStylerService.rules.set(this.config.nodeStylerRules);
+    }
 
     // No initial ui state. Use the graph with the most node counts as the
     // default selected graph.

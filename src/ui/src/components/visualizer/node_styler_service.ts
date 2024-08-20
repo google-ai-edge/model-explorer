@@ -24,6 +24,7 @@ import {ModelNode} from './common/model_graph';
 import {
   NodeQuery,
   NodeQueryType,
+  NodeStyleId,
   NodeStylerRule,
   NodeStylerRuleVersion,
   NodeTypeQuery,
@@ -41,7 +42,7 @@ import {LocalStorageService} from './local_storage_service';
 export interface Style {
   type: StyleType;
   label: string;
-  id: string;
+  id: NodeStyleId;
   defaultValue: string;
 }
 
@@ -51,19 +52,11 @@ export enum StyleType {
   NUMBER = 'NUMBER',
 }
 
-/** Style ids. */
-export enum StyleId {
-  NODE_BG_COLOR = 'node_bg_color',
-  NODE_TEXT_COLOR = 'node_text_color',
-  NODE_BORDER_COLOR = 'node_border_color',
-  NODE_SCALE = 'node_scale',
-}
-
 /** Style for node background color. */
 export const NODE_BG_COLOR_STYLE: Style = {
   type: StyleType.COLOR,
   label: 'Bg color',
-  id: StyleId.NODE_BG_COLOR,
+  id: NodeStyleId.NODE_BG_COLOR,
   defaultValue: '#ffffff',
 };
 
@@ -71,7 +64,7 @@ export const NODE_BG_COLOR_STYLE: Style = {
 export const NODE_BORDER_COLOR_STYLE: Style = {
   type: StyleType.COLOR,
   label: 'Border color',
-  id: StyleId.NODE_BORDER_COLOR,
+  id: NodeStyleId.NODE_BORDER_COLOR,
   defaultValue: '#777777',
 };
 
@@ -79,7 +72,7 @@ export const NODE_BORDER_COLOR_STYLE: Style = {
 export const NODE_TEXT_COLOR_STYLE: Style = {
   type: StyleType.COLOR,
   label: 'Text color',
-  id: StyleId.NODE_TEXT_COLOR,
+  id: NodeStyleId.NODE_TEXT_COLOR,
   defaultValue: '#041e49',
 };
 
@@ -251,18 +244,17 @@ export class NodeStylerService {
     });
   }
 
-  updateNodeType(ruleIndex: number, nodeType: SearchNodeType) {
-    this.rules.update((rules) => {
-      const rule = rules[ruleIndex];
-      rule.nodeType = nodeType;
-      return [...rules];
-    });
-  }
-
   updateStyleValue(ruleIndex: number, style: Style, value: string) {
     this.rules.update((rules) => {
       const rule = rules[ruleIndex];
-      rule.styles[style.id].value = value;
+      const curStyle = rule.styles[style.id];
+      if (curStyle) {
+        if (typeof curStyle === 'string') {
+          rule.styles[style.id] = value;
+        } else {
+          curStyle.value = value;
+        }
+      }
       return [...rules];
     });
   }
@@ -279,7 +271,7 @@ export class NodeStylerService {
     return rules.map((rule) => {
       // For older version of the rule, convert the node type to
       // a query.
-      if (rule.version == null) {
+      if (rule.version == null && rule.nodeType) {
         const nodeTypeQuery: NodeTypeQuery = {
           type: NodeQueryType.NODE_TYPE,
           nodeType: rule.nodeType,

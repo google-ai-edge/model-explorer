@@ -536,12 +536,38 @@ export declare interface ShowOnEdgeItemData {
   selected: boolean;
 }
 
+/** The ids of the node style. */
+export enum NodeStyleId {
+  NODE_BG_COLOR = 'node_bg_color',
+  NODE_TEXT_COLOR = 'node_text_color',
+  NODE_BORDER_COLOR = 'node_border_color',
+}
+
 /** A rule for node styler. All fields should be serializable. */
 export declare interface NodeStylerRule {
+  /**
+   * Quries are connected with AND.
+   */
   queries: NodeQuery[];
-  nodeType: SearchNodeType;
-  // Indexed by style ids.
-  styles: Record<string, SerializedStyle>;
+
+  /**
+   * The type of node to match.
+   *
+   * @deprecated The new version the of rule stores node type as a query in
+   * `queries` above.
+   */
+  nodeType?: SearchNodeType;
+
+  /**
+   * Styles applied to the matched nodes.
+   *
+   * Indexed by style ids.
+   */
+  styles: Partial<Record<NodeStyleId, SerializedStyle | string>>;
+
+  /**
+   * Should set this to V2.
+   */
   version?: NodeStylerRuleVersion;
 }
 
@@ -557,8 +583,8 @@ declare interface NodeQueryBase {
 /** A rule width processed node styler rules. */
 export interface ProcessedNodeStylerRule {
   queries: ProcessedNodeQuery[];
-  nodeType: SearchNodeType;
-  styles: Record<string, SerializedStyle>;
+  nodeType?: SearchNodeType;
+  styles: Record<string, SerializedStyle | string>;
 }
 
 declare interface ProcessedNodeQueryBase {
@@ -621,6 +647,6 @@ export enum SearchNodeType {
 
 /** Serialized style. */
 export declare interface SerializedStyle {
-  id: string;
+  id: NodeStyleId;
   value: string;
 }
