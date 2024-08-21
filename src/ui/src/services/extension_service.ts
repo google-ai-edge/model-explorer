@@ -52,7 +52,28 @@ export class ExtensionService {
       if (!resp.ok) {
         return {otherError: `Failed to convert model. ${resp.status}`};
       }
-      return {cmdResp: (await resp.json()) as T};
+
+      // TODO: revert mock changes to the API!
+
+      let json = await resp.json();
+
+      json = {
+        ...json,
+        graphs: json.graphs.map((graph: { nodes: { attrs: {}[]}[]}) => ({
+          ...graph,
+          nodes: graph.nodes.map((node) => ({
+            ...node,
+            attrs: node.attrs.map((attr) => ({
+              ...attr,
+              editable: {
+                input_type: 'value_list',
+                options: ['foo', 'bar', 'baz']
+              }
+            }))
+          }))
+        }))
+      };
+      return {cmdResp: json as T};
     } catch (e) {
       return {otherError: e as string};
     }
