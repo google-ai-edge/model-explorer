@@ -67,7 +67,17 @@ limitations under the License.
     }
   </div>
   <div class="one-line-text" #oneLineText>
-    {{text}}
+    @if (editable?.input_type === 'value_list') {
+      <select>
+        @for (option of getEditableOptions(editable!, text); track $index) {
+          <option [selected]="option === text">{{option}}</option>
+        }
+      </select>
+    } @else if (editable?.input_type === 'int_list') {
+      <input type="number" [value]="text"/>
+    } @else {
+      {{text}}
+    }
   </div>
   <div class="icon-container toggle" (click)="handleToggleExpand($event)">
     <mat-icon>{{iconName}}</mat-icon>

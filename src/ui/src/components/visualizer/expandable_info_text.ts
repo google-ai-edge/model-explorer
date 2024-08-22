@@ -32,6 +32,7 @@ import {
 import {MatIconModule} from '@angular/material/icon';
 import {MatTooltipModule} from '@angular/material/tooltip';
 import {AppService} from './app_service';
+import type { EditableAttributeTypes, EditableValueListAttribute } from './common/input_graph.js';
 
 /** Expandable info text component. */
 @Component({
@@ -47,6 +48,7 @@ export class ExpandableInfoText implements AfterViewInit, OnDestroy, OnChanges {
   @Input() type = '';
   @Input() bgColor = 'transparent';
   @Input() textColor = 'inherit';
+  @Input() editable?: EditableAttributeTypes = undefined;
   @ViewChild('container') container?: ElementRef<HTMLElement>;
   @ViewChild('oneLineText') oneLineText?: ElementRef<HTMLElement>;
 
@@ -109,6 +111,10 @@ export class ExpandableInfoText implements AfterViewInit, OnDestroy, OnChanges {
 
   getMaxConstValueCount(): number {
     return this.appService.config()?.maxConstValueCount ?? 0;
+  }
+
+  getEditableOptions(editable: EditableAttributeTypes, value: string) {
+    return [...new Set([value, ...(editable as EditableValueListAttribute).options])];
   }
 
   get hasOverflow(): boolean {
