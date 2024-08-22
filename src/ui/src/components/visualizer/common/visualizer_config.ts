@@ -50,6 +50,12 @@ export declare interface VisualizerConfig {
   /** Whether to keep layers with a single child. */
   keepLayersWithASingleChild?: boolean;
 
+  /**
+   * Whether to show op node edges to other nodes out of the layer without
+   * needing to select the node first.
+   */
+  showOpNodeOutOfLayerEdgesWithoutSelecting?: boolean;
+
   /** The default node styler rules. */
   nodeStylerRules?: NodeStylerRule[];
 

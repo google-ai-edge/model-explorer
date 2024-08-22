@@ -358,6 +358,7 @@ export class WebglRenderer implements OnInit, OnDestroy {
   private savedUpdateNodeBgWhenFarProgress = -1;
   private curNodeStylerRules: NodeStylerRule[] = [];
   private curProcessedNodeStylerRules: ProcessedNodeStylerRule[] = [];
+  private renderedEdgeIdsToHide: string[] = [];
 
   private readonly selectedNodeInfo = computed(() => {
     const pane = this.appService.getPaneById(this.paneId);
@@ -2012,7 +2013,68 @@ export class WebglRenderer implements OnInit, OnDestroy {
   }
 
   private renderEdges() {
+    this.renderedEdgeIdsToHide = [];
+
     if (this.edgesToRender.length > 0) {
+      // Add the edges that go out of the layer to the edges to render list
+      // if the option is on.
+      if (this.appService.config()?.showOpNodeOutOfLayerEdgesWithoutSelecting) {
+        for (const {node} of this.nodesToRender) {
+          if (isOpNode(node) && node.nsParentId) {
+            const {
+              overlayEdges: incomingOverlayEdges,
+              renderedEdges: incomingRenderedEdges,
+            } =
+              this.webglRendererIoHighlightService.getHighlightedIncomingNodesAndEdges(
+                this.curHiddenInputOpNodeIds,
+                node,
+                {
+                  ignoreEdgesWithinSameNamespace: true,
+                  reuseRenderedEdgeCurvePoints: true,
+                },
+              );
+            if (incomingOverlayEdges.length > 0) {
+              this.renderedEdgeIdsToHide.push(
+                ...incomingRenderedEdges.map((edge) => edge.id),
+              );
+              for (const edge of incomingOverlayEdges) {
+                this.edgesToRender.push({
+                  edge,
+                  // make sure to pick a number less than 95 which is used for
+                  // rendering io highlight edges.
+                  index: 92 / WEBGL_ELEMENT_Y_FACTOR,
+                });
+              }
+            }
+
+            const {
+              overlayEdges: outgoingOverlayEdges,
+              renderedEdges: outgoingRenderedEdges,
+            } =
+              this.webglRendererIoHighlightService.getHighlightedOutgoingNodesAndEdges(
+                this.curHiddenOutputIds,
+                node,
+                {
+                  ignoreEdgesWithinSameNamespace: true,
+                  reuseRenderedEdgeCurvePoints: true,
+                },
+              );
+            if (outgoingOverlayEdges.length > 0) {
+              this.renderedEdgeIdsToHide.push(
+                ...outgoingRenderedEdges.map((edge) => edge.id),
+              );
+              for (const edge of outgoingOverlayEdges) {
+                this.edgesToRender.push({
+                  edge,
+                  // make sure to pick a number less than 95 which is used for
+                  // rendering io highlight edges.
+                  index: 92 / WEBGL_ELEMENT_Y_FACTOR,
+                });
+              }
+            }
+          }
+        }
+      }
       this.edges.generateMesh(this.edgesToRender, this.curModelGraph);
       this.webglRendererThreejsService.addToScene(this.edges.edgesMesh);
       this.webglRendererThreejsService.addToScene(this.edges.arrowHeadsMesh);
@@ -2338,13 +2400,12 @@ export class WebglRenderer implements OnInit, OnDestroy {
       }
     }
     // Hide all rendered edges to better shown highlighted edges.
-    this.edges.updateYOffsets(
-      [
-        ...this.webglRendererIoHighlightService.inputsRenderedEdges,
-        ...this.webglRendererIoHighlightService.outputsRenderedEdges,
-      ].map((edge) => edge.id),
-      1000,
-    );
+    const ids = [
+      ...this.webglRendererIoHighlightService.inputsRenderedEdges,
+      ...this.webglRendererIoHighlightService.outputsRenderedEdges,
+    ].map((edge) => edge.id);
+    ids.push(...this.renderedEdgeIdsToHide);
+    this.edges.updateYOffsets(ids, 1000);
 
     // Node data provider.
     //

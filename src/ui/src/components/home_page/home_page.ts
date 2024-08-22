@@ -48,6 +48,7 @@ import {
   SETTING_HIDE_OP_NODES_WITH_LABELS,
   SETTING_KEEP_LAYERS_WITH_A_SINGLE_CHILD,
   SETTING_MAX_CONST_ELEMENT_COUNT_LIMIT,
+  SETTING_SHOW_OP_NODE_OUT_OF_LAYER_EDGES_WITHOUT_SELECTING,
   SettingKey,
   SettingsService,
 } from '../../services/settings_service';
@@ -325,6 +326,10 @@ export class HomePage implements AfterViewInit {
       keepLayersWithASingleChild: this.settingsService.getBooleanValue(
         SETTING_KEEP_LAYERS_WITH_A_SINGLE_CHILD,
       ),
+      showOpNodeOutOfLayerEdgesWithoutSelecting:
+        this.settingsService.getBooleanValue(
+          SETTING_SHOW_OP_NODE_OUT_OF_LAYER_EDGES_WITHOUT_SELECTING,
+        ),
     };
   }
 

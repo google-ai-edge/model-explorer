@@ -34,6 +34,7 @@ export enum SettingKey {
   EDGE_COLOR = 'edge_color',
   DISALLOW_VERTICAL_EDGE_LABELS = 'disallow_vertical_edge_labels',
   KEEP_LAYERS_WITH_A_SINGLE_CHILD = 'keep_layers_with_a_single_child',
+  SHOW_OP_NODE_OUT_OF_LAYER_EDGES_WITHOUT_SELECTING = 'show_op_node_out_of_layer_edges_without_selecting',
 }
 
 /** Setting types. */
@@ -140,6 +141,21 @@ export const SETTING_KEEP_LAYERS_WITH_A_SINGLE_CHILD: Setting = {
     'Turn this toggle on to keep those layers.',
 };
 
+/** Setting for showing op node out-of-layer edges without selecting. */
+export const SETTING_SHOW_OP_NODE_OUT_OF_LAYER_EDGES_WITHOUT_SELECTING: Setting =
+  {
+    label: 'Show op node out-of-layer edges without selecting',
+    key: SettingKey.SHOW_OP_NODE_OUT_OF_LAYER_EDGES_WITHOUT_SELECTING,
+    type: SettingType.BOOLEAN,
+    defaultValue: false,
+    help:
+      "By default, an op node's edges that go out of the layer is only " +
+      'visible when the op node is selected. Turn this toggle on to see ' +
+      'those edges without needing to select the node. ⚠️ This feature will ' +
+      'make the model graph look more noisy and harder to read ' +
+      'especially for larger models.',
+  };
+
 const SETTINGS_LOCAL_STORAGE_KEY = 'model_explorer_settings';
 
 /** All settings. */
@@ -152,6 +168,7 @@ export const ALL_SETTINGS = [
   SETTING_KEEP_LAYERS_WITH_A_SINGLE_CHILD,
   SETTING_SHOW_WELCOME_CARD,
   SETTING_DISALLOW_VERTICAL_EDGE_LABELS,
+  SETTING_SHOW_OP_NODE_OUT_OF_LAYER_EDGES_WITHOUT_SELECTING,
 ];
 
 /**
