@@ -70,6 +70,7 @@ limitations under the License.
               class="value-col">
             <div class="header-content">
               <div class="index-number">{{i + 1}}</div>
+              <div class="stat-label">{{runItem.runName}}</div>
             </div>
           </th>
         </tr>
@@ -85,7 +86,7 @@ limitations under the License.
       </tbody>
     </table>
   </div>
-  
+
   <!-- Children stats table -->
   <div class="table-container children-stats" #childrenStatsTableContainer
       [class.collapsed]="childrenStatsTableCollapsed">
@@ -102,6 +103,8 @@ limitations under the License.
         </paginator>
       }
     </div>
+    <ng-container *ngTemplateOutlet="nodeFilter;context:{'formControl': childrenStatsTableNodeFilter}">
+    </ng-container>
     <table class="children-stats-results" *ngIf="showResults"
         border="0" cellspacing="0" cellpadding="0">
       <thead>
@@ -167,6 +170,8 @@ limitations under the License.
         </paginator>
       }
     </div>
+    <ng-container *ngTemplateOutlet="nodeFilter;context:{'formControl': resultsTableNodeFilter}">
+    </ng-container>
     <table class="results" *ngIf="showResults"
         border="0" cellspacing="0" cellpadding="0">
       <thead>
@@ -194,6 +199,7 @@ limitations under the License.
               (click)="handleClickHeader(i)">
             <div class="header-content">
               <div class="index-number">{{i + 1}}</div>
+              <div class="stat-label">{{runItem.runName}}</div>
               <div class="icon-container visibility"
                   *ngIf="!runItem.error"
                   [class.selected]="isRunItemSelected(runItem)"
@@ -230,3 +236,15 @@ limitations under the License.
     </table>
   </div>
 </div>
+
+<ng-template #nodeFilter let-formControl="formControl">
+  <div class="node-filter">
+    <input placeholder="regex to filter nodes" [formControl]="formControl">
+    <mat-icon class="filter">filter_alt</mat-icon>
+    @if (formControl.value) {
+      <div class="clear-container" (click)="handleClearStatsTableFilter(formControl)">
+        <mat-icon class="clear">close</mat-icon>
+      </div>
+    }
+  </div>
+</ng-template>
