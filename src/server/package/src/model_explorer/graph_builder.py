@@ -14,7 +14,7 @@
 # ==============================================================================
 
 from dataclasses import dataclass, field
-from typing import Union
+from typing import Dict, Union
 
 
 @dataclass
@@ -26,6 +26,11 @@ class Graph:
 
   # A list of nodes in the graph.
   nodes: list['GraphNode'] = field(default_factory=list)
+
+  # Attributes for group nodes.
+  #
+  # It is displayed in the side panel when the group is selected.
+  groupNodeAttributes: Union['GroupNodeAttributes', None] = None
 
 
 @dataclass
@@ -182,6 +187,9 @@ class GraphNodeConfig:
   #
   # (optional)
   pinToGroupTop: bool = False
+
+
+GroupNodeAttributes = Dict[str, Dict[str, str]]
 
 
 @dataclass
