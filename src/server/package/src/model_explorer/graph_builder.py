@@ -189,6 +189,10 @@ class GraphNodeConfig:
   pinToGroupTop: bool = False
 
 
+# From group's namespace to its attribuets (key-value pairs).
+#
+# Use empty group namespace for the graph-level attributes (i.e. shown in
+# side panel when no node is selected).
 GroupNodeAttributes = Dict[str, Dict[str, str]]
 
 
