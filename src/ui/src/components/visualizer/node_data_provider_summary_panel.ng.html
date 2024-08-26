@@ -103,7 +103,7 @@ limitations under the License.
         </paginator>
       }
     </div>
-    <ng-container *ngTemplateOutlet="nodeFilter;context:{'formControl': childrenStatsTableNodeFilter}">
+    <ng-container *ngTemplateOutlet="nodeFilter;context:{$implicit: childrenStatsTableNodeFilter}">
     </ng-container>
     <table class="children-stats-results" *ngIf="showResults"
         border="0" cellspacing="0" cellpadding="0">
@@ -170,7 +170,7 @@ limitations under the License.
         </paginator>
       }
     </div>
-    <ng-container *ngTemplateOutlet="nodeFilter;context:{'formControl': resultsTableNodeFilter}">
+    <ng-container *ngTemplateOutlet="nodeFilter;context:{$implicit: resultsTableNodeFilter}">
     </ng-container>
     <table class="results" *ngIf="showResults"
         border="0" cellspacing="0" cellpadding="0">
@@ -237,7 +237,7 @@ limitations under the License.
   </div>
 </div>
 
-<ng-template #nodeFilter let-formControl="formControl">
+<ng-template #nodeFilter let-formControl>
   <div class="node-filter">
     <input placeholder="regex to filter nodes" [formControl]="formControl">
     <mat-icon class="filter">filter_alt</mat-icon>
