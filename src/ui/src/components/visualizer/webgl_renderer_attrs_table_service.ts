@@ -31,6 +31,7 @@ import {FontWeight, ShowOnNodeItemType} from './common/types';
 import {
   getGroupNodeAttrsKeyValuePairsForAttrsTable,
   getGroupNodeFieldLabelsFromShowOnNodeItemTypes,
+  getMultiLineLabelExtraHeight,
   getNodeInfoFieldValue,
   getOpNodeAttrsKeyValuePairsForAttrsTable,
   getOpNodeDataProviderKeyValuePairsForAttrsTable,
@@ -97,7 +98,11 @@ export class WebglRendererAttrsTableService {
         keyLabelData: LabelData;
         valueLabelData: LabelData;
       }> = [];
-      let curZ = DEFAULT_NODE_HEIGHT + NODE_ATTRS_TABLE_MARGIN_TOP - 4;
+      let curZ =
+        DEFAULT_NODE_HEIGHT +
+        NODE_ATTRS_TABLE_MARGIN_TOP -
+        4 +
+        getMultiLineLabelExtraHeight(node.label);
       let maxKeyWidth = 0;
       let maxValueWidth = 0;
       const keyValuePairs: Array<{key: string; value: string}> = [];

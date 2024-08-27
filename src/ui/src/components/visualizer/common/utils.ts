@@ -23,6 +23,7 @@ import {
   EXPORT_TO_RESOURCE_CMD,
   MAX_IO_ROWS_IN_ATTRS_TABLE,
   NODE_DATA_PROVIDER_SHOW_ON_NODE_TYPE_PREFIX,
+  NODE_LABEL_LINE_HEIGHT,
   TENSOR_TAG_METADATA_KEY,
   TENSOR_VALUES_KEY,
   WEBGL_CURVE_SEGMENTS,
@@ -949,4 +950,17 @@ export function getNodeStyleValue(
     }
   }
   return '';
+}
+
+/** Splits the given label. */
+export function splitLabel(label: string): string[] {
+  return label
+    .split('\n')
+    .map((line) => line.trim())
+    .filter((line) => line !== '');
+}
+
+/** Get the extra height for multi-line label. */
+export function getMultiLineLabelExtraHeight(label: string): number {
+  return (splitLabel(label).length - 1) * NODE_LABEL_LINE_HEIGHT;
 }

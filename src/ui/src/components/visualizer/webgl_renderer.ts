@@ -50,6 +50,7 @@ import {
   GLOBAL_KEY,
   LAYOUT_MARGIN_X,
   NODE_LABEL_HEIGHT,
+  NODE_LABEL_LINE_HEIGHT,
   WEBGL_ELEMENT_Y_FACTOR,
 } from './common/consts';
 import {
@@ -87,6 +88,7 @@ import {
   isOpNode,
   matchNodeForQueries,
   processNodeStylerRules,
+  splitLabel,
 } from './common/utils';
 import {
   ExpandOrCollapseGroupNodeRequest,
@@ -1365,8 +1367,33 @@ export class WebglRenderer implements OnInit, OnDestroy {
     return 14;
   }
 
+  getNodeLabelSizes(node: ModelNode) {
+    const scale = NODE_LABEL_HEIGHT / this.texts.getFontSize();
+    let minX = Number.POSITIVE_INFINITY;
+    let maxX = Number.NEGATIVE_INFINITY;
+    let firstLineLabelHeight = 0;
+    const lines = splitLabel(this.getNodeLabel(node));
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      const labelSize = this.texts.getLabelSizes(
+        line,
+        FontWeight.BOLD,
+        NODE_LABEL_HEIGHT,
+      ).sizes;
+      minX = Math.min(minX, labelSize.minX);
+      maxX = Math.max(maxX, labelSize.maxX);
+      if (i === 0) {
+        firstLineLabelHeight = (labelSize.maxZ - labelSize.minZ) * scale;
+      }
+    }
+    return {minX, maxX, firstLineLabelHeight};
+  }
+
   // Used by tests only.
   getNodeTitleScreenPositionRelativeToCenter(nodeId: string): Point {
+    // This is to workaround the issue where nodeId cannot contain '\n' when
+    // called from protractor.
+    nodeId = nodeId.replaceAll('%%%', '\n');
     const node = this.curModelGraph.nodesById[nodeId];
     const x = this.getNodeX(node) + this.getNodeWidth(node) / 2;
     const y = this.getNodeY(node) + 5;
@@ -1397,13 +1424,9 @@ export class WebglRenderer implements OnInit, OnDestroy {
     const x = this.getNodeX(node);
     const y = this.getNodeY(node);
     const width = this.getNodeWidth(node);
-    const labelSize = this.texts.getLabelSizes(
-      this.getNodeLabel(node),
-      FontWeight.BOLD,
-      NODE_LABEL_HEIGHT,
-    ).sizes;
+    const {minX, maxX} = this.getNodeLabelSizes(node);
     const scale = NODE_LABEL_HEIGHT / this.texts.getFontSize();
-    const labelWidth = (labelSize.maxX - labelSize.minX) * scale;
+    const labelWidth = (maxX - minX) * scale;
     const labelLeft = x + width / 2 - labelWidth / 2;
     const iconX = node.expanded ? labelLeft - 13 : (x + labelLeft + 1) / 2 + 1;
     const iconY = y + this.getNodeLabelRelativeY(node);
@@ -1424,13 +1447,9 @@ export class WebglRenderer implements OnInit, OnDestroy {
     const x = this.getNodeX(node);
     const y = this.getNodeY(node);
     const width = this.getNodeWidth(node);
-    const labelSize = this.texts.getLabelSizes(
-      this.getNodeLabel(node),
-      FontWeight.BOLD,
-      NODE_LABEL_HEIGHT,
-    ).sizes;
+    const {minX, maxX} = this.getNodeLabelSizes(node);
     const scale = NODE_LABEL_HEIGHT / this.texts.getFontSize();
-    const labelWidth = (labelSize.maxX - labelSize.minX) * scale;
+    const labelWidth = (maxX - minX) * scale;
     const labelRight = x + width / 2 + labelWidth / 2;
     const iconX = node.expanded
       ? labelRight + 12
@@ -1897,18 +1916,14 @@ export class WebglRenderer implements OnInit, OnDestroy {
       // Group node label icons.
       if (isGroupNode(node)) {
         // Get current node label width.
-        const labelSize = this.texts.getLabelSizes(
-          this.getNodeLabel(node),
-          FontWeight.BOLD,
-          NODE_LABEL_HEIGHT,
-        ).sizes;
-        const labelWidth = (labelSize.maxX - labelSize.minX) * scale;
-        const labelHeight = (labelSize.maxZ - labelSize.minZ) * scale;
+        const {minX, maxX, firstLineLabelHeight} = this.getNodeLabelSizes(node);
+        const labelWidth = (maxX - minX) * scale;
         const labelLeft = x + width / 2 - labelWidth / 2;
         const labelRight = x + width / 2 + labelWidth / 2;
 
         // Expand icon.
-        const iconZ = y + this.getNodeLabelRelativeY(node) + labelHeight + 7.5;
+        const iconZ =
+          y + this.getNodeLabelRelativeY(node) + firstLineLabelHeight + 7.5;
         const leftIconX = node.expanded
           ? labelLeft - 13
           : (x + labelLeft + 1) / 2 + 1;
@@ -2101,19 +2116,26 @@ export class WebglRenderer implements OnInit, OnDestroy {
         }
       }
 
-      labels.push({
-        id: `${node.id}_label`,
-        nodeId: node.id,
-        label: this.getNodeLabel(node),
-        height: NODE_LABEL_HEIGHT,
-        hAlign: 'center',
-        vAlign: 'center',
-        weight: isOpNode(node) ? FontWeight.MEDIUM : FontWeight.BOLD,
-        x: this.getNodeX(node) + this.getNodeWidth(node) / 2,
-        y: index * WEBGL_ELEMENT_Y_FACTOR + NODE_LABEL_Y_OFFSET,
-        z: this.getNodeY(node) + this.getNodeLabelRelativeY(node),
-        color,
-      });
+      const lines = splitLabel(this.getNodeLabel(node));
+      for (let i = 0; i < lines.length; i++) {
+        const curLineLabel = lines[i];
+        labels.push({
+          id: `${node.id}_label_line${i}`,
+          nodeId: node.id,
+          label: curLineLabel,
+          height: NODE_LABEL_HEIGHT,
+          hAlign: 'center',
+          vAlign: 'center',
+          weight: isOpNode(node) ? FontWeight.MEDIUM : FontWeight.BOLD,
+          x: this.getNodeX(node) + this.getNodeWidth(node) / 2,
+          y: index * WEBGL_ELEMENT_Y_FACTOR + NODE_LABEL_Y_OFFSET,
+          z:
+            this.getNodeY(node) +
+            this.getNodeLabelRelativeY(node) +
+            NODE_LABEL_LINE_HEIGHT * i,
+          color,
+        });
+      }
     }
     this.texts.generateMesh(labels);
     this.webglRendererThreejsService.addToScene(this.texts.mesh);
