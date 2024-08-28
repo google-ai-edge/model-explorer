@@ -66,6 +66,7 @@ limitations under the License.
 #include "tensorflow/compiler/mlir/lite/utils/const_tensor_utils.h"
 #include "tensorflow/compiler/mlir/tensorflow/ir/tf_dialect.h"
 #include "tensorflow/compiler/mlir/tensorflow/ir/tf_types.h"
+#include "tensorflow/core/framework/tensor.pb.h"
 #include "tensorflow/lite/core/model_builder.h"
 #include "tsl/platform/env.h"
 
