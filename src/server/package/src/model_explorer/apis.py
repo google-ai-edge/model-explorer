@@ -19,7 +19,8 @@ import torch
 
 from . import server
 from .config import ModelExplorerConfig
-from .consts import DEFAULT_COLAB_HEIGHT, DEFAULT_HOST, DEFAULT_PORT, DEFAULT_SETTINGS
+from .consts import (DEFAULT_COLAB_HEIGHT, DEFAULT_HOST, DEFAULT_PORT,
+                     DEFAULT_SETTINGS)
 
 
 def config() -> ModelExplorerConfig:
@@ -33,6 +34,9 @@ def visualize(
     port=DEFAULT_PORT,
     extensions: list[str] = [],
     colab_height=DEFAULT_COLAB_HEIGHT,
+    reuse_server: bool = False,
+    reuse_server_host: str = DEFAULT_HOST,
+    reuse_server_port: Union[int, None] = None,
 ) -> None:
   """Starts the ME local server and visualizes the models by the given paths.
 
@@ -42,6 +46,11 @@ def visualize(
     port: The port of the server. Default to 8080.
     extensions: List of extension names to be run with model explorer.
     colab_height: The height of the embedded iFrame when running in colab.
+    reuse_server: Whether to reuse the current server/browser tab(s) to
+        visualize.
+    reuse_server_host: the host of the server to reuse. Default to localhost.
+    reuse_server_port: the port of the server to reuse. If unspecified, it will
+        try to find a running server from port 8080 to 8099.
   """
   # Construct config.
   cur_config = config()
@@ -50,10 +59,17 @@ def visualize(
     model_paths_list = [model_paths]
   for model_path in model_paths_list:
     cur_config.add_model_from_path(path=model_path)
+  if reuse_server:
+    cur_config.set_reuse_server(server_host=reuse_server_host,
+                                server_port=reuse_server_port)
 
   # Start server.
   server.start(
-      host=host, port=port, config=cur_config, colab_height=colab_height, extensions=extensions
+      host=host,
+      port=port,
+      config=cur_config,
+      colab_height=colab_height,
+      extensions=extensions
   )
 
 

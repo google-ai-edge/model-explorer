@@ -45,6 +45,18 @@ parser.add_argument('--cors_host',
 parser.add_argument('--skip_health_check',
                     action='store_true',
                     help='Whether to skip the health check after server starts')
+parser.add_argument('--reuse_server',
+                    action='store_true',
+                    help='Whether to reuse the currently running server')
+parser.add_argument('--reuse_server_host',
+                    default=DEFAULT_HOST,
+                    help='The host of the server to reuse')
+parser.add_argument('--reuse_server_port',
+                    default=-1,
+                    type=int,
+                    help=('The port of the server to reuse. If unspecified, '
+                          'it will try to find a running server from port 8080 '
+                          'to 8099'))
 args = parser.parse_args()
 
 
@@ -69,6 +81,9 @@ def main():
     config.add_model_from_path(model_path)
   for node_data_path in node_data_paths:
     config.add_node_data_from_path(node_data_path)
+  if args.reuse_server:
+    config.set_reuse_server(server_host=args.reuse_server_host,
+                            server_port=args.reuse_server_port)
 
   server.start(host=args.host,
                port=args.port,
