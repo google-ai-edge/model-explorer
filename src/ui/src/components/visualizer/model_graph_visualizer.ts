@@ -51,6 +51,7 @@ import {type VisualizerUiState} from './common/visualizer_ui_state';
 import {ExtensionService} from './extension_service';
 import {NodeDataProviderExtensionService} from './node_data_provider_extension_service';
 import {NodeStylerService} from './node_styler_service';
+import {ServerDirectorService} from './server_director_service';
 import {SplitPanesContainer} from './split_panes_container';
 import {ThreejsService} from './threejs_service';
 import {TitleBar} from './title_bar';
@@ -69,6 +70,7 @@ import {WorkerService} from './worker_service';
     ExtensionService,
     NodeDataProviderExtensionService,
     NodeStylerService,
+    ServerDirectorService,
     UiStateService,
     WorkerService,
   ],
@@ -130,7 +132,11 @@ export class ModelGraphVisualizer implements OnInit, OnDestroy, OnChanges {
     private readonly uiStateService: UiStateService,
     private readonly nodeDataProviderExtensionService: NodeDataProviderExtensionService,
     private readonly nodeStylerService: NodeStylerService,
+    private readonly serverDirectorService: ServerDirectorService,
   ) {
+
+    this.serverDirectorService.init();
+
     effect(() => {
       const curUiState = this.uiStateService.curUiState();
       if (!curUiState) {
