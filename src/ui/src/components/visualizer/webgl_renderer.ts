@@ -80,6 +80,7 @@ import {
 } from './common/types';
 import {
   genUid,
+  getDeepestExpandedGroupNodeIds,
   getHighQualityPixelRatio,
   getNodeStyleValue,
   hasNonEmptyQueries,
@@ -766,9 +767,25 @@ export class WebglRenderer implements OnInit, OnDestroy {
       if (!paneState) {
         initGraphFn();
       } else {
+        // Expand all layers if paneState.deepestExpandedGroupNodeIds has only
+        // one elemenet '___all___'.
+        let deepestExpandedGroupNodeIds = paneState.deepestExpandedGroupNodeIds;
+        if (
+          deepestExpandedGroupNodeIds.length === 1 &&
+          deepestExpandedGroupNodeIds[0] === '___all___'
+        ) {
+          const groupNodeIds: string[] = [];
+          getDeepestExpandedGroupNodeIds(
+            undefined,
+            this.curModelGraph,
+            groupNodeIds,
+            true,
+          );
+          deepestExpandedGroupNodeIds = groupNodeIds;
+        }
         this.sendRelayoutGraphRequest(
           paneState.selectedNodeId,
-          paneState.deepestExpandedGroupNodeIds,
+          deepestExpandedGroupNodeIds,
           true,
         );
         // This is needed for loading old perma-link.
