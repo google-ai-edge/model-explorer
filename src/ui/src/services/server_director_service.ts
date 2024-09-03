@@ -17,7 +17,7 @@
  */
 
 import {safeLocation} from 'safevalues/dom';
-import {IS_EXTERNAL} from '../../common/flags';
+import {IS_EXTERNAL} from '../common/flags';
 
 import {Injectable} from '@angular/core';
 
@@ -37,7 +37,9 @@ declare interface RefreshPageDirective extends DirectiveBase {
 type Directive = RefreshPageDirective;
 
 /** A service for handling directives streaming from ME server. */
-@Injectable()
+@Injectable({
+  providedIn: 'root',
+})
 export class ServerDirectorService {
   init() {
     if (IS_EXTERNAL) {

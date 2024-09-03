@@ -40,6 +40,7 @@ import {ActivatedRoute, Router} from '@angular/router';
 import {type ModelLoaderServiceInterface} from '../../common/model_loader_service_interface';
 import {ExtensionService} from '../../services/extension_service';
 import {GaEventType, GaService} from '../../services/ga_service';
+import {ServerDirectorService} from '../../services/server_director_service';
 import {
   SETTING_ARTIFACIAL_LAYER_NODE_COUNT_THRESHOLD,
   SETTING_DISALLOW_VERTICAL_EDGE_LABELS,
@@ -124,11 +125,14 @@ export class HomePage implements AfterViewInit {
     private readonly newVersionService: NewVersionService,
     private readonly route: ActivatedRoute,
     private readonly router: Router,
+    private readonly serverDirectorService: ServerDirectorService,
     private readonly settingsService: SettingsService,
     private readonly snackBar: MatSnackBar,
     readonly threejsService: ThreejsService,
     private readonly urlService: UrlService,
   ) {
+    this.serverDirectorService.init();
+
     this.loadingExtensions = this.extensionService.loading;
     this.loadedGraphCollections =
       this.modelLoaderService.loadedGraphCollections;
