@@ -44,6 +44,7 @@ import {
   ModelGraphProcessedEvent,
   NodeDataProviderData,
   NodeDataProviderGraphData,
+  NodeInfo,
 } from './common/types';
 import {genUid, inInputElement, isOpNode} from './common/utils';
 import {type VisualizerConfig} from './common/visualizer_config';
@@ -108,6 +109,12 @@ export class ModelGraphVisualizer implements OnInit, OnDestroy, OnChanges {
   /** Triggered when a remote node data paths are updated. */
   @Output() readonly remoteNodeDataPathsChanged = new EventEmitter<string[]>();
 
+  /** Triggered when the hovered node is changed. */
+  @Output() readonly hoveredNodeChanged = new EventEmitter<NodeInfo>();
+
+  /** Triggered when the double clicked node is changed. */
+  @Output() readonly doubleClickedNodeChanged = new EventEmitter<NodeInfo>();
+
   curProcessedModelGraph?: ModelGraph;
   ready = false;
 
@@ -144,6 +151,14 @@ export class ModelGraphVisualizer implements OnInit, OnDestroy, OnChanges {
       this.remoteNodeDataPathsChanged.emit(
         this.appService.remoteNodeDataPaths(),
       );
+    });
+
+    effect(() => {
+      this.hoveredNodeChanged.emit(this.appService.hoveredNode());
+    });
+
+    effect(() => {
+      this.doubleClickedNodeChanged.emit(this.appService.doubleClickedNode());
     });
 
     // Listen to postMessage.

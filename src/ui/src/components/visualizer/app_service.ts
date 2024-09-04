@@ -32,6 +32,7 @@ import {
   ExpandOrCollapseAllGraphLayersInfo,
   LocateNodeInfo,
   ModelGraphProcessedEvent,
+  NodeInfo,
   Pane,
   RendererInfo,
   RendererOwner,
@@ -98,6 +99,10 @@ export class AppService {
   readonly modelGraphProcessed$ = new Subject<ModelGraphProcessedEvent>();
 
   readonly remoteNodeDataPaths = signal<string[]>([]);
+
+  readonly hoveredNode = signal<NodeInfo | undefined>(undefined);
+
+  readonly doubleClickedNode = signal<NodeInfo | undefined>(undefined);
 
   testMode: boolean = false;
 
@@ -867,6 +872,40 @@ export class AppService {
 
   getCurrentModelGraphFromPane(paneId: string): ModelGraph | undefined {
     return this.paneIdToCurModelGraphs[paneId];
+  }
+
+  updateHoveredNode(nodeId: string, graphId: string, collectionLabel: string) {
+    const curHoveredNode = this.hoveredNode();
+    if (
+      curHoveredNode?.nodeId !== nodeId ||
+      curHoveredNode?.graphId !== graphId ||
+      curHoveredNode?.collectionLabel !== collectionLabel
+    ) {
+      this.hoveredNode.set({
+        nodeId,
+        graphId,
+        collectionLabel,
+      });
+    }
+  }
+
+  updateDoubleClickedNode(
+    nodeId: string,
+    graphId: string,
+    collectionLabel: string,
+  ) {
+    const curDoubleClickedNode = this.doubleClickedNode();
+    if (
+      curDoubleClickedNode?.nodeId !== nodeId ||
+      curDoubleClickedNode?.graphId !== graphId ||
+      curDoubleClickedNode?.collectionLabel !== collectionLabel
+    ) {
+      this.doubleClickedNode.set({
+        nodeId,
+        graphId,
+        collectionLabel,
+      });
+    }
   }
 
   reset() {
