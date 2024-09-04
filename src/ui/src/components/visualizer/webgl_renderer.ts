@@ -1004,7 +1004,7 @@ export class WebglRenderer implements OnInit, OnDestroy {
     ) {
       return;
     }
-    this.hoveredNodeId = '';
+    this.setHoveredNodeId('');
     this.updateNodesStyles();
     this.handleHoveredGroupNodeIconChanged();
     this.webglRendererThreejsService.render();
@@ -1154,6 +1154,11 @@ export class WebglRenderer implements OnInit, OnDestroy {
     // Expand/collapse node on double click. Alt key controls whether to do it
     // for all sub layers.
     if (this.selectedNodeId !== '' && !shiftDown) {
+      this.appService.updateDoubleClickedNode(
+        this.selectedNodeId,
+        this.curModelGraph.id,
+        this.curModelGraph.collectionLabel || '',
+      );
       this.handleToggleExpandCollapse(
         this.curModelGraph.nodesById[this.selectedNodeId],
         altDown,
@@ -2228,7 +2233,7 @@ export class WebglRenderer implements OnInit, OnDestroy {
     this.nodeBodies.raycast(
       this.webglRendererThreejsService.raycaster,
       (recId) => {
-        this.hoveredNodeId = recId;
+        this.setHoveredNodeId(recId);
         this.updateNodesStyles();
         this.webglRendererThreejsService.render();
       },
@@ -2890,5 +2895,14 @@ export class WebglRenderer implements OnInit, OnDestroy {
       return node.label;
     }
     return '-';
+  }
+
+  private setHoveredNodeId(id: string) {
+    this.hoveredNodeId = id;
+    this.appService.updateHoveredNode(
+      id,
+      this.curModelGraph.id,
+      this.curModelGraph.collectionLabel || '',
+    );
   }
 }

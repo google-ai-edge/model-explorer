@@ -226,6 +226,13 @@ export declare interface NodeDataProviderRunInfo {
   runName: string;
 }
 
+/** Info of a node when hovered or double clicked. */
+export declare interface NodeInfo {
+  nodeId: string;
+  graphId: string;
+  collectionLabel: string;
+}
+
 /** Node data provider data for a single graph. */
 export declare interface NodeDataProviderGraphData {
   /**
