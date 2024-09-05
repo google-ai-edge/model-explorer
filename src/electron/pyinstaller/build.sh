@@ -65,5 +65,3 @@ cd -
 # Done.
 echo
 echo '#### Done building model explorer pyinstaller package'
-
-ls -lh venv/lib/python*/site-packages/model_explorer/dist/*
