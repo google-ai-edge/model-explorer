@@ -16,6 +16,28 @@
 # Fail on any error.
 set -e
 
-# Build model explorer using pyinstaller.
-cd "${KOKORO_ARTIFACTS_DIR}/github/model-explorer/src/electron/pyinstaller"
+ELECTRON_BASE_DIR="${KOKORO_ARTIFACTS_DIR}/github/model-explorer/src/electron"
+
+# Build model explorer stand-alone pacakge using pyinstaller.
+echo
+echo '##################################################'
+echo 'Build model explorer pyinstaller package'
+
+cd "${ELECTRON_BASE_DIR}/pyinstaller"
+./build.sh
+
+echo
+echo '##################################################'
+echo 'Build electron app'
+
+# Move the package into electron app.
+echo
+echo '#### Move model explorer stand-alone package into electron app'
+ME_SERVER_TARGET_DIR="${ELECTRON_BASE_DIR}/app/model_explorer_server"
+mkdir -p "${ME_SERVER_TARGET_DIR}"
+mv "${ELECTRON_BASE_DIR}"/pyinstaller/venv/lib/python*/site-packages/model_explorer/dist/* \
+    "${ME_SERVER_TARGET_DIR}/"
+
+# Build electron app.
+cd "${ELECTRON_BASE_DIR}/app"
 ./build.sh
