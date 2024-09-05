@@ -37,6 +37,12 @@ pip install torch ai-edge-model-explorer pyinstaller \
     --index-url https://download.pytorch.org/whl/cpu \
     --extra-index-url https://pypi.python.org/simple
 
+# Replace the model explorer code with the latest.
+cd venv/lib/python*/site-packages/
+rm -rf model_explorer
+cp -rf "${KOKORO_ARTIFACTS_DIR}/github/model-explorer/src/server/package/src/model_explorer" .
+cd -
+
 # Run pyinstaller
 echo
 echo '#### Run pyinstaller'
@@ -55,4 +61,9 @@ pyinstaller -y \
   --add-data "web_app:model_explorer/web_app" \
   model_explorer.py
 cd -
-ls -lh venv/lib/python*/site-packages/model_explorer/dist/
+
+# Done.
+echo
+echo '#### Done building model explorer pyinstaller package'
+
+ls -lh venv/lib/python*/site-packages/model_explorer/dist/*

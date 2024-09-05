@@ -1,0 +1,3 @@
+Run the following command to generate icns on Mac:
+
+$ iconutil -c icns app_icon.iconset
