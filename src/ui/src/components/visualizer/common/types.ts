@@ -16,7 +16,7 @@
  * ==============================================================================
  */
 
-import {GroupNode, ModelGraph} from './model_graph';
+import {GroupNode, ModelGraph, ModelNode} from './model_graph';
 
 /** A type for key-value pairs. */
 export type KeyValuePairs = Record<string, string>;
@@ -231,6 +231,7 @@ export declare interface NodeInfo {
   nodeId: string;
   graphId: string;
   collectionLabel: string;
+  node?: ModelNode;
 }
 
 /** Node data provider data for a single graph. */
