@@ -1158,6 +1158,7 @@ export class WebglRenderer implements OnInit, OnDestroy {
         this.selectedNodeId,
         this.curModelGraph.id,
         this.curModelGraph.collectionLabel || '',
+        this.curModelGraph.nodesById[this.selectedNodeId],
       );
       this.handleToggleExpandCollapse(
         this.curModelGraph.nodesById[this.selectedNodeId],
@@ -2903,6 +2904,7 @@ export class WebglRenderer implements OnInit, OnDestroy {
       id,
       this.curModelGraph.id,
       this.curModelGraph.collectionLabel || '',
+      this.curModelGraph.nodesById[id],
     );
   }
 }

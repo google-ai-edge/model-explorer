@@ -25,7 +25,7 @@ import {
   LOCAL_STORAGE_KEY_SHOW_ON_NODE_ITEM_TYPES,
 } from './common/consts';
 import {Graph, GraphCollection} from './common/input_graph';
-import {ModelGraph} from './common/model_graph';
+import {ModelGraph, ModelNode} from './common/model_graph';
 import {
   AddSnapshotInfo,
   DownloadAsPngInfo,
@@ -874,7 +874,12 @@ export class AppService {
     return this.paneIdToCurModelGraphs[paneId];
   }
 
-  updateHoveredNode(nodeId: string, graphId: string, collectionLabel: string) {
+  updateHoveredNode(
+    nodeId: string,
+    graphId: string,
+    collectionLabel: string,
+    node?: ModelNode,
+  ) {
     const curHoveredNode = this.hoveredNode();
     if (
       curHoveredNode?.nodeId !== nodeId ||
@@ -885,6 +890,7 @@ export class AppService {
         nodeId,
         graphId,
         collectionLabel,
+        node,
       });
     }
   }
@@ -893,6 +899,7 @@ export class AppService {
     nodeId: string,
     graphId: string,
     collectionLabel: string,
+    node?: ModelNode,
   ) {
     const curDoubleClickedNode = this.doubleClickedNode();
     if (
@@ -904,6 +911,7 @@ export class AppService {
         nodeId,
         graphId,
         collectionLabel,
+        node,
       });
     }
   }
