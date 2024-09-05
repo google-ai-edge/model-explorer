@@ -17,11 +17,42 @@
 set -e
 
 # Check python version.
+echo
 echo '#### Check python version'
-python -v
+
+python --version
+
+# Create venv.
+echo
+echo '#### Create venv'
+
+python -m venv venv
+source venv/bin/activate
 
 # Install packages.
+echo
 echo '#### Install model explorer packages'
+
 pip install torch ai-edge-model-explorer pyinstaller \
     --index-url https://download.pytorch.org/whl/cpu \
     --extra-index-url https://pypi.python.org/simple
+
+# Run pyinstaller
+echo
+echo '#### Run pyinstaller'
+
+cp -f model_explorer.py venv/lib/python*/site-packages/
+cd venv/lib/python*/site-packages/
+pyinstaller -y \
+  --hidden-import model_explorer.builtin_tflite_flatbuffer_adapter \
+  --hidden-import model_explorer.builtin_tflite_mlir_adapter \
+  --hidden-import model_explorer.builtin_tf_mlir_adapter \
+  --hidden-import model_explorer.builtin_tf_direct_adapter \
+  --hidden-import model_explorer.builtin_graphdef_adapter \
+  --hidden-import model_explorer.builtin_pytorch_exportedprogram_adapter \
+  --hidden-import model_explorer.builtin_mlir_adapter \
+  --copy-metadata ai-edge-model-explorer \
+  --add-data "web_app:model_explorer/web_app" \
+  model_explorer.py
+cd -
+ls -lh venv/lib/python*/site-packages/model_explorer/dist/
