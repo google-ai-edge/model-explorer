@@ -26,11 +26,13 @@ echo 'Build model explorer pyinstaller package'
 cd "${ELECTRON_BASE_DIR}/pyinstaller"
 ./build.sh
 
+
+# Build electron app.
 echo
 echo '##################################################'
 echo 'Build electron app'
 
-# Move the package into electron app.
+# Move the pyinstaller-built package into electron app.
 echo
 echo '#### Move model explorer stand-alone package into electron app'
 ME_SERVER_TARGET_DIR="${ELECTRON_BASE_DIR}/app/model_explorer_server"
@@ -41,3 +43,13 @@ mv "${ELECTRON_BASE_DIR}"/pyinstaller/venv/lib/python*/site-packages/model_explo
 # Build electron app.
 cd "${ELECTRON_BASE_DIR}/app"
 ./build.sh
+
+
+# Create artifact (tar) from the bundled platform-specific app built from the
+# electron app.
+echo
+echo '##################################################'
+echo 'Create artifact'
+
+mkdir "${KOKORO_ARTIFACTS_DIR}/bundles"
+tar -czf "${KOKORO_ARTIFACTS_DIR}/bundles/bundles.tar.gz" out

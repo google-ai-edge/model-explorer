@@ -34,10 +34,3 @@ echo '#### Build and package electon app'
 
 npm run package -- --arch=x64
 npm run package -- --arch=arm64
-
-# Tar the packaged bundle into the artifact dir.
-echo
-echo '#### Tar the bundles'
-
-mkdir "${KOKORO_ARTIFACTS_DIR}/bundles"
-tar -czf "${KOKORO_ARTIFACTS_DIR}/bundles/bundles.tar.gz" out
