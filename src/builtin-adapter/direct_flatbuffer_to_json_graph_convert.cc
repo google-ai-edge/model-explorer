@@ -17,7 +17,6 @@ limitations under the License.
 
 #include <cstdint>
 #include <cstring>
-#include <iterator>
 #include <memory>
 #include <optional>
 #include <string>
@@ -32,7 +31,6 @@ limitations under the License.
 #include "absl/strings/ascii.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_join.h"
-#include "absl/strings/str_replace.h"
 #include "absl/strings/str_split.h"
 #include "absl/strings/string_view.h"
 #include "flatbuffers/flexbuffers.h"
@@ -57,6 +55,7 @@ limitations under the License.
 #include "tools/attribute_printer.h"
 #include "tools/convert_type.h"
 #include "tools/load_opdefs.h"
+#include "tools/namespace_heuristics.h"
 #include "visualize_config.h"
 #include "tensorflow/compiler/mlir/lite/flatbuffer_operator.h"
 #include "tensorflow/compiler/mlir/lite/ir/tfl_ops.h"
@@ -199,15 +198,8 @@ std::string StringifyTensorShape(const TensorT& tensor) {
   return absl::StrCat(TensorTypeToString(tensor.type), "[", shape_str, "]");
 }
 
-// Generates the node name based on the provided tensor indices.
-//
-// In TFLite, a single tensor name could still contain several hierarchical info
-// concatenated together with semicolons. In this case, we will find the last
-// candidate node name that contains this node label. If no match is found, we
-// will return the first candidate node name by default. This method also echos
-// the MLIR-based conversion for Flatbuffer.
-std::string GenerateNodeName(absl::string_view node_id_str,
-                             absl::string_view node_label,
+// Obtains the node namespace based on the node label and related tensor names.
+std::string GenerateNodeName(absl::string_view node_label,
                              const std::vector<int>& tensor_indices,
                              const Tensors& tensors) {
   if (tensor_indices.empty()) return "";
@@ -224,33 +216,7 @@ std::string GenerateNodeName(absl::string_view node_id_str,
       candidate_names.push_back(std::string(name));
     }
   }
-  if (candidate_names.empty()) return "";
-  if (candidate_names.size() == 1) {
-    return candidate_names[0];
-  }
-
-  // Removes any underscores in `node_label`.
-  const std::string node_label_substr =
-      absl::StrReplaceAll(node_label, {{"_", ""}});
-
-  // Iterates backwards to find if the last chunk of candidate_name contains the
-  // node label in the end hierarchy.
-  for (auto name_it = std::rbegin(candidate_names);
-       name_it != std::rend(candidate_names); ++name_it) {
-    const auto start_pos = name_it->find_last_of('/');
-    std::string last_substr;
-    if (start_pos != std::string::npos) {
-      last_substr = name_it->substr(start_pos, name_it->size());
-    } else {
-      last_substr = *name_it;
-    }
-    if (absl::AsciiStrToLower(last_substr).find(node_label_substr) !=
-        std::string::npos) {
-      return *name_it;
-    }
-  }
-
-  return candidate_names[0];
+  return TfliteNodeNamespaceHeuristic(node_label, candidate_names);
 }
 
 void AppendMetadata(
@@ -410,8 +376,7 @@ absl::Status AddAuxiliaryNode(
     case NodeType::kConstNode: {
       edge_type = EdgeType::kOutput;
       node_label = kPseudoConst;
-      node_name =
-          GenerateNodeName(node_id_str, node_label, tensor_indices, tensors);
+      node_name = GenerateNodeName(node_label, tensor_indices, tensors);
       break;
     }
     default: {
@@ -725,7 +690,7 @@ absl::Status AddNode(
   const std::string node_id_str = node_ids[node_index];
   absl::string_view node_label = op_names[op.opcode_index];
   const std::string node_name =
-      GenerateNodeName(node_id_str, node_label, op.outputs, tensors);
+      GenerateNodeName(node_label, op.outputs, tensors);
   GraphNodeBuilder builder;
   builder.SetNodeInfo(node_id_str, node_label, node_name);
   // Logs the error and continues to add the node to the graph.
