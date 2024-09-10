@@ -8,12 +8,12 @@ on:
   push:
     branches: [ "main" ]
     paths:
-      - 'src/ui/**'
+      - 'src/server/**'
   pull_request:
     branches: [ "main" ]
     types: [labeled, synchronize, opened, reopened]
     paths:
-      - 'src/ui/**'
+      - 'src/server/**'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref || github.run_id }}
