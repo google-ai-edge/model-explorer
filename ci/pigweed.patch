@@ -45,7 +45,7 @@ index 794967db..061db7ea 100755
  # The first line must be regex because of the '20\d\d' date
 -COPYRIGHT_FIRST_LINE = r'Copyright 20\d\d The Pigweed Authors'
 -COPYRIGHT_COMMENTS = r'(#|//| \*|REM|::)'
-+COPYRIGHT_FIRST_LINE = r'Copyright 20\d\d The AI Edge Model Explorer Authors.'
++COPYRIGHT_FIRST_LINE = r'Copyright 20\d\d The AI Edge Torch Authors.'
 +COPYRIGHT_COMMENTS = r'(#|//|\*|REM|::|/\*|@rem)'
  COPYRIGHT_BLOCK_COMMENTS = (
      # HTML comments
@@ -123,6 +123,6 @@ index 794967db..061db7ea 100755
 -PROGRAMS = Programs(broken=BROKEN, quick=QUICK, full=FULL)
 +PROGRAMS = Programs(broken=BROKEN, quick=QUICK, full=FULL,
 +                    copyright_notice=COPYRIGHT_NOTICE)
-
-
+ 
+ 
  def parse_args() -> argparse.Namespace:
