@@ -130,6 +130,7 @@ export class GraphProcessor {
         id: graphNode.id,
         namespace: this.flattenLayers ? '' : graphNode.namespace,
         savedNamespace: graphNode.namespace,
+        fullNamespace: graphNode.namespace,
         label: graphNode.label,
         level: this.getNonEmptyNamespaceComponents(graphNode.namespace).length,
       };

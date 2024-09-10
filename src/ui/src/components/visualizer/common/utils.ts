@@ -158,7 +158,7 @@ export function getNodeInfoFieldValue(
 
 /** Gets namespace display label. */
 export function getNamespaceLabel(node: ModelNode): string {
-  return node.savedNamespace || node.namespace || '<root>';
+  return node.fullNamespace || node.namespace || '<root>';
 }
 
 /** Generates unique id. */
