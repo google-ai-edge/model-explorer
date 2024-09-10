@@ -109,6 +109,9 @@ export class ModelGraphVisualizer implements OnInit, OnDestroy, OnChanges {
   /** Triggered when a remote node data paths are updated. */
   @Output() readonly remoteNodeDataPathsChanged = new EventEmitter<string[]>();
 
+  /** Triggered when the selected node is changed. */
+  @Output() readonly selectedNodeChanged = new EventEmitter<NodeInfo>();
+
   /** Triggered when the hovered node is changed. */
   @Output() readonly hoveredNodeChanged = new EventEmitter<NodeInfo>();
 
@@ -151,6 +154,10 @@ export class ModelGraphVisualizer implements OnInit, OnDestroy, OnChanges {
       this.remoteNodeDataPathsChanged.emit(
         this.appService.remoteNodeDataPaths(),
       );
+    });
+
+    effect(() => {
+      this.selectedNodeChanged.emit(this.appService.selectedNode());
     });
 
     effect(() => {

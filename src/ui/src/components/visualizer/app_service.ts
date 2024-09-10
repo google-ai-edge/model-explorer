@@ -100,6 +100,8 @@ export class AppService {
 
   readonly remoteNodeDataPaths = signal<string[]>([]);
 
+  readonly selectedNode = signal<NodeInfo | undefined>(undefined);
+
   readonly hoveredNode = signal<NodeInfo | undefined>(undefined);
 
   readonly doubleClickedNode = signal<NodeInfo | undefined>(undefined);
@@ -434,6 +436,17 @@ export class AppService {
           '*',
         );
       }
+    }
+
+    // Trigger event on visualizer component.
+    if (modelGraph) {
+      const nodeId = info?.nodeId || '';
+      this.updateSelectedNode(
+        nodeId,
+        modelGraph.id,
+        modelGraph.collectionLabel,
+        modelGraph.nodesById[nodeId],
+      );
     }
   }
 
@@ -872,6 +885,27 @@ export class AppService {
 
   getCurrentModelGraphFromPane(paneId: string): ModelGraph | undefined {
     return this.paneIdToCurModelGraphs[paneId];
+  }
+
+  updateSelectedNode(
+    nodeId: string,
+    graphId: string,
+    collectionLabel: string,
+    node?: ModelNode,
+  ) {
+    const curSelectedNode = this.selectedNode();
+    if (
+      curSelectedNode?.nodeId !== nodeId ||
+      curSelectedNode?.graphId !== graphId ||
+      curSelectedNode?.collectionLabel !== collectionLabel
+    ) {
+      this.selectedNode.set({
+        nodeId,
+        graphId,
+        collectionLabel,
+        node,
+      });
+    }
   }
 
   updateHoveredNode(
