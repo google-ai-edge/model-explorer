@@ -1,4 +1,4 @@
-# Copyright 2024 The AI Edge Model Explorer Authors.
+# Copyright 2024 The AI Edge Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -38,8 +38,8 @@ class PytorchExportedProgramAdapterImpl:
   ):
     """Transform args, kwargs of __call__ to args for graph_module.
 
-    self.graph_module takes stuff from state dict as inputs.
-    The invariant is for ep: ExportedProgram is
+                                   self.graph_module takes stuff from state dict as inputs.
+                          The invariant is for ep: ExportedProgram is
     ep(args, kwargs) ==
       ep.postprocess(ep.graph_module(ep.graph_module_flat_inputs(args, kwargs)))
     """
@@ -53,8 +53,8 @@ class PytorchExportedProgramAdapterImpl:
       if (
           in_spec.type == tuple
           and len(in_spec.children_specs) == 2
-          and in_spec.children_specs[0].type == tuple
-          and in_spec.children_specs[1].type == dict
+              and in_spec.children_specs[0].type == tuple
+              and in_spec.children_specs[1].type == dict
       ):
         # NOTE: this is the case where in_spec is for both args and kwargs
         flat_args = fx_pytree.tree_flatten_spec((args, kwargs), in_spec)
@@ -137,7 +137,7 @@ class PytorchExportedProgramAdapterImpl:
 
   def add_incoming_edges(self, fx_node: torch.fx.node.Node, node: GraphNode):
     for target_input_id, input_fx_node in enumerate(fx_node.all_input_nodes):
-      source_node_output_id = '0'  # default to the first output
+              source_node_output_id = '0'  # default to the first output
       for idx, user in enumerate(input_fx_node.users):
         if user == fx_node:
           source_node_output_id = str(idx)
@@ -220,8 +220,8 @@ class PytorchExportedProgramAdapterImpl:
   def create_node(self, fx_node: torch.fx.node.Node):
     node = GraphNode(
         id=fx_node.name,
-        label=self.get_label(fx_node),
-        namespace=self.get_hierachy(fx_node),
+          label=self.get_label(fx_node),
+          namespace=self.get_hierachy(fx_node),
     )
     self.add_incoming_edges(fx_node, node)
     self.add_node_attrs(fx_node, node)
