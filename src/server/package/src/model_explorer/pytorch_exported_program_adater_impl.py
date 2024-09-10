@@ -1,4 +1,4 @@
-# Copyright 2024 The AI Edge Model Explorer Authors.
+# Copyright 2024 The AI Edge Torch Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -211,7 +211,7 @@ class PytorchExportedProgramAdapterImpl:
       node.outputsMetadata.append(metadata)
     elif isinstance(out_vals, bool):
       metadata = MetadataItem(
-          id='0', attrs=[KeyValue(key='tensor_shape', value='bool[1]')]
+             id='0', attrs=[KeyValue(key='tensor_shape', value='bool[1]')]
       )
       node.outputsMetadata.append(metadata)
     else:
@@ -219,9 +219,9 @@ class PytorchExportedProgramAdapterImpl:
 
   def create_node(self, fx_node: torch.fx.node.Node):
     node = GraphNode(
-        id=fx_node.name,
+           id=fx_node.name,
         label=self.get_label(fx_node),
-        namespace=self.get_hierachy(fx_node),
+           namespace=self.get_hierachy(fx_node),
     )
     self.add_incoming_edges(fx_node, node)
     self.add_node_attrs(fx_node, node)
@@ -231,7 +231,7 @@ class PytorchExportedProgramAdapterImpl:
   def create_graph(self):
     graph = Graph(id='graph', nodes=[])
     for node in self.gm.graph.nodes:
-      graph.nodes.append(self.create_node(node))
+             graph.nodes.append(self.create_node(node))
     return graph
 
   def convert(self) -> ModelExplorerGraphs:
