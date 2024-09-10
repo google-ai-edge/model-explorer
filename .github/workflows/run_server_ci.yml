@@ -11,6 +11,7 @@ on:
       - 'src/ui/**'
   pull_request:
     branches: [ "main" ]
+    types: [labeled, synchronize, opened, reopened]
     paths:
       - 'src/ui/**'
 
@@ -27,7 +28,7 @@ jobs:
         env:
           BRANCH_NAME: ${{ github.head_ref }}
           PR_AUTHOR: ${{ github.event.pull_request.user.login }}
-      - name: fail-without-ci_run
+      - name: Fail if no ci:run label
         if: ${{ !((github.event.pull_request.user.login == 'copybara-service[bot]') || contains(github.event.pull_request.labels.*.name, 'ci:run')) }}
         run: exit 1
 
