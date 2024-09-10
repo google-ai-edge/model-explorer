@@ -1,0 +1,38 @@
+# YAML schema for GitHub Actions:
+# https://help.github.com/en/actions/automating-your-workflow-with-github-actions/workflow-syntax-for-github-actions
+#
+# Helpful YAML parser to clarify YAML syntax:
+# https://yaml-online-parser.appspot.com/
+#
+# This workflow will run when triggered from PR comment
+
+name: Formatting
+
+on:
+  workflow_call:
+    inputs:
+      trigger-sha:
+        required: true
+        type: string
+
+jobs:
+  check-code-style:
+    name: Code Style
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pyink
+
+      - name: Check Code Style
+        run: |
+          ci/code_style_check.sh
