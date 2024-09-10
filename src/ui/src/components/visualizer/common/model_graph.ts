@@ -117,6 +117,15 @@ export declare interface ModelNodeBase {
   savedNamespace?: string;
 
   /**
+   * Model explorer removes layers if their only child node is an op node.
+   * In these cases, the op node's namespace and savedNamespace fields are
+   * updated to reflect the optimized namespace. The savedNamespace field
+   * stores the original (unoptimized) namespace of the node, which is still
+   * useful to display in the UI.
+   */
+  fullNamespace?: string;
+
+  /**
    * The level of the node in the hierarchy. It is the number of components in
    * its namespace.
    *
