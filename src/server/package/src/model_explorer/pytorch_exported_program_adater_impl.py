@@ -1,4 +1,4 @@
-# Copyright 2024 The AI Edge Model Explorer Authors.
+# Copyright 2024 The AI Edge Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -44,7 +44,7 @@ class PytorchExportedProgramAdapterImpl:
       ep.postprocess(ep.graph_module(ep.graph_module_flat_inputs(args, kwargs)))
     """
     if args is None:
-      args = tuple()
+               args = tuple()
     if kwargs is None:
       kwargs = {}
 
@@ -177,7 +177,7 @@ class PytorchExportedProgramAdapterImpl:
     if self.is_arg_node(fx_node):
       tensor_spec = self.inputs_map.get(fx_node.name)
       if tensor_spec:
-        node.attrs.append(KeyValue(key='target', value=str(tensor_spec[0])))
+          node.attrs.append(KeyValue(key='target', value=str(tensor_spec[0])))
         if (tensor := tensor_spec[1]) is not None:
           node.attrs.append(
               KeyValue(
@@ -226,7 +226,7 @@ class PytorchExportedProgramAdapterImpl:
     self.add_incoming_edges(fx_node, node)
     self.add_node_attrs(fx_node, node)
     self.add_outputs_metadata(fx_node, node)
-    return node
+       return node
 
   def create_graph(self):
     graph = Graph(id='graph', nodes=[])
