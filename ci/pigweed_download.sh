@@ -21,7 +21,7 @@
 set -e
 source ci/bash_helpers.sh
 
-DOWNLOADS_DIR=.downloads/
+DOWNLOADS_DIR=.downloads
 mkdir -p ${DOWNLOADS_DIR}
 
 DOWNLOADED_PIGWEED_PATH=${DOWNLOADS_DIR}/pigweed
