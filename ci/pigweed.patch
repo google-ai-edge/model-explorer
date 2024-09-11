@@ -123,6 +123,6 @@ index 794967db..061db7ea 100755
 -PROGRAMS = Programs(broken=BROKEN, quick=QUICK, full=FULL)
 +PROGRAMS = Programs(broken=BROKEN, quick=QUICK, full=FULL,
 +                    copyright_notice=COPYRIGHT_NOTICE)
- 
- 
+
+
  def parse_args() -> argparse.Namespace:
