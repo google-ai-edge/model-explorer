@@ -39,12 +39,18 @@ FIX_FORMAT_FLAG=${1}
   -e .downloads \
   -e .github \
   -e venv \
+  -e src/server/package/src/model_explorer/web_app \
   -e "\.md" \
   -e "\.ipynb" \
   -e "\.patch" \
   -e "\.jpg" \
   -e "\.png" \
   -e "\.jar" \
+  -e "\.test" \
+  -e "\.toml" \
+  -e "BUILD" \
+  -e "\.dot" \
+  -e "\.in" \
   --output-directory /tmp
 
 LICENSE_CHECK_RESULT=$?

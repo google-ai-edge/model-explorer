@@ -11,6 +11,8 @@ on:
     branches: ["main"]
     paths:
       - 'src/server/**'
+      - '.github/workflow/**'
+      - 'ci/**'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref || github.run_id }}
