@@ -24,8 +24,7 @@ from typing_extensions import NotRequired
 
 from .consts import DEFAULT_HOST, DEFAULT_SETTINGS
 from .node_data_builder import NodeData
-from .pytorch_exported_program_adater_impl import \
-    PytorchExportedProgramAdapterImpl
+from .pytorch_exported_program_adater_impl import PytorchExportedProgramAdapterImpl
 from .types import ModelExplorerGraphs
 
 ModelSource = TypedDict(
@@ -34,9 +33,11 @@ ModelSource = TypedDict(
 
 EncodedUrlData = TypedDict(
     'EncodedUrlData',
-    {'models': list[ModelSource],
-     'nodeData': NotRequired[list[str]],
-     'nodeDataTargets': NotRequired[list[str]]},
+    {
+        'models': list[ModelSource],
+        'nodeData': NotRequired[list[str]],
+        'nodeDataTargets': NotRequired[list[str]],
+    },
 )
 
 
@@ -105,9 +106,8 @@ class ModelExplorerConfig:
     return self
 
   def add_node_data_from_path(
-          self,
-          path: str,
-          model_name: Union[str, None] = None) -> 'ModelExplorerConfig':
+      self, path: str, model_name: Union[str, None] = None
+  ) -> 'ModelExplorerConfig':
     """Adds node data file to the config.
 
     Args:
@@ -132,10 +132,7 @@ class ModelExplorerConfig:
     return self
 
   def add_node_data(
-      self,
-      name: str,
-      node_data: NodeData,
-      model_name: Union[str, None] = None
+      self, name: str, node_data: NodeData, model_name: Union[str, None] = None
   ) -> 'ModelExplorerConfig':
     """Adds the given node data object.
 
@@ -164,9 +161,11 @@ class ModelExplorerConfig:
       self.node_data_target_models.append(model_name)
     return self
 
-  def set_reuse_server(self,
-                       server_host: str = DEFAULT_HOST,
-                       server_port: Union[int, None] = None):
+  def set_reuse_server(
+      self,
+      server_host: str = DEFAULT_HOST,
+      server_port: Union[int, None] = None,
+  ):
     """Makes it to reuse the existing server instead of starting a new one.
 
     Args:
@@ -184,10 +183,11 @@ class ModelExplorerConfig:
 
     if self.reuse_server_port > 0:
       print(
-          f'Re-using running server at http://{self.reuse_server_host}:{self.reuse_server_port}')
+          'Re-using running server at'
+          f' http://{self.reuse_server_host}:{self.reuse_server_port}'
+      )
     else:
-      print(
-          f'No running server found. Will start a new server.')
+      print(f'No running server found. Will start a new server.')
 
     return self
 

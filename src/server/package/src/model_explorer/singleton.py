@@ -13,6 +13,7 @@
 # limitations under the License.
 # ==============================================================================
 
+
 class Singleton(type):
   """A metaclass for setting a class as singleton."""
 

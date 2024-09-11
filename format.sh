@@ -1,4 +1,5 @@
-# Copyright 2024 The AI Edge Model Explorer Authors.
+#!/bin/bash
+# Copyright 2024 The AI Edge Model Explorer Authors. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,20 +13,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
+# A helper script to format code. Must be called from repo's root.
+#
 
-from .extension_matadata import ExtensionMetadata
-from .types import ExtensionClassType
+set -ex
 
-
-class RegisteredExtension(object):
-  """A registered extension in extension manager."""
-
-  def __init__(
-      self,
-      metadata: ExtensionMetadata,
-      type: str,
-      ext_class: ExtensionClassType,
-  ):
-    self.metadata = metadata
-    self.type = type
-    self.ext_class = ext_class
+pyink --pyink-use-majority-quotes --pyink-indentation=2 --preview --unstable --line-length 80 \
+      --extend-exclude .downloads \
+    ./
+isort ./

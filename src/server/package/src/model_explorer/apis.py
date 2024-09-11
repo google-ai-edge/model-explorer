@@ -19,8 +19,12 @@ import torch
 
 from . import server
 from .config import ModelExplorerConfig
-from .consts import (DEFAULT_COLAB_HEIGHT, DEFAULT_HOST, DEFAULT_PORT,
-                     DEFAULT_SETTINGS)
+from .consts import (
+    DEFAULT_COLAB_HEIGHT,
+    DEFAULT_HOST,
+    DEFAULT_PORT,
+    DEFAULT_SETTINGS,
+)
 
 
 def config() -> ModelExplorerConfig:
@@ -60,8 +64,9 @@ def visualize(
   for model_path in model_paths_list:
     cur_config.add_model_from_path(path=model_path)
   if reuse_server:
-    cur_config.set_reuse_server(server_host=reuse_server_host,
-                                server_port=reuse_server_port)
+    cur_config.set_reuse_server(
+        server_host=reuse_server_host, server_port=reuse_server_port
+    )
 
   # Start server.
   server.start(
@@ -69,7 +74,7 @@ def visualize(
       port=port,
       config=cur_config,
       colab_height=colab_height,
-      extensions=extensions
+      extensions=extensions,
   )
 
 
@@ -101,7 +106,11 @@ def visualize_pytorch(
 
   # Start server.
   server.start(
-      host=host, port=port, config=cur_config, colab_height=colab_height, extensions=extensions
+      host=host,
+      port=port,
+      config=cur_config,
+      colab_height=colab_height,
+      extensions=extensions,
   )
 
 
