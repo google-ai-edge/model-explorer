@@ -779,6 +779,7 @@ export function getAttributesFromNode(
     attrs = {
       '#descendants': `${(node.descendantsNodeIds || []).length}`,
       '#children': `${(node.nsChildrenIds || []).length}`,
+      'namespace': node.namespace || node.savedNamespace || '<root>',
     };
     const customAttrs =
       modelGraph.groupNodeAttributes?.[node.id.replace('___group___', '')] ||
