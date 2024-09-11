@@ -4,14 +4,11 @@
 name: Run Server Code CI
 
 on:
-  workflow_dispatch:
-  push:
-    branches: [ "main" ]
-    paths:
-      - 'src/server/**'
   pull_request:
-    branches: [ "main" ]
+    # Triggered by default activities (synchronize, opened, reopened) + labeled.
+    # https://docs.github.com/en/actions/writing-workflows/choosing-when-your-workflow-runs/events-that-trigger-workflows#pull_request
     types: [labeled, synchronize, opened, reopened]
+    branches: ["main"]
     paths:
       - 'src/server/**'
 
