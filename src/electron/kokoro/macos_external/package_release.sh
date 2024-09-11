@@ -49,7 +49,8 @@ cd "${ELECTRON_BASE_DIR}/app"
 # electron app.
 echo
 echo '##################################################'
-echo 'Create artifact'
+echo "Create tar'd app"
 
-mkdir "${KOKORO_ARTIFACTS_DIR}/bundles"
-tar -czf "${KOKORO_ARTIFACTS_DIR}/bundles/bundles.tar.gz" out
+mkdir "${KOKORO_ARTIFACTS_DIR}/artifacts"
+cd "${ELECTRON_BASE_DIR}"
+tar -czf "${KOKORO_ARTIFACTS_DIR}/artifacts/app.tar.gz" app
