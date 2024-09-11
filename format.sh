@@ -14,7 +14,6 @@
 # limitations under the License.
 # ==============================================================================
 # A helper script to format code. Must be called from repo's root.
-#
 
 set -ex
 
