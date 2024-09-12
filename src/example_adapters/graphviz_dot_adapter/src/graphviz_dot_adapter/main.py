@@ -16,12 +16,8 @@
 from typing import Dict
 
 import pydot
-from model_explorer import (
-    Adapter,
-    AdapterMetadata,
-    ModelExplorerGraphs,
-    graph_builder,
-)
+from model_explorer import (Adapter, AdapterMetadata, ModelExplorerGraphs,
+                            graph_builder)
 
 
 class GraphVizAdapter(Adapter):

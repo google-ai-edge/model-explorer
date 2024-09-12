@@ -15,7 +15,8 @@
 
 from typing import Dict
 
-from ai_edge_model_explorer_adapter import _pywrap_convert_wrapper as convert_wrapper  # type: ignore
+from ai_edge_model_explorer_adapter import \
+    _pywrap_convert_wrapper as convert_wrapper  # type: ignore
 
 from .adapter import Adapter, AdapterMetadata
 from .types import ModelExplorerGraphs

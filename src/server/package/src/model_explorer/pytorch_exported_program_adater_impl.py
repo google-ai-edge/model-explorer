@@ -21,7 +21,8 @@ import torch
 import torch.fx
 from torch.fx import _pytree as fx_pytree
 
-from .graph_builder import Graph, GraphNode, IncomingEdge, KeyValue, MetadataItem
+from .graph_builder import (Graph, GraphNode, IncomingEdge, KeyValue,
+                            MetadataItem)
 from .types import ModelExplorerGraphs
 
 

@@ -36,12 +36,8 @@ from packaging.version import parse
 from termcolor import colored, cprint
 
 from .config import ModelExplorerConfig
-from .consts import (
-    DEFAULT_COLAB_HEIGHT,
-    DEFAULT_HOST,
-    DEFAULT_PORT,
-    PACKAGE_NAME,
-)
+from .consts import (DEFAULT_COLAB_HEIGHT, DEFAULT_HOST, DEFAULT_PORT,
+                     PACKAGE_NAME)
 from .extension_manager import ExtensionManager
 from .server_directive_dispatcher import ServerDirectiveDispatcher
 from .server_director import ServerDirector

@@ -15,12 +15,8 @@
 
 from typing import Dict
 
-from model_explorer import (
-    Adapter,
-    AdapterMetadata,
-    ModelExplorerGraphs,
-    graph_builder,
-)
+from model_explorer import (Adapter, AdapterMetadata, ModelExplorerGraphs,
+                            graph_builder)
 
 
 class MyAdapter(Adapter):

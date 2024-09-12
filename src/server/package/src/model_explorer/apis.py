@@ -19,12 +19,8 @@ import torch
 
 from . import server
 from .config import ModelExplorerConfig
-from .consts import (
-    DEFAULT_COLAB_HEIGHT,
-    DEFAULT_HOST,
-    DEFAULT_PORT,
-    DEFAULT_SETTINGS,
-)
+from .consts import (DEFAULT_COLAB_HEIGHT, DEFAULT_HOST, DEFAULT_PORT,
+                     DEFAULT_SETTINGS)
 
 
 def config() -> ModelExplorerConfig:

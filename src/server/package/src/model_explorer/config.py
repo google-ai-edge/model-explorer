@@ -24,7 +24,8 @@ from typing_extensions import NotRequired
 
 from .consts import DEFAULT_HOST, DEFAULT_SETTINGS
 from .node_data_builder import NodeData
-from .pytorch_exported_program_adater_impl import PytorchExportedProgramAdapterImpl
+from .pytorch_exported_program_adater_impl import \
+    PytorchExportedProgramAdapterImpl
 from .types import ModelExplorerGraphs
 
 ModelSource = TypedDict(

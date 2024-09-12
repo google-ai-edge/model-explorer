@@ -26,8 +26,7 @@ developers to easily add support for additional formats.
 
 import os
 
-from setuptools import find_packages
-from setuptools import setup
+from setuptools import find_packages, setup
 
 PACKAGE_NAME = os.environ['PROJECT_NAME']
 PACKAGE_VERSION = os.environ['PACKAGE_VERSION']

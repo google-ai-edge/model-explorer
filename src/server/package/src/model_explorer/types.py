@@ -14,6 +14,7 @@
 # ==============================================================================
 
 from typing import Dict, Type, TypedDict
+
 from typing_extensions import NotRequired
 
 from .extension_matadata import ExtensionMetadata

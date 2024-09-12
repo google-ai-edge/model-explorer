@@ -19,8 +19,9 @@ import torch
 import torch.fx
 
 from .adapter import Adapter, AdapterMetadata
+from .pytorch_exported_program_adater_impl import \
+    PytorchExportedProgramAdapterImpl
 from .types import ModelExplorerGraphs
-from .pytorch_exported_program_adater_impl import PytorchExportedProgramAdapterImpl
 
 
 class BuiltinPytorchExportedProgramAdapter(Adapter):
