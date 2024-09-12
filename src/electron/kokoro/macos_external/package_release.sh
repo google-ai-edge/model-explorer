@@ -48,8 +48,14 @@ cd "${ELECTRON_BASE_DIR}/app"
 # Create artifact (tar) from the built electron app.
 echo
 echo '##################################################'
-echo "Create tar'd app and upload to placer"
+echo "Create tar'd app"
 
 mkdir "${KOKORO_ARTIFACTS_DIR}/artifacts"
 cd "${ELECTRON_BASE_DIR}"
 tar -czf "${KOKORO_ARTIFACTS_DIR}/artifacts/app.tar.gz" app
+
+echo
+echo '##################################################'
+echo "Done creating tar. Uploading to placer"
+
+ls -lh "${KOKORO_ARTIFACTS_DIR}/artifacts/*"
