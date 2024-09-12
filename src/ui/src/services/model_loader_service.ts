@@ -65,6 +65,8 @@ export class ModelLoaderService implements ModelLoaderServiceInterface {
     undefined,
   );
 
+  readonly models = signal<ModelItem[]>([]);
+
   constructor(
     private readonly settingsService: SettingsService,
     readonly extensionService: ExtensionService,
@@ -105,6 +107,7 @@ export class ModelLoaderService implements ModelLoaderServiceInterface {
   async loadModel(modelItem: ModelItem): Promise<GraphCollection[]> {
     modelItem.status.set(ModelItemStatus.PROCESSING);
     let result: GraphCollection[] = [];
+    let updatedPath: string | undefined;
 
     // User-entered file path.
     if (modelItem.type === ModelItemType.FILE_PATH) {
@@ -183,6 +186,8 @@ export class ModelLoaderService implements ModelLoaderServiceInterface {
             return [];
           }
 
+          updatedPath = path;
+
           // Send request to backend for processing.
           result = await this.sendConvertRequest(
             modelItem,
@@ -193,6 +198,15 @@ export class ModelLoaderService implements ModelLoaderServiceInterface {
           break;
       }
     }
+
+    this.models.update((curModels) => {
+      curModels.push({
+        ...modelItem,
+        path: updatedPath ?? modelItem.path,
+      });
+
+      return curModels;
+    });
 
     return result;
   }
