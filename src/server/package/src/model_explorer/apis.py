@@ -13,17 +13,38 @@
 # limitations under the License.
 # ==============================================================================
 
-from typing import Union
+from typing import Union, TypedDict
+from typing_extensions import NotRequired
 
 import torch
 
 from . import server
-from .config import ModelExplorerConfig
+from .config import ModelExplorerConfig, NodeData
 from .consts import (
     DEFAULT_COLAB_HEIGHT,
     DEFAULT_HOST,
     DEFAULT_PORT,
     DEFAULT_SETTINGS,
+)
+
+NodeDataInfo = TypedDict(
+    'NodeDataInfo',
+    {
+        # The name of the node data for display purpose.
+        'name': str,
+        # The NodeData object of node data json string to add.
+        #
+        # This field takes precedence over node_data_path field below when they
+        # are both set.
+        'node_data': NotRequired[Union[NodeData, str]],
+        # The path of the node data json file to add.
+        'node_data_path': NotRequired[str],
+        # The name of the model to apply the node data to. If not set, the node
+        # data will be applied to the first model by default.
+        #
+        # To set this field, use the name of the model file (e.g. model.tflite).
+        'model_name': NotRequired[str],
+    },
 )
 
 
@@ -37,6 +58,7 @@ def visualize(
     host=DEFAULT_HOST,
     port=DEFAULT_PORT,
     extensions: list[str] = [],
+    node_data_list: list[NodeDataInfo] = [],
     colab_height=DEFAULT_COLAB_HEIGHT,
     reuse_server: bool = False,
     reuse_server_host: str = DEFAULT_HOST,
@@ -49,6 +71,7 @@ def visualize(
     host: The host of the server. Default to localhost.
     port: The port of the server. Default to 8080.
     extensions: List of extension names to be run with model explorer.
+    node_data_list: The list of node data to display.
     colab_height: The height of the embedded iFrame when running in colab.
     reuse_server: Whether to reuse the current server/browser tab(s) to
         visualize.
@@ -59,10 +82,16 @@ def visualize(
   # Construct config.
   cur_config = config()
   model_paths_list = model_paths
+
   if isinstance(model_paths, str):
     model_paths_list = [model_paths]
   for model_path in model_paths_list:
     cur_config.add_model_from_path(path=model_path)
+
+  _add_node_data_list_to_config(
+      node_data_list=node_data_list, config=cur_config
+  )
+
   if reuse_server:
     cur_config.set_reuse_server(
         server_host=reuse_server_host, server_port=reuse_server_port
@@ -84,6 +113,7 @@ def visualize_pytorch(
     host=DEFAULT_HOST,
     port=DEFAULT_PORT,
     extensions: list[str] = [],
+    node_data_list: list[NodeDataInfo] = [],
     colab_height=DEFAULT_COLAB_HEIGHT,
     settings=DEFAULT_SETTINGS,
 ) -> None:
@@ -95,6 +125,7 @@ def visualize_pytorch(
     host: The host of the server. Default to localhost.
     port: The port of the server. Default to 8080.
     extensions: List of extension names to be run with model explorer.
+    node_data_list: The list of node data to display.
     colab_height: The height of the embedded iFrame when running in colab.
     settings: The settings that config the visualization.
   """
@@ -102,6 +133,10 @@ def visualize_pytorch(
   cur_config = config()
   cur_config.add_model_from_pytorch(
       name, exported_program=exported_program, settings=settings
+  )
+
+  _add_node_data_list_to_config(
+      node_data_list=node_data_list, config=cur_config
   )
 
   # Start server.
@@ -145,3 +180,19 @@ def visualize_from_config(
       no_open_in_browser=no_open_in_browser,
       colab_height=colab_height,
   )
+
+
+def _add_node_data_list_to_config(
+    node_data_list: list[NodeDataInfo], config: ModelExplorerConfig
+):
+  for node_data_info in node_data_list:
+    name = node_data_info.get('name', 'node data')
+    node_data_path = node_data_info.get('node_data_path')
+    node_data = node_data_info.get('node_data')
+    model_name = node_data_info.get('model_name')
+    if node_data:
+      config.add_node_data(
+          name=name, node_data=node_data, model_name=model_name
+      )
+    elif node_data_path:
+      config.add_node_data_from_path(path=node_data_path, model_name=model_name)

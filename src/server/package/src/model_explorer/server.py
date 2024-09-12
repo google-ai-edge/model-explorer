@@ -264,7 +264,10 @@ def start(
       return {}
     node_data_index = int(node_data_index_str)
     node_data = config.get_node_data(node_data_index)
-    json_str = node_data.to_json_string()
+    if isinstance(node_data, str):
+      json_str = node_data
+    else:
+      json_str = node_data.to_json_string()
     return _make_json_response({'content': json_str})
 
   @app.route('/api/v1/read_text_file')
