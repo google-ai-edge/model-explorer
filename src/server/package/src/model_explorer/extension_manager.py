@@ -45,7 +45,8 @@ class ExtensionManager(object, metaclass=Singleton):
     # For custom extensions (i.e. non-built-in extensions), we load their "main"
     # module by default.
     self.custom_extension_modules = [
-        f'{x}.main' for x in custom_extension_modules]
+        f'{x}.main' for x in custom_extension_modules
+    ]
     self.extensions: list[RegisteredExtension] = []
     self.adapter_runner: AdapterRunner = AdapterRunner()
 
@@ -56,8 +57,9 @@ class ExtensionManager(object, metaclass=Singleton):
 
   def get_extensions_metadata(self) -> list:
     """Get metadata for all extensions."""
-    exts = [{**asdict(ext.metadata), 'type': ext.type}
-            for ext in self.extensions]
+    exts = [
+        {**asdict(ext.metadata), 'type': ext.type} for ext in self.extensions
+    ]
     exts.append({
         'fileExts': ['json'],
         'type': 'adapter',
@@ -79,8 +81,7 @@ class ExtensionManager(object, metaclass=Singleton):
     #
     # Adapter.
     if extension.type == 'adapter':
-      resp = self.adapter_runner.run_adapter(
-          extension=extension, cmd=cmd)
+      resp = self.adapter_runner.run_adapter(extension=extension, cmd=cmd)
       return convert_adapter_response(resp)
 
     return {}
@@ -102,14 +103,17 @@ class ExtensionManager(object, metaclass=Singleton):
 
   def _import_extensions(self):
     # Built-in pywrapped c++ extensions + custom extensions.
-    for module in ExtensionManager.BUILTIN_ADAPTER_MODULES + self.custom_extension_modules:
+    for module in (
+        ExtensionManager.BUILTIN_ADAPTER_MODULES + self.custom_extension_modules
+    ):
       module_full_name = f'{MODULE_NAME}{module}'
 
       # Get the registered extension from cache if it has already been
       # registered.
       if module_full_name in ExtensionManager.CACHED_REGISTERED_EXTENSIONS:
         self.extensions.append(
-            ExtensionManager.CACHED_REGISTERED_EXTENSIONS[module_full_name])
+            ExtensionManager.CACHED_REGISTERED_EXTENSIONS[module_full_name]
+        )
       # Import the extension module if it has not been registered.
       else:
         try:
@@ -121,11 +125,15 @@ class ExtensionManager(object, metaclass=Singleton):
           continue
 
         if ExtensionClassProcessor.extension_class is not None:
-          extension = RegisteredExtension(metadata=ExtensionClassProcessor.extension_class.metadata,
-                                          type=ExtensionClassProcessor.extension_type,
-                                          ext_class=ExtensionClassProcessor.extension_class)
+          extension = RegisteredExtension(
+              metadata=ExtensionClassProcessor.extension_class.metadata,
+              type=ExtensionClassProcessor.extension_type,
+              ext_class=ExtensionClassProcessor.extension_class,
+          )
           self.extensions.append(extension)
-          ExtensionManager.CACHED_REGISTERED_EXTENSIONS[module_full_name] = extension
+          ExtensionManager.CACHED_REGISTERED_EXTENSIONS[module_full_name] = (
+              extension
+          )
 
   def _get_extension_by_id(self, id: str) -> Union[RegisteredExtension, None]:
     matches = [ext for ext in self.extensions if ext.metadata.id == id]

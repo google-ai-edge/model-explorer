@@ -33,18 +33,18 @@ def get_instance_method(instance: object, fn_name: str) -> Union[Any, None]:
 def convert_builtin_resp(resp_json_str: str) -> list[GraphCollection]:
   """Converts the json string response from the built-in adapters."""
   resp = json.loads(resp_json_str)
-  return [GraphCollection(label=item['label'],
-                          graphs=item['subgraphs']) for item in resp]
+  return [
+      GraphCollection(label=item['label'], graphs=item['subgraphs'])
+      for item in resp
+  ]
 
 
 def convert_adapter_response(resp: ModelExplorerGraphs):
   """Converts the given adapter convert response to python object."""
   if 'graphs' in resp:
-    return {'graphs':
-            [asdict(x) for x in resp['graphs']]}
+    return {'graphs': [asdict(x) for x in resp['graphs']]}
   if 'graphCollections' in resp:
-    return {'graphCollections':
-            [asdict(x) for x in resp['graphCollections']]}
+    return {'graphCollections': [asdict(x) for x in resp['graphCollections']]}
 
 
 def ensure_tf_model_name(model_path: str) -> str:
@@ -67,7 +67,6 @@ def remove_none(d: Any) -> Any:
   if isinstance(d, list):
     return [remove_none(x) for x in d if x is not None]
   elif isinstance(d, dict):
-    return dict((
-        k, remove_none(v)) for k, v in d.items() if v is not None)
+    return dict((k, remove_none(v)) for k, v in d.items() if v is not None)
   else:
     return d

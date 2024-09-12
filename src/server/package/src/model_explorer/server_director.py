@@ -28,7 +28,9 @@ class ServerDirector:
     """Updates config in the running server."""
 
     data = self.config.get_transferrable_data()
-    server_address = ('http://'
-                      f'{self.config.reuse_server_host}:'
-                      f'{self.config.reuse_server_port}')
+    server_address = (
+        'http://'
+        f'{self.config.reuse_server_host}:'
+        f'{self.config.reuse_server_port}'
+    )
     requests.post(f'{server_address}/apipost/v1/update_config', json=data)

@@ -35,4 +35,3 @@ class ServerDirectiveDispatcher:
 
   def remove_listener(self, listener: queue.Queue[str]):
     self.listeners.remove(listener)
-

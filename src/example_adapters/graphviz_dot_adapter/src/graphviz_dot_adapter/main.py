@@ -16,8 +16,12 @@
 from typing import Dict
 
 import pydot
-from model_explorer import (Adapter, AdapterMetadata, ModelExplorerGraphs,
-                            graph_builder)
+from model_explorer import (
+    Adapter,
+    AdapterMetadata,
+    ModelExplorerGraphs,
+    graph_builder,
+)
 
 
 class GraphVizAdapter(Adapter):
@@ -27,11 +31,13 @@ class GraphVizAdapter(Adapter):
   including node label, edge connections, and subgraphs/clusters.
   """
 
-  metadata = AdapterMetadata(id='model_explorer_graphviz_dot_adapter',
-                             name='GraphViz Dot adapter',
-                             description='Add GraphViz (dot) support to Model Explorer',
-                             source_repo='https://github.com/user/graphviz_dot_adapter',
-                             fileExts=['dot'])
+  metadata = AdapterMetadata(
+      id='model_explorer_graphviz_dot_adapter',
+      name='GraphViz Dot adapter',
+      description='Add GraphViz (dot) support to Model Explorer',
+      source_repo='https://github.com/user/graphviz_dot_adapter',
+      fileExts=['dot'],
+  )
 
   # This is required.
   def __init__(self):
@@ -60,11 +66,13 @@ class GraphVizAdapter(Adapter):
 
     return {'graphs': graphs}
 
-  def _gen_graph_nodes(self,
-                       cur_gv_graph,
-                       seen_gv_nodes: set,
-                       node_to_graph_node: Dict,
-                       cur_namespace: str):
+  def _gen_graph_nodes(
+      self,
+      cur_gv_graph,
+      seen_gv_nodes: set,
+      node_to_graph_node: Dict,
+      cur_namespace: str,
+  ):
     # Get nodes from the node list.
     for gv_node in cur_gv_graph.get_nodes():
       node_name = gv_node.get_name()
@@ -81,8 +89,9 @@ class GraphVizAdapter(Adapter):
       node_label = node_name
       if 'label' in gv_node.obj_dict['attributes']:
         node_label = gv_node.obj_dict['attributes']['label']
-      self._create_graph_node(node_name, node_label,
-                              node_to_graph_node, cur_namespace)
+      self._create_graph_node(
+          node_name, node_label, node_to_graph_node, cur_namespace
+      )
 
     # Get nodes from the edge list.
     gv_edges = cur_gv_graph.get_edges()
@@ -93,16 +102,22 @@ class GraphVizAdapter(Adapter):
       if source_node_name not in seen_gv_nodes:
         seen_gv_nodes.add(source_node_name)
         self._create_graph_node(
-            source_node_name, source_node_name,
-            node_to_graph_node, cur_namespace)
+            source_node_name,
+            source_node_name,
+            node_to_graph_node,
+            cur_namespace,
+        )
       else:
         node_to_graph_node[source_node_name].namespace = cur_namespace
 
       if target_node_name not in seen_gv_nodes:
         seen_gv_nodes.add(target_node_name)
         self._create_graph_node(
-            target_node_name, target_node_name,
-            node_to_graph_node, cur_namespace)
+            target_node_name,
+            target_node_name,
+            node_to_graph_node,
+            cur_namespace,
+        )
       else:
         node_to_graph_node[target_node_name].namespace = cur_namespace
 
@@ -111,12 +126,13 @@ class GraphVizAdapter(Adapter):
     for subgraph in subgraphs:
       subgraph_id = subgraph.get_name()
       if 'label' in subgraph.obj_dict['attributes']:
-        subgraph_id = subgraph.obj_dict['attributes']['label'].strip('\"')
+        subgraph_id = subgraph.obj_dict['attributes']['label'].strip('"')
       new_namespace = f'{cur_namespace}/{subgraph_id}'
       if cur_namespace == '':
         new_namespace = subgraph_id
-      self._gen_graph_nodes(subgraph, seen_gv_nodes,
-                            node_to_graph_node, new_namespace)
+      self._gen_graph_nodes(
+          subgraph, seen_gv_nodes, node_to_graph_node, new_namespace
+      )
 
   def _gen_graph_edges(self, cur_gv_graph, node_to_graph_node: Dict):
     for gv_edge in cur_gv_graph.get_edges():
@@ -124,17 +140,22 @@ class GraphVizAdapter(Adapter):
       target_node = gv_edge.get_destination()
       target_graph_node = node_to_graph_node[target_node]
       target_graph_node.incomingEdges.append(
-          graph_builder.IncomingEdge(sourceNodeId=source_node))
+          graph_builder.IncomingEdge(sourceNodeId=source_node)
+      )
 
     # Recursive on subgraphs.
     subgraphs = cur_gv_graph.get_subgraphs()
     for subgraph in subgraphs:
       self._gen_graph_edges(subgraph, node_to_graph_node)
 
-  def _create_graph_node(self, node_name: str,
-                         node_label: str,
-                         node_to_graph_node: Dict,
-                         namespace: str):
+  def _create_graph_node(
+      self,
+      node_name: str,
+      node_label: str,
+      node_to_graph_node: Dict,
+      namespace: str,
+  ):
     graph_node = graph_builder.GraphNode(
-        node_name, node_label, namespace=namespace)
+        node_name, node_label, namespace=namespace
+    )
     node_to_graph_node[node_name] = graph_node

@@ -36,8 +36,12 @@ from packaging.version import parse
 from termcolor import colored, cprint
 
 from .config import ModelExplorerConfig
-from .consts import (DEFAULT_COLAB_HEIGHT, DEFAULT_HOST, DEFAULT_PORT,
-                     PACKAGE_NAME)
+from .consts import (
+    DEFAULT_COLAB_HEIGHT,
+    DEFAULT_HOST,
+    DEFAULT_PORT,
+    PACKAGE_NAME,
+)
 from .extension_manager import ExtensionManager
 from .server_directive_dispatcher import ServerDirectiveDispatcher
 from .server_director import ServerDirector
@@ -74,7 +78,8 @@ def _check_new_version(print_msg=True):
   try:
     # Get version from repo.
     repo_version = _get_latest_version_from_repo(
-        f'https://pypi.python.org/pypi/{PACKAGE_NAME}/json')
+        f'https://pypi.python.org/pypi/{PACKAGE_NAME}/json'
+    )
 
     if repo_version != '0':
       # Compare with the local installed version.
@@ -83,13 +88,16 @@ def _check_new_version(print_msg=True):
       if parse(installed_version) < parse(repo_version):
         check_new_version_resp['version'] = repo_version
         if print_msg:
-          def c_print(x): return cprint(x, 'yellow')
+
+          def c_print(x):
+            return cprint(x, 'yellow')
+
           c_print(
-              f'\n{PACKAGE_NAME} version {repo_version} is available, and you are using version {installed_version}.')
-          c_print(
-              'Consider upgrading via the following command:')
-          c_print(
-              f'$ pip install -U {PACKAGE_NAME}')
+              f'\n{PACKAGE_NAME} version {repo_version} is available, and you'
+              f' are using version {installed_version}.'
+          )
+          c_print('Consider upgrading via the following command:')
+          c_print(f'$ pip install -U {PACKAGE_NAME}')
   except:
     pass
   finally:
@@ -101,7 +109,10 @@ def _is_port_in_use(host: str, port: int) -> bool:
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
       return s.connect_ex((host, port)) == 0
   except socket.gaierror:
-    print(f'"{host}" cannot be resolved. Try using IP address directly: model-explorer --host=127.0.0.1')
+    print(
+        f'"{host}" cannot be resolved. Try using IP address directly:'
+        ' model-explorer --host=127.0.0.1'
+    )
     sys.exit(1)
 
 
@@ -110,14 +121,15 @@ def _js(script):
 
 
 def start(
-        host=DEFAULT_HOST,
-        port=DEFAULT_PORT,
-        config: Union[ModelExplorerConfig, None] = None,
-        no_open_in_browser: bool = False,
-        extensions: list[str] = [],
-        colab_height: int = DEFAULT_COLAB_HEIGHT,
-        cors_host: Union[str, None] = None,
-        skip_health_check: bool = False):
+    host=DEFAULT_HOST,
+    port=DEFAULT_PORT,
+    config: Union[ModelExplorerConfig, None] = None,
+    no_open_in_browser: bool = False,
+    extensions: list[str] = [],
+    colab_height: int = DEFAULT_COLAB_HEIGHT,
+    cors_host: Union[str, None] = None,
+    skip_health_check: bool = False,
+):
   """Starts the local server that serves the web app.
 
   Args:
@@ -133,7 +145,11 @@ def start(
   """
 
   # Don't start the server if user wants to reuse an existing server.
-  if config is not None and config.reuse_server_host != '' and config.reuse_server_port > 0:
+  if (
+      config is not None
+      and config.reuse_server_host != ''
+      and config.reuse_server_port > 0
+  ):
     director = ServerDirector(config=config)
     director.update_config()
     return
@@ -188,7 +204,8 @@ def start(
   extension_metadata_list = extension_manager.get_extensions_metadata()
   num_extensions = len(extension_metadata_list)
   print(
-      f'Loaded {num_extensions} extension{"" if num_extensions == 1 else "s"}:')
+      f'Loaded {num_extensions} extension{"" if num_extensions == 1 else "s"}:'
+  )
   for extension in extension_metadata_list:
     print(f' - {extension["name"]}')
 
@@ -235,7 +252,8 @@ def start(
       return {}
     graph_index = int(graph_index_str)
     return _make_json_response(
-        convert_adapter_response(config.get_model_explorer_graphs(graph_index)))
+        convert_adapter_response(config.get_model_explorer_graphs(graph_index))
+    )
 
   @app.route('/api/v1/load_node_data')
   def load_node_data():
@@ -276,9 +294,12 @@ def start(
       config.set_transferrable_data(config_data)
 
       # Ask UI to refresh page with the new url.
-      server_directive_dispatcher.broadcast(json.dumps(
-          {'name': 'refreshPage',
-           'url':  f'/?data={config.to_url_param_value()}'}))
+      server_directive_dispatcher.broadcast(
+          json.dumps({
+              'name': 'refreshPage',
+              'url': f'/?data={config.to_url_param_value()}',
+          })
+      )
 
     return ''
 
@@ -291,13 +312,13 @@ def start(
           # Try to get a new message.
           try:
             msg = directive_queue.get(block=False)
-            yield f"data: {msg}\n\n"
+            yield f'data: {msg}\n\n'
           except queue.Empty:
             # Ignore if there is no new messages.
             pass
 
           # Keep the connection alive.
-          yield ": heartbeat\n\n"
+          yield ': heartbeat\n\n'
           time.sleep(1)
       except:
         # The client closes the connection (i.e. close the browser tab)
@@ -310,8 +331,9 @@ def start(
     return Response(
         stream(),
         headers=headers,
-        content_type="text/event-stream",
-        mimetype="text/event-stream")
+        content_type='text/event-stream',
+        mimetype='text/event-stream',
+    )
 
   @app.route('/')
   def send_index_html():
@@ -360,7 +382,9 @@ def start(
     if len(url_params) > 0:
       server_address = f'{server_address}/?{"&".join(url_params)}'
     print(
-        f'\nStarting Model Explorer server at:\n{server_address}\n\nPress Ctrl+C to stop.')
+        f'\nStarting Model Explorer server at:\n{server_address}\n\nPress'
+        ' Ctrl+C to stop.'
+    )
     if not no_open_in_browser:
       webbrowser.open_new_tab(f'{server_address}')
 
@@ -403,16 +427,17 @@ def start(
     if config is not None and config.has_data_to_encode_in_url():
       data_param = f'data={config.to_url_param_value()}'
     replacements = [
-        ("%PORT%", f"{colab_port}"),
-        ("%HOSTED_RUNTIME%", f"{colab}"),
-        ("%HEIGHT%", f"{colab_height}"),
-        ("%DATA_PARAM%", f"{data_param}"),
+        ('%PORT%', f'{colab_port}'),
+        ('%HOSTED_RUNTIME%', f'{colab}'),
+        ('%HEIGHT%', f'{colab_height}'),
+        ('%DATA_PARAM%', f'{data_param}'),
     ]
-    for (k, v) in replacements:
+    for k, v in replacements:
       shell = shell.replace(k, v)
 
-    threading.Thread(target=app.run, kwargs={
-                     'host': '::', 'port': colab_port}).start()
+    threading.Thread(
+        target=app.run, kwargs={'host': '::', 'port': colab_port}
+    ).start()
 
     _js(shell)
 

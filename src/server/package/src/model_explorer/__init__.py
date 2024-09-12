@@ -22,8 +22,16 @@ from .consts import PACKAGE_NAME
 from .types import ModelExplorerGraphs
 
 # Default 'exports'.
-__all__ = ['config', 'visualize', 'visualize_pytorch', 'visualize_from_config',
-           'Adapter', 'AdapterMetadata', 'ModelExplorerGraphs', 'graph_builder',
-           'node_data_builder']
+__all__ = [
+    'config',
+    'visualize',
+    'visualize_pytorch',
+    'visualize_from_config',
+    'Adapter',
+    'AdapterMetadata',
+    'ModelExplorerGraphs',
+    'graph_builder',
+    'node_data_builder',
+]
 
 __version__ = version(PACKAGE_NAME)
