@@ -58,4 +58,4 @@ echo
 echo '##################################################'
 echo "Done creating tar. Uploading to placer"
 
-ls -lh "${KOKORO_ARTIFACTS_DIR}/artifacts/*"
+ls -lh "${KOKORO_ARTIFACTS_DIR}/artifacts/"*
