@@ -45,11 +45,10 @@ cd "${ELECTRON_BASE_DIR}/app"
 ./build.sh
 
 
-# Create artifact (tar) from the bundled platform-specific app built from the
-# electron app.
+# Create artifact (tar) from the built electron app.
 echo
 echo '##################################################'
-echo "Create tar'd app"
+echo "Create tar'd app and upload to placer"
 
 mkdir "${KOKORO_ARTIFACTS_DIR}/artifacts"
 cd "${ELECTRON_BASE_DIR}"
