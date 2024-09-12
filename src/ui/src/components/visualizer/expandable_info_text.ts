@@ -94,6 +94,18 @@ export class ExpandableInfoText implements AfterViewInit, OnDestroy, OnChanges {
     }
   }
 
+  handleTextChange(evt: Event) {
+    const target = evt.target as HTMLInputElement | HTMLSelectElement;
+
+    if (this.editable?.input_type === 'int_list') {
+      // TODO: get all inputs in a list and then emmit them together.
+    }
+
+    // TODO: send the patch update to the backend
+
+    this.appService.hasChangesToUpload.update(() => true);
+  }
+
   handleToggleExpand(event: MouseEvent, fromExpandedText = false) {
     if (!this.hasOverflow && !this.hasMultipleLines) {
       return;
