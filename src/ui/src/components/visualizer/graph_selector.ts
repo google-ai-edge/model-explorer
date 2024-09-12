@@ -164,6 +164,10 @@ export class GraphSelector {
     return pane.modelGraph.id;
   });
 
+  get hasChangesToUpload() {
+    return this.appService.hasChangesToUpload();
+  }
+
   constructor(
     private readonly appService: AppService,
     private readonly overlay: Overlay,
@@ -192,6 +196,12 @@ export class GraphSelector {
     ref.instance.onClose.subscribe(() => {
       overlayRef.dispose();
     });
+  }
+
+  handleClickUploadGraph() {
+    console.log('upload button clicked');
+    // TODO: send request to server
+    debugger;
   }
 
   handleGraphSelectorOpenedChanged(opened: boolean) {
