@@ -25,6 +25,7 @@ class ExtensionClassProcessor(type):
   will be called when the module that contains any Extension based class is
   imported.
   """
+
   # To add a new extension type:
   #
   # 1. Add a base class that extends Extension

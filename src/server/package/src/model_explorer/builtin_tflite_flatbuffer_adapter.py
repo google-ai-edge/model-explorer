@@ -15,8 +15,7 @@
 
 from typing import Dict
 
-from ai_edge_model_explorer_adapter import \
-    _pywrap_convert_wrapper as convert_wrapper  # type: ignore
+from ai_edge_model_explorer_adapter import _pywrap_convert_wrapper as convert_wrapper  # type: ignore
 
 from .adapter import Adapter, AdapterMetadata
 from .types import ModelExplorerGraphs
@@ -26,10 +25,15 @@ from .utils import convert_builtin_resp
 class BuiltinTfliteFlatbufferAdapter(Adapter):
   """Built-in tflite adapter by parsing flatbuffer."""
 
-  metadata = AdapterMetadata(id='builtin_tflite_flatbuffer',
-                             name='TFLite adapter (Flatbuffer)',
-                             description='A built-in adapter that converts a TFLite model to Model Explorer format by directly parsing the flatbuffer.',
-                             fileExts=['tflite'])
+  metadata = AdapterMetadata(
+      id='builtin_tflite_flatbuffer',
+      name='TFLite adapter (Flatbuffer)',
+      description=(
+          'A built-in adapter that converts a TFLite model to Model Explorer'
+          ' format by directly parsing the flatbuffer.'
+      ),
+      fileExts=['tflite'],
+  )
 
   def __init__(self):
     super().__init__()
@@ -42,5 +46,6 @@ class BuiltinTfliteFlatbufferAdapter(Adapter):
 
     # Run
     resp_json_str = convert_wrapper.ConvertFlatbufferDirectlyToJson(
-        config, model_path)
+        config, model_path
+    )
     return {'graphCollections': convert_builtin_resp(resp_json_str)}

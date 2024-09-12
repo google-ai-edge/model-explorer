@@ -42,8 +42,7 @@ class ModelNodeData:
       f.write(data)
 
   def to_json_string(self, indent: Union[int, None] = None) -> str:
-    data = {k: remove_none(asdict(v))
-            for (k, v) in self.graphsData.items()}
+    data = {k: remove_none(asdict(v)) for (k, v) in self.graphsData.items()}
     return json.dumps(data, indent=indent)
 
 

@@ -15,8 +15,7 @@
 
 from typing import Dict
 
-from ai_edge_model_explorer_adapter import \
-    _pywrap_convert_wrapper as convert_wrapper  # type: ignore
+from ai_edge_model_explorer_adapter import _pywrap_convert_wrapper as convert_wrapper  # type: ignore
 
 from .adapter import Adapter, AdapterMetadata
 from .types import ModelExplorerGraphs
@@ -26,10 +25,15 @@ from .utils import convert_builtin_resp
 class BuiltinGraphdefAdapter(Adapter):
   """Built-in graphdef adapter."""
 
-  metadata = AdapterMetadata(id='builtin_graphdef',
-                             name='GraphDef adapter',
-                             description='A built-in adapter that converts GraphDef file to Model Explorer format.',
-                             fileExts=['pb', 'pbtxt', 'graphdef'])
+  metadata = AdapterMetadata(
+      id='builtin_graphdef',
+      name='GraphDef adapter',
+      description=(
+          'A built-in adapter that converts GraphDef file to Model Explorer'
+          ' format.'
+      ),
+      fileExts=['pb', 'pbtxt', 'graphdef'],
+  )
 
   def __init__(self):
     super().__init__()
@@ -42,5 +46,6 @@ class BuiltinGraphdefAdapter(Adapter):
 
     # Run
     resp_json_str = convert_wrapper.ConvertGraphDefDirectlyToJson(
-        config, model_path)
+        config, model_path
+    )
     return {'graphCollections': convert_builtin_resp(resp_json_str)}

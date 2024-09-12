@@ -40,7 +40,7 @@ FIX_FORMAT_FLAG=${1}
   -e .github \
   -e venv \
   -e src/server/package/src/model_explorer/web_app \
-  -e src/server/package/src/model_explorer/web_app \
+  -e src/ui \
   -e "\.md" \
   -e "\.ipynb" \
   -e "\.patch" \

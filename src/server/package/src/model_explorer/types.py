@@ -28,12 +28,18 @@ ExtensionClassType = Type[ClassWithMetadata]
 
 AdapterCommand = TypedDict(
     'AdapterCommand',
-    {'cmdId': str,
-     'modelPath': str,
-     'settings': Dict,
-     'deleteAfterConversion': bool})
+    {
+        'cmdId': str,
+        'modelPath': str,
+        'settings': Dict,
+        'deleteAfterConversion': bool,
+    },
+)
 
 ModelExplorerGraphs = TypedDict(
     'ModelExplorerGraphs',
-    {'graphs': NotRequired[list[Graph]],
-     'graphCollections': NotRequired[list[GraphCollection]]})
+    {
+        'graphs': NotRequired[list[Graph]],
+        'graphCollections': NotRequired[list[GraphCollection]],
+    },
+)
