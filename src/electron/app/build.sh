@@ -32,5 +32,5 @@ npm install
 echo
 echo '#### Build and package electon app'
 
-npm run package -- --arch=x64
-npm run package -- --arch=arm64
+npm run make -- --arch=x64
+npm run make -- --arch=arm64
