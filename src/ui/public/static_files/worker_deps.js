@@ -1382,7 +1382,20 @@
   function initOrder(g) {
     let visited = {};
     let simpleNodes = g.nodes().filter(v => !g.children(v).length);
-    let maxRank = Math.max(...simpleNodes.map(v => g.node(v).rank));
+
+    // The following code would throw "maximum call stack size exceeded" error
+    // when handling large graphs. Change it to using loop.
+    //
+    // let maxRank = Math.max(...simpleNodes.map(v => g.node(v).rank));
+
+    let maxRank =  -Infinity;
+    for (let i = 0; i < simpleNodes.length; i++) {
+      const rank = g.node(simpleNodes[i]).rank;
+      if (rank > maxRank) {
+        maxRank = rank;
+      }
+    }
+
     let layers = util.range(maxRank + 1).map(() => []);
   
     /* 
@@ -2078,9 +2091,23 @@
    * coordinate of the smallest width alignment.
    */
   function alignCoordinates(xss, alignTo) {
-    let alignToVals = Object.values(alignTo),
-      alignToMin = Math.min(...alignToVals),
-      alignToMax = Math.max(...alignToVals);
+    let alignToVals = Object.values(alignTo);
+
+    // The following code would throw "maximum call stack size exceeded" error
+    // when handling large graphs. Change them to using loop.
+    //
+    // alignToMin = Math.min(...alignToVals),
+    // alignToMax = Math.max(...alignToVals);
+    let alignToMin = Infinity;
+    let alignToMax = -Infinity;
+    for (const v of alignToVals) {
+      if (v < alignToMin) {
+        alignToMin = v;
+      }
+      if (v > alignToMax) {
+        alignToMax = v;
+      }
+    }
   
     ["u", "d"].forEach(vert => {
       ["l", "r"].forEach(horiz => {
@@ -2088,11 +2115,27 @@
           xs = xss[alignment];
   
         if (xs === alignTo) return;
+        
+        // Math.min(...) and Math.max(...) below would throw "maximum call stack
+        // "size exceeded" error when handling large graphs. Change them to
+        // using loop.
+        let xMin = Infinity;
+        let xMax = -Infinity;
+        for (const v of xsVals) {
+          if (v < xMin) {
+            xMin = v;
+          }
+          if (v > xMax) {
+            xMax = v;
+          }
+        }
   
         let xsVals = Object.values(xs);
-        let delta = alignToMin - Math.min(...xsVals);
+        // let delta = alignToMin - Math.min(...xsVals);
+        let delta = alignToMin - xMin;;
         if (horiz !== "l") {
-          delta = alignToMax - Math.max(...xsVals);
+          // delta = alignToMax - Math.max(...xsVals);
+          delta = alignToMax - xMax;
         }
   
         if (delta) {
@@ -2496,7 +2539,12 @@
     if (arguments.length < 2) {
       root = tree.nodes()[0];
     }
-    dfsAssignLowLim(tree, {}, 1, root);
+    // The following code would throw "maximum call stack size exceeded" error
+    // when handling large graphs. Change it to using an iterative version.
+    //
+    // dfsAssignLowLim(tree, {}, 1, root);
+
+    dfsAssignLowLimIterative(tree, {}, 1, root);
   }
   
   function dfsAssignLowLim(tree, visited, nextLim, v, parent) {
@@ -2519,6 +2567,57 @@
       delete label.parent;
     }
   
+    return nextLim;
+  }
+    
+  function dfsAssignLowLimIterative(tree, visited, nextLim, startNode, parent = null) {
+    const stack = [];
+    const lowLimStack = [];
+
+    stack.push({ v: startNode, parent: parent, stage: 0 });
+
+    while (stack.length > 0) {
+      let { v, parent, stage } = stack.pop();
+      let label = tree.node(v);
+
+      // Stage 0 means this node is being processed for the first time
+      if (stage === 0) {
+        visited[v] = true;
+        var low = nextLim;
+        label.low = low;
+        lowLimStack.push({ node: v, low });
+
+        // Mark the node as in-process and push it back to the stack
+        stack.push({ v: v, parent: parent, stage: 1 });
+
+        // Process its neighbors
+        let neighbors = tree.neighbors(v);
+        for (let i = neighbors.length-1; i>=0; i--) {
+          const w = neighbors[i];
+          if (!visited.hasOwnProperty(w)) {
+            // Push neighbor node onto the stack
+            stack.push({ v: w, parent: v, stage: 0 });
+          }
+        }
+      }
+
+      // Stage 1 means we are returning to the node after processing all its neighbors
+      else if (stage === 1) {
+        // Assign limits and update parent information
+        let lim = nextLim++;
+        label.lim = lim;
+
+        if (parent) {
+          label.parent = parent;
+        } else {
+          delete label.parent;
+        }
+
+        let lowLimNode = lowLimStack.pop();
+        label.low = lowLimNode.low;
+      }
+    }
+
     return nextLim;
   }
   
