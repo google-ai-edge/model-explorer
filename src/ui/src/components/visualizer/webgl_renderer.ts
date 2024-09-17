@@ -783,11 +783,18 @@ export class WebglRenderer implements OnInit, OnDestroy {
           );
           deepestExpandedGroupNodeIds = groupNodeIds;
         }
-        this.sendRelayoutGraphRequest(
-          paneState.selectedNodeId,
-          deepestExpandedGroupNodeIds,
-          true,
-        );
+        if (
+          paneState.selectedNodeId != '' ||
+          deepestExpandedGroupNodeIds.length > 0
+        ) {
+          this.sendRelayoutGraphRequest(
+            paneState.selectedNodeId,
+            deepestExpandedGroupNodeIds,
+            true,
+          );
+        } else {
+          initGraphFn();
+        }
         // This is needed for loading old perma-link.
         this.uiStateService.setDeepestExpandedGroupNodeIds(
           paneState.deepestExpandedGroupNodeIds,

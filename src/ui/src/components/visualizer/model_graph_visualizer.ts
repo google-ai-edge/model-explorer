@@ -234,6 +234,9 @@ export class ModelGraphVisualizer implements OnInit, OnDestroy, OnChanges {
       // One pane.
       if (this.initialUiState.paneStates.length === 1) {
         const paneState = this.initialUiState.paneStates[0];
+        const initialLayout =
+          paneState.selectedNodeId === '' &&
+          paneState.deepestExpandedGroupNodeIds.length === 0;
         const selectedGraph = this.findGraphFromCollections(
           paneState.selectedCollectionLabel,
           paneState.selectedGraphId,
@@ -243,11 +246,18 @@ export class ModelGraphVisualizer implements OnInit, OnDestroy, OnChanges {
           this.appService.selectGraphInCurrentPane(
             selectedGraph,
             flattenLayers,
+            undefined,
+            initialLayout,
           );
         } else {
           // Fall back to first graph.
           const firstGraph = this.graphCollections[0].graphs[0];
-          this.appService.selectGraphInCurrentPane(firstGraph, flattenLayers);
+          this.appService.selectGraphInCurrentPane(
+            firstGraph,
+            flattenLayers,
+            undefined,
+            initialLayout,
+          );
         }
         this.appService.setFlattenLayersInCurrentPane(flattenLayers);
       }
