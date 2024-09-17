@@ -35,10 +35,23 @@ echo 'Build electron app'
 # Move the pyinstaller-built package into electron app.
 echo
 echo '#### Move model explorer stand-alone package into electron app'
+
 ME_SERVER_TARGET_DIR="${ELECTRON_BASE_DIR}/app/model_explorer_server"
 mkdir -p "${ME_SERVER_TARGET_DIR}"
 mv "${ELECTRON_BASE_DIR}"/pyinstaller/venv/lib/python*/site-packages/model_explorer/dist/* \
     "${ME_SERVER_TARGET_DIR}/"
+
+# Install node.
+echo
+echo '#### Install node'
+
+ARCH="$(uname -m)"
+# Rename "x86_64" to "x64".
+if [[ "$ARCH" == "x86_64" ]]; then
+    ARCH="x64"
+fi
+sudo installer -store -pkg "${ELECTRON_BASE_DIR}/tools/node-v20.17.0-${ARCH}.pkg" -target "/"
+node -v
 
 # Build electron app.
 cd "${ELECTRON_BASE_DIR}/app"
