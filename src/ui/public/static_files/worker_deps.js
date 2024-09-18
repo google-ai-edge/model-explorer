@@ -2119,6 +2119,7 @@
         // Math.min(...) and Math.max(...) below would throw "maximum call stack
         // "size exceeded" error when handling large graphs. Change them to
         // using loop.
+        let xsVals = Object.values(xs);
         let xMin = Infinity;
         let xMax = -Infinity;
         for (const v of xsVals) {
@@ -2130,7 +2131,6 @@
           }
         }
   
-        let xsVals = Object.values(xs);
         // let delta = alignToMin - Math.min(...xsVals);
         let delta = alignToMin - xMin;;
         if (horiz !== "l") {
