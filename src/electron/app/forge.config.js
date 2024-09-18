@@ -92,16 +92,15 @@ module.exports = {
       [FuseV1Options.OnlyLoadAppFromAsar]: false,
     }),
   ],
-  // hooks: {
-  //   packageAfterPrune: async (_config, buildPath) => {
-  //     const gypPath = path.join(
-  //       buildPath,
-  //       'node_modules',
-  //       'moduleName',
-  //       'build',
-  //       'node_gyp_bins',
-  //     );
-  //     await fs.rm(gypPath, {recursive: true, force: true});
-  //   },
-  // },
+  hooks: {
+    postMake: async (forgeConfig, makeResults) => {
+      // Rename the packaged file name from "Model Explorer-xxx.zip" to
+      // "model-explorer-xxx.zip".
+      for (const makeResult of makeResults) {
+        const firstArtifact = makeResult.artifacts[0];
+        const newName = firstArtifact.replace('Model Explorer', 'model-explorer');
+        await fs.rename(firstArtifact, newName)
+      }
+    },
+  },
 };
