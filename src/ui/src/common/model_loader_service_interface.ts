@@ -26,4 +26,5 @@ import {ModelItem} from './types';
 export interface ModelLoaderServiceInterface {
   loadModels(modelItems: ModelItem[]): Promise<void>;
   get loadedGraphCollections(): WritableSignal<GraphCollection[] | undefined>;
+  get models(): WritableSignal<ModelItem[]>;
 }

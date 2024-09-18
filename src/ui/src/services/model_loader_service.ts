@@ -22,6 +22,8 @@ import {GRAPHS_MODEL_SOURCE_PREFIX} from '../common/consts';
 import {
   AdapterConvertCommand,
   AdapterConvertResponse,
+  type AdapterOverrideCommand,
+  type AdapterOverrideResponse,
 } from '../common/extension_command';
 import {ModelLoaderServiceInterface} from '../common/model_loader_service_interface';
 import {
@@ -71,6 +73,57 @@ export class ModelLoaderService implements ModelLoaderServiceInterface {
     private readonly settingsService: SettingsService,
     readonly extensionService: ExtensionService,
   ) {}
+  async overrideModel(modelItem: ModelItem, fieldsToUpdate: Record<string, any>) {
+    modelItem.status.set(ModelItemStatus.PROCESSING);
+    let result: GraphCollection[] = [];
+    let updatedPath = modelItem.path;
+
+    // User-entered file path.
+    if (modelItem.type === ModelItemType.FILE_PATH) {
+      result = await this.sendOverrideRequest(
+        modelItem,
+        updatedPath,
+        fieldsToUpdate,
+      );
+    }
+    // Upload or graph jsons from server.
+    else if (
+      modelItem.type === ModelItemType.LOCAL ||
+      modelItem.type === ModelItemType.GRAPH_JSONS_FROM_SERVER
+    ) {
+      const file = modelItem.file!;
+
+      // Upload the file
+      modelItem.status.set(ModelItemStatus.UPLOADING);
+      const {path, error: uploadError} = await this.uploadModelFile(file);
+      if (uploadError) {
+        modelItem.selected = false;
+        modelItem.status.set(ModelItemStatus.ERROR);
+        modelItem.errorMessage = uploadError;
+        return [];
+      }
+
+      updatedPath = path;
+
+      // Send request to backend for processing.
+      result = await this.sendOverrideRequest(
+        modelItem,
+        updatedPath,
+        fieldsToUpdate,
+      );
+    }
+
+    this.models.update((curModels) => {
+      curModels.push({
+        ...modelItem,
+        path: updatedPath ?? modelItem.path,
+      });
+
+      return curModels;
+    });
+
+    return result;
+  }
 
   async loadModels(modelItems: ModelItem[]) {
     // Create tasks for loading models in the given model items.
@@ -291,6 +344,40 @@ export class ModelLoaderService implements ModelLoaderServiceInterface {
     return result;
   }
 
+  private async sendOverrideRequest(
+    modelItem: ModelItem,
+    path: string,
+    fieldsToUpdate: Record<string, any>
+  ) {
+
+    let result: GraphCollection[] = [];
+
+    modelItem.status.set(ModelItemStatus.PROCESSING);
+
+    const overrideCommand: AdapterOverrideCommand = {
+      cmdId: 'override',
+      extensionId: modelItem.selectedAdapter?.id || '',
+      modelPath: path,
+      settings: fieldsToUpdate,
+    };
+
+    const {cmdResp, otherError: cmdError} =
+      await this.extensionService.sendCommandToExtension<AdapterOverrideResponse>(
+        overrideCommand,
+      );
+    const error = cmdResp?.error || cmdError;
+    if (error) {
+      modelItem.selected = false;
+      modelItem.status.set(ModelItemStatus.ERROR);
+      modelItem.errorMessage = error;
+      return [];
+    } else if (cmdResp) {
+      result = this.processAdapterOverrideResponse(cmdResp, modelItem.file?.name ?? '');
+    }
+    modelItem.status.set(ModelItemStatus.DONE);
+    return result;
+  }
+
   private processAdapterConvertResponse(
     resp: AdapterConvertResponse,
     fileName: string,
@@ -298,6 +385,24 @@ export class ModelLoaderService implements ModelLoaderServiceInterface {
     if (resp.graphs) {
       return [{label: fileName, graphs: resp.graphs}];
     } else if (resp.graphCollections) {
+      return resp.graphCollections.map((item) => {
+        return {
+          label: item.label === '' ? fileName : `${fileName} (${item.label})`,
+          graphs: item.graphs,
+        };
+      });
+    }
+    return [];
+  }
+
+  // TODO: do we need to have a special conversion here?
+  private processAdapterOverrideResponse(
+    resp: AdapterOverrideResponse,
+    fileName: string,
+  ): GraphCollection[] {
+    if (resp.graphs) {
+      return [{ label: fileName, graphs: resp.graphs }];
+    }  else if (resp.graphCollections) {
       return resp.graphCollections.map((item) => {
         return {
           label: item.label === '' ? fileName : `${fileName} (${item.label})`,

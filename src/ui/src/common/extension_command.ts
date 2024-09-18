@@ -40,3 +40,18 @@ export declare interface AdapterConvertResponse {
   graphCollections?: GraphCollection[];
   error?: string;
 }
+
+/** Adapter's "override" command. */
+export declare interface AdapterOverrideCommand extends ExtensionCommand {
+  cmdId: 'override';
+  modelPath: string;
+  settings: Record<string, any>;
+}
+
+/** Adapter's "override" command response. */
+export declare interface AdapterOverrideResponse {
+  success: boolean;
+  graphs?: Graph[];
+  graphCollections?: GraphCollection[];
+  error?: string;
+}
