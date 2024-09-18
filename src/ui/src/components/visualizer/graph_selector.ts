@@ -204,10 +204,37 @@ export class GraphSelector {
     });
   }
 
-  handleClickUploadGraph() {
-    console.log('upload button clicked');
-    // TODO: send request to server
-    debugger;
+  async handleClickUploadGraph() {
+    const curCollectionLabel = this.appService.getSelectedPane()?.modelGraph?.collectionLabel;
+    const models = this.modelLoaderService.models();
+    const curModel = models.find(({ label }) => label === curCollectionLabel);
+    const changesToUpload = this.modelLoaderService.changesToUpload()[curCollectionLabel ?? ''];
+
+    if (curModel && changesToUpload) {
+      const updatedGraphCollection = await this.modelLoaderService.overrideModel(curModel, changesToUpload);
+
+      if (updatedGraphCollection) {
+        this.appService.curGraphCollections.update((prevGraphCollections) => {
+          const collectionToUpdate = prevGraphCollections.findIndex(({ label }) => label === curCollectionLabel);
+
+          if (collectionToUpdate !== -1) {
+            prevGraphCollections[collectionToUpdate] = updatedGraphCollection;
+          }
+
+          return prevGraphCollections;
+        });
+
+        this.urlService.setUiState(undefined);
+        this.urlService.setModels(models.map(({ path, selectedAdapter }) => {
+          return {
+            url: path,
+            adapterId: selectedAdapter?.id
+          };
+        }));
+
+        this.modelLoaderService.changesToUpload.update(() => ({}));
+      }
+    }
   }
 
   handleGraphSelectorOpenedChanged(opened: boolean) {

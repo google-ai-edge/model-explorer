@@ -105,9 +105,23 @@ export class ExpandableInfoText implements AfterViewInit, OnDestroy, OnChanges {
       // TODO: get all inputs in a list and then emmit them together.
     }
 
-    // TODO: send the patch update to the backend
+    const collectionLabel = this.appService.getSelectedPane()?.modelGraph?.collectionLabel;
+    const nodeId = this.appService.getSelectedPane()?.selectedNodeInfo?.nodeId;
 
-    this.appService.hasChangesToUpload.update(() => true);
+    this.modelLoaderService.changesToUpload.update((changesToUpload) => {
+      if (collectionLabel && nodeId) {
+        changesToUpload[collectionLabel] = {...changesToUpload[collectionLabel] };
+        changesToUpload[collectionLabel][nodeId] = [
+          ...(changesToUpload[collectionLabel][nodeId] ?? []),
+          {
+            key: this.type,
+            value: target.value
+          }
+        ];
+      }
+
+      return changesToUpload;
+    });
   }
 
   handleToggleExpand(event: MouseEvent, fromExpandedText = false) {
