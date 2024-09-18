@@ -49,6 +49,7 @@
 #include "mlir/Support/LLVM.h"
 #include "stablehlo/dialect/StablehloOps.h"
 #include "stablehlo/dialect/VhloOps.h"
+#include "tensorflow/compiler/mlir/lite/core/absl_error_model_builder.h"
 #include "formats/schema_structs.h"
 #include "graphnode_builder.h"
 #include "status_macros.h"
@@ -66,15 +67,14 @@
 #include "tensorflow/compiler/mlir/tensorflow/ir/tf_dialect.h"
 #include "tensorflow/compiler/mlir/tensorflow/ir/tf_types.h"
 #include "tensorflow/core/framework/tensor.pb.h"
-#include "tensorflow/lite/core/model_builder.h"
 #include "tsl/platform/env.h"
 
 namespace tooling {
 namespace visualization_client {
 namespace {
 
+using ::mlir::TFL::FlatBufferModelAbslError;
 using ::tflite::BuiltinOperator;
-using ::tflite::FlatBufferModel;
 using ::tflite::ModelT;
 using ::tflite::OperatorCodeT;
 using ::tflite::OperatorT;
@@ -301,7 +301,7 @@ absl::StatusOr<mlir::ElementsAttr> ConvertBufferToAttr(
 
 absl::StatusOr<std::vector<uint8_t>> GetBuffer(
     const TensorT& tensor, const Buffers& buffers,
-    const std::unique_ptr<FlatBufferModel>& model_ptr) {
+    const std::unique_ptr<FlatBufferModelAbslError>& model_ptr) {
   const uint64_t buffer_offset = buffers[tensor.buffer]->offset;
   const uint64_t buffer_size = buffers[tensor.buffer]->size;
   // Check if constant tensor is stored outside of the flatbuffers.
@@ -326,7 +326,7 @@ absl::StatusOr<std::vector<uint8_t>> GetBuffer(
 absl::Status AddConstantToNodeAttr(
     const TensorT& tensor, const Buffers& buffers,
     const int const_element_count_limit,
-    const std::unique_ptr<FlatBufferModel>& model_ptr,
+    const std::unique_ptr<FlatBufferModelAbslError>& model_ptr,
     mlir::Builder mlir_builder, GraphNodeBuilder& builder) {
   ASSIGN_OR_RETURN(std::vector<uint8_t> buffer,
                    GetBuffer(tensor, buffers, model_ptr));
@@ -348,7 +348,7 @@ absl::Status AddAuxiliaryNode(
     const NodeType node_type, const std::vector<int>& tensor_indices,
     const Tensors& tensors, const Buffers& buffers,
     const std::optional<const SignatureNameMap>& signature_name_map,
-    const std::unique_ptr<FlatBufferModel>& model_ptr,
+    const std::unique_ptr<FlatBufferModelAbslError>& model_ptr,
     const int const_element_count_limit, std::vector<std::string>& node_ids,
     EdgeMap& edge_map, mlir::Builder mlir_builder, Subgraph& subgraph) {
   // Skips adding auxiliary node if `tensor_indices` is empty.
@@ -566,7 +566,7 @@ absl::Status SubgraphIdxToAttributes(
 absl::Status AddOptionsToNodeAttribute(
     const OperatorT& op, const OperatorCodes& op_codes,
     const std::vector<std::string>& func_names,
-    const std::unique_ptr<FlatBufferModel>& model_ptr,
+    const std::unique_ptr<FlatBufferModelAbslError>& model_ptr,
     mlir::Builder mlir_builder, GraphNodeBuilder& builder) {
   llvm::SmallVector<mlir::NamedAttribute, 2> attrs;
   const OperatorCodeT& op_code = *op_codes.at(op.opcode_index);
@@ -679,7 +679,8 @@ absl::Status AddNode(
     const std::vector<std::string>& op_names, const Tensors& tensors,
     const Buffers& buffers, const std::vector<std::string>& func_names,
     const std::optional<const SignatureNameMap>& signature_name_map,
-    const OpdefsMap& op_defs, const std::unique_ptr<FlatBufferModel>& model_ptr,
+    const OpdefsMap& op_defs,
+    const std::unique_ptr<FlatBufferModelAbslError>& model_ptr,
     const int const_element_count_limit, std::vector<std::string>& node_ids,
     EdgeMap& edge_map, mlir::Builder mlir_builder, Subgraph& subgraph) {
   if (op.opcode_index >= op_names.size()) {
@@ -777,7 +778,7 @@ absl::Status AddSubgraph(
     const std::optional<const SignatureNameMap>& signature_name_map,
     const std::vector<std::string>& func_names, const OpdefsMap& op_defs,
     const std::unique_ptr<ModelT>& model,
-    const std::unique_ptr<FlatBufferModel>& model_ptr,
+    const std::unique_ptr<FlatBufferModelAbslError>& model_ptr,
     mlir::Builder mlir_builder, Graph& graph) {
   // Creates a Model Explorer subgraph.
   Subgraph subgraph((std::string(subgraph_name)));
@@ -833,9 +834,9 @@ absl::StatusOr<std::string> ConvertFlatbufferDirectlyToJson(
   RETURN_IF_ERROR(tsl::ReadFileToString(
       tsl::Env::Default(), std::string(model_path), &model_content));
 
-  std::unique_ptr<FlatBufferModel> model_ptr =
-      FlatBufferModel::VerifyAndBuildFromBuffer(model_content.data(),
-                                                model_content.length());
+  std::unique_ptr<FlatBufferModelAbslError> model_ptr =
+      FlatBufferModelAbslError::VerifyAndBuildFromBuffer(
+          model_content.data(), model_content.length());
 
   mlir::MLIRContext mlir_context;
   mlir::DialectRegistry registry;
