@@ -167,3 +167,4 @@ cython_debug/
 # Bazel
 /bazel-*
 MODULE.bazel.lock
+.DS_Store

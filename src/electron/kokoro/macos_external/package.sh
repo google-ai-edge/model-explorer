@@ -38,7 +38,7 @@ echo '#### Move model explorer stand-alone package into electron app'
 
 ME_SERVER_TARGET_DIR="${ELECTRON_BASE_DIR}/app/model_explorer_server"
 mkdir -p "${ME_SERVER_TARGET_DIR}"
-mv "${ELECTRON_BASE_DIR}"/pyinstaller/venv/lib/python*/site-packages/model_explorer/dist/* \
+mv "${ELECTRON_BASE_DIR}"/pyinstaller/venv/lib/python*/site-packages/model_explorer/dist/model_explorer/* \
     "${ME_SERVER_TARGET_DIR}/"
 
 # Install node.
