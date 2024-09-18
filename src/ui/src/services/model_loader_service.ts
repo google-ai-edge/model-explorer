@@ -25,7 +25,7 @@ import {
   type AdapterOverrideCommand,
   type AdapterOverrideResponse,
 } from '../common/extension_command';
-import {ModelLoaderServiceInterface} from '../common/model_loader_service_interface';
+import {ModelLoaderServiceInterface, type ChangesPerGraphAndNode} from '../common/model_loader_service_interface';
 import {
   InternalAdapterExtId,
   ModelItem,
@@ -69,58 +69,69 @@ export class ModelLoaderService implements ModelLoaderServiceInterface {
 
   readonly models = signal<ModelItem[]>([]);
 
+  readonly changesToUpload = signal<ChangesPerGraphAndNode>({});
+
   constructor(
     private readonly settingsService: SettingsService,
     readonly extensionService: ExtensionService,
   ) {}
-  async overrideModel(modelItem: ModelItem, fieldsToUpdate: Record<string, any>) {
+
+  get hasChangesToUpload() {
+    return Object.keys(this.changesToUpload()).length > 0;
+  }
+
+  async overrideModel(modelItem: ModelItem, fieldsToUpdate?: ChangesPerGraphAndNode) {
     modelItem.status.set(ModelItemStatus.PROCESSING);
-    let result: GraphCollection[] = [];
+    let result: GraphCollection | undefined = undefined;
     let updatedPath = modelItem.path;
 
-    // User-entered file path.
-    if (modelItem.type === ModelItemType.FILE_PATH) {
-      result = await this.sendOverrideRequest(
-        modelItem,
-        updatedPath,
-        fieldsToUpdate,
-      );
-    }
-    // Upload or graph jsons from server.
-    else if (
-      modelItem.type === ModelItemType.LOCAL ||
-      modelItem.type === ModelItemType.GRAPH_JSONS_FROM_SERVER
-    ) {
-      const file = modelItem.file!;
+    if (fieldsToUpdate) {
+      // User-entered file path.
+      if (modelItem.type === ModelItemType.FILE_PATH) {
+        result = await this.sendOverrideRequest(
+          modelItem,
+          updatedPath,
+          fieldsToUpdate,
+        );
+      }
+      // Upload or graph jsons from server.
+      else if (
+        modelItem.type === ModelItemType.LOCAL ||
+        modelItem.type === ModelItemType.GRAPH_JSONS_FROM_SERVER
+      ) {
+        const file = modelItem.file!;
 
-      // Upload the file
-      modelItem.status.set(ModelItemStatus.UPLOADING);
-      const {path, error: uploadError} = await this.uploadModelFile(file);
-      if (uploadError) {
-        modelItem.selected = false;
-        modelItem.status.set(ModelItemStatus.ERROR);
-        modelItem.errorMessage = uploadError;
-        return [];
+        // Upload the file
+        modelItem.status.set(ModelItemStatus.UPLOADING);
+        const {path, error: uploadError} = await this.uploadModelFile(file);
+        if (uploadError) {
+          modelItem.selected = false;
+          modelItem.status.set(ModelItemStatus.ERROR);
+          modelItem.errorMessage = uploadError;
+          return undefined;
+        }
+
+        updatedPath = path;
+
+        // Send request to backend for processing.
+        result = await this.sendOverrideRequest(
+          modelItem,
+          updatedPath,
+          fieldsToUpdate,
+        );
       }
 
-      updatedPath = path;
+      this.models.update((curModels) => {
+        curModels.push({
+          ...modelItem,
+          path: updatedPath ?? modelItem.path,
+        });
 
-      // Send request to backend for processing.
-      result = await this.sendOverrideRequest(
-        modelItem,
-        updatedPath,
-        fieldsToUpdate,
-      );
+        return curModels;
+      });
     }
 
-    this.models.update((curModels) => {
-      curModels.push({
-        ...modelItem,
-        path: updatedPath ?? modelItem.path,
-      });
-
-      return curModels;
-    });
+    modelItem.status.set(ModelItemStatus.DONE);
 
     return result;
   }
@@ -350,7 +361,7 @@ export class ModelLoaderService implements ModelLoaderServiceInterface {
     fieldsToUpdate: Record<string, any>
   ) {
 
-    let result: GraphCollection[] = [];
+    let result: GraphCollection | undefined = undefined;
 
     modelItem.status.set(ModelItemStatus.PROCESSING);
 
@@ -370,9 +381,9 @@ export class ModelLoaderService implements ModelLoaderServiceInterface {
       modelItem.selected = false;
       modelItem.status.set(ModelItemStatus.ERROR);
       modelItem.errorMessage = error;
-      return [];
+      return  undefined;
     } else if (cmdResp) {
-      result = this.processAdapterOverrideResponse(cmdResp, modelItem.file?.name ?? '');
+      result = this.processAdapterOverrideResponse(cmdResp, modelItem.label);
     }
     modelItem.status.set(ModelItemStatus.DONE);
     return result;
@@ -395,21 +406,17 @@ export class ModelLoaderService implements ModelLoaderServiceInterface {
     return [];
   }
 
-  // TODO: do we need to have a special conversion here?
   private processAdapterOverrideResponse(
     resp: AdapterOverrideResponse,
-    fileName: string,
-  ): GraphCollection[] {
-    if (resp.graphs) {
-      return [{ label: fileName, graphs: resp.graphs }];
-    }  else if (resp.graphCollections) {
-      return resp.graphCollections.map((item) => {
-        return {
-          label: item.label === '' ? fileName : `${fileName} (${item.label})`,
-          graphs: item.graphs,
-        };
-      });
+    label: string,
+  ): GraphCollection | undefined {
+    if (resp.graphCollection) {
+      return {
+        label: resp.graphCollection.label === '' ? label : `${label} (${resp.graphCollection.label})`,
+        graphs: resp.graphCollection.graphs,
+      }
     }
-    return [];
+
+    return undefined;
   }
 }

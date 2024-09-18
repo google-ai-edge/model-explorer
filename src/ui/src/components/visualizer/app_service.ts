@@ -99,8 +99,6 @@ export class AppService {
 
   readonly remoteNodeDataPaths = signal<string[]>([]);
 
-  readonly hasChangesToUpload = signal<boolean>(false);
-
   testMode: boolean = false;
 
   private groupNodeChildrenCountThresholdFromUrl: string | null = null;
