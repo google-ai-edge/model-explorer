@@ -23,6 +23,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   ElementRef,
+  Inject,
   Signal,
   ViewChild,
   ViewContainerRef,
@@ -37,9 +38,11 @@ import {MatSelect, MatSelectModule} from '@angular/material/select';
 import {MatTooltipModule} from '@angular/material/tooltip';
 import {safeAnchorEl} from 'safevalues/dom';
 import {AppService} from './app_service';
+import {UrlService} from '../../services/url_service';
 import {Graph, GraphCollection} from './common/input_graph';
 import {exportToResource} from './common/utils';
 import {GraphSelectorPanel} from './graph_selector_panel';
+import type { ModelLoaderServiceInterface } from '../../common/model_loader_service_interface';
 
 /** A graph collection in the dropdown menu. */
 export interface GraphCollectionItem {
@@ -165,11 +168,14 @@ export class GraphSelector {
   });
 
   get hasChangesToUpload() {
-    return this.appService.hasChangesToUpload();
+    return this.modelLoaderService.hasChangesToUpload;
   }
 
   constructor(
+    @Inject('ModelLoaderService')
+    private readonly modelLoaderService: ModelLoaderServiceInterface,
     private readonly appService: AppService,
+    private readonly urlService: UrlService,
     private readonly overlay: Overlay,
     private readonly viewContainerRef: ViewContainerRef,
   ) {

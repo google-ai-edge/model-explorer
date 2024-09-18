@@ -24,6 +24,7 @@ import {
   Component,
   ElementRef,
   HostBinding,
+  Inject,
   Input,
   OnChanges,
   OnDestroy,
@@ -32,7 +33,8 @@ import {
 import {MatIconModule} from '@angular/material/icon';
 import {MatTooltipModule} from '@angular/material/tooltip';
 import {AppService} from './app_service';
-import type { EditableAttributeTypes, EditableValueListAttribute } from './common/input_graph.js';
+import { ModelLoaderServiceInterface } from '../../common/model_loader_service_interface';
+import type { EditableAttributeTypes, EditableValueListAttribute } from './common/input_graph';
 
 /** Expandable info text component. */
 @Component({
@@ -58,6 +60,8 @@ export class ExpandableInfoText implements AfterViewInit, OnDestroy, OnChanges {
   private resizeObserver?: ResizeObserver;
 
   constructor(
+    @Inject('ModelLoaderService')
+    private readonly modelLoaderService: ModelLoaderServiceInterface,
     private readonly appService: AppService,
     private readonly changeDetectorRef: ChangeDetectorRef,
   ) {}
