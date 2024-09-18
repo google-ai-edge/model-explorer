@@ -47,6 +47,7 @@ export declare interface AdapterOverrideCommand extends ExtensionCommand {
   cmdId: 'override';
   modelPath: string;
   settings: ChangesPerGraphAndNode;
+  deleteAfterConversion: boolean;
 }
 
 /** Adapter's "override" command response. */

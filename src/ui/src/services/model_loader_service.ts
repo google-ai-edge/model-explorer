@@ -370,6 +370,7 @@ export class ModelLoaderService implements ModelLoaderServiceInterface {
       extensionId: modelItem.selectedAdapter?.id || '',
       modelPath: path,
       settings: fieldsToUpdate,
+      deleteAfterConversion: false
     };
 
     const {cmdResp, otherError: cmdError} =
