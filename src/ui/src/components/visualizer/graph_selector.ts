@@ -205,7 +205,8 @@ export class GraphSelector {
   }
 
   async handleClickUploadGraph() {
-    const curCollectionLabel = this.appService.getSelectedPane()?.modelGraph?.collectionLabel;
+    const curPane = this.appService.getSelectedPane()
+    const curCollectionLabel = curPane?.modelGraph?.collectionLabel;
     const models = this.modelLoaderService.models();
     const curModel = models.find(({ label }) => label === curCollectionLabel);
     const changesToUpload = this.modelLoaderService.changesToUpload()[curCollectionLabel ?? ''];
@@ -214,11 +215,11 @@ export class GraphSelector {
       const updatedGraphCollection = await this.modelLoaderService.overrideModel(curModel, changesToUpload);
 
       if (updatedGraphCollection) {
-        this.appService.curGraphCollections.update((prevGraphCollections) => {
-          const collectionToUpdate = prevGraphCollections.findIndex(({ label }) => label === curCollectionLabel);
+        this.modelLoaderService.loadedGraphCollections.update((prevGraphCollections) => {
+          const collectionToUpdate = prevGraphCollections?.findIndex(({ label }) => label === curCollectionLabel) ?? -1;
 
           if (collectionToUpdate !== -1) {
-            prevGraphCollections[collectionToUpdate] = updatedGraphCollection;
+            prevGraphCollections![collectionToUpdate] = updatedGraphCollection;
           }
 
           return prevGraphCollections;
