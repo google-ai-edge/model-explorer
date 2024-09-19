@@ -98,6 +98,14 @@ export class ExpandableInfoText implements AfterViewInit, OnDestroy, OnChanges {
     }
   }
 
+  splitEditableList(value: string) {
+    return value
+      .replace(/^\[/iu, '')
+      .replace(/\]$/iu, '')
+      .split(',')
+      .map((part) => part.trim())
+  }
+
   handleTextChange(evt: Event) {
     const target = evt.target as HTMLInputElement | HTMLSelectElement;
 

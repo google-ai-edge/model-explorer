@@ -63,7 +63,28 @@ limitations under the License.
     } @else if (type === 'quantization') {
       <div class="monospace-content">{{formatQuantization}}</div>
     } @else {
-      <div class="text-content">{{text}}</div>
+      <div class="text-content">
+        @if (editable?.input_type === 'value_list') {
+          <select (change)="handleTextChange($event)">
+            @for (option of getEditableOptions(editable!, text); track $index) {
+              <option [selected]="option === text">{{option}}</option>
+            }
+          </select>
+        } @else if (editable?.input_type === 'int_list') {
+          @for (value of splitEditableList(text); track $index) {
+            <input
+              type="text"
+              [value]="value"
+              [step]="$any(editable)?.step ?? 1"
+              [min]="$any(editable)?.min_value ?? 0"
+              [max]="$any(editable)?.max_value ?? 100"
+              (change)="handleTextChange($event)"
+            />
+          }
+        } @else {
+          {{text}}
+        }
+      </div>
     }
   </div>
   <div class="one-line-text" #oneLineText>
@@ -74,14 +95,16 @@ limitations under the License.
         }
       </select>
     } @else if (editable?.input_type === 'int_list') {
-      <input
-        type="number"
-        [value]="text"
-        [step]="$any(editable)?.step ?? 1"
-        [min]="$any(editable)?.min_value ?? 0"
-        [max]="$any(editable)?.max_value ?? 100"
-        (change)="handleTextChange($event)"
-      />
+      @for (value of splitEditableList(text); track $index) {
+        <input
+          type="text"
+          [value]="value"
+          [step]="$any(editable)?.step ?? 1"
+          [min]="$any(editable)?.min_value ?? 0"
+          [max]="$any(editable)?.max_value ?? 100"
+          (change)="handleTextChange($event)"
+        />
+      }
     } @else {
       {{text}}
     }
