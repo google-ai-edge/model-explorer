@@ -179,6 +179,9 @@ async function waitForServer() {
 function createMainWindow() {
   mainWindow = new BrowserWindow({
     show: false,
+    webPreferences: {
+      preload: path.join(__dirname, 'preload.js'),
+    },
   });
 
   mainWindow.on('closed', () => {
