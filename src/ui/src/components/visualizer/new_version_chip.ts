@@ -20,6 +20,7 @@ import {Component, Injectable, signal} from '@angular/core';
 import {MatIconModule} from '@angular/material/icon';
 
 import {IS_EXTERNAL} from '../../common/flags';
+import {getElectronApi} from '../../common/utils';
 import {Bubble} from '../bubble/bubble';
 
 const CHECK_NEW_VERSION = '/api/v1/check_new_version';
@@ -29,6 +30,8 @@ export declare interface CheckNewVersionResponse {
   // Empty means no new version.
   version: string;
   runningVersion: string;
+  releaseUrl: string;
+  desktopAppUrl: string;
 }
 
 /** Service to check new version. */
@@ -37,6 +40,8 @@ export class NewVersionService {
   info = signal<CheckNewVersionResponse>({
     version: '',
     runningVersion: '',
+    releaseUrl: '',
+    desktopAppUrl: '',
   });
 
   constructor() {
@@ -79,10 +84,29 @@ export class NewVersionService {
     <div class="model-explorer-upgrade-popup">
       Model Explorer <span class="bold">v{{info().version}}</span> is available.
       You are running <span class="bold">v{{info().runningVersion}}</span>.
-      <br><br>
-      Run the following command in your console to upgrade:
-      <div class="code">
-        pip install -U ai-edge-model-explorer
+      @if (!isElectron) {
+        <div class="upgrade-command">
+          Run the following command in your console to upgrade:
+          <div class="code">
+            pip install -U ai-edge-model-explorer
+          </div>
+        </div>
+      }
+      <div class="items">
+        <div class="release-notes">
+          <mat-icon class="item-icon">description</mat-icon>
+          <a [href]="info().releaseUrl" target="_blank">
+            Release notes
+          </a>
+        </div>
+        @if (isElectron &&info().desktopAppUrl) {
+          <div class="download-desktop-app">
+            <mat-icon class="item-icon">get_app</mat-icon>
+            <a [href]="info().desktopAppUrl" target="_blank">
+              Download desktop app
+            </a>
+          </div>
+        }
       </div>
     </div>
   </ng-template>
@@ -118,18 +142,44 @@ export class NewVersionService {
     font-weight: 500;
   }
 
+  .upgrade-command {
+    margin-top: 12px;
+  }
+
   .code {
     background-color: #f1f1f1;
     font-family: monospace;
-    margin-top: 8px;
+    margin-top: 4px;
     padding: 4px;
     font-size: 11px;
+  }
+ 
+  .items {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-top: 12px;
+  }
+ 
+  .release-notes,
+  .download-desktop-app {
+    display: flex;
+    align-items: center;
+  }
+
+  .item-icon {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+    margin-right: 4px;
+    color: #777;
   }
 }
 `,
 })
 export class NewVersionChip {
   readonly info;
+  readonly isElectron = getElectronApi() != null;
 
   constructor(private readonly newVersionService: NewVersionService) {
     this.info = this.newVersionService.info;
