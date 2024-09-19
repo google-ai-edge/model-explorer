@@ -16,6 +16,7 @@
 import json
 import logging
 import os
+import platform
 import queue
 import socket
 import sys
@@ -70,10 +71,49 @@ def _get_latest_version_from_repo(package_json_url: str) -> str:
   return str(version)
 
 
+def _get_release_from_github(version: str) -> dict:
+  # Get release data through github API.
+  req = requests.get(
+      f'https://api.github.com/repos/google-ai-edge/model-explorer/releases/tags/model-explorer-v{version}'
+  )
+  req_json = json.loads(req.text.encode('utf-8'))
+
+  # Construct the search term from platform and cpu architecture for finding
+  # asset download url.
+  #
+  # darwin, linux, etc.
+  cur_platform = sys.platform
+  # x64_64, arm64, etc.
+  cur_mach = platform.machine()
+  if cur_mach == 'x86_64':
+    cur_mach = 'x64'
+
+  # Find the download url from assets.
+  asset_search_term = f'{cur_platform}-{cur_mach}-{version}'
+  asset_url = ''
+  assets = req_json.get('assets', [])
+  for asset in assets:
+    browser_download_url = asset.get('browser_download_url', '')
+    if asset_search_term in browser_download_url:
+      asset_url = browser_download_url
+      break
+
+  return {
+      'releaseUrl': req_json.get('html_url', ''),
+      'desktopAppUrl': f'{asset_url}',
+  }
+
+
+def _print_yellow(x):
+  return cprint(x, 'yellow')
+
+
 def _check_new_version(print_msg=True):
   check_new_version_resp = {
       'version': '',
       'runningVersion': '',
+      'releaseUrl': '',
+      'desktopAppUrl': '',
   }
   try:
     # Get version from repo.
@@ -89,15 +129,21 @@ def _check_new_version(print_msg=True):
         check_new_version_resp['version'] = repo_version
         if print_msg:
 
-          def c_print(x):
-            return cprint(x, 'yellow')
-
-          c_print(
+          _print_yellow(
               f'\n{PACKAGE_NAME} version {repo_version} is available, and you'
               f' are using version {installed_version}.'
           )
-          c_print('Consider upgrading via the following command:')
-          c_print(f'$ pip install -U {PACKAGE_NAME}')
+          _print_yellow('Consider upgrading via the following command:')
+          _print_yellow(f'$ pip install -U {PACKAGE_NAME}')
+
+        # Get the corresponding release data from github.
+        github_release = _get_release_from_github(repo_version)
+        releaseUrl = github_release['releaseUrl']
+        check_new_version_resp['releaseUrl'] = releaseUrl
+        _print_yellow(f'\nRelease notes: {releaseUrl}')
+        check_new_version_resp['desktopAppUrl'] = github_release[
+            'desktopAppUrl'
+        ]
   except:
     pass
   finally:
