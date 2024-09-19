@@ -85,7 +85,7 @@ function createMenu() {
       submenu: [
         // Open file.
         {
-          label: 'Open File',
+          label: 'Open Model File',
           accelerator: 'CmdOrCtrl+O',
           click() {
             dialog
