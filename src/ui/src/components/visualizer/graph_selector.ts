@@ -216,13 +216,17 @@ export class GraphSelector {
 
       if (updatedGraphCollection) {
         this.modelLoaderService.loadedGraphCollections.update((prevGraphCollections) => {
-          const collectionToUpdate = prevGraphCollections?.findIndex(({ label }) => label === curCollectionLabel) ?? -1;
-
-          if (collectionToUpdate !== -1) {
-            prevGraphCollections![collectionToUpdate] = updatedGraphCollection;
+          if (!prevGraphCollections) {
+            return undefined;
           }
 
-          return prevGraphCollections;
+          const collectionToUpdate = prevGraphCollections.findIndex(({ label }) => label === curCollectionLabel) ?? -1;
+
+          if (collectionToUpdate !== -1) {
+            prevGraphCollections[collectionToUpdate] = updatedGraphCollection;
+          }
+
+          return [...prevGraphCollections];
         });
 
         this.urlService.setUiState(undefined);
