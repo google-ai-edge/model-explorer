@@ -103,7 +103,15 @@ export class ExpandableInfoText implements AfterViewInit, OnDestroy, OnChanges {
       .replace(/^\[/iu, '')
       .replace(/\]$/iu, '')
       .split(',')
-      .map((part) => part.trim())
+      .map((part) => {
+        const parsedValue = Number.parseFloat(part);
+
+        if (Number.isNaN(parsedValue)) {
+          return { type: 'text', value: part.trim() };
+        }
+
+        return { type: 'number', value: parsedValue }
+      });
   }
 
   handleTextChange(evt: Event) {
