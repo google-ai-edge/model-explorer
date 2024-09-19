@@ -58,14 +58,6 @@ module.exports = {
       name: '@electron-forge/maker-zip',
       platforms: ['darwin'],
     },
-    // {
-    //   name: "@electron-forge/maker-dmg",
-    //   config: {
-    //     "title": "Model Explorer",
-    //     "icon": "icon_sets/app_icon.icns",
-    //     "format": "ULFO"
-    //   }
-    // },
     {
       name: '@electron-forge/maker-deb',
       config: {},
@@ -76,10 +68,6 @@ module.exports = {
     },
   ],
   plugins: [
-    // {
-    //   name: '@electron-forge/plugin-auto-unpack-natives',
-    //   config: {},
-    // },
     // Fuses are used to enable/disable various Electron functionality
     // at package time, before code signing the application
     new FusesPlugin({
