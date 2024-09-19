@@ -142,6 +142,7 @@ async function startServer() {
     'model_explorer',
   );
   meServerProcess = spawn(serverBinary, [
+    '--extensions=model_explorer_onnx',
     '--no_open_in_browser',
     `--port=${meServerPort}`,
   ]);

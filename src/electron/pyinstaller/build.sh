@@ -33,7 +33,7 @@ source venv/bin/activate
 echo
 echo '#### Install model explorer packages'
 
-pip install torch ai-edge-model-explorer pyinstaller \
+pip install torch ai-edge-model-explorer pyinstaller model-explorer-onnx \
     --index-url https://download.pytorch.org/whl/cpu \
     --extra-index-url https://pypi.python.org/simple
 
@@ -57,6 +57,7 @@ pyinstaller -y \
   --hidden-import model_explorer.builtin_graphdef_adapter \
   --hidden-import model_explorer.builtin_pytorch_exportedprogram_adapter \
   --hidden-import model_explorer.builtin_mlir_adapter \
+  --hidden-import model_explorer_onnx.main \
   --copy-metadata ai-edge-model-explorer \
   --add-data "web_app:model_explorer/web_app" \
   model_explorer.py
