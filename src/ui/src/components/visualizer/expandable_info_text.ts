@@ -116,9 +116,16 @@ export class ExpandableInfoText implements AfterViewInit, OnDestroy, OnChanges {
 
   handleTextChange(evt: Event) {
     const target = evt.target as HTMLInputElement | HTMLSelectElement;
+    let updatedValue = target.value;
 
     if (this.editable?.input_type === 'int_list') {
-      // TODO: get all inputs in a list and then emmit them together.
+      updatedValue = `[${this.splitEditableList(this.text).map(({ value }, index) => {
+        if (index.toString() === target.dataset['index']) {
+          return target.value;
+        }
+
+        return value;
+      }).join(', ')}]`;
     }
 
     const collectionLabel = this.appService.getSelectedPane()?.modelGraph?.collectionLabel;
@@ -127,11 +134,18 @@ export class ExpandableInfoText implements AfterViewInit, OnDestroy, OnChanges {
     this.modelLoaderService.changesToUpload.update((changesToUpload) => {
       if (collectionLabel && nodeId) {
         changesToUpload[collectionLabel] = {...changesToUpload[collectionLabel] };
+
+        const existingChanges = changesToUpload[collectionLabel][nodeId]?.findIndex(({ key }) => key === this.type) ?? -1;
+
+        if (existingChanges !== -1) {
+          changesToUpload[collectionLabel][nodeId].splice(existingChanges, 1);
+        }
+
         changesToUpload[collectionLabel][nodeId] = [
           ...(changesToUpload[collectionLabel][nodeId] ?? []),
           {
             key: this.type,
-            value: target.value
+            value: updatedValue
           }
         ];
       }
