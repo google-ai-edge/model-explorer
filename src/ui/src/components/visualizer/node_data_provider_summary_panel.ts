@@ -21,16 +21,19 @@ import {
   ChangeDetectionStrategy,
   ChangeDetectorRef,
   Component,
+  DestroyRef,
   effect,
   Input,
   OnChanges,
   SimpleChanges,
   ViewChild,
 } from '@angular/core';
-import {ReactiveFormsModule} from '@angular/forms';
+import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
+import {FormControl, ReactiveFormsModule} from '@angular/forms';
 import {MatIconModule} from '@angular/material/icon';
 import {MatProgressSpinnerModule} from '@angular/material/progress-spinner';
 import {MatTooltipModule} from '@angular/material/tooltip';
+import {debounceTime} from 'rxjs/operators';
 import {AppService} from './app_service';
 import {NODE_DATA_PROVIDER_SHOW_ON_NODE_TYPE_PREFIX} from './common/consts';
 import {GroupNode, ModelGraph, OpNode} from './common/model_graph';
@@ -118,6 +121,9 @@ export class NodeDataProviderSummaryPanel implements OnChanges {
   @ViewChild('paginator') paginator?: Paginator;
   @ViewChild('childrenStatsPaginator') childrenStatsPaginator?: Paginator;
 
+  readonly childrenStatsTableNodeFilter = new FormControl<string>('');
+  readonly resultsTableNodeFilter = new FormControl<string>('');
+
   curRows?: Row[];
   curPageRows: Row[] = [];
   savedCurRows?: Row[];
@@ -139,6 +145,7 @@ export class NodeDataProviderSummaryPanel implements OnChanges {
 
   constructor(
     private readonly appService: AppService,
+    private readonly destroyRef: DestroyRef,
     private readonly infoPanelService: InfoPanelService,
     private readonly nodeDataProviderExtensionService: NodeDataProviderExtensionService,
     private readonly changeDetectorRef: ChangeDetectorRef,
@@ -216,6 +223,20 @@ export class NodeDataProviderSummaryPanel implements OnChanges {
         this.childrenStatsPaginator?.reset();
       }
     });
+
+    // Handle changes on children stats table node filter.
+    this.childrenStatsTableNodeFilter.valueChanges
+      .pipe(debounceTime(150), takeUntilDestroyed(this.destroyRef))
+      .subscribe((text) => {
+        this.handleChildrenStatsTableFilterChanged();
+      });
+
+    // Handle changes on results table node filter.
+    this.resultsTableNodeFilter.valueChanges
+      .pipe(debounceTime(150), takeUntilDestroyed(this.destroyRef))
+      .subscribe((text) => {
+        this.handleResultsTableFilterChanged();
+      });
   }
 
   ngOnChanges(changes: SimpleChanges) {
@@ -271,7 +292,7 @@ export class NodeDataProviderSummaryPanel implements OnChanges {
     }
 
     this.infoPanelService.curSortingRunIndex = colIndex;
-    this.sortRows();
+    this.sortAndFiltertRows();
 
     this.paginator?.reset();
     this.handleTablePaginatorChanged(0);
@@ -289,7 +310,7 @@ export class NodeDataProviderSummaryPanel implements OnChanges {
     }
 
     this.infoPanelService.curChildrenStatSortingColIndex = colIndex;
-    this.sortChildrenStatsRows();
+    this.sortAndFilterChildrenStatsRows();
 
     this.childrenStatsPaginator?.reset();
     this.handleChildrenStatsTablePaginatorChanged(0);
@@ -389,6 +410,28 @@ export class NodeDataProviderSummaryPanel implements OnChanges {
         }, 150);
       }
     });
+  }
+
+  handleChildrenStatsTableFilterChanged() {
+    this.childrenStatsPaginator?.reset();
+    this.sortAndFilterChildrenStatsRows();
+    this.handleChildrenStatsTablePaginatorChanged(0);
+  }
+
+  handleResultsTableFilterChanged() {
+    this.paginator?.reset();
+    this.sortAndFiltertRows();
+    this.handleTablePaginatorChanged(0);
+  }
+
+  handleClearStatsTableFilter(formControl: FormControl<string>) {
+    if (formControl === this.childrenStatsTableNodeFilter) {
+      this.childrenStatsPaginator?.reset();
+    } else if (formControl === this.resultsTableNodeFilter) {
+      this.paginator?.reset();
+    }
+
+    formControl.reset();
   }
 
   getStatValue(value: number): string {
@@ -590,7 +633,7 @@ export class NodeDataProviderSummaryPanel implements OnChanges {
       });
     }
     this.savedCurRows = [...this.curRows];
-    this.sortRows();
+    this.sortAndFiltertRows();
     this.handleTablePaginatorChanged(0);
 
     // Populate stat rows.
@@ -607,7 +650,7 @@ export class NodeDataProviderSummaryPanel implements OnChanges {
         this.childrenStatsCols.push({
           colIndex: childrenStatColIndex,
           runIndex: i,
-          label: childrenStat,
+          label: `${runs[i].runName} • ${childrenStat}`,
         });
         childrenStatColIndex++;
       }
@@ -664,7 +707,7 @@ export class NodeDataProviderSummaryPanel implements OnChanges {
       });
     }
     this.savedChildrenStatRows = [...this.curChildrenStatRows];
-    this.sortChildrenStatsRows();
+    this.sortAndFilterChildrenStatsRows();
     this.handleChildrenStatsTablePaginatorChanged(0);
 
     this.changeDetectorRef.markForCheck();
@@ -681,8 +724,21 @@ export class NodeDataProviderSummaryPanel implements OnChanges {
     }
   }
 
-  private sortRows() {
+  private sortAndFiltertRows() {
     this.curRows = [...(this.savedCurRows || [])];
+
+    // Filter.
+    const regexText = (this.resultsTableNodeFilter.value || '').trim();
+    if (regexText !== '') {
+      try {
+        const regex = new RegExp(regexText, 'i');
+        this.curRows = this.curRows.filter((row) => regex.test(row.label));
+      } catch {
+        return;
+      }
+    }
+
+    // Sort.
     this.curRows.sort((a, b) => {
       const v1 = this.getCellValue(a, this.infoPanelService.curSortingRunIndex);
       const v2 = this.getCellValue(b, this.infoPanelService.curSortingRunIndex);
@@ -694,8 +750,23 @@ export class NodeDataProviderSummaryPanel implements OnChanges {
     });
   }
 
-  private sortChildrenStatsRows() {
+  private sortAndFilterChildrenStatsRows() {
     this.curChildrenStatRows = [...(this.savedChildrenStatRows || [])];
+
+    // Filter.
+    const regexText = (this.childrenStatsTableNodeFilter.value || '').trim();
+    if (regexText !== '') {
+      try {
+        const regex = new RegExp(regexText, 'i');
+        this.curChildrenStatRows = this.curChildrenStatRows.filter((row) =>
+          regex.test(row.label),
+        );
+      } catch {
+        return;
+      }
+    }
+
+    // Sort.
     this.curChildrenStatRows.sort((a, b) => {
       const v1 = this.getChildrenStatsColValue(
         a,

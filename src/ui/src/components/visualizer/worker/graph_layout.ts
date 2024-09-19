@@ -48,6 +48,7 @@ import {
   getGroupNodeAttrsKeyValuePairsForAttrsTable,
   getGroupNodeFieldLabelsFromShowOnNodeItemTypes,
   getLabelWidth,
+  getMultiLineLabelExtraHeight,
   getNodeInfoFieldValue,
   getOpNodeAttrsKeyValuePairsForAttrsTable,
   getOpNodeDataProviderKeyValuePairsForAttrsTable,
@@ -56,6 +57,7 @@ import {
   getOpNodeOutputsKeyValuePairsForAttrsTable,
   isGroupNode,
   isOpNode,
+  splitLabel,
 } from '../common/utils';
 
 import {Dagre, DagreGraphInstance} from './dagre_types';
@@ -322,7 +324,14 @@ export function getNodeWidth(
   }
 
   const label = node.label;
-  let labelWidth = getLabelWidth(label, 11, isGroupNode(node)) + LABEL_PADDING;
+  const lines = splitLabel(label);
+  let labelWidth = 0;
+  for (const line of lines) {
+    labelWidth = Math.max(
+      getLabelWidth(line, 11, isGroupNode(node)) + LABEL_PADDING,
+      labelWidth,
+    );
+  }
   // Add space to label width for the "expand/collapse icon" at the left and the
   // "more" icon at the right.
   if (isGroupNode(node)) {
@@ -474,6 +483,9 @@ export function getNodeHeight(
     return node.height;
   }
 
+  // Extra height for multi-line label.
+  const extraMultiLineLabelHeight = getMultiLineLabelExtraHeight(node.label);
+
   // Count how many rows will be in the attrs table.
   let attrsTableRowCount = 0;
   if (isOpNode(node)) {
@@ -492,6 +504,7 @@ export function getNodeHeight(
 
   return (
     DEFAULT_NODE_HEIGHT +
+    extraMultiLineLabelHeight +
     attrsTableRowCount * NODE_ATTRS_TABLE_ROW_HEIGHT +
     (attrsTableRowCount > 0 ? NODE_ATTRS_TABLE_MARGIN_TOP - 4 : 0)
   );

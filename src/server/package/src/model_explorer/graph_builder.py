@@ -14,7 +14,7 @@
 # ==============================================================================
 
 from dataclasses import dataclass, field
-from typing import Union
+from typing import Dict, Union
 
 
 @dataclass
@@ -27,10 +27,16 @@ class Graph:
   # A list of nodes in the graph.
   nodes: list['GraphNode'] = field(default_factory=list)
 
+  # Attributes for group nodes.
+  #
+  # It is displayed in the side panel when the group is selected.
+  groupNodeAttributes: Union['GroupNodeAttributes', None] = None
+
 
 @dataclass
 class GraphNode:
   """A node in a graph."""
+
   # The unique id of the node. It only needs to be unique within the graph.
   id: str
 
@@ -123,6 +129,7 @@ class GraphNode:
 @dataclass
 class IncomingEdge:
   """An incoming edge of a graph node."""
+
   # The id of the source node.
   sourceNodeId: str
 
@@ -140,6 +147,7 @@ class IncomingEdge:
 @dataclass
 class KeyValue:
   """A key-value pair"""
+
   key: str
   value: str
 
@@ -147,6 +155,7 @@ class KeyValue:
 @dataclass
 class MetadataItem:
   """A single output metadata item for a specific output id."""
+
   # The id of the input/output this metadata item belongs to.
   id: str
 
@@ -159,6 +168,7 @@ class MetadataItem:
 @dataclass
 class GraphNodeStyle:
   """Style of the node."""
+
   # The background color of the node.
   #
   # (optional)
@@ -178,10 +188,18 @@ class GraphNodeStyle:
 @dataclass
 class GraphNodeConfig:
   """Custom configs for the node."""
+
   # Whether to pin the node to the top of the group it belongs to.
   #
   # (optional)
   pinToGroupTop: bool = False
+
+
+# From group's namespace to its attribuets (key-value pairs).
+#
+# Use empty group namespace for the graph-level attributes (i.e. shown in
+# side panel when no node is selected).
+GroupNodeAttributes = Dict[str, Dict[str, str]]
 
 
 @dataclass

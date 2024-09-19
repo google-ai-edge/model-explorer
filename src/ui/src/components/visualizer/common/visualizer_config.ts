@@ -16,7 +16,7 @@
  * ==============================================================================
  */
 
-import {RendererType} from './types';
+import {NodeStylerRule, RendererType} from './types';
 
 /** Configs for the visualizer. */
 export declare interface VisualizerConfig {
@@ -51,7 +51,18 @@ export declare interface VisualizerConfig {
   keepLayersWithASingleChild?: boolean;
 
   /**
+   * Whether to show op node edges to other nodes out of the layer without
+   * needing to select the node first.
+   */
+  showOpNodeOutOfLayerEdgesWithoutSelecting?: boolean;
+
+  /** The default node styler rules. */
+  nodeStylerRules?: NodeStylerRule[];
+
+  /**
    * Default graph renderer.
+   *
+   * @deprecated This field is no longer used.
    */
   defaultRenderer?: RendererType;
 

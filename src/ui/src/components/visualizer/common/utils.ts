@@ -23,6 +23,7 @@ import {
   EXPORT_TO_RESOURCE_CMD,
   MAX_IO_ROWS_IN_ATTRS_TABLE,
   NODE_DATA_PROVIDER_SHOW_ON_NODE_TYPE_PREFIX,
+  NODE_LABEL_LINE_HEIGHT,
   TENSOR_TAG_METADATA_KEY,
   TENSOR_VALUES_KEY,
   WEBGL_CURVE_SEGMENTS,
@@ -41,6 +42,7 @@ import {
   NodeDataProviderRunData,
   NodeQuery,
   NodeQueryType,
+  NodeStyleId,
   NodeStylerRule,
   Point,
   ProcessedNodeQuery,
@@ -156,7 +158,7 @@ export function getNodeInfoFieldValue(
 
 /** Gets namespace display label. */
 export function getNamespaceLabel(node: ModelNode): string {
-  return node.savedNamespace || node.namespace || '<root>';
+  return node.fullNamespace || node.namespace || '<root>';
 }
 
 /** Generates unique id. */
@@ -169,6 +171,7 @@ export function getDeepestExpandedGroupNodeIds(
   root: GroupNode | undefined,
   modelGraph: ModelGraph,
   deepestExpandedGroupNodeIds: string[],
+  ignoreExpandedState = false,
 ) {
   let nsChildrenIds: string[] = [];
   if (root == null) {
@@ -181,10 +184,17 @@ export function getDeepestExpandedGroupNodeIds(
     if (!childNode) {
       continue;
     }
-    if (isGroupNode(childNode) && childNode.expanded) {
-      const isDeepest = (childNode.nsChildrenIds || [])
-        .filter((id) => isGroupNode(modelGraph.nodesById[id]))
-        .every((id) => !(modelGraph.nodesById[id] as GroupNode).expanded);
+    if (
+      isGroupNode(childNode) &&
+      (ignoreExpandedState || (!ignoreExpandedState && childNode.expanded))
+    ) {
+      const nsChildrenIds = childNode.nsChildrenIds || [];
+      const isDeepest = ignoreExpandedState
+        ? nsChildrenIds.filter((id) => isGroupNode(modelGraph.nodesById[id]))
+            .length === 0
+        : nsChildrenIds
+            .filter((id) => isGroupNode(modelGraph.nodesById[id]))
+            .every((id) => !(modelGraph.nodesById[id] as GroupNode).expanded);
       if (isDeepest) {
         deepestExpandedGroupNodeIds.push(childNode.id);
       }
@@ -192,6 +202,7 @@ export function getDeepestExpandedGroupNodeIds(
         childNode,
         modelGraph,
         deepestExpandedGroupNodeIds,
+        ignoreExpandedState,
       );
     }
   }
@@ -768,6 +779,7 @@ export function getAttributesFromNode(
     attrs = {
       '#descendants': `${(node.descendantsNodeIds || []).length}`,
       '#children': `${(node.nsChildrenIds || []).length}`,
+      'namespace': node.namespace || node.savedNamespace || '<root>',
     };
     const customAttrs =
       modelGraph.groupNodeAttributes?.[node.id.replace('___group___', '')] ||
@@ -932,4 +944,33 @@ export function getHighQualityPixelRatio(): number {
   return window.devicePixelRatio === 1
     ? 1.5 /* This makes rendering result sharper on non-retina displays */
     : window.devicePixelRatio;
+}
+
+/** Get the value for the given style. */
+export function getNodeStyleValue(
+  rule: ProcessedNodeStylerRule | NodeStylerRule,
+  styleId: NodeStyleId,
+): string {
+  const curStyle = rule.styles[styleId];
+  if (curStyle) {
+    if (typeof curStyle === 'string') {
+      return curStyle;
+    } else {
+      return curStyle.value;
+    }
+  }
+  return '';
+}
+
+/** Splits the given label. */
+export function splitLabel(label: string): string[] {
+  return label
+    .split('\n')
+    .map((line) => line.trim())
+    .filter((line) => line !== '');
+}
+
+/** Get the extra height for multi-line label. */
+export function getMultiLineLabelExtraHeight(label: string): number {
+  return (splitLabel(label).length - 1) * NODE_LABEL_LINE_HEIGHT;
 }

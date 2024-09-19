@@ -1,23 +1,22 @@
-/* Copyright 2024 The Model Explorer Authors. All Rights Reserved.
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-==============================================================================*/
+// Copyright 2024 The AI Edge Model Explorer Authors.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+// =============================================================================
 
 #include "direct_flatbuffer_to_json_graph_convert.h"
 
 #include <cstdint>
 #include <cstring>
-#include <iterator>
 #include <memory>
 #include <optional>
 #include <string>
@@ -32,7 +31,6 @@ limitations under the License.
 #include "absl/strings/ascii.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_join.h"
-#include "absl/strings/str_replace.h"
 #include "absl/strings/str_split.h"
 #include "absl/strings/string_view.h"
 #include "flatbuffers/flexbuffers.h"
@@ -51,12 +49,14 @@ limitations under the License.
 #include "mlir/Support/LLVM.h"
 #include "stablehlo/dialect/StablehloOps.h"
 #include "stablehlo/dialect/VhloOps.h"
+#include "tensorflow/compiler/mlir/lite/core/absl_error_model_builder.h"
 #include "formats/schema_structs.h"
 #include "graphnode_builder.h"
 #include "status_macros.h"
 #include "tools/attribute_printer.h"
 #include "tools/convert_type.h"
 #include "tools/load_opdefs.h"
+#include "tools/namespace_heuristics.h"
 #include "visualize_config.h"
 #include "tensorflow/compiler/mlir/lite/flatbuffer_operator.h"
 #include "tensorflow/compiler/mlir/lite/ir/tfl_ops.h"
@@ -66,15 +66,15 @@ limitations under the License.
 #include "tensorflow/compiler/mlir/lite/utils/const_tensor_utils.h"
 #include "tensorflow/compiler/mlir/tensorflow/ir/tf_dialect.h"
 #include "tensorflow/compiler/mlir/tensorflow/ir/tf_types.h"
-#include "tensorflow/lite/core/model_builder.h"
+#include "tensorflow/core/framework/tensor.pb.h"
 #include "tsl/platform/env.h"
 
 namespace tooling {
 namespace visualization_client {
 namespace {
 
+using ::mlir::TFL::FlatBufferModelAbslError;
 using ::tflite::BuiltinOperator;
-using ::tflite::FlatBufferModel;
 using ::tflite::ModelT;
 using ::tflite::OperatorCodeT;
 using ::tflite::OperatorT;
@@ -198,15 +198,8 @@ std::string StringifyTensorShape(const TensorT& tensor) {
   return absl::StrCat(TensorTypeToString(tensor.type), "[", shape_str, "]");
 }
 
-// Generates the node name based on the provided tensor indices.
-//
-// In TFLite, a single tensor name could still contain several hierarchical info
-// concatenated together with semicolons. In this case, we will find the last
-// candidate node name that contains this node label. If no match is found, we
-// will return the first candidate node name by default. This method also echos
-// the MLIR-based conversion for Flatbuffer.
-std::string GenerateNodeName(absl::string_view node_id_str,
-                             absl::string_view node_label,
+// Obtains the node namespace based on the node label and related tensor names.
+std::string GenerateNodeName(absl::string_view node_label,
                              const std::vector<int>& tensor_indices,
                              const Tensors& tensors) {
   if (tensor_indices.empty()) return "";
@@ -223,33 +216,7 @@ std::string GenerateNodeName(absl::string_view node_id_str,
       candidate_names.push_back(std::string(name));
     }
   }
-  if (candidate_names.empty()) return "";
-  if (candidate_names.size() == 1) {
-    return candidate_names[0];
-  }
-
-  // Removes any underscores in `node_label`.
-  const std::string node_label_substr =
-      absl::StrReplaceAll(node_label, {{"_", ""}});
-
-  // Iterates backwards to find if the last chunk of candidate_name contains the
-  // node label in the end hierarchy.
-  for (auto name_it = std::rbegin(candidate_names);
-       name_it != std::rend(candidate_names); ++name_it) {
-    const auto start_pos = name_it->find_last_of('/');
-    std::string last_substr;
-    if (start_pos != std::string::npos) {
-      last_substr = name_it->substr(start_pos, name_it->size());
-    } else {
-      last_substr = *name_it;
-    }
-    if (absl::AsciiStrToLower(last_substr).find(node_label_substr) !=
-        std::string::npos) {
-      return *name_it;
-    }
-  }
-
-  return candidate_names[0];
+  return TfliteNodeNamespaceHeuristic(node_label, candidate_names);
 }
 
 void AppendMetadata(
@@ -334,7 +301,7 @@ absl::StatusOr<mlir::ElementsAttr> ConvertBufferToAttr(
 
 absl::StatusOr<std::vector<uint8_t>> GetBuffer(
     const TensorT& tensor, const Buffers& buffers,
-    const std::unique_ptr<FlatBufferModel>& model_ptr) {
+    const std::unique_ptr<FlatBufferModelAbslError>& model_ptr) {
   const uint64_t buffer_offset = buffers[tensor.buffer]->offset;
   const uint64_t buffer_size = buffers[tensor.buffer]->size;
   // Check if constant tensor is stored outside of the flatbuffers.
@@ -359,7 +326,7 @@ absl::StatusOr<std::vector<uint8_t>> GetBuffer(
 absl::Status AddConstantToNodeAttr(
     const TensorT& tensor, const Buffers& buffers,
     const int const_element_count_limit,
-    const std::unique_ptr<FlatBufferModel>& model_ptr,
+    const std::unique_ptr<FlatBufferModelAbslError>& model_ptr,
     mlir::Builder mlir_builder, GraphNodeBuilder& builder) {
   ASSIGN_OR_RETURN(std::vector<uint8_t> buffer,
                    GetBuffer(tensor, buffers, model_ptr));
@@ -381,7 +348,7 @@ absl::Status AddAuxiliaryNode(
     const NodeType node_type, const std::vector<int>& tensor_indices,
     const Tensors& tensors, const Buffers& buffers,
     const std::optional<const SignatureNameMap>& signature_name_map,
-    const std::unique_ptr<FlatBufferModel>& model_ptr,
+    const std::unique_ptr<FlatBufferModelAbslError>& model_ptr,
     const int const_element_count_limit, std::vector<std::string>& node_ids,
     EdgeMap& edge_map, mlir::Builder mlir_builder, Subgraph& subgraph) {
   // Skips adding auxiliary node if `tensor_indices` is empty.
@@ -409,8 +376,7 @@ absl::Status AddAuxiliaryNode(
     case NodeType::kConstNode: {
       edge_type = EdgeType::kOutput;
       node_label = kPseudoConst;
-      node_name =
-          GenerateNodeName(node_id_str, node_label, tensor_indices, tensors);
+      node_name = GenerateNodeName(node_label, tensor_indices, tensors);
       break;
     }
     default: {
@@ -600,7 +566,7 @@ absl::Status SubgraphIdxToAttributes(
 absl::Status AddOptionsToNodeAttribute(
     const OperatorT& op, const OperatorCodes& op_codes,
     const std::vector<std::string>& func_names,
-    const std::unique_ptr<FlatBufferModel>& model_ptr,
+    const std::unique_ptr<FlatBufferModelAbslError>& model_ptr,
     mlir::Builder mlir_builder, GraphNodeBuilder& builder) {
   llvm::SmallVector<mlir::NamedAttribute, 2> attrs;
   const OperatorCodeT& op_code = *op_codes.at(op.opcode_index);
@@ -713,7 +679,8 @@ absl::Status AddNode(
     const std::vector<std::string>& op_names, const Tensors& tensors,
     const Buffers& buffers, const std::vector<std::string>& func_names,
     const std::optional<const SignatureNameMap>& signature_name_map,
-    const OpdefsMap& op_defs, const std::unique_ptr<FlatBufferModel>& model_ptr,
+    const OpdefsMap& op_defs,
+    const std::unique_ptr<FlatBufferModelAbslError>& model_ptr,
     const int const_element_count_limit, std::vector<std::string>& node_ids,
     EdgeMap& edge_map, mlir::Builder mlir_builder, Subgraph& subgraph) {
   if (op.opcode_index >= op_names.size()) {
@@ -724,7 +691,7 @@ absl::Status AddNode(
   const std::string node_id_str = node_ids[node_index];
   absl::string_view node_label = op_names[op.opcode_index];
   const std::string node_name =
-      GenerateNodeName(node_id_str, node_label, op.outputs, tensors);
+      GenerateNodeName(node_label, op.outputs, tensors);
   GraphNodeBuilder builder;
   builder.SetNodeInfo(node_id_str, node_label, node_name);
   // Logs the error and continues to add the node to the graph.
@@ -811,7 +778,7 @@ absl::Status AddSubgraph(
     const std::optional<const SignatureNameMap>& signature_name_map,
     const std::vector<std::string>& func_names, const OpdefsMap& op_defs,
     const std::unique_ptr<ModelT>& model,
-    const std::unique_ptr<FlatBufferModel>& model_ptr,
+    const std::unique_ptr<FlatBufferModelAbslError>& model_ptr,
     mlir::Builder mlir_builder, Graph& graph) {
   // Creates a Model Explorer subgraph.
   Subgraph subgraph((std::string(subgraph_name)));
@@ -867,9 +834,9 @@ absl::StatusOr<std::string> ConvertFlatbufferDirectlyToJson(
   RETURN_IF_ERROR(tsl::ReadFileToString(
       tsl::Env::Default(), std::string(model_path), &model_content));
 
-  std::unique_ptr<FlatBufferModel> model_ptr =
-      FlatBufferModel::VerifyAndBuildFromBuffer(model_content.data(),
-                                                model_content.length());
+  std::unique_ptr<FlatBufferModelAbslError> model_ptr =
+      FlatBufferModelAbslError::VerifyAndBuildFromBuffer(
+          model_content.data(), model_content.length());
 
   mlir::MLIRContext mlir_context;
   mlir::DialectRegistry registry;

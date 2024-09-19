@@ -15,14 +15,15 @@
 
 import json
 import os
-from typing import Any, Callable, Dict, Tuple, TypedDict, Union
+from typing import Dict, TypedDict, Union
 from urllib.parse import quote
 
+import requests
 import torch
 from typing_extensions import NotRequired
 
-from .consts import DEFAULT_SETTINGS
-from .node_data_builder import GraphNodeData, ModelNodeData, NodeData
+from .consts import DEFAULT_HOST, DEFAULT_SETTINGS
+from .node_data_builder import NodeData
 from .pytorch_exported_program_adater_impl import PytorchExportedProgramAdapterImpl
 from .types import ModelExplorerGraphs
 
@@ -32,9 +33,11 @@ ModelSource = TypedDict(
 
 EncodedUrlData = TypedDict(
     'EncodedUrlData',
-    {'models': list[ModelSource],
-     'nodeData': NotRequired[list[str]],
-     'nodeDataTargets': NotRequired[list[str]]},
+    {
+        'models': list[ModelSource],
+        'nodeData': NotRequired[list[str]],
+        'nodeDataTargets': NotRequired[list[str]],
+    },
 )
 
 
@@ -48,7 +51,9 @@ class ModelExplorerConfig:
     # List of model names to apply node data to. For the meaning of
     # "model name", see comments in `add_node_data_from_path` method below.
     self.node_data_target_models: list[str] = []
-    self.node_data_list: list[NodeData] = []
+    self.node_data_list: list[Union[NodeData, str]] = []
+    self.reuse_server_host = ''
+    self.reuse_server_port = -1
 
   def add_model_from_path(
       self, path: str, adapterId: str = ''
@@ -101,9 +106,8 @@ class ModelExplorerConfig:
     return self
 
   def add_node_data_from_path(
-          self,
-          path: str,
-          model_name: Union[str, None] = None) -> 'ModelExplorerConfig':
+      self, path: str, model_name: Union[str, None] = None
+  ) -> 'ModelExplorerConfig':
     """Adds node data file to the config.
 
     Args:
@@ -130,14 +134,14 @@ class ModelExplorerConfig:
   def add_node_data(
       self,
       name: str,
-      node_data: NodeData,
-      model_name: Union[str, None] = None
+      node_data: Union[NodeData, str],
+      model_name: Union[str, None] = None,
   ) -> 'ModelExplorerConfig':
     """Adds the given node data object.
 
     Args:
       name: the name of the NodeData for display purpose.
-      node_data: the NodeData object to add.
+      node_data: the NodeData object or node data json string to add.
       model_name: the name of the model. If not set, the node data will be
           applied to the first model added to the config by default.
 
@@ -160,6 +164,36 @@ class ModelExplorerConfig:
       self.node_data_target_models.append(model_name)
     return self
 
+  def set_reuse_server(
+      self,
+      server_host: str = DEFAULT_HOST,
+      server_port: Union[int, None] = None,
+  ):
+    """Makes it to reuse the existing server instead of starting a new one.
+
+    Args:
+      server_host: the host of the server to reuse.
+      server_port: the port of the server to reuse. If unspecified, it will try
+          to find a running server from port 8080 to 8099.
+    """
+    # Find the server to reuse.
+    self.reuse_server_host = server_host
+    if server_port is None or server_port < 0:
+      self.reuse_server_port = self._find_running_server_port(host=server_host)
+    else:
+      if self._check_running_server(host=server_host, port=server_port):
+        self.reuse_server_port = server_port
+
+    if self.reuse_server_port > 0:
+      print(
+          'Re-using running server at'
+          f' http://{self.reuse_server_host}:{self.reuse_server_port}'
+      )
+    else:
+      print(f'No running server found. Will start a new server.')
+
+    return self
+
   def to_url_param_value(self) -> str:
     """Converts the config to the url param value."""
     # Construct url data.
@@ -176,8 +210,33 @@ class ModelExplorerConfig:
   def get_model_explorer_graphs(self, index: int) -> ModelExplorerGraphs:
     return self.graphs_list[index]
 
-  def get_node_data(self, index: int) -> NodeData:
+  def get_node_data(self, index: int) -> Union[NodeData, str]:
     return self.node_data_list[index]
 
   def has_data_to_encode_in_url(self) -> bool:
     return len(self.model_sources) > 0 or len(self.node_data_sources) > 0
+
+  def get_transferrable_data(self) -> Dict:
+    return {
+        'model_sources': self.model_sources,
+        'node_data_sources': self.node_data_sources,
+        'node_data_target_models': self.node_data_target_models,
+    }
+
+  def set_transferrable_data(self, data: Dict):
+    self.model_sources = data['model_sources']
+    self.node_data_sources = data['node_data_sources']
+    self.node_data_target_models = data['node_data_target_models']
+
+  def _find_running_server_port(self, host: str = DEFAULT_HOST) -> int:
+    for port in range(8080, 8100):
+      if self._check_running_server(host=host, port=port):
+        return port
+    return -1
+
+  def _check_running_server(self, host: str, port: int) -> bool:
+    try:
+      resp = requests.get(f'http://{host}:{port}/check_health')
+      return resp.status_code == 200 and resp.text == 'model_explorer_ok'
+    except:
+      return False

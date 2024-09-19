@@ -15,8 +15,7 @@
 
 from typing import Dict
 
-from ai_edge_model_explorer_adapter import \
-    _pywrap_convert_wrapper as convert_wrapper  # type: ignore
+from ai_edge_model_explorer_adapter import _pywrap_convert_wrapper as convert_wrapper  # type: ignore
 
 from .adapter import Adapter, AdapterMetadata
 from .types import ModelExplorerGraphs
@@ -26,10 +25,15 @@ from .utils import convert_builtin_resp, ensure_tf_model_name
 class BuiltinTfDirectAdapter(Adapter):
   """Built-in tf adapter by parsing .pb file."""
 
-  metadata = AdapterMetadata(id='builtin_tf_direct',
-                             name='TF adapter (direct)',
-                             description='A built-in adapter that converts a TF saved model to Model Explorer format by directly parsing the .pb file.',
-                             fileExts=['pb'])
+  metadata = AdapterMetadata(
+      id='builtin_tf_direct',
+      name='TF adapter (direct)',
+      description=(
+          'A built-in adapter that converts a TF saved model to Model Explorer'
+          ' format by directly parsing the .pb file.'
+      ),
+      fileExts=['pb'],
+  )
 
   def __init__(self):
     super().__init__()
@@ -47,5 +51,6 @@ class BuiltinTfDirectAdapter(Adapter):
 
     # Run
     resp_json_str = convert_wrapper.ConvertSavedModelDirectlyToJson(
-        config, model_dir)
+        config, model_dir
+    )
     return {'graphCollections': convert_builtin_resp(resp_json_str)}

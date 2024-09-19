@@ -50,6 +50,7 @@ import {
   GLOBAL_KEY,
   LAYOUT_MARGIN_X,
   NODE_LABEL_HEIGHT,
+  NODE_LABEL_LINE_HEIGHT,
   WEBGL_ELEMENT_Y_FACTOR,
 } from './common/consts';
 import {
@@ -64,6 +65,7 @@ import {
   FontWeight,
   NodeDataProviderResultProcessedData,
   NodeDataProviderRunData,
+  NodeStyleId,
   NodeStylerRule,
   Point,
   PopupPanelData,
@@ -78,13 +80,16 @@ import {
 } from './common/types';
 import {
   genUid,
+  getDeepestExpandedGroupNodeIds,
   getHighQualityPixelRatio,
+  getNodeStyleValue,
   hasNonEmptyQueries,
   IS_MAC,
   isGroupNode,
   isOpNode,
   matchNodeForQueries,
   processNodeStylerRules,
+  splitLabel,
 } from './common/utils';
 import {
   ExpandOrCollapseGroupNodeRequest,
@@ -97,7 +102,7 @@ import {
 import {DragArea} from './drag_area';
 import {genIoTreeData, IoTree} from './io_tree';
 import {NodeDataProviderExtensionService} from './node_data_provider_extension_service';
-import {NodeStylerService, StyleId} from './node_styler_service';
+import {NodeStylerService} from './node_styler_service';
 import {SplitPaneService} from './split_pane_service';
 import {SubgraphSelectionService} from './subgraph_selection_service';
 import {ThreejsService} from './threejs_service';
@@ -356,6 +361,7 @@ export class WebglRenderer implements OnInit, OnDestroy {
   private savedUpdateNodeBgWhenFarProgress = -1;
   private curNodeStylerRules: NodeStylerRule[] = [];
   private curProcessedNodeStylerRules: ProcessedNodeStylerRule[] = [];
+  private renderedEdgeIdsToHide: string[] = [];
 
   private readonly selectedNodeInfo = computed(() => {
     const pane = this.appService.getPaneById(this.paneId);
@@ -761,11 +767,34 @@ export class WebglRenderer implements OnInit, OnDestroy {
       if (!paneState) {
         initGraphFn();
       } else {
-        this.sendRelayoutGraphRequest(
-          paneState.selectedNodeId,
-          paneState.deepestExpandedGroupNodeIds,
-          true,
-        );
+        // Expand all layers if paneState.deepestExpandedGroupNodeIds has only
+        // one elemenet '___all___'.
+        let deepestExpandedGroupNodeIds = paneState.deepestExpandedGroupNodeIds;
+        if (
+          deepestExpandedGroupNodeIds.length === 1 &&
+          deepestExpandedGroupNodeIds[0] === '___all___'
+        ) {
+          const groupNodeIds: string[] = [];
+          getDeepestExpandedGroupNodeIds(
+            undefined,
+            this.curModelGraph,
+            groupNodeIds,
+            true,
+          );
+          deepestExpandedGroupNodeIds = groupNodeIds;
+        }
+        if (
+          paneState.selectedNodeId != '' ||
+          deepestExpandedGroupNodeIds.length > 0
+        ) {
+          this.sendRelayoutGraphRequest(
+            paneState.selectedNodeId,
+            deepestExpandedGroupNodeIds,
+            true,
+          );
+        } else {
+          initGraphFn();
+        }
         // This is needed for loading old perma-link.
         this.uiStateService.setDeepestExpandedGroupNodeIds(
           paneState.deepestExpandedGroupNodeIds,
@@ -982,7 +1011,7 @@ export class WebglRenderer implements OnInit, OnDestroy {
     ) {
       return;
     }
-    this.hoveredNodeId = '';
+    this.setHoveredNodeId('');
     this.updateNodesStyles();
     this.handleHoveredGroupNodeIconChanged();
     this.webglRendererThreejsService.render();
@@ -1132,6 +1161,12 @@ export class WebglRenderer implements OnInit, OnDestroy {
     // Expand/collapse node on double click. Alt key controls whether to do it
     // for all sub layers.
     if (this.selectedNodeId !== '' && !shiftDown) {
+      this.appService.updateDoubleClickedNode(
+        this.selectedNodeId,
+        this.curModelGraph.id,
+        this.curModelGraph.collectionLabel || '',
+        this.curModelGraph.nodesById[this.selectedNodeId],
+      );
       this.handleToggleExpandCollapse(
         this.curModelGraph.nodesById[this.selectedNodeId],
         altDown,
@@ -1362,8 +1397,33 @@ export class WebglRenderer implements OnInit, OnDestroy {
     return 14;
   }
 
+  getNodeLabelSizes(node: ModelNode) {
+    const scale = NODE_LABEL_HEIGHT / this.texts.getFontSize();
+    let minX = Number.POSITIVE_INFINITY;
+    let maxX = Number.NEGATIVE_INFINITY;
+    let firstLineLabelHeight = 0;
+    const lines = splitLabel(this.getNodeLabel(node));
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      const labelSize = this.texts.getLabelSizes(
+        line,
+        FontWeight.BOLD,
+        NODE_LABEL_HEIGHT,
+      ).sizes;
+      minX = Math.min(minX, labelSize.minX);
+      maxX = Math.max(maxX, labelSize.maxX);
+      if (i === 0) {
+        firstLineLabelHeight = (labelSize.maxZ - labelSize.minZ) * scale;
+      }
+    }
+    return {minX, maxX, firstLineLabelHeight};
+  }
+
   // Used by tests only.
   getNodeTitleScreenPositionRelativeToCenter(nodeId: string): Point {
+    // This is to workaround the issue where nodeId cannot contain '\n' when
+    // called from protractor.
+    nodeId = nodeId.replaceAll('%%%', '\n');
     const node = this.curModelGraph.nodesById[nodeId];
     const x = this.getNodeX(node) + this.getNodeWidth(node) / 2;
     const y = this.getNodeY(node) + 5;
@@ -1394,13 +1454,9 @@ export class WebglRenderer implements OnInit, OnDestroy {
     const x = this.getNodeX(node);
     const y = this.getNodeY(node);
     const width = this.getNodeWidth(node);
-    const labelSize = this.texts.getLabelSizes(
-      this.getNodeLabel(node),
-      FontWeight.BOLD,
-      NODE_LABEL_HEIGHT,
-    ).sizes;
+    const {minX, maxX} = this.getNodeLabelSizes(node);
     const scale = NODE_LABEL_HEIGHT / this.texts.getFontSize();
-    const labelWidth = (labelSize.maxX - labelSize.minX) * scale;
+    const labelWidth = (maxX - minX) * scale;
     const labelLeft = x + width / 2 - labelWidth / 2;
     const iconX = node.expanded ? labelLeft - 13 : (x + labelLeft + 1) / 2 + 1;
     const iconY = y + this.getNodeLabelRelativeY(node);
@@ -1421,13 +1477,9 @@ export class WebglRenderer implements OnInit, OnDestroy {
     const x = this.getNodeX(node);
     const y = this.getNodeY(node);
     const width = this.getNodeWidth(node);
-    const labelSize = this.texts.getLabelSizes(
-      this.getNodeLabel(node),
-      FontWeight.BOLD,
-      NODE_LABEL_HEIGHT,
-    ).sizes;
+    const {minX, maxX} = this.getNodeLabelSizes(node);
     const scale = NODE_LABEL_HEIGHT / this.texts.getFontSize();
-    const labelWidth = (labelSize.maxX - labelSize.minX) * scale;
+    const labelWidth = (maxX - minX) * scale;
     const labelRight = x + width / 2 + labelWidth / 2;
     const iconX = node.expanded
       ? labelRight + 12
@@ -1767,17 +1819,24 @@ export class WebglRenderer implements OnInit, OnDestroy {
       // Node styler.
       for (const rule of this.curProcessedNodeStylerRules) {
         if (matchNodeForQueries(node, rule.queries, this.curModelGraph)) {
-          const nodeStylerBgColor =
-            rule.styles[StyleId.NODE_BG_COLOR]?.value || '';
+          const nodeStylerBgColor = getNodeStyleValue(
+            rule,
+            NodeStyleId.NODE_BG_COLOR,
+          );
           if (nodeStylerBgColor !== '') {
             bgColor = new THREE.Color(nodeStylerBgColor);
           }
-          const nodeBorderColor =
-            rule.styles[StyleId.NODE_BORDER_COLOR]?.value || '';
+          const nodeBorderColor = getNodeStyleValue(
+            rule,
+            NodeStyleId.NODE_BORDER_COLOR,
+          );
           if (nodeBorderColor !== '') {
             borderColor = new THREE.Color(nodeBorderColor);
           }
-          const textColor = rule.styles[StyleId.NODE_TEXT_COLOR]?.value || '';
+          const textColor = getNodeStyleValue(
+            rule,
+            NodeStyleId.NODE_TEXT_COLOR,
+          );
           if (textColor !== '') {
             groupNodeIconColor = new THREE.Color(textColor);
           }
@@ -1887,18 +1946,14 @@ export class WebglRenderer implements OnInit, OnDestroy {
       // Group node label icons.
       if (isGroupNode(node)) {
         // Get current node label width.
-        const labelSize = this.texts.getLabelSizes(
-          this.getNodeLabel(node),
-          FontWeight.BOLD,
-          NODE_LABEL_HEIGHT,
-        ).sizes;
-        const labelWidth = (labelSize.maxX - labelSize.minX) * scale;
-        const labelHeight = (labelSize.maxZ - labelSize.minZ) * scale;
+        const {minX, maxX, firstLineLabelHeight} = this.getNodeLabelSizes(node);
+        const labelWidth = (maxX - minX) * scale;
         const labelLeft = x + width / 2 - labelWidth / 2;
         const labelRight = x + width / 2 + labelWidth / 2;
 
         // Expand icon.
-        const iconZ = y + this.getNodeLabelRelativeY(node) + labelHeight + 7.5;
+        const iconZ =
+          y + this.getNodeLabelRelativeY(node) + firstLineLabelHeight + 7.5;
         const leftIconX = node.expanded
           ? labelLeft - 13
           : (x + labelLeft + 1) / 2 + 1;
@@ -2003,7 +2058,68 @@ export class WebglRenderer implements OnInit, OnDestroy {
   }
 
   private renderEdges() {
+    this.renderedEdgeIdsToHide = [];
+
     if (this.edgesToRender.length > 0) {
+      // Add the edges that go out of the layer to the edges to render list
+      // if the option is on.
+      if (this.appService.config()?.showOpNodeOutOfLayerEdgesWithoutSelecting) {
+        for (const {node} of this.nodesToRender) {
+          if (isOpNode(node) && node.nsParentId) {
+            const {
+              overlayEdges: incomingOverlayEdges,
+              renderedEdges: incomingRenderedEdges,
+            } =
+              this.webglRendererIoHighlightService.getHighlightedIncomingNodesAndEdges(
+                this.curHiddenInputOpNodeIds,
+                node,
+                {
+                  ignoreEdgesWithinSameNamespace: true,
+                  reuseRenderedEdgeCurvePoints: true,
+                },
+              );
+            if (incomingOverlayEdges.length > 0) {
+              this.renderedEdgeIdsToHide.push(
+                ...incomingRenderedEdges.map((edge) => edge.id),
+              );
+              for (const edge of incomingOverlayEdges) {
+                this.edgesToRender.push({
+                  edge,
+                  // make sure to pick a number less than 95 which is used for
+                  // rendering io highlight edges.
+                  index: 92 / WEBGL_ELEMENT_Y_FACTOR,
+                });
+              }
+            }
+
+            const {
+              overlayEdges: outgoingOverlayEdges,
+              renderedEdges: outgoingRenderedEdges,
+            } =
+              this.webglRendererIoHighlightService.getHighlightedOutgoingNodesAndEdges(
+                this.curHiddenOutputIds,
+                node,
+                {
+                  ignoreEdgesWithinSameNamespace: true,
+                  reuseRenderedEdgeCurvePoints: true,
+                },
+              );
+            if (outgoingOverlayEdges.length > 0) {
+              this.renderedEdgeIdsToHide.push(
+                ...outgoingRenderedEdges.map((edge) => edge.id),
+              );
+              for (const edge of outgoingOverlayEdges) {
+                this.edgesToRender.push({
+                  edge,
+                  // make sure to pick a number less than 95 which is used for
+                  // rendering io highlight edges.
+                  index: 92 / WEBGL_ELEMENT_Y_FACTOR,
+                });
+              }
+            }
+          }
+        }
+      }
       this.edges.generateMesh(this.edgesToRender, this.curModelGraph);
       this.webglRendererThreejsService.addToScene(this.edges.edgesMesh);
       this.webglRendererThreejsService.addToScene(this.edges.arrowHeadsMesh);
@@ -2019,8 +2135,10 @@ export class WebglRenderer implements OnInit, OnDestroy {
       // Node styler.
       for (const rule of this.curProcessedNodeStylerRules) {
         if (matchNodeForQueries(node, rule.queries, this.curModelGraph)) {
-          const nodeStylerTextColor =
-            rule.styles[StyleId.NODE_TEXT_COLOR]?.value || '';
+          const nodeStylerTextColor = getNodeStyleValue(
+            rule,
+            NodeStyleId.NODE_TEXT_COLOR,
+          );
           if (nodeStylerTextColor !== '') {
             color = new THREE.Color(nodeStylerTextColor);
           }
@@ -2028,19 +2146,26 @@ export class WebglRenderer implements OnInit, OnDestroy {
         }
       }
 
-      labels.push({
-        id: `${node.id}_label`,
-        nodeId: node.id,
-        label: this.getNodeLabel(node),
-        height: NODE_LABEL_HEIGHT,
-        hAlign: 'center',
-        vAlign: 'center',
-        weight: isOpNode(node) ? FontWeight.MEDIUM : FontWeight.BOLD,
-        x: this.getNodeX(node) + this.getNodeWidth(node) / 2,
-        y: index * WEBGL_ELEMENT_Y_FACTOR + NODE_LABEL_Y_OFFSET,
-        z: this.getNodeY(node) + this.getNodeLabelRelativeY(node),
-        color,
-      });
+      const lines = splitLabel(this.getNodeLabel(node));
+      for (let i = 0; i < lines.length; i++) {
+        const curLineLabel = lines[i];
+        labels.push({
+          id: `${node.id}_label_line${i}`,
+          nodeId: node.id,
+          label: curLineLabel,
+          height: NODE_LABEL_HEIGHT,
+          hAlign: 'center',
+          vAlign: 'center',
+          weight: isOpNode(node) ? FontWeight.MEDIUM : FontWeight.BOLD,
+          x: this.getNodeX(node) + this.getNodeWidth(node) / 2,
+          y: index * WEBGL_ELEMENT_Y_FACTOR + NODE_LABEL_Y_OFFSET,
+          z:
+            this.getNodeY(node) +
+            this.getNodeLabelRelativeY(node) +
+            NODE_LABEL_LINE_HEIGHT * i,
+          color,
+        });
+      }
     }
     this.texts.generateMesh(labels);
     this.webglRendererThreejsService.addToScene(this.texts.mesh);
@@ -2116,7 +2241,7 @@ export class WebglRenderer implements OnInit, OnDestroy {
     this.nodeBodies.raycast(
       this.webglRendererThreejsService.raycaster,
       (recId) => {
-        this.hoveredNodeId = recId;
+        this.setHoveredNodeId(recId);
         this.updateNodesStyles();
         this.webglRendererThreejsService.render();
       },
@@ -2327,13 +2452,12 @@ export class WebglRenderer implements OnInit, OnDestroy {
       }
     }
     // Hide all rendered edges to better shown highlighted edges.
-    this.edges.updateYOffsets(
-      [
-        ...this.webglRendererIoHighlightService.inputsRenderedEdges,
-        ...this.webglRendererIoHighlightService.outputsRenderedEdges,
-      ].map((edge) => edge.id),
-      1000,
-    );
+    const ids = [
+      ...this.webglRendererIoHighlightService.inputsRenderedEdges,
+      ...this.webglRendererIoHighlightService.outputsRenderedEdges,
+    ].map((edge) => edge.id);
+    ids.push(...this.renderedEdgeIdsToHide);
+    this.edges.updateYOffsets(ids, 1000);
 
     // Node data provider.
     //
@@ -2779,5 +2903,15 @@ export class WebglRenderer implements OnInit, OnDestroy {
       return node.label;
     }
     return '-';
+  }
+
+  private setHoveredNodeId(id: string) {
+    this.hoveredNodeId = id;
+    this.appService.updateHoveredNode(
+      id,
+      this.curModelGraph.id,
+      this.curModelGraph.collectionLabel || '',
+      this.curModelGraph.nodesById[id],
+    );
   }
 }

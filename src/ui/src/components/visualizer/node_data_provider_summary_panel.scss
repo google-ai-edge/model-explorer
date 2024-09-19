@@ -36,6 +36,47 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .node-filter {
+    margin-bottom: 4px;
+    position: relative;
+
+    input {
+      width: 100%;
+      border: 1px solid #ccc;
+      padding: 3px 4px 3px 19px;
+      border-radius: 4px;
+      box-sizing: border-box;
+    }
+
+    mat-icon {
+      font-size: 12px;
+      width: 12px;
+      height: 12px;
+      color: #999;
+
+      &.filter {
+        position: absolute;
+        top: 6px;
+        left: 3px;
+      }
+    }
+
+    .clear-container {
+      position: absolute;
+      top: 6px;
+      right: 3px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      &:hover mat-icon {
+        color: #555;
+      }
+    }
   }
 
   .icon-container {
@@ -199,10 +240,7 @@
     thead {
       height: 24px;
       background-color: #f2f2f2;
-
-      .header {
-        font-weight: 500;
-      }
+      font-size: 11px;
     }
 
     tbody {
@@ -235,6 +273,7 @@
       height: 100%;
       display: flex;
       align-items: center;
+      font-size: 11px;
 
       mat-icon.sort {
         font-size: 12px;
@@ -242,11 +281,14 @@
         height: 12px;
         color: #999;
         margin-left: 4px;
+        flex-shrink: 0;
       }
 
       .stat-label {
-        margin-left: 6px;
+        margin-left: 4px;
         white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
       }
     }
 

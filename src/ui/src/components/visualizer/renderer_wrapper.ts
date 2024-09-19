@@ -26,7 +26,6 @@ import {
   effect,
   EventEmitter,
   Input,
-  OnInit,
   Output,
   ViewChild,
 } from '@angular/core';
@@ -43,7 +42,6 @@ import {AppService} from './app_service';
 import {type ModelGraph} from './common/model_graph';
 import {
   PopupPanelData,
-  RendererType,
   SelectedNodeInfo,
   SubgraphBreadcrumbItem,
 } from './common/types';
@@ -53,8 +51,6 @@ import {SnapshotManager} from './snapshot_manager';
 import {SubgraphBreadcrumbs} from './subgraph_breadcrumbs';
 import {ViewOnNode} from './view_on_node';
 import {WebglRenderer} from './webgl_renderer';
-
-const DEFAULT_RENDERER_TYPE: RendererType = RendererType.WEBGL;
 
 /** A wrapper panel around various renderers. */
 @Component({
@@ -79,7 +75,7 @@ const DEFAULT_RENDERER_TYPE: RendererType = RendererType.WEBGL;
   styleUrls: ['./renderer_wrapper.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class RendererWrapper implements OnInit {
+export class RendererWrapper {
   @Input({required: true}) modelGraph!: ModelGraph;
   @Input({required: true}) rendererId!: string;
   @Input({required: true}) paneId!: string;
@@ -90,8 +86,6 @@ export class RendererWrapper implements OnInit {
 
   @ViewChild('webglRenderer') webglRenderer?: WebglRenderer;
 
-  readonly RendererType = RendererType;
-
   readonly helpPopupSize: OverlaySizeConfig = {
     minWidth: 0,
     minHeight: 0,
@@ -101,7 +95,6 @@ export class RendererWrapper implements OnInit {
   flattenAllLayers = computed(() =>
     this.appService.getFlattenLayers(this.paneId),
   );
-  rendererType = DEFAULT_RENDERER_TYPE;
   disableDownloadPngHelpPopup = false;
   transparentPngBackground = new FormControl<boolean>(false);
 
@@ -116,11 +109,6 @@ export class RendererWrapper implements OnInit {
       this.curSubgraphBreadcrumbs = pane?.subgraphBreadcrumbs || [];
       this.changeDetectorRef.markForCheck();
     });
-  }
-
-  ngOnInit() {
-    this.rendererType =
-      this.appService.config()?.defaultRenderer ?? DEFAULT_RENDERER_TYPE;
   }
 
   handleOpenOnPopupClicked(data: PopupPanelData) {
@@ -205,11 +193,11 @@ export class RendererWrapper implements OnInit {
   }
 
   get showDownloadPng(): boolean {
-    return !this.inPopup && this.rendererType === RendererType.WEBGL;
+    return !this.inPopup;
   }
 
   get showSnapshotManager(): boolean {
-    return !this.inPopup && this.rendererType === RendererType.WEBGL;
+    return !this.inPopup;
   }
 
   get showSubgraphBreadcrumbs(): boolean {

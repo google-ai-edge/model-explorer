@@ -1,21 +1,20 @@
-/* Copyright 2024 The Model Explorer Authors. All Rights Reserved.
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-==============================================================================*/
+// Copyright 2024 The AI Edge Model Explorer Authors.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+// =============================================================================
 
 #include "translate_helpers.h"
 
-#include <cstddef>
 #include <string>
 #include <utility>
 #include <vector>
@@ -25,7 +24,7 @@ limitations under the License.
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
-#include "absl/strings/str_replace.h"
+#include "absl/strings/str_split.h"
 #include "absl/strings/string_view.h"
 #include "llvm/ADT/STLExtras.h"
 #include "llvm/ADT/SmallVector.h"
@@ -50,6 +49,7 @@ limitations under the License.
 #include "status_macros.h"
 #include "tools/attribute_printer.h"
 #include "tools/load_opdefs.h"
+#include "tools/namespace_heuristics.h"
 #include "visualize_config.h"
 #include "tensorflow/compiler/mlir/lite/ir/tfl_ops.h"
 #include "tensorflow/compiler/mlir/tensorflow/ir/tf_dialect.h"
@@ -266,13 +266,12 @@ llvm::StringRef GetTfNodeName(Operation& operation) {
 
 // Generates the node name (the hierarchical information of the node) from a tfl
 // dialect operation.
-llvm::StringRef GenerateTfliteNodeName(llvm::StringRef node_id_str,
-                                       llvm::StringRef node_label,
-                                       Operation& operation) {
+std::string GenerateTfliteNodeName(llvm::StringRef node_label,
+                                   Operation& operation) {
   auto fusedLoc = operation.getLoc()->findInstanceOf<mlir::FusedLoc>();
   auto nameLoc = operation.getLoc()->findInstanceOf<mlir::NameLoc>();
   if (fusedLoc == nullptr && nameLoc == nullptr) {
-    return kEmptyString;
+    return "";
   }
   // In TFLite, we store op's output tensor names in location attribute. So it
   // could be either a simple NameLoc of the original node_name; or a special
@@ -290,39 +289,15 @@ llvm::StringRef GenerateTfliteNodeName(llvm::StringRef node_id_str,
   // concatenated together with semicolons. In this case, we will find the last
   // single node name that contains this node label. If no matching found, we
   // will return the first single node name by default.
-  llvm::SmallVector<llvm::StringRef, 4> candidate_names;
-  for (const llvm::StringRef tensor_name : tensor_names) {
-    llvm::SmallVector<llvm::StringRef, 4> tmp_names;
-    tensor_name.split(tmp_names, kSemicolonSeparator, /*MaxSplit=*/-1,
-                      /*KeepEmpty=*/false);
-    for (const llvm::StringRef name : tmp_names) {
-      candidate_names.push_back(name);
+  std::vector<std::string> candidate_names;
+  for (absl::string_view tensor_name : tensor_names) {
+    std::vector<std::string> tmp_names =
+        absl::StrSplit(tensor_name, ';', absl::SkipEmpty());
+    for (absl::string_view name : tmp_names) {
+      candidate_names.push_back(std::string(name));
     }
   }
-  if (candidate_names.empty()) {
-    return kEmptyString;
-  }
-  if (candidate_names.size() == 1) {
-    return candidate_names.front();
-  }
-  // Removes any underscores in `node_label`.
-  const std::string node_label_substr =
-      absl::StrReplaceAll(node_label, {{"_", ""}});
-  // We iterate backwards to find if a single node name contains the node
-  // label in the end hierarchy.
-  for (auto it = candidate_names.rbegin(); it != candidate_names.rend(); ++it) {
-    llvm::StringRef name = *it;
-    llvm::StringRef last_substr = name;
-    const size_t start_pos = name.find_last_of('/');
-    if (start_pos != std::string::npos) {
-      last_substr = name.substr(start_pos);
-    }
-    if (last_substr.contains_insensitive(node_label_substr)) {
-      return name;
-    }
-  }
-
-  return candidate_names.front();
+  return TfliteNodeNamespaceHeuristic(node_label, candidate_names);
 }
 
 // Gets a list of output tensor name(s) of an TFLite operation. Returns empty
@@ -505,8 +480,7 @@ absl::StatusOr<Subgraph> TfliteFunctionToSubgraph(const VisualizeConfig& config,
       node_label = kGraphOutputs.str();
     }
     seen_ops.insert({&operation, node_id});
-    llvm::StringRef node_name =
-        GenerateTfliteNodeName(node_id, node_label, operation);
+    std::string node_name = GenerateTfliteNodeName(node_label, operation);
     GraphNodeBuilder builder;
     builder.SetNodeInfo(node_id, node_label, node_name);
     AppendNodeAttrs(config.const_element_count_limit, operation, builder);

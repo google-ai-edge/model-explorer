@@ -25,13 +25,14 @@ import {
   LOCAL_STORAGE_KEY_SHOW_ON_NODE_ITEM_TYPES,
 } from './common/consts';
 import {Graph, GraphCollection} from './common/input_graph';
-import {ModelGraph} from './common/model_graph';
+import {ModelGraph, ModelNode} from './common/model_graph';
 import {
   AddSnapshotInfo,
   DownloadAsPngInfo,
   ExpandOrCollapseAllGraphLayersInfo,
   LocateNodeInfo,
   ModelGraphProcessedEvent,
+  NodeInfo,
   Pane,
   RendererInfo,
   RendererOwner,
@@ -98,6 +99,12 @@ export class AppService {
   readonly modelGraphProcessed$ = new Subject<ModelGraphProcessedEvent>();
 
   readonly remoteNodeDataPaths = signal<string[]>([]);
+
+  readonly selectedNode = signal<NodeInfo | undefined>(undefined);
+
+  readonly hoveredNode = signal<NodeInfo | undefined>(undefined);
+
+  readonly doubleClickedNode = signal<NodeInfo | undefined>(undefined);
 
   testMode: boolean = false;
 
@@ -206,6 +213,7 @@ export class AppService {
     paneIndex: number,
     flattenLayers = false,
     snapshot?: SnapshotData,
+    initialLayout = true,
   ) {
     if (paneIndex === 1 && this.panes().length === 1) {
       this.openGraphInSplitPane(graph);
@@ -240,23 +248,29 @@ export class AppService {
     }
 
     // Process the graph.
-    this.processGraph(paneId, flattenLayers, snapshot);
+    this.processGraph(paneId, flattenLayers, snapshot, initialLayout);
   }
 
   selectGraphInCurrentPane(
     graph: Graph,
     flattenLayers = false,
     snapshot?: SnapshotData,
+    initialLayout = true,
   ) {
     this.selectGraphInPane(
       graph,
       this.getPaneIndexById(this.selectedPaneId()),
       flattenLayers,
       snapshot,
+      initialLayout,
     );
   }
 
-  openGraphInSplitPane(graph: Graph, flattenLayers = false) {
+  openGraphInSplitPane(
+    graph: Graph,
+    flattenLayers = false,
+    initialLayout = true,
+  ) {
     // Add a new pane.
     const paneId = genUid();
     this.paneIdToGraph[paneId] = graph;
@@ -305,6 +319,7 @@ export class AppService {
         this.getGroupNodeChildrenCountThreshold(),
       flattenLayers,
       keepLayersWithASingleChild: this.config()?.keepLayersWithASingleChild,
+      initialLayout,
     };
     this.workerService.worker.postMessage(processGraphReq);
   }
@@ -313,6 +328,7 @@ export class AppService {
     paneId: string,
     flattenLayers = false,
     snapshotToRestore?: SnapshotData,
+    initialLayout = true,
   ) {
     // Store snapshotToResotre into pane if set.
     if (snapshotToRestore != null) {
@@ -337,6 +353,7 @@ export class AppService {
         this.getGroupNodeChildrenCountThreshold(),
       flattenLayers,
       keepLayersWithASingleChild: this.config()?.keepLayersWithASingleChild,
+      initialLayout,
     };
     this.workerService.worker.postMessage(processGraphReq);
   }
@@ -429,6 +446,17 @@ export class AppService {
           '*',
         );
       }
+    }
+
+    // Trigger event on visualizer component.
+    if (modelGraph) {
+      const nodeId = info?.nodeId || '';
+      this.updateSelectedNode(
+        nodeId,
+        modelGraph.id,
+        modelGraph.collectionLabel,
+        modelGraph.nodesById[nodeId],
+      );
     }
   }
 
@@ -867,6 +895,69 @@ export class AppService {
 
   getCurrentModelGraphFromPane(paneId: string): ModelGraph | undefined {
     return this.paneIdToCurModelGraphs[paneId];
+  }
+
+  updateSelectedNode(
+    nodeId: string,
+    graphId: string,
+    collectionLabel: string,
+    node?: ModelNode,
+  ) {
+    const curSelectedNode = this.selectedNode();
+    if (
+      curSelectedNode?.nodeId !== nodeId ||
+      curSelectedNode?.graphId !== graphId ||
+      curSelectedNode?.collectionLabel !== collectionLabel
+    ) {
+      this.selectedNode.set({
+        nodeId,
+        graphId,
+        collectionLabel,
+        node,
+      });
+    }
+  }
+
+  updateHoveredNode(
+    nodeId: string,
+    graphId: string,
+    collectionLabel: string,
+    node?: ModelNode,
+  ) {
+    const curHoveredNode = this.hoveredNode();
+    if (
+      curHoveredNode?.nodeId !== nodeId ||
+      curHoveredNode?.graphId !== graphId ||
+      curHoveredNode?.collectionLabel !== collectionLabel
+    ) {
+      this.hoveredNode.set({
+        nodeId,
+        graphId,
+        collectionLabel,
+        node,
+      });
+    }
+  }
+
+  updateDoubleClickedNode(
+    nodeId: string,
+    graphId: string,
+    collectionLabel: string,
+    node?: ModelNode,
+  ) {
+    const curDoubleClickedNode = this.doubleClickedNode();
+    if (
+      curDoubleClickedNode?.nodeId !== nodeId ||
+      curDoubleClickedNode?.graphId !== graphId ||
+      curDoubleClickedNode?.collectionLabel !== collectionLabel
+    ) {
+      this.doubleClickedNode.set({
+        nodeId,
+        graphId,
+        collectionLabel,
+        node,
+      });
+    }
   }
 
   reset() {

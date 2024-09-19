@@ -45,6 +45,7 @@ import {
   SearchMatchType,
   SearchNodeType,
 } from './common/types';
+import {getNodeStyleValue} from './common/utils';
 import {ComplexQueries} from './complex_queries';
 import {NodeListViewer} from './node_list_viewer';
 import {
@@ -205,13 +206,6 @@ export class NodeStylerDialog {
     this.nodeStylerService.updateStyleValue(index, style, `${n}`);
   }
 
-  handleNodeTypeChanged(ruleIndex: number, nodeType: string) {
-    this.nodeStylerService.updateNodeType(
-      ruleIndex,
-      nodeType as SearchNodeType,
-    );
-  }
-
   handleMoveUpRule(index: number) {
     this.nodeStylerService.moveUpRule(index);
   }
@@ -233,7 +227,7 @@ export class NodeStylerDialog {
   }
 
   getSerializedStyleValue(rule: NodeStylerRule, style: Style): string {
-    return rule.styles[style.id]?.value || '';
+    return getNodeStyleValue(rule, style.id);
   }
 
   getMatchedNodes(ruleIndex: number, paneIndex: number): ModelNode[] {

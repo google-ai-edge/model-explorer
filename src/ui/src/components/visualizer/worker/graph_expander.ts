@@ -16,10 +16,19 @@
  * ==============================================================================
  */
 
-import {LAYOUT_MARGIN_X} from '../common/consts';
+import {LAYOUT_MARGIN_X, NODE_LABEL_LINE_HEIGHT} from '../common/consts';
 import {GroupNode, ModelGraph, OpNode} from '../common/model_graph';
-import {NodeDataProviderRunData, ShowOnNodeItemData} from '../common/types';
-import {getDeepestExpandedGroupNodeIds, isGroupNode} from '../common/utils';
+import {
+  NodeDataProviderRunData,
+  Rect,
+  ShowOnNodeItemData,
+} from '../common/types';
+import {
+  getDeepestExpandedGroupNodeIds,
+  getMultiLineLabelExtraHeight,
+  isGroupNode,
+  splitLabel,
+} from '../common/utils';
 
 import {Dagre, DagreGraphInstance} from './dagre_types';
 import {
@@ -84,13 +93,7 @@ export class GraphExpander {
 
       // Grow size.
       const curTargetWidth = rect.width + LAYOUT_MARGIN_X * 2;
-      let curTargetHeight =
-        rect.height + LAYOUT_MARGIN_TOP + LAYOUT_MARGIN_BOTTOM;
-      if (curGroupNode.pinToTopOpNode) {
-        curTargetHeight += this.getPinToTopNodeVerticalSpace(
-          curGroupNode.pinToTopOpNode,
-        );
-      }
+      const curTargetHeight = this.getTargetGroupNodeHeight(rect, curGroupNode);
       curGroupNode.width = curTargetWidth;
       curGroupNode.height = curTargetHeight;
 
@@ -163,13 +166,7 @@ export class GraphExpander {
 
       // Grow size.
       const curTargetWidth = rect.width + LAYOUT_MARGIN_X * 2;
-      let curTargetHeight =
-        rect.height + LAYOUT_MARGIN_TOP + LAYOUT_MARGIN_BOTTOM;
-      if (groupNode.pinToTopOpNode) {
-        curTargetHeight += this.getPinToTopNodeVerticalSpace(
-          groupNode.pinToTopOpNode,
-        );
-      }
+      const curTargetHeight = this.getTargetGroupNodeHeight(rect, groupNode);
       groupNode.width = curTargetWidth;
       groupNode.height = curTargetHeight;
     }
@@ -273,13 +270,7 @@ export class GraphExpander {
 
       // Shrink size.
       const curTargetWidth = rect.width + LAYOUT_MARGIN_X * 2;
-      let curTargetHeight =
-        rect.height + LAYOUT_MARGIN_TOP + LAYOUT_MARGIN_BOTTOM;
-      if (curGroupNode.pinToTopOpNode) {
-        curTargetHeight += this.getPinToTopNodeVerticalSpace(
-          curGroupNode.pinToTopOpNode,
-        );
-      }
+      const curTargetHeight = this.getTargetGroupNodeHeight(rect, curGroupNode);
       curGroupNode.width = curTargetWidth;
       curGroupNode.height = curTargetHeight;
 
@@ -417,6 +408,13 @@ export class GraphExpander {
           (groupNode.globalY || 0) +
           (node.localOffsetY || 0);
 
+        // Move the node down to make space for multi-line node label.
+        const extraLabelHeight =
+          (splitLabel(groupNode.label).length - 1) * NODE_LABEL_LINE_HEIGHT;
+        if (extraLabelHeight > 0) {
+          node.globalY += extraLabelHeight;
+        }
+
         // Move the node down if the current group node has a node pinned to
         // top.
         if (
@@ -479,5 +477,22 @@ export class GraphExpander {
 
   private getPinToTopNodeVerticalSpace(node: OpNode): number {
     return (node.height || 0) + 20;
+  }
+
+  private getTargetGroupNodeHeight(rect: Rect, groupNode: GroupNode): number {
+    const extraMultiLineLabelHeight = getMultiLineLabelExtraHeight(
+      groupNode.label,
+    );
+    let targetHeight =
+      rect.height +
+      LAYOUT_MARGIN_TOP +
+      LAYOUT_MARGIN_BOTTOM +
+      extraMultiLineLabelHeight;
+    if (groupNode.pinToTopOpNode) {
+      targetHeight += this.getPinToTopNodeVerticalSpace(
+        groupNode.pinToTopOpNode,
+      );
+    }
+    return targetHeight;
   }
 }

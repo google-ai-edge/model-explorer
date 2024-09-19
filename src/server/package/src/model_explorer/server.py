@@ -16,10 +16,13 @@
 import json
 import logging
 import os
+import platform
+import queue
 import socket
 import sys
 import tempfile
 import threading
+import time
 import traceback
 import webbrowser
 from importlib import metadata
@@ -28,16 +31,24 @@ from typing import Any, Union
 
 import portpicker
 import requests
-from flask import Flask, make_response, request, send_from_directory
+from flask import Flask, Response, make_response, request, send_from_directory
 from IPython import display
 from packaging.version import parse
 from termcolor import colored, cprint
 
 from .config import ModelExplorerConfig
-from .consts import (DEFAULT_COLAB_HEIGHT, DEFAULT_HOST, DEFAULT_PORT,
-                     PACKAGE_NAME)
+from .consts import (
+    DEFAULT_COLAB_HEIGHT,
+    DEFAULT_HOST,
+    DEFAULT_PORT,
+    PACKAGE_NAME,
+)
 from .extension_manager import ExtensionManager
+from .server_directive_dispatcher import ServerDirectiveDispatcher
+from .server_director import ServerDirector
 from .utils import convert_adapter_response
+
+server_directive_dispatcher = ServerDirectiveDispatcher()
 
 
 def _make_json_response(obj):
@@ -60,15 +71,55 @@ def _get_latest_version_from_repo(package_json_url: str) -> str:
   return str(version)
 
 
+def _get_release_from_github(version: str) -> dict:
+  # Get release data through github API.
+  req = requests.get(
+      f'https://api.github.com/repos/google-ai-edge/model-explorer/releases/tags/model-explorer-v{version}'
+  )
+  req_json = json.loads(req.text.encode('utf-8'))
+
+  # Construct the search term from platform and cpu architecture for finding
+  # asset download url.
+  #
+  # darwin, linux, etc.
+  cur_platform = sys.platform
+  # x64_64, arm64, etc.
+  cur_mach = platform.machine()
+  if cur_mach == 'x86_64':
+    cur_mach = 'x64'
+
+  # Find the download url from assets.
+  asset_search_term = f'{cur_platform}-{cur_mach}-{version}'
+  asset_url = ''
+  assets = req_json.get('assets', [])
+  for asset in assets:
+    browser_download_url = asset.get('browser_download_url', '')
+    if asset_search_term in browser_download_url:
+      asset_url = browser_download_url
+      break
+
+  return {
+      'releaseUrl': req_json.get('html_url', ''),
+      'desktopAppUrl': f'{asset_url}',
+  }
+
+
+def _print_yellow(x):
+  return cprint(x, 'yellow')
+
+
 def _check_new_version(print_msg=True):
   check_new_version_resp = {
       'version': '',
       'runningVersion': '',
+      'releaseUrl': '',
+      'desktopAppUrl': '',
   }
   try:
     # Get version from repo.
     repo_version = _get_latest_version_from_repo(
-        f'https://pypi.python.org/pypi/{PACKAGE_NAME}/json')
+        f'https://pypi.python.org/pypi/{PACKAGE_NAME}/json'
+    )
 
     if repo_version != '0':
       # Compare with the local installed version.
@@ -77,13 +128,22 @@ def _check_new_version(print_msg=True):
       if parse(installed_version) < parse(repo_version):
         check_new_version_resp['version'] = repo_version
         if print_msg:
-          def c_print(x): return cprint(x, 'yellow')
-          c_print(
-              f'\n{PACKAGE_NAME} version {repo_version} is available, and you are using version {installed_version}.')
-          c_print(
-              'Consider upgrading via the following command:')
-          c_print(
-              f'$ pip install -U {PACKAGE_NAME}')
+
+          _print_yellow(
+              f'\n{PACKAGE_NAME} version {repo_version} is available, and you'
+              f' are using version {installed_version}.'
+          )
+          _print_yellow('Consider upgrading via the following command:')
+          _print_yellow(f'$ pip install -U {PACKAGE_NAME}')
+
+        # Get the corresponding release data from github.
+        github_release = _get_release_from_github(repo_version)
+        releaseUrl = github_release['releaseUrl']
+        check_new_version_resp['releaseUrl'] = releaseUrl
+        _print_yellow(f'\nRelease notes: {releaseUrl}')
+        check_new_version_resp['desktopAppUrl'] = github_release[
+            'desktopAppUrl'
+        ]
   except:
     pass
   finally:
@@ -95,7 +155,10 @@ def _is_port_in_use(host: str, port: int) -> bool:
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
       return s.connect_ex((host, port)) == 0
   except socket.gaierror:
-    print(f'"{host}" cannot be resolved. Try using IP address directly: model-explorer --host=127.0.0.1')
+    print(
+        f'"{host}" cannot be resolved. Try using IP address directly:'
+        ' model-explorer --host=127.0.0.1'
+    )
     sys.exit(1)
 
 
@@ -104,14 +167,15 @@ def _js(script):
 
 
 def start(
-        host=DEFAULT_HOST,
-        port=DEFAULT_PORT,
-        config: Union[ModelExplorerConfig, None] = None,
-        no_open_in_browser: bool = False,
-        extensions: list[str] = [],
-        colab_height: int = DEFAULT_COLAB_HEIGHT,
-        cors_host: Union[str, None] = None,
-        skip_health_check: bool = False):
+    host=DEFAULT_HOST,
+    port=DEFAULT_PORT,
+    config: Union[ModelExplorerConfig, None] = None,
+    no_open_in_browser: bool = False,
+    extensions: list[str] = [],
+    colab_height: int = DEFAULT_COLAB_HEIGHT,
+    cors_host: Union[str, None] = None,
+    skip_health_check: bool = False,
+):
   """Starts the local server that serves the web app.
 
   Args:
@@ -125,6 +189,17 @@ def start(
         won't be present if it is None.
     skip_health_check: Whether to skip the health check after server starts.
   """
+
+  # Don't start the server if user wants to reuse an existing server.
+  if (
+      config is not None
+      and config.reuse_server_host != ''
+      and config.reuse_server_port > 0
+  ):
+    director = ServerDirector(config=config)
+    director.update_config()
+    return
+
   # Check whether it is running in colab.
   colab = 'google.colab' in sys.modules or os.getenv('COLAB_RELEASE_TAG')
 
@@ -175,7 +250,8 @@ def start(
   extension_metadata_list = extension_manager.get_extensions_metadata()
   num_extensions = len(extension_metadata_list)
   print(
-      f'Loaded {num_extensions} extension{"" if num_extensions == 1 else "s"}:')
+      f'Loaded {num_extensions} extension{"" if num_extensions == 1 else "s"}:'
+  )
   for extension in extension_metadata_list:
     print(f' - {extension["name"]}')
 
@@ -222,7 +298,8 @@ def start(
       return {}
     graph_index = int(graph_index_str)
     return _make_json_response(
-        convert_adapter_response(config.get_model_explorer_graphs(graph_index)))
+        convert_adapter_response(config.get_model_explorer_graphs(graph_index))
+    )
 
   @app.route('/api/v1/load_node_data')
   def load_node_data():
@@ -233,7 +310,10 @@ def start(
       return {}
     node_data_index = int(node_data_index_str)
     node_data = config.get_node_data(node_data_index)
-    json_str = node_data.to_json_string()
+    if isinstance(node_data, str):
+      json_str = node_data
+    else:
+      json_str = node_data.to_json_string()
     return _make_json_response({'content': json_str})
 
   @app.route('/api/v1/read_text_file')
@@ -249,6 +329,60 @@ def start(
       return _make_json_response({'content': content})
     except Exception as err:
       return _make_json_response({'error': str(err)})
+
+  @app.route('/check_health')
+  def check_health():
+    """Serves check_health request."""
+    return 'model_explorer_ok'
+
+  @app.route('/apipost/v1/update_config', methods=['POST'])
+  def update_config():
+    # TODO(do not submit): Update confnig.
+    config_data = request.json
+    if config and config_data:
+      config.set_transferrable_data(config_data)
+
+      # Ask UI to refresh page with the new url.
+      server_directive_dispatcher.broadcast(
+          json.dumps({
+              'name': 'refreshPage',
+              'url': f'/?data={config.to_url_param_value()}',
+          })
+      )
+
+    return ''
+
+  @app.route('/apistream/server_director')
+  def server_director_stream():
+    def stream():
+      directive_queue = server_directive_dispatcher.listen()
+      try:
+        while True:
+          # Try to get a new message.
+          try:
+            msg = directive_queue.get(block=False)
+            yield f'data: {msg}\n\n'
+          except queue.Empty:
+            # Ignore if there is no new messages.
+            pass
+
+          # Keep the connection alive.
+          yield ': heartbeat\n\n'
+          time.sleep(1)
+      except:
+        # The client closes the connection (i.e. close the browser tab)
+        server_directive_dispatcher.remove_listener(directive_queue)
+
+    headers = {
+        'Access-Control-Allow-Origin': '*',
+        'Cache-Control': 'no-cache',
+    }
+    return Response(
+        stream(),
+        headers=headers,
+        content_type='text/event-stream',
+        mimetype='text/event-stream',
+    )
 
   @app.route('/')
   def send_index_html():
@@ -297,7 +431,9 @@ def start(
     if len(url_params) > 0:
       server_address = f'{server_address}/?{"&".join(url_params)}'
     print(
-        f'\nStarting Model Explorer server at:\n{server_address}\n\nPress Ctrl+C to stop.')
+        f'\nStarting Model Explorer server at:\n{server_address}\n\nPress'
+        ' Ctrl+C to stop.'
+    )
     if not no_open_in_browser:
       webbrowser.open_new_tab(f'{server_address}')
 
@@ -340,16 +476,17 @@ def start(
     if config is not None and config.has_data_to_encode_in_url():
       data_param = f'data={config.to_url_param_value()}'
     replacements = [
-        ("%PORT%", f"{colab_port}"),
-        ("%HOSTED_RUNTIME%", f"{colab}"),
-        ("%HEIGHT%", f"{colab_height}"),
-        ("%DATA_PARAM%", f"{data_param}"),
+        ('%PORT%', f'{colab_port}'),
+        ('%HOSTED_RUNTIME%', f'{colab}'),
+        ('%HEIGHT%', f'{colab_height}'),
+        ('%DATA_PARAM%', f'{data_param}'),
     ]
-    for (k, v) in replacements:
+    for k, v in replacements:
       shell = shell.replace(k, v)
 
-    threading.Thread(target=app.run, kwargs={
-                     'host': '::', 'port': colab_port}).start()
+    threading.Thread(
+        target=app.run, kwargs={'host': '::', 'port': colab_port}
+    ).start()
 
     _js(shell)
 

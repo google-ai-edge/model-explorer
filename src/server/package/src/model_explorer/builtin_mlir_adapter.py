@@ -15,8 +15,7 @@
 
 from typing import Dict
 
-from ai_edge_model_explorer_adapter import \
-    _pywrap_convert_wrapper as convert_wrapper  # type: ignore
+from ai_edge_model_explorer_adapter import _pywrap_convert_wrapper as convert_wrapper  # type: ignore
 
 from .adapter import Adapter, AdapterMetadata
 from .types import ModelExplorerGraphs
@@ -26,10 +25,14 @@ from .utils import convert_builtin_resp
 class BuiltinMlirAdapter(Adapter):
   """Built-in MLIR adapter."""
 
-  metadata = AdapterMetadata(id='builtin_mlir',
-                             name='MLIR adapter',
-                             description='A built-in adapter that converts MLIR file to Model Explorer format.',
-                             fileExts=['mlir', 'mlirbc'])
+  metadata = AdapterMetadata(
+      id='builtin_mlir',
+      name='MLIR adapter',
+      description=(
+          'A built-in adapter that converts MLIR file to Model Explorer format.'
+      ),
+      fileExts=['mlir', 'mlirbc'],
+  )
 
   def __init__(self):
     super().__init__()
@@ -41,6 +44,5 @@ class BuiltinMlirAdapter(Adapter):
       config.const_element_count_limit = settings['const_element_count_limit']
 
     # Run
-    resp_json_str = convert_wrapper.ConvertMlirToJson(
-        config, model_path)
+    resp_json_str = convert_wrapper.ConvertMlirToJson(config, model_path)
     return {'graphCollections': convert_builtin_resp(resp_json_str)}

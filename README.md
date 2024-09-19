@@ -21,6 +21,7 @@ $ pip install ai-edge-model-explorer
 $ model-explorer
 ```
 
+Or give it a try on [Hugging Face](https://huggingface.co/spaces/google/model-explorer) (only support visualizing uploaded models)
 
 Please check out our [Wiki](https://github.com/google-ai-edge/model-explorer/wiki) for
 more details:
