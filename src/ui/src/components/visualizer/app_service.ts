@@ -213,6 +213,7 @@ export class AppService {
     paneIndex: number,
     flattenLayers = false,
     snapshot?: SnapshotData,
+    initialLayout = true,
   ) {
     if (paneIndex === 1 && this.panes().length === 1) {
       this.openGraphInSplitPane(graph);
@@ -247,23 +248,29 @@ export class AppService {
     }
 
     // Process the graph.
-    this.processGraph(paneId, flattenLayers, snapshot);
+    this.processGraph(paneId, flattenLayers, snapshot, initialLayout);
   }
 
   selectGraphInCurrentPane(
     graph: Graph,
     flattenLayers = false,
     snapshot?: SnapshotData,
+    initialLayout = true,
   ) {
     this.selectGraphInPane(
       graph,
       this.getPaneIndexById(this.selectedPaneId()),
       flattenLayers,
       snapshot,
+      initialLayout,
     );
   }
 
-  openGraphInSplitPane(graph: Graph, flattenLayers = false) {
+  openGraphInSplitPane(
+    graph: Graph,
+    flattenLayers = false,
+    initialLayout = true,
+  ) {
     // Add a new pane.
     const paneId = genUid();
     this.paneIdToGraph[paneId] = graph;
@@ -312,6 +319,7 @@ export class AppService {
         this.getGroupNodeChildrenCountThreshold(),
       flattenLayers,
       keepLayersWithASingleChild: this.config()?.keepLayersWithASingleChild,
+      initialLayout,
     };
     this.workerService.worker.postMessage(processGraphReq);
   }
@@ -320,6 +328,7 @@ export class AppService {
     paneId: string,
     flattenLayers = false,
     snapshotToRestore?: SnapshotData,
+    initialLayout = true,
   ) {
     // Store snapshotToResotre into pane if set.
     if (snapshotToRestore != null) {
@@ -344,6 +353,7 @@ export class AppService {
         this.getGroupNodeChildrenCountThreshold(),
       flattenLayers,
       keepLayersWithASingleChild: this.config()?.keepLayersWithASingleChild,
+      initialLayout,
     };
     this.workerService.worker.postMessage(processGraphReq);
   }

@@ -59,6 +59,7 @@ export declare interface ProcessGraphRequest extends WorkerEventBase {
   groupNodeChildrenCountThreshold?: number;
   flattenLayers?: boolean;
   keepLayersWithASingleChild?: boolean;
+  initialLayout?: boolean;
 }
 
 /** The response for processing an input graph. */

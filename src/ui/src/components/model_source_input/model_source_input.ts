@@ -60,7 +60,7 @@ import {
   ModelItemStatus,
   ModelItemType,
 } from '../../common/types';
-import {isInternalStoragePath} from '../../common/utils';
+import {getElectronApi, isInternalStoragePath} from '../../common/utils';
 import {AdapterExtensionService} from '../../services/adapter_extension_service';
 import {ModelSource, UrlService} from '../../services/url_service';
 import {Bubble} from '../bubble/bubble';
@@ -383,22 +383,47 @@ export class ModelSourceInput {
     const modelItems: ModelItem[] = [];
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
+      const meElectronApi = getElectronApi();
+      let filePath = '';
+      // When running in electron app, a `pathForFile` api is exposed from its
+      // preload script to the renderer process (here) that can be used to get
+      // the absolute path of a file.
+      if (meElectronApi) {
+        const pathForFileFn = meElectronApi['pathForFile'];
+        filePath = pathForFileFn?.(file) || '';
+      }
       const adapterCandidates = getAdapterCandidates(
         file.name,
         this.adapterExtensionService,
         IS_EXTERNAL,
       );
-      modelItems.push({
-        path: file.name,
-        type: ModelItemType.LOCAL,
-        status: signal<ModelItemStatus>(ModelItemStatus.NOT_STARTED),
-        selected: adapterCandidates.length > 0,
-        file,
-        adapterCandidates,
-        // TODO: store the adapter selection in local storage and load it here.
-        selectedAdapter:
-          adapterCandidates.length > 0 ? adapterCandidates[0] : undefined,
-      });
+      if (filePath !== '') {
+        modelItems.push({
+          path: filePath,
+          type: this.isInternal
+            ? ModelItemType.REMOTE
+            : ModelItemType.FILE_PATH,
+          status: signal<ModelItemStatus>(ModelItemStatus.NOT_STARTED),
+          selected: adapterCandidates.length > 0,
+          adapterCandidates,
+          // TODO: store the adapter selection in local storage and load
+          // it here.
+          selectedAdapter:
+            adapterCandidates.length > 0 ? adapterCandidates[0] : undefined,
+        });
+      } else {
+        modelItems.push({
+          path: file.name,
+          type: ModelItemType.LOCAL,
+          status: signal<ModelItemStatus>(ModelItemStatus.NOT_STARTED),
+          selected: adapterCandidates.length > 0,
+          file,
+          adapterCandidates,
+          // TODO: store the adapter selection in local storage and load it here.
+          selectedAdapter:
+            adapterCandidates.length > 0 ? adapterCandidates[0] : undefined,
+        });
+      }
     }
     this.addModelItems(modelItems);
   }

@@ -16,7 +16,11 @@
  * ==============================================================================
  */
 
-import {Graph, GraphCollection, GraphCollectionFromBuiltinAdapters,} from '../components/visualizer/common/input_graph';
+import {
+  Graph,
+  GraphCollection,
+  GraphCollectionFromBuiltinAdapters,
+} from '../components/visualizer/common/input_graph';
 
 import {loadTfjsModel} from './tfjs';
 
@@ -27,8 +31,8 @@ export function isInternalStoragePath(path: string): boolean {
 
 /** Processes uploaded json file. */
 export async function processUploadedJsonFile(
-    file: File,
-    ): Promise<GraphCollection[]> {
+  file: File,
+): Promise<GraphCollection[]> {
   return new Promise<GraphCollection[]>((resolve, reject) => {
     const fileReader = new FileReader();
     fileReader.onload = (event) => {
@@ -47,10 +51,10 @@ export async function processUploadedJsonFile(
 
 /** Processes the given json string. */
 export function processJson(
-    collectionLabel: string,
-    // tslint:disable-next-line:no-any Allow custom types.
-    json: any,
-    ): {graphCollections?: GraphCollection[]; error?: string;} {
+  collectionLabel: string,
+  // tslint:disable-next-line:no-any Allow custom types.
+  json: any,
+): {graphCollections?: GraphCollection[]; error?: string} {
   if (json['modelTopology'] == null) {
     return loadGraphsJson(json, collectionLabel);
   } else {
@@ -61,10 +65,10 @@ export function processJson(
 
 /** Loads graphs json. */
 export function loadGraphsJson(
-    // tslint:disable-next-line:no-any JSON dataj.
-    json: any,
-    fileName: string,
-    ): {graphCollections?: GraphCollection[]; error?: string} {
+  // tslint:disable-next-line:no-any JSON dataj.
+  json: any,
+  fileName: string,
+): {graphCollections?: GraphCollection[]; error?: string} {
   // Use it directly if it is a GraphCollection.
   if (json['label'] != null && json['graphs'] != null) {
     return {graphCollections: [json as GraphCollection]};
@@ -73,18 +77,18 @@ export function loadGraphsJson(
   else if (Array.isArray(json) && json[0]['subgraphs'] != null) {
     return {
       graphCollections:
-          convertGraphCollectionsFromBuiltinAdptersToGraphCollections(
-              json as GraphCollectionFromBuiltinAdapters[],
-              fileName,
-              ),
+        convertGraphCollectionsFromBuiltinAdptersToGraphCollections(
+          json as GraphCollectionFromBuiltinAdapters[],
+          fileName,
+        ),
     };
   }
   // The json is a list of graphs.
   else if (
-      Array.isArray(json) &&
-      (json.length === 0 ||
-       (json.length > 0 && json[0]['id'] != null &&
-        json[0]['nodes'] != null))) {
+    Array.isArray(json) &&
+    (json.length === 0 ||
+      (json.length > 0 && json[0]['id'] != null && json[0]['nodes'] != null))
+  ) {
     return {
       graphCollections: [
         {
@@ -103,13 +107,19 @@ export function loadGraphsJson(
  * GraphCollection.
  */
 export function convertGraphCollectionsFromBuiltinAdptersToGraphCollections(
-    collections: GraphCollectionFromBuiltinAdapters[],
-    fileName: string,
-    ): GraphCollection[] {
+  collections: GraphCollectionFromBuiltinAdapters[],
+  fileName: string,
+): GraphCollection[] {
   return collections.map((item) => {
     return {
       label: item.label === '' ? fileName : `${fileName} (${item.label})`,
       graphs: item.subgraphs,
     };
   });
+}
+
+/** Gets the api exposed by electron's preload script. */
+export function getElectronApi() {
+  // tslint:disable-next-line:no-any Allow arbitrary types.
+  return (window as any)['meElectronApi'];
 }
