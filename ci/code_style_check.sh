@@ -62,7 +62,7 @@ LICENSE_CHECK_RESULT=$?
 ############################################################
 
 PYINK_COMMAND="pyink --pyink-use-majority-quotes --pyink-indentation=2 --preview --unstable --line-length 80 
-      --extend-exclude .downloads --check ./"
+      --extend-exclude .downloads --extend-exclude '\.pyi' --check ./"
 
 echo "Testing python formatting with ${PYINK_COMMAND}"
 ${PYINK_COMMAND}
