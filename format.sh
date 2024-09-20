@@ -20,5 +20,4 @@ set -ex
 pip install pyink
 
 pyink --pyink-use-majority-quotes --pyink-indentation=2 --preview --unstable --line-length 80 \
-      --extend-exclude .downloads \
-    ./
+      --extend-exclude .downloads --extend-exclude '\.pyi' ./
