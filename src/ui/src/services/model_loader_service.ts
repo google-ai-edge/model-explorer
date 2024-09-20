@@ -22,6 +22,8 @@ import {GRAPHS_MODEL_SOURCE_PREFIX} from '../common/consts';
 import {
   AdapterConvertCommand,
   AdapterConvertResponse,
+  type AdapterExecuteCommand,
+  type AdapterExecuteResponse,
   type AdapterOverrideCommand,
   type AdapterOverrideResponse,
 } from '../common/extension_command';
@@ -70,6 +72,8 @@ export class ModelLoaderService implements ModelLoaderServiceInterface {
   readonly models = signal<ModelItem[]>([]);
 
   readonly changesToUpload = signal<ChangesPerGraphAndNode>({});
+
+  readonly graphErrors = signal<string[] | undefined>(undefined);
 
   constructor(
     private readonly settingsService: SettingsService,
@@ -352,6 +356,42 @@ export class ModelLoaderService implements ModelLoaderServiceInterface {
       result = this.processAdapterConvertResponse(cmdResp, fileName);
     }
     modelItem.status.set(ModelItemStatus.DONE);
+    return result;
+  }
+
+  private async sentExecuteRequest(
+    modelItem: ModelItem,
+    path: string
+  ) {
+    let result: GraphCollection | undefined = undefined;
+
+    modelItem.status.set(ModelItemStatus.PROCESSING);
+
+    const executeCommand: AdapterExecuteCommand = {
+      cmdId: 'execute',
+      extensionId: modelItem.selectedAdapter?.id ?? '',
+      modelPath: path,
+      settings: {},
+      deleteAfterConversion: false
+    }
+
+    const {cmdResp, otherError: cmdError} =
+      await this.extensionService.sendCommandToExtension<AdapterExecuteResponse>(
+        executeCommand,
+      );
+    const error = cmdResp?.error || cmdError;
+
+    if (error) {
+      modelItem.selected = false;
+      modelItem.status.set(ModelItemStatus.ERROR);
+      modelItem.errorMessage = error;
+      return  undefined;
+    } else if (cmdResp) {
+      // TODO: process response
+    }
+
+    modelItem.status.set(ModelItemStatus.DONE);
+
     return result;
   }
 

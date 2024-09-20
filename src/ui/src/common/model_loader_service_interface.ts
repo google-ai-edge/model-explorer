@@ -33,5 +33,6 @@ export interface ModelLoaderServiceInterface {
   get loadedGraphCollections(): WritableSignal<GraphCollection[] | undefined>;
   get models(): WritableSignal<ModelItem[]>;
   get changesToUpload(): WritableSignal<ChangesPerGraphAndNode>;
+  get graphErrors(): WritableSignal<string[] | undefined>;
   get hasChangesToUpload(): boolean;
 }

@@ -48,6 +48,13 @@ limitations under the License.
     </div>
   }
 
+  @if (!hasChangesToUpload && !graphHasErrors) {
+    <div class="mat-icon-container" matTooltip="Upload processed graphs json to server"
+        (click)="handleClickExecuteGraph()">
+      <mat-icon>play</mat-icon>
+    </div>
+  }
+
   @if (enableExportToResource) {
     <div class="mat-icon-container" matTooltip="Export to resource"
         (click)="handleClickExportGraphJsonToResource()">

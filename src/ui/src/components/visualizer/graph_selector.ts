@@ -167,10 +167,6 @@ export class GraphSelector {
     return pane.modelGraph.id;
   });
 
-  get hasChangesToUpload() {
-    return this.modelLoaderService.hasChangesToUpload;
-  }
-
   constructor(
     @Inject('ModelLoaderService')
     private readonly modelLoaderService: ModelLoaderServiceInterface,
@@ -202,6 +198,10 @@ export class GraphSelector {
     ref.instance.onClose.subscribe(() => {
       overlayRef.dispose();
     });
+  }
+
+  async handleClickExecuteGraph() {
+    // TODO: send request to server
   }
 
   async handleClickUploadGraph() {
@@ -238,6 +238,8 @@ export class GraphSelector {
         }));
 
         this.modelLoaderService.changesToUpload.update(() => ({}));
+
+        // TODO: add errors handling
       }
     }
   }
@@ -296,6 +298,14 @@ export class GraphSelector {
 
   getGraphLabel(graph: Graph): string {
     return `${graph.id} (${graph.nodes.length} nodes)`;
+  }
+
+  get hasChangesToUpload() {
+    return this.modelLoaderService.hasChangesToUpload;
+  }
+
+  get graphHasErrors() {
+    return this.modelLoaderService.graphErrors() !== undefined;
   }
 
   get graphSelectorDropdownWidth(): number {

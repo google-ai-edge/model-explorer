@@ -56,3 +56,19 @@ export declare interface AdapterOverrideResponse {
   graphCollection?: GraphCollection;
   error?: string;
 }
+
+/** Adapter's "execute" command. */
+export declare interface AdapterExecuteCommand extends ExtensionCommand {
+  cmdId: 'execute';
+  modelPath: string;
+  settings: Record<string, any>;
+  deleteAfterConversion: boolean;
+}
+
+/** Adapter's "execute" command response. */
+export declare interface AdapterExecuteResponse {
+  stdout: string;
+  log_file: string;
+  perf_trace: string;
+  error?: string;
+}
