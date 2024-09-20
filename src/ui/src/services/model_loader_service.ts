@@ -84,6 +84,46 @@ export class ModelLoaderService implements ModelLoaderServiceInterface {
     return Object.keys(this.changesToUpload()).length > 0;
   }
 
+  async executeModel(modelItem: ModelItem) {
+    modelItem.status.set(ModelItemStatus.PROCESSING);
+    let updatedPath = modelItem.path;
+
+    // User-entered file path.
+    if (modelItem.type === ModelItemType.FILE_PATH) {
+      await this.sendExecuteRequest(
+        modelItem,
+        updatedPath,
+      );
+    }
+    // Upload or graph jsons from server.
+    else if (
+      modelItem.type === ModelItemType.LOCAL ||
+      modelItem.type === ModelItemType.GRAPH_JSONS_FROM_SERVER
+    ) {
+      const file = modelItem.file!;
+
+      // Upload the file
+      modelItem.status.set(ModelItemStatus.UPLOADING);
+      const {path, error: uploadError} = await this.uploadModelFile(file);
+      if (uploadError) {
+        modelItem.selected = false;
+        modelItem.status.set(ModelItemStatus.ERROR);
+        modelItem.errorMessage = uploadError;
+        return undefined;
+      }
+
+      updatedPath = path;
+
+      // Send request to backend for processing.
+      await this.sendExecuteRequest(
+        modelItem,
+        updatedPath,
+      );
+    }
+
+    modelItem.status.set(ModelItemStatus.DONE);
+  }
+
   async overrideModel(modelItem: ModelItem, fieldsToUpdate?: ChangesPerGraphAndNode) {
     modelItem.status.set(ModelItemStatus.PROCESSING);
     let result: GraphCollection | undefined = undefined;
@@ -359,7 +399,7 @@ export class ModelLoaderService implements ModelLoaderServiceInterface {
     return result;
   }
 
-  private async sentExecuteRequest(
+  private async sendExecuteRequest(
     modelItem: ModelItem,
     path: string
   ) {

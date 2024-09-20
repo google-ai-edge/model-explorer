@@ -201,7 +201,14 @@ export class GraphSelector {
   }
 
   async handleClickExecuteGraph() {
-    // TODO: send request to server
+    const curPane = this.appService.getSelectedPane()
+    const curCollectionLabel = curPane?.modelGraph?.collectionLabel;
+    const models = this.modelLoaderService.models();
+    const curModel = models.find(({ label }) => label === curCollectionLabel);
+
+    if (curModel) {
+      await this.modelLoaderService.executeModel(curModel);
+    }
   }
 
   async handleClickUploadGraph() {

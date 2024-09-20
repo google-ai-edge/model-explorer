@@ -29,6 +29,7 @@ export type ChangesPerGraphAndNode = Record<string, ChangesPerNode>;
 /** The interface of model load service. */
 export interface ModelLoaderServiceInterface {
   loadModels(modelItems: ModelItem[]): Promise<void>;
+  executeModel(modelItem: ModelItem): Promise<void>;
   overrideModel(modelItem: ModelItem, fieldsToUpdate: Record<string, any>): Promise<GraphCollection | undefined>;
   get loadedGraphCollections(): WritableSignal<GraphCollection[] | undefined>;
   get models(): WritableSignal<ModelItem[]>;
