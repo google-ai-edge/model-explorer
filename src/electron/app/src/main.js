@@ -218,7 +218,6 @@ function createMainWindow() {
   }
   mainWindow.maximize();
   mainWindow.show();
-  mainWindow.webContents.openDevTools();
 
   log.info('Main windown shown');
 }
