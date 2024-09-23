@@ -16,8 +16,8 @@
  * ==============================================================================
  */
 
-const {app, BrowserWindow, Menu, dialog} = require('electron');
-const log = require('electron-log')
+const {app, BrowserWindow, Menu, dialog, shell} = require('electron');
+const log = require('electron-log');
 const {spawn} = require('node:child_process');
 const path = require('node:path');
 const http = require('http');
@@ -204,6 +204,13 @@ function createMainWindow() {
     filePathToOpen = '';
   });
 
+  // Open the url with "target=_blank" in external browser instead of a electron
+  // window.
+  mainWindow.webContents.setWindowOpenHandler(({url}) => {
+    shell.openExternal(url);
+    return {action: 'deny'};
+  });
+
   if (filePathToOpen !== '') {
     loadFiles([filePathToOpen]);
   } else {
@@ -211,6 +218,7 @@ function createMainWindow() {
   }
   mainWindow.maximize();
   mainWindow.show();
+  mainWindow.webContents.openDevTools();
 
   log.info('Main windown shown');
 }
