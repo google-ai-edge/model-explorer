@@ -9,8 +9,8 @@
     "make": "electron-forge make",
     "darwin-sign": "node darwin_sign.js"
   },
-  "author": "Jing Jin",
-  "license": "ISC",
+  "author": "Google",
+  "license": "Apache-2.0",
   "description": "",
   "devDependencies": {
     "@electron-forge/cli": "^7.4.0",
@@ -23,10 +23,10 @@
     "@electron-forge/plugin-fuses": "^7.4.0",
     "@electron/fuses": "^1.8.0",
     "@electron/osx-sign": "^1.0.5",
-    "electron": "^32.0.1",
-    "electron-log": "5.2.0"
+    "electron": "^32.0.1"
   },
   "dependencies": {
-    "electron-squirrel-startup": "^1.0.1"
+    "electron-squirrel-startup": "^1.0.1",
+    "electron-log": "5.2.0"
   }
 }

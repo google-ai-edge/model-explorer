@@ -26,7 +26,8 @@ module.exports = {
     asar: false,
     ignore: [
       /^\/icon_sets/,
-      /^\/node_modules/,
+      /^\/node_modules\/@.*/,
+      /^\/node_modules\/\.package-lock\.json/,
       /^\/.gitignore/,
       /^\/forge.config.js/,
     ],
