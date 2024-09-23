@@ -152,6 +152,7 @@ async function startServer() {
   );
   meServerProcess = spawn(serverBinary, [
     '--extensions=model_explorer_onnx',
+    '--host=127.0.0.1',
     '--no_open_in_browser',
     `--port=${meServerPort}`,
   ]);
@@ -163,7 +164,7 @@ async function waitForServer() {
   return new Promise((resolve) => {
     const checkStatus = () => {
       const options = {
-        hostname: 'localhost',
+        hostname: '127.0.0.1',
         port: meServerPort,
         path: '/',
         method: 'GET',
@@ -206,7 +207,7 @@ function createMainWindow() {
   if (filePathToOpen !== '') {
     loadFiles([filePathToOpen]);
   } else {
-    mainWindow.loadURL(`http://localhost:${meServerPort}`);
+    mainWindow.loadURL(`http://127.0.0.1:${meServerPort}`);
   }
   mainWindow.maximize();
   mainWindow.show();
@@ -265,7 +266,7 @@ function loadFiles(paths) {
     }),
   };
   mainWindow.loadURL(
-    `http://localhost:${meServerPort}/?data=${encodeURIComponent(
+    `http://127.0.0.1:${meServerPort}/?data=${encodeURIComponent(
       JSON.stringify(data),
     )}`,
   );
