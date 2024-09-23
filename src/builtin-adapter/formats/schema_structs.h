@@ -16,6 +16,7 @@
 #ifndef TENSORFLOW_COMPILER_MLIR_LITE_EXPERIMENTAL_GOOGLE_TOOLING_FORMATS_SCHEMA_STRUCTS_H_
 #define TENSORFLOW_COMPILER_MLIR_LITE_EXPERIMENTAL_GOOGLE_TOOLING_FORMATS_SCHEMA_STRUCTS_H_
 
+#include <optional>
 #include <string>
 #include <utility>
 #include <vector>
@@ -64,6 +65,17 @@ struct GraphEdge {
   static const char kEdgeMetadata[];
 };
 
+// Configuration for a graph node.
+struct GraphNodeConfig {
+  // Whether to pin the node to the top of the group it belongs to.
+  bool pin_to_group_top = false;
+
+  llvm::json::Object Json();
+
+ private:
+  static const char kPinToGroupTop[];
+};
+
 struct GraphNode {
   std::string node_id;
   std::string node_label;
@@ -73,6 +85,7 @@ struct GraphNode {
   std::vector<GraphEdge> incoming_edges;
   std::vector<Metadata> inputs_metadata;
   std::vector<Metadata> outputs_metadata;
+  std::optional<GraphNodeConfig> config;
 
   llvm::json::Object Json();
 
@@ -85,6 +98,7 @@ struct GraphNode {
   static const char kIncomingEdges[];
   static const char kInputsMetadata[];
   static const char kOutputsMetadata[];
+  static const char kConfig[];
 };
 
 struct Subgraph {
