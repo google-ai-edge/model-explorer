@@ -23,7 +23,8 @@
     "@electron-forge/plugin-fuses": "^7.4.0",
     "@electron/fuses": "^1.8.0",
     "@electron/osx-sign": "^1.0.5",
-    "electron": "^32.0.1"
+    "electron": "^32.0.1",
+    "electron-log": "5.2.0"
   },
   "dependencies": {
     "electron-squirrel-startup": "^1.0.1"

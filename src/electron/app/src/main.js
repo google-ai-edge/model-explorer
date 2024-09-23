@@ -17,6 +17,7 @@
  */
 
 const {app, BrowserWindow, Menu, dialog} = require('electron');
+const log = require('electron-log')
 const {spawn} = require('node:child_process');
 const path = require('node:path');
 const http = require('http');
@@ -78,6 +79,8 @@ app.whenReady().then(async () => {
 });
 
 function createMenu() {
+  log.info('Creating menu');
+
   // setting up the menu with just two items
   const menu = Menu.buildFromTemplate([
     {
@@ -117,6 +120,8 @@ function createMenu() {
 }
 
 function showSplashScreen() {
+  log.info('Showing splash screen');
+
   splashScreen = new BrowserWindow({
     width: 300,
     height: 300,
@@ -128,12 +133,16 @@ function showSplashScreen() {
 }
 
 function hideSplashScreen() {
+  log.info('Hiding splash screen');
   splashScreen?.close();
 }
 
 async function startServer() {
   // Find a free port and start ME server at that port.
+  log.info('Getting free port');
   meServerPort = await getFreePort();
+  log.info(`Free port: ${meServerPort}`);
+
   const baseDir = isDev()
     ? process.cwd()
     : path.join(process.resourcesPath, 'app');
@@ -146,9 +155,11 @@ async function startServer() {
     '--no_open_in_browser',
     `--port=${meServerPort}`,
   ]);
+  log.info('Server process spawned');
 }
 
 async function waitForServer() {
+  log.info('Waiting for server');
   return new Promise((resolve) => {
     const checkStatus = () => {
       const options = {
@@ -178,6 +189,8 @@ async function waitForServer() {
 }
 
 function createMainWindow() {
+  log.info('Creating main window');
+
   mainWindow = new BrowserWindow({
     show: false,
     webPreferences: {
@@ -197,6 +210,8 @@ function createMainWindow() {
   }
   mainWindow.maximize();
   mainWindow.show();
+
+  log.info('Main windown shown');
 }
 
 async function getFreePort() {
