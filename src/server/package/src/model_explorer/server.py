@@ -128,7 +128,6 @@ def _check_new_version(print_msg=True):
       if parse(installed_version) < parse(repo_version):
         check_new_version_resp['version'] = repo_version
         if print_msg:
-
           _print_yellow(
               f'\n{PACKAGE_NAME} version {repo_version} is available, and you'
               f' are using version {installed_version}.'
@@ -140,10 +139,12 @@ def _check_new_version(print_msg=True):
         github_release = _get_release_from_github(repo_version)
         releaseUrl = github_release['releaseUrl']
         check_new_version_resp['releaseUrl'] = releaseUrl
-        _print_yellow(f'\nRelease notes: {releaseUrl}')
         check_new_version_resp['desktopAppUrl'] = github_release[
             'desktopAppUrl'
         ]
+
+        if print_msg:
+          _print_yellow(f'\nRelease notes: {releaseUrl}')
   except:
     pass
   finally:
