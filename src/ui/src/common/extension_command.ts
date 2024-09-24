@@ -47,7 +47,7 @@ export declare interface AdapterOverrideCommand extends ExtensionCommand {
   cmdId: 'override';
   modelPath: string;
   settings: {
-    graphCollection: GraphCollection;
+    graphs: Graph[];
     changes: ChangesPerNode;
   };
   deleteAfterConversion: boolean;

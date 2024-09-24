@@ -451,7 +451,7 @@ export class ModelLoaderService implements ModelLoaderServiceInterface {
       extensionId: modelItem.selectedAdapter?.id || '',
       modelPath: path,
       settings: {
-        graphCollection,
+        graphs: graphCollection.graphs,
         changes: fieldsToUpdate
       },
       deleteAfterConversion: false
