@@ -56,7 +56,7 @@ export declare interface AdapterOverrideCommand extends ExtensionCommand {
 /** Adapter's "override" command response. */
 export declare interface AdapterOverrideResponse {
   success: boolean;
-  graphCollection?: GraphCollection;
+  graphs?: Graph[];
   error?: string;
 }
 

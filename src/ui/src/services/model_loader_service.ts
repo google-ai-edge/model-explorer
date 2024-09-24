@@ -495,10 +495,10 @@ export class ModelLoaderService implements ModelLoaderServiceInterface {
     resp: AdapterOverrideResponse,
     label: string,
   ): GraphCollection | undefined {
-    if (resp.graphCollection) {
+    if (resp.graphs) {
       return {
-        label: resp.graphCollection.label === '' ? label : `${label} (${resp.graphCollection.label})`,
-        graphs: resp.graphCollection.graphs,
+        label,
+        graphs: resp.graphs,
       }
     }
 
