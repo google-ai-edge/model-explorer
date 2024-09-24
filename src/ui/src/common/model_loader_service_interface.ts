@@ -23,14 +23,14 @@ import type { KeyValue } from '../components/visualizer/common/types';
 
 import {ModelItem} from './types';
 
-type ChangesPerNode = Record<string, KeyValue[]>;
+export type ChangesPerNode = Record<string, KeyValue[]>;
 export type ChangesPerGraphAndNode = Record<string, ChangesPerNode>;
 
 /** The interface of model load service. */
 export interface ModelLoaderServiceInterface {
   loadModels(modelItems: ModelItem[]): Promise<void>;
   executeModel(modelItem: ModelItem): Promise<void>;
-  overrideModel(modelItem: ModelItem, fieldsToUpdate: Record<string, any>): Promise<GraphCollection | undefined>;
+  overrideModel(modelItem: ModelItem, graphCollection: GraphCollection, fieldsToUpdate: ChangesPerNode): Promise<GraphCollection | undefined>;
   get loadedGraphCollections(): WritableSignal<GraphCollection[] | undefined>;
   get models(): WritableSignal<ModelItem[]>;
   get changesToUpload(): WritableSignal<ChangesPerGraphAndNode>;

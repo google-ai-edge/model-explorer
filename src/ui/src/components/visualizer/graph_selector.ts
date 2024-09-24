@@ -214,12 +214,17 @@ export class GraphSelector {
   async handleClickUploadGraph() {
     const curPane = this.appService.getSelectedPane()
     const curCollectionLabel = curPane?.modelGraph?.collectionLabel;
+    const curCollection = this.appService.curGraphCollections().find(({ label }) =>label === curCollectionLabel);
     const models = this.modelLoaderService.models();
     const curModel = models.find(({ label }) => label === curCollectionLabel);
     const changesToUpload = this.modelLoaderService.changesToUpload()[curCollectionLabel ?? ''];
 
-    if (curModel && changesToUpload) {
-      const updatedGraphCollection = await this.modelLoaderService.overrideModel(curModel, changesToUpload);
+    if (curModel && curCollection && changesToUpload) {
+      const updatedGraphCollection = await this.modelLoaderService.overrideModel(
+        curModel,
+        curCollection,
+        changesToUpload
+      );
 
       if (updatedGraphCollection) {
         this.modelLoaderService.loadedGraphCollections.update((prevGraphCollections) => {

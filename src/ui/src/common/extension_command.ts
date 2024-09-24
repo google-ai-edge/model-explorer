@@ -17,7 +17,7 @@
  */
 
 import {Graph, GraphCollection,} from '../components/visualizer/common/input_graph';
-import type { ChangesPerGraphAndNode } from './model_loader_service_interface.js';
+import type { ChangesPerNode } from './model_loader_service_interface.js';
 
 /** A command sent to extension. */
 export declare interface ExtensionCommand {
@@ -46,7 +46,10 @@ export declare interface AdapterConvertResponse {
 export declare interface AdapterOverrideCommand extends ExtensionCommand {
   cmdId: 'override';
   modelPath: string;
-  settings: ChangesPerGraphAndNode;
+  settings: {
+    graphCollection: GraphCollection;
+    changes: ChangesPerNode;
+  };
   deleteAfterConversion: boolean;
 }
 

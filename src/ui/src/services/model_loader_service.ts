@@ -27,7 +27,7 @@ import {
   type AdapterOverrideCommand,
   type AdapterOverrideResponse,
 } from '../common/extension_command';
-import {ModelLoaderServiceInterface, type ChangesPerGraphAndNode} from '../common/model_loader_service_interface';
+import {ModelLoaderServiceInterface, type ChangesPerGraphAndNode, type ChangesPerNode} from '../common/model_loader_service_interface';
 import {
   InternalAdapterExtId,
   ModelItem,
@@ -124,46 +124,46 @@ export class ModelLoaderService implements ModelLoaderServiceInterface {
     modelItem.status.set(ModelItemStatus.DONE);
   }
 
-  async overrideModel(modelItem: ModelItem, fieldsToUpdate?: ChangesPerGraphAndNode) {
+  async overrideModel(modelItem: ModelItem, graphCollection: GraphCollection, fieldsToUpdate: ChangesPerNode) {
     modelItem.status.set(ModelItemStatus.PROCESSING);
     let result: GraphCollection | undefined = undefined;
     let updatedPath = modelItem.path;
 
-    if (fieldsToUpdate) {
-      // User-entered file path.
-      if (modelItem.type === ModelItemType.FILE_PATH) {
-        result = await this.sendOverrideRequest(
-          modelItem,
-          updatedPath,
-          fieldsToUpdate,
-        );
+    // User-entered file path.
+    if (modelItem.type === ModelItemType.FILE_PATH) {
+      result = await this.sendOverrideRequest(
+        modelItem,
+        updatedPath,
+        graphCollection,
+        fieldsToUpdate,
+      );
+    }
+    // Upload or graph jsons from server.
+    else if (
+      modelItem.type === ModelItemType.LOCAL ||
+      modelItem.type === ModelItemType.GRAPH_JSONS_FROM_SERVER
+    ) {
+      const file = modelItem.file!;
+
+      // Upload the file
+      modelItem.status.set(ModelItemStatus.UPLOADING);
+      const {path, error: uploadError} = await this.uploadModelFile(file);
+      if (uploadError) {
+        modelItem.selected = false;
+        modelItem.status.set(ModelItemStatus.ERROR);
+        modelItem.errorMessage = uploadError;
+        return undefined;
       }
-      // Upload or graph jsons from server.
-      else if (
-        modelItem.type === ModelItemType.LOCAL ||
-        modelItem.type === ModelItemType.GRAPH_JSONS_FROM_SERVER
-      ) {
-        const file = modelItem.file!;
 
-        // Upload the file
-        modelItem.status.set(ModelItemStatus.UPLOADING);
-        const {path, error: uploadError} = await this.uploadModelFile(file);
-        if (uploadError) {
-          modelItem.selected = false;
-          modelItem.status.set(ModelItemStatus.ERROR);
-          modelItem.errorMessage = uploadError;
-          return undefined;
-        }
+      updatedPath = path;
 
-        updatedPath = path;
-
-        // Send request to backend for processing.
-        result = await this.sendOverrideRequest(
-          modelItem,
-          updatedPath,
-          fieldsToUpdate,
-        );
-      }
+      // Send request to backend for processing.
+      result = await this.sendOverrideRequest(
+        modelItem,
+        updatedPath,
+        graphCollection,
+        fieldsToUpdate,
+      );
 
       this.models.update((curModels) => {
         curModels.push({
@@ -438,6 +438,7 @@ export class ModelLoaderService implements ModelLoaderServiceInterface {
   private async sendOverrideRequest(
     modelItem: ModelItem,
     path: string,
+    graphCollection: GraphCollection,
     fieldsToUpdate: Record<string, any>
   ) {
 
@@ -449,7 +450,10 @@ export class ModelLoaderService implements ModelLoaderServiceInterface {
       cmdId: 'override',
       extensionId: modelItem.selectedAdapter?.id || '',
       modelPath: path,
-      settings: fieldsToUpdate,
+      settings: {
+        graphCollection,
+        changes: fieldsToUpdate
+      },
       deleteAfterConversion: false
     };
 
