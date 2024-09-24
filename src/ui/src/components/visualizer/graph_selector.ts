@@ -207,7 +207,26 @@ export class GraphSelector {
     const curModel = models.find(({ label }) => label === curCollectionLabel);
 
     if (curModel) {
+      // TODO: process response
       await this.modelLoaderService.executeModel(curModel);
+
+      this.modelLoaderService.loadedGraphCollections.update((prevGraphCollections) => {
+          if (!prevGraphCollections) {
+            return undefined;
+          }
+
+          return [...prevGraphCollections];
+        });
+
+        this.urlService.setUiState(undefined);
+        this.urlService.setModels(models.map(({ path, selectedAdapter }) => {
+          return {
+            url: path,
+            adapterId: selectedAdapter?.id
+          };
+        }));
+
+        this.modelLoaderService.changesToUpload.update(() => ({}));
     }
   }
 

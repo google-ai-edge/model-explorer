@@ -425,7 +425,7 @@ export class ModelLoaderService implements ModelLoaderServiceInterface {
       modelItem.selected = false;
       modelItem.status.set(ModelItemStatus.ERROR);
       modelItem.errorMessage = error;
-      return  undefined;
+      return undefined;
     } else if (cmdResp) {
       // TODO: process response
     }
