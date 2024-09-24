@@ -27,7 +27,7 @@ import {
   type AdapterOverrideCommand,
   type AdapterOverrideResponse,
 } from '../common/extension_command';
-import {ModelLoaderServiceInterface, type ChangesPerGraphAndNode, type ChangesPerNode} from '../common/model_loader_service_interface';
+import {ModelLoaderServiceInterface, type ChangesPerGraphAndNode, type ChangesPerNode, type ExecutionCommand} from '../common/model_loader_service_interface';
 import {
   InternalAdapterExtId,
   ModelItem,
@@ -87,10 +87,11 @@ export class ModelLoaderService implements ModelLoaderServiceInterface {
   async executeModel(modelItem: ModelItem) {
     modelItem.status.set(ModelItemStatus.PROCESSING);
     let updatedPath = modelItem.path;
+    let result: ExecutionCommand | undefined = undefined;
 
     // User-entered file path.
     if (modelItem.type === ModelItemType.FILE_PATH) {
-      await this.sendExecuteRequest(
+      result = await this.sendExecuteRequest(
         modelItem,
         updatedPath,
       );
@@ -115,13 +116,15 @@ export class ModelLoaderService implements ModelLoaderServiceInterface {
       updatedPath = path;
 
       // Send request to backend for processing.
-      await this.sendExecuteRequest(
+      result = await this.sendExecuteRequest(
         modelItem,
         updatedPath,
       );
     }
 
     modelItem.status.set(ModelItemStatus.DONE);
+
+    return result;
   }
 
   async overrideModel(modelItem: ModelItem, graphCollection: GraphCollection, fieldsToUpdate: ChangesPerNode) {
@@ -403,7 +406,7 @@ export class ModelLoaderService implements ModelLoaderServiceInterface {
     modelItem: ModelItem,
     path: string
   ) {
-    let result: GraphCollection | undefined = undefined;
+    let result: ExecutionCommand | undefined = undefined;
 
     modelItem.status.set(ModelItemStatus.PROCESSING);
 
@@ -427,7 +430,7 @@ export class ModelLoaderService implements ModelLoaderServiceInterface {
       modelItem.errorMessage = error;
       return undefined;
     } else if (cmdResp) {
-      // TODO: process response
+      result = cmdResp;
     }
 
     modelItem.status.set(ModelItemStatus.DONE);

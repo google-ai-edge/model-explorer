@@ -26,10 +26,16 @@ import {ModelItem} from './types';
 export type ChangesPerNode = Record<string, KeyValue[]>;
 export type ChangesPerGraphAndNode = Record<string, ChangesPerNode>;
 
+export interface ExecutionCommand {
+  stdout: string;
+  log_file: string;
+  perf_trace: string;
+}
+
 /** The interface of model load service. */
 export interface ModelLoaderServiceInterface {
   loadModels(modelItems: ModelItem[]): Promise<void>;
-  executeModel(modelItem: ModelItem): Promise<void>;
+  executeModel(modelItem: ModelItem): Promise<ExecutionCommand | undefined>;
   overrideModel(modelItem: ModelItem, graphCollection: GraphCollection, fieldsToUpdate: ChangesPerNode): Promise<GraphCollection | undefined>;
   get loadedGraphCollections(): WritableSignal<GraphCollection[] | undefined>;
   get models(): WritableSignal<ModelItem[]>;

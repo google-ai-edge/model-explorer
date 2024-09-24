@@ -206,27 +206,46 @@ export class GraphSelector {
     const models = this.modelLoaderService.models();
     const curModel = models.find(({ label }) => label === curCollectionLabel);
 
+    function downloadFile(name: string, contents: string) {
+      const tempLink = document.createElement('a');
+      tempLink.href = `data:text/plain;charset=utf-8,${encodeURIComponent(contents)}`;
+      tempLink.download = name;
+
+      tempLink.style.display = 'none';
+      document.body.appendChild(tempLink);
+      tempLink.click();
+      document.body.removeChild(tempLink);
+    }
+
     if (curModel) {
       // TODO: process response
-      await this.modelLoaderService.executeModel(curModel);
+      const result = await this.modelLoaderService.executeModel(curModel);
 
-      this.modelLoaderService.loadedGraphCollections.update((prevGraphCollections) => {
-          if (!prevGraphCollections) {
-            return undefined;
-          }
+      if (result) {
+        this.modelLoaderService.loadedGraphCollections.update((prevGraphCollections) => {
+            if (!prevGraphCollections) {
+              return undefined;
+            }
 
-          return [...prevGraphCollections];
-        });
+            return [...prevGraphCollections];
+          });
 
-        this.urlService.setUiState(undefined);
-        this.urlService.setModels(models.map(({ path, selectedAdapter }) => {
-          return {
-            url: path,
-            adapterId: selectedAdapter?.id
-          };
-        }));
+          this.urlService.setUiState(undefined);
+          this.urlService.setModels(models.map(({ path, selectedAdapter }) => {
+            return {
+              url: path,
+              adapterId: selectedAdapter?.id
+            };
+          }));
 
-        this.modelLoaderService.changesToUpload.update(() => ({}));
+          this.modelLoaderService.changesToUpload.update(() => ({}));
+
+          console.info('Execution complete', result);
+
+          downloadFile(`${curCollectionLabel} - log_file.log`, result.log_file);
+          downloadFile(`${curCollectionLabel} - stdout.txt`, result.stdout);
+          downloadFile(`${curCollectionLabel} - perf_trace.txt`, result.perf_trace);
+      }
     }
   }
 

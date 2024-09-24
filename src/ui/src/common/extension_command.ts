@@ -17,7 +17,7 @@
  */
 
 import {Graph, GraphCollection,} from '../components/visualizer/common/input_graph';
-import type { ChangesPerNode } from './model_loader_service_interface.js';
+import type { ChangesPerNode, ExecutionCommand } from './model_loader_service_interface';
 
 /** A command sent to extension. */
 export declare interface ExtensionCommand {
@@ -69,9 +69,6 @@ export declare interface AdapterExecuteCommand extends ExtensionCommand {
 }
 
 /** Adapter's "execute" command response. */
-export declare interface AdapterExecuteResponse {
-  stdout: string;
-  log_file: string;
-  perf_trace: string;
+export declare interface AdapterExecuteResponse extends ExecutionCommand {
   error?: string;
 }
