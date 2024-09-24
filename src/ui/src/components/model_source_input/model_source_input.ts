@@ -405,6 +405,7 @@ export class ModelSourceInput {
       if (filePath !== '') {
         modelItems.push({
           path: filePath,
+          label: file.name,
           type: this.isInternal
             ? ModelItemType.REMOTE
             : ModelItemType.FILE_PATH,
@@ -419,6 +420,7 @@ export class ModelSourceInput {
       } else {
         modelItems.push({
           path: file.name,
+          label: file.name,
           type: ModelItemType.LOCAL,
           status: signal<ModelItemStatus>(ModelItemStatus.NOT_STARTED),
           selected: adapterCandidates.length > 0,
