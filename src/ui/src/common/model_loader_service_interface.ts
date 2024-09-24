@@ -29,7 +29,7 @@ export type ChangesPerGraphAndNode = Record<string, ChangesPerNode>;
 export interface ExecutionCommand {
   stdout: string;
   log_file: string;
-  perf_trace: string;
+  perf_trace?: string;
 }
 
 /** The interface of model load service. */
