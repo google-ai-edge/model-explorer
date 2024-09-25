@@ -48,6 +48,8 @@ import type { EditableAttributeTypes, EditableValueListAttribute } from './commo
 export class ExpandableInfoText implements AfterViewInit, OnDestroy, OnChanges {
   @Input() text = '';
   @Input() type = '';
+  @Input() collectionLabel = '';
+  @Input() nodeId = '';
   @Input() bgColor = 'transparent';
   @Input() textColor = 'inherit';
   @Input() editable?: EditableAttributeTypes = undefined;
@@ -83,6 +85,12 @@ export class ExpandableInfoText implements AfterViewInit, OnDestroy, OnChanges {
       });
       this.resizeObserver.observe(this.container.nativeElement);
     }
+
+    this.text = this.modelLoaderService
+      .changesToUpload()[this.collectionLabel ?? '']
+      ?.[this.nodeId]
+      ?.find(({ key }) => key === this.type)
+      ?.value ?? this.text;
   }
 
   ngOnChanges() {

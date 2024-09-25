@@ -554,6 +554,10 @@ export class InfoPanel {
     return this.curSelectedNode ? this.curSelectedNode.id : undefined;
   }
 
+  get curCollectionLabel(): string | undefined {
+    return this.curModelGraph?.collectionLabel;
+  }
+
   get showInputPaginator(): boolean {
     return (
       this.inputSourceNodes.length > this.ioPageSize &&

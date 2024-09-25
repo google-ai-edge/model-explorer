@@ -35,6 +35,8 @@ limitations under the License.
             <td class="value">
               <expandable-info-text
                   [text]="item.value" [type]="item.label"
+                  [collectionLabel]="$any(curCollectionLabel)"
+                  [nodeId]="$any(curSelectedNodeId)"
                   [bgColor]="item.bgColor || 'transparent'"
                   [textColor]="item.textColor || 'black'"
                   [editable]="item.editable">
