@@ -18,7 +18,7 @@
 
 import {Injectable, signal} from '@angular/core';
 
-import {ExtensionCommand} from '../common/extension_command';
+import {ExtensionCommand, type AdapterExecuteResponse, type AdapterOverrideResponse} from '../common/extension_command';
 import {Extension} from '../common/types';
 
 const EXTERNAL_GET_EXTENSIONS_API_PATH = '/api/v1/get_extensions';
@@ -37,6 +37,7 @@ export class ExtensionService {
     this.loadExtensions();
   }
 
+  // TODO: revert mock API changes!
   async sendCommandToExtension<T>(
     cmd: ExtensionCommand,
   ): Promise<{cmdResp?: T; otherError?: string}> {
@@ -47,13 +48,80 @@ export class ExtensionService {
       },
     };
     requestData.body = JSON.stringify(cmd);
+
+    if (localStorage.getItem('mock-api') === 'true' && cmd.cmdId === 'execute') {
+      const response: AdapterExecuteResponse = {
+        log_file: '',
+        stdout: ''
+      };
+
+      return { cmdResp: response as T };
+    }
+
+    if (localStorage.getItem('mock-api') === 'true' && cmd.cmdId === 'override') {
+      const response: AdapterOverrideResponse = {
+        success: true,
+        // @ts-expect-error
+        graphs: cmd.settings.graphs
+      };
+
+      return { cmdResp: response as T };
+    }
+
     try {
       const resp = await fetch(EXTERNAL_SEND_CMD_API_PATH, requestData);
       if (!resp.ok) {
         return {otherError: `Failed to convert model. ${resp.status}`};
       }
 
-      const json = await resp.json();
+      let json = await resp.json();
+
+      function processAttribute(key: string, value: string) {
+        if (value.startsWith('[')) {
+          const arr = value.split(',');
+
+          return {
+            key,
+            value,
+            editable: {
+              input_type: 'int_list',
+              min_size: 1,
+              max_size: arr.length,
+              min_value: 0,
+              max_value: 128,
+              step: 32
+            }
+          };
+        }
+
+        if (value.startsWith('(')) {
+          return { key, value };
+        }
+
+        return {
+          key,
+          value,
+          editable: {
+            input_type: 'value_list',
+            options: ['foo', 'bar', 'baz']
+          }
+        };
+      }
+
+      if (localStorage.getItem('mock-api') === 'true') {
+        json = {
+          ...json,
+          graphs: json.graphs.map((graph: { nodes: { attrs: { key: string, value: string }[]}[]}) => ({
+            ...graph,
+            nodes: graph.nodes.map((node) => ({
+              ...node,
+              attrs: node.attrs.map(({key, value}) => ({
+                ...processAttribute(key, value)
+              }))
+            }))
+          }))
+        };
+      }
 
       return {cmdResp: json as T};
     } catch (e) {
