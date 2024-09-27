@@ -51,7 +51,10 @@ import {MatProgressSpinnerModule} from '@angular/material/progress-spinner';
 import {MatSelectModule} from '@angular/material/select';
 import {MatTooltipModule} from '@angular/material/tooltip';
 
-import {GRAPHS_MODEL_SOURCE_PREFIX} from '../../common/consts';
+import {
+  DATA_NEXUS_MODEL_SOURCE_PREFIX,
+  GRAPHS_MODEL_SOURCE_PREFIX,
+} from '../../common/consts';
 import {IS_EXTERNAL} from '../../common/flags';
 import {type ModelLoaderServiceInterface} from '../../common/model_loader_service_interface';
 import {
@@ -180,6 +183,21 @@ export class ModelSourceInput {
           type: ModelItemType.GRAPH_JSONS_FROM_SERVER,
           status: signal<ModelItemStatus>(ModelItemStatus.NOT_STARTED),
           selected: adapterCandidates.length > 0,
+          adapterCandidates,
+          selectedAdapter: ext,
+        };
+      }
+      // Data nexus model source.
+      else if (modelSource.url.startsWith(DATA_NEXUS_MODEL_SOURCE_PREFIX)) {
+        const ext = this.adapterExtensionService.getExtensionById(
+          InternalAdapterExtId.DATA_NEXUS,
+        );
+        const adapterCandidates = ext == null ? [] : [ext];
+        return {
+          path: modelSource.url,
+          type: ModelItemType.DATA_NEXUS,
+          status: signal<ModelItemStatus>(ModelItemStatus.NOT_STARTED),
+          selected: true,
           adapterCandidates,
           selectedAdapter: ext,
         };

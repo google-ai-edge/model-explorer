@@ -18,3 +18,6 @@
 
 /** Prefix for graphs json model sources. */
 export const GRAPHS_MODEL_SOURCE_PREFIX = 'graphs://';
+
+/** Prefix for data nexus model sources. */
+export const DATA_NEXUS_MODEL_SOURCE_PREFIX = 'data-nexus://';
