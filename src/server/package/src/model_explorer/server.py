@@ -169,10 +169,10 @@ def _js(script):
 
 def _is_internal_colab() -> bool:
   return (
-      "BORG_TASK_HANDLE" in os.environ
-      or "X20_HOME" in os.environ
-      or "UNITTEST_ON_BORG" in os.environ
-      or "google3.research.colab.lib" in sys.modules
+      'BORG_TASK_HANDLE' in os.environ
+      or 'X20_HOME' in os.environ
+      or 'UNITTEST_ON_BORG' in os.environ
+      or 'google3.research.colab.lib' in sys.modules
   )
 
 
