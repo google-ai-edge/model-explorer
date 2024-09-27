@@ -167,6 +167,15 @@ def _js(script):
   display.display(display.Javascript(script))
 
 
+def _is_internal_colab() -> bool:
+  return (
+      "BORG_TASK_HANDLE" in os.environ
+      or "X20_HOME" in os.environ
+      or "UNITTEST_ON_BORG" in os.environ
+      or "google3.research.colab.lib" in sys.modules
+  )
+
+
 def start(
     host=DEFAULT_HOST,
     port=DEFAULT_PORT,
@@ -203,6 +212,7 @@ def start(
 
   # Check whether it is running in colab.
   colab = 'google.colab' in sys.modules or os.getenv('COLAB_RELEASE_TAG')
+  internal_colab = _is_internal_colab()
 
   # Check port in non-colab environment.
   if not colab:
@@ -277,10 +287,20 @@ def start(
     f.save(file_path)
     return _make_json_response({'path': file_path})
 
-  # Note: using "/api/..." for POST requests is not allowed when running in
-  # colab.
-  @app.route('/apipost/v1/send_command', methods=['POST'])
+  @app.route('/api/v1/send_command')
   def send_command():
+    cmd_json = json.loads(request.args.get('json', '{}'))
+    try:
+      resp = extension_manager.run_cmd(cmd_json)
+      return _make_json_response(resp)
+    except Exception as err:
+      traceback.print_exc()
+      return _make_json_response({'error': f'{type(err).__name__}: {str(err)}'})
+    finally:
+      extension_manager.cleanup(cmd_json)
+
+  @app.route('/apipost/v1/send_command', methods=['POST'])
+  def send_command_post():
     try:
       resp = extension_manager.run_cmd(request.json)
       return _make_json_response(resp)
@@ -464,6 +484,9 @@ def start(
           if ('%DATA_PARAM%' !== '') {
             url += '&%DATA_PARAM%';
           }
+          if ('%INTERNAL%' === 'True') {
+            url += '&internal_colab=1';
+          }
           const iframe = document.createElement('iframe');
           iframe.src = url;
           iframe.setAttribute('width', '100%');
@@ -479,6 +502,7 @@ def start(
     replacements = [
         ('%PORT%', f'{colab_port}'),
         ('%HOSTED_RUNTIME%', f'{colab}'),
+        ('%INTERNAL%', f'{internal_colab}'),
         ('%HEIGHT%', f'{colab_height}'),
         ('%DATA_PARAM%', f'{data_param}'),
     ]
