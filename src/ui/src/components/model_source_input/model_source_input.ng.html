@@ -78,16 +78,20 @@ limitations under the License.
       </div>
 
       <!-- Or -->
-      <div class="or-label">or</div>
+      @if (!internalColab) {
+        <div class="or-label">or</div>
+      }
 
       <!-- Upload button -->
-      <button
-          mat-flat-button
-          class="btn-upload"
-          (click)="uploadInput.click()"
-          [disabled]="hasReachedMaxModelsCount || loading()">
-        Select from your computer
-      </button>
+      @if (!internalColab) {
+        <button
+            mat-flat-button
+            class="btn-upload"
+            (click)="uploadInput.click()"
+            [disabled]="hasReachedMaxModelsCount || loading()">
+          Select from your computer
+        </button>
+      }
       <input class="upload-input" type="file" multiple #uploadInput
           (change)="handleClickUpload(uploadInput)">
     </div>

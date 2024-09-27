@@ -63,7 +63,11 @@ import {
   ModelItemStatus,
   ModelItemType,
 } from '../../common/types';
-import {getElectronApi, isInternalStoragePath} from '../../common/utils';
+import {
+  getElectronApi,
+  INTERNAL_COLAB,
+  isInternalStoragePath,
+} from '../../common/utils';
 import {AdapterExtensionService} from '../../services/adapter_extension_service';
 import {ModelSource, UrlService} from '../../services/url_service';
 import {Bubble} from '../bubble/bubble';
@@ -140,6 +144,7 @@ export class ModelSourceInput {
 
   readonly loading = signal<boolean>(false);
   readonly hasUploadedModels = signal<boolean>(false);
+  readonly internalColab = INTERNAL_COLAB;
 
   private portal: ComponentPortal<AdapterSelectorPanel> | null = null;
 

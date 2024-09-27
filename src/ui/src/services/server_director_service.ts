@@ -18,6 +18,7 @@
 
 import {safeLocation} from 'safevalues/dom';
 import {IS_EXTERNAL} from '../common/flags';
+import {INTERNAL_COLAB} from '../common/utils';
 
 import {Injectable} from '@angular/core';
 
@@ -42,7 +43,7 @@ type Directive = RefreshPageDirective;
 })
 export class ServerDirectorService {
   init() {
-    if (IS_EXTERNAL) {
+    if (IS_EXTERNAL && !INTERNAL_COLAB) {
       // Listen to the streaming events (directives) from the following source
       // that the server has established.
       const eventSource = new EventSource('/apistream/server_director');

@@ -24,6 +24,10 @@ import {
 
 import {loadTfjsModel} from './tfjs';
 
+/** Checks if the current page is running in internal colab. */
+export const INTERNAL_COLAB =
+  new URLSearchParams(window.location.search).get('internal_colab') === '1';
+
 /** Checks if the given path is a supported internal storage path. */
 export function isInternalStoragePath(path: string): boolean {
   return false;

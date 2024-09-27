@@ -63,8 +63,6 @@ $blue-palette: (
   // The `mat.core` mixin applies common styles used by multiple
   // components, such ripples, overlays, high contrast mode, etc.
   @include mat.core();
-  @include mat.app-background();
-  @include mat.elevation-classes();
 
   // Define the application's color palettes.
   $primary: mat.m2-define-palette($blue-palette, 600);
