@@ -19,7 +19,7 @@
 import {WritableSignal} from '@angular/core';
 
 import {GraphCollection} from '../components/visualizer/common/input_graph';
-import type { KeyValue } from '../components/visualizer/common/types';
+import type { KeyValue, NodeDataProviderData } from '../components/visualizer/common/types';
 
 import {ModelItem} from './types';
 
@@ -30,6 +30,7 @@ export interface ExecutionCommand {
   stdout: string;
   log_file: string;
   perf_trace?: string;
+  perf_data?: NodeDataProviderData
 }
 
 /** The interface of model load service. */
