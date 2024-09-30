@@ -33,7 +33,6 @@
 #include "absl/strings/string_view.h"
 #include "llvm/Support/FormatVariadic.h"
 #include "llvm/Support/JSON.h"
-#include "google/protobuf/repeated_ptr_field.h"
 #include "tensorflow/cc/saved_model/reader.h"
 #include "formats/schema_structs.h"
 #include "graphnode_builder.h"
