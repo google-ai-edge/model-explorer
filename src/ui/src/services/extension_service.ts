@@ -52,7 +52,18 @@ export class ExtensionService {
     if (localStorage.getItem('mock-api') === 'true' && cmd.cmdId === 'execute') {
       const response: AdapterExecuteResponse = {
         log_file: '',
-        stdout: ''
+        stdout: '',
+        perf_data: {
+          'ttir-graph': {
+            results: {
+              'forward0': {
+                value: 1,
+                bgColor: '#ff0000',
+                textColor: '#000000'
+              }
+            }
+          }
+        }
       };
 
       return { cmdResp: response as T };

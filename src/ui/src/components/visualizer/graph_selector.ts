@@ -40,9 +40,11 @@ import {safeAnchorEl} from 'safevalues/dom';
 import {AppService} from './app_service';
 import {UrlService} from '../../services/url_service';
 import {Graph, GraphCollection} from './common/input_graph';
-import {exportToResource} from './common/utils';
+import {exportToResource, genUid} from './common/utils';
 import {GraphSelectorPanel} from './graph_selector_panel';
 import type { ModelLoaderServiceInterface } from '../../common/model_loader_service_interface';
+import { NodeDataProviderExtensionService } from './node_data_provider_extension_service';
+import type { ModelGraph } from './common/model_graph.js';
 
 /** A graph collection in the dropdown menu. */
 export interface GraphCollectionItem {
@@ -170,6 +172,7 @@ export class GraphSelector {
   constructor(
     @Inject('ModelLoaderService')
     private readonly modelLoaderService: ModelLoaderServiceInterface,
+    private readonly nodeDataProviderExtensionService: NodeDataProviderExtensionService,
     private readonly appService: AppService,
     private readonly urlService: UrlService,
     private readonly overlay: Overlay,
@@ -207,29 +210,39 @@ export class GraphSelector {
     const curModel = models.find(({ label }) => label === curCollectionLabel);
 
     if (curModel) {
-      // TODO: process response
       const result = await this.modelLoaderService.executeModel(curModel);
 
       if (result) {
         this.modelLoaderService.loadedGraphCollections.update((prevGraphCollections) => {
-            if (!prevGraphCollections) {
-              return undefined;
-            }
+          if (!prevGraphCollections) {
+            return undefined;
+          }
 
-            return [...prevGraphCollections];
-          });
+          return [...prevGraphCollections];
+        });
 
-          this.urlService.setUiState(undefined);
-          this.urlService.setModels(models.map(({ path, selectedAdapter }) => {
-            return {
-              url: path,
-              adapterId: selectedAdapter?.id
-            };
-          }));
+        this.urlService.setUiState(undefined);
+        this.urlService.setModels(models.map(({ path, selectedAdapter }) => {
+          return {
+            url: path,
+            adapterId: selectedAdapter?.id
+          };
+        }));
 
-          this.modelLoaderService.changesToUpload.update(() => ({}));
+        this.modelLoaderService.changesToUpload.update(() => ({}));
 
-          console.info('Execution complete', result);
+        if (result.perf_data) {
+          const runId = genUid();
+          const modelGraph = curPane?.modelGraph as ModelGraph;
+
+          this.nodeDataProviderExtensionService.addRun(
+            runId,
+            `${modelGraph.id} (Performance Trace)`,
+            curModel.selectedAdapter?.id ?? '',
+            modelGraph,
+            result.perf_data,
+          );
+        }
       }
     }
   }
