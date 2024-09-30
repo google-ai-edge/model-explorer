@@ -20,9 +20,11 @@ import {Injectable, signal} from '@angular/core';
 
 import {ExtensionCommand, type AdapterExecuteResponse, type AdapterOverrideResponse} from '../common/extension_command';
 import {Extension} from '../common/types';
+import {INTERNAL_COLAB} from '../common/utils';
 
 const EXTERNAL_GET_EXTENSIONS_API_PATH = '/api/v1/get_extensions';
-const EXTERNAL_SEND_CMD_API_PATH = '/apipost/v1/send_command';
+const EXTERNAL_SEND_CMD_GET_API_PATH = '/api/v1/send_command';
+const EXTERNAL_SEND_CMD_POST_API_PATH = '/apipost/v1/send_command';
 
 /**
  * Service for managing model explorer extensions.
@@ -30,6 +32,7 @@ const EXTERNAL_SEND_CMD_API_PATH = '/apipost/v1/send_command';
 @Injectable({providedIn: 'root'})
 export class ExtensionService {
   readonly loading = signal<boolean>(true);
+  readonly internalColab = INTERNAL_COLAB;
 
   extensions: Extension[] = [];
 
@@ -41,13 +44,22 @@ export class ExtensionService {
   async sendCommandToExtension<T>(
     cmd: ExtensionCommand,
   ): Promise<{cmdResp?: T; otherError?: string}> {
-    const requestData: RequestInit = {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    };
-    requestData.body = JSON.stringify(cmd);
+    try {
+      let resp: Response | undefined = undefined;
+      // In internal colab, use GET request.
+      if (this.internalColab) {
+        const url = `${EXTERNAL_SEND_CMD_GET_API_PATH}?json=${JSON.stringify(cmd)}`;
+        resp = await fetch(url);
+      }
+      // In other environments, use POST request.
+      else {
+        const requestData: RequestInit = {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        };
+        requestData.body = JSON.stringify(cmd);
 
     if (localStorage.getItem('mock-api') === 'true' && cmd.cmdId === 'execute') {
       const response: AdapterExecuteResponse = {
@@ -79,8 +91,8 @@ export class ExtensionService {
       return { cmdResp: response as T };
     }
 
-    try {
-      const resp = await fetch(EXTERNAL_SEND_CMD_API_PATH, requestData);
+        resp = await fetch(EXTERNAL_SEND_CMD_POST_API_PATH, requestData);
+      }
       if (!resp.ok) {
         return {otherError: `Failed to convert model. ${resp.status}`};
       }

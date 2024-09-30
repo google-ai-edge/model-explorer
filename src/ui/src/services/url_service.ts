@@ -29,6 +29,7 @@ enum QueryParamKey {
   BENCHMARK = 'benchmark',
   ENABLE_SUBGRAPH_SELECTION = 'ess',
   ENABLE_EXPORT_TO_RESOURCE = 'eetr',
+  INTERNAL_COLAB = 'internal_colab',
 }
 
 declare interface OldEncodedUrlData {
@@ -70,6 +71,7 @@ export class UrlService {
 
   renderer = 'webgl';
   showOpenInNewTab = false;
+  internalColab = false;
   benchmark = false;
   enableSubgraphSelection = false;
   enableExportToResource = false;
@@ -127,6 +129,9 @@ export class UrlService {
       queryParams[QueryParamKey.DATA] = JSON.stringify(data);
       queryParams[QueryParamKey.RENDERER] = this.renderer;
       queryParams[QueryParamKey.SHOW_OPEN_IN_NEW_TAB] = this.showOpenInNewTab
+        ? '1'
+        : '0';
+      queryParams[QueryParamKey.INTERNAL_COLAB] = this.internalColab
         ? '1'
         : '0';
       queryParams[QueryParamKey.ENABLE_SUBGRAPH_SELECTION] = this
@@ -196,6 +201,7 @@ export class UrlService {
     this.renderer = renderer || 'webgl';
     this.showOpenInNewTab =
       params.get(QueryParamKey.SHOW_OPEN_IN_NEW_TAB) === '1';
+    this.internalColab = params.get(QueryParamKey.INTERNAL_COLAB) === '1';
     this.enableSubgraphSelection =
       params.get(QueryParamKey.ENABLE_SUBGRAPH_SELECTION) === '1';
     this.enableExportToResource =

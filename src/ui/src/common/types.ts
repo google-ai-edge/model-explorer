@@ -35,6 +35,7 @@ export enum InternalAdapterExtId {
   GRAPHDEF = 'builtin_graphdef',
   MLIR = 'builtin_mlir',
   JSON_LOADER = 'builtin_json',
+  DATA_NEXUS = 'builtin_data_nexus',
 }
 
 /** Extension types. */
@@ -87,6 +88,9 @@ export enum ModelItemType {
 
   // Remote path/url.
   REMOTE = 'remote',
+
+  // Data nexus models.
+  DATA_NEXUS = 'data_nexus',
 
   // External only
   //
