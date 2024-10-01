@@ -63,6 +63,8 @@ export declare interface AdapterExtension extends ExtensionBase {
 
   // Used internally to match http/https urls.
   matchHttpUrl?: boolean;
+
+  supportedCommands?: string[];
 }
 
 /** Union type for extension. */

@@ -38,6 +38,7 @@ export interface ModelLoaderServiceInterface {
   loadModels(modelItems: ModelItem[]): Promise<void>;
   executeModel(modelItem: ModelItem): Promise<ExecutionCommand | undefined>;
   overrideModel(modelItem: ModelItem, graphCollection: GraphCollection, fieldsToUpdate: ChangesPerNode): Promise<GraphCollection | undefined>;
+  getSupportedCommandsForExtension(extensionId: string): string[];
   get loadedGraphCollections(): WritableSignal<GraphCollection[] | undefined>;
   get models(): WritableSignal<ModelItem[]>;
   get changesToUpload(): WritableSignal<ChangesPerGraphAndNode>;
