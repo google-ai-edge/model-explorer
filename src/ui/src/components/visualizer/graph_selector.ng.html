@@ -41,14 +41,14 @@ limitations under the License.
     <mat-icon>download</mat-icon>
   </div>
 
-  @if (hasChangesToUpload) {
+  @if (shouldShowOverrideButton && hasChangesToUpload) {
     <div class="mat-icon-container" matTooltip="Upload processed graphs json to server"
         (click)="handleClickUploadGraph()">
       <mat-icon>upload</mat-icon>
     </div>
   }
 
-  @if (!hasChangesToUpload && !graphHasErrors) {
+  @if (shouldShowExecuteButton && !hasChangesToUpload && !graphHasErrors) {
     <div class="mat-icon-container" matTooltip="Execute graph"
         (click)="handleClickExecuteGraph()">
       <mat-icon>play_arrow</mat-icon>

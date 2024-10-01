@@ -204,7 +204,7 @@ export class GraphSelector {
   }
 
   async handleClickExecuteGraph() {
-    const curPane = this.appService.getSelectedPane()
+    const curPane = this.appService.getSelectedPane();
     const curCollectionLabel = curPane?.modelGraph?.collectionLabel;
     const models = this.modelLoaderService.models();
     const curModel = models.find(({ label }) => label === curCollectionLabel);
@@ -348,6 +348,18 @@ export class GraphSelector {
     return `${graph.id} (${graph.nodes.length} nodes)`;
   }
 
+  get shouldShowOverrideButton() {
+    const extensionId = this.getCurrentExtensionId();
+
+    return this.modelLoaderService.getSupportedCommandsForExtension(extensionId).includes('override');
+  }
+
+  get shouldShowExecuteButton() {
+    const extensionId = this.getCurrentExtensionId();
+
+    return this.modelLoaderService.getSupportedCommandsForExtension(extensionId).includes('execute');
+  }
+
   get hasChangesToUpload() {
     return this.modelLoaderService.hasChangesToUpload;
   }
@@ -366,6 +378,15 @@ export class GraphSelector {
 
   get enableExportToResource(): boolean {
     return this.appService.config()?.enableExportToResource === true;
+  }
+
+  private getCurrentExtensionId() {
+    const curPane = this.appService.getSelectedPane();
+    const curCollectionLabel = curPane?.modelGraph?.collectionLabel;
+    const models = this.modelLoaderService.models();
+    const curModel = models.find(({ label }) => label === curCollectionLabel);
+
+    return curModel?.selectedAdapter?.id ?? '';
   }
 
   private getLabelWidth(label: string, fontSize = 12, bold = false): number {
