@@ -201,6 +201,7 @@ export class ModelSourceInput {
         const adapterCandidates = ext == null ? [] : [ext];
         return {
           path: modelSource.url,
+          label: '',
           type: ModelItemType.DATA_NEXUS,
           status: signal<ModelItemStatus>(ModelItemStatus.NOT_STARTED),
           selected: true,
