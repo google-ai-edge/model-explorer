@@ -45,6 +45,7 @@ import {GraphSelectorPanel} from './graph_selector_panel';
 import type { ModelLoaderServiceInterface } from '../../common/model_loader_service_interface';
 import { NodeDataProviderExtensionService } from './node_data_provider_extension_service';
 import type { ModelGraph } from './common/model_graph.js';
+import { ModelItemStatus } from '../../common/types.js';
 
 /** A graph collection in the dropdown menu. */
 export interface GraphCollectionItem {
@@ -262,32 +263,35 @@ export class GraphSelector {
         changesToUpload
       );
 
-      if (updatedGraphCollection) {
-        this.modelLoaderService.loadedGraphCollections.update((prevGraphCollections) => {
-          if (!prevGraphCollections) {
-            return undefined;
-          }
+      if (curModel.status() !== ModelItemStatus.ERROR) {
+        if (updatedGraphCollection) {
+          this.modelLoaderService.loadedGraphCollections.update((prevGraphCollections) => {
+            if (!prevGraphCollections) {
+              return undefined;
+            }
 
-          const collectionToUpdate = prevGraphCollections.findIndex(({ label }) => label === curCollectionLabel) ?? -1;
+            const collectionToUpdate = prevGraphCollections.findIndex(({ label }) => label === curCollectionLabel) ?? -1;
 
-          if (collectionToUpdate !== -1) {
-            prevGraphCollections[collectionToUpdate] = updatedGraphCollection;
-          }
+            if (collectionToUpdate !== -1) {
+              prevGraphCollections[collectionToUpdate] = updatedGraphCollection;
+            }
 
-          return [...prevGraphCollections];
-        });
+            return [...prevGraphCollections];
+          });
 
-        this.urlService.setUiState(undefined);
-        this.urlService.setModels(models.map(({ path, selectedAdapter }) => {
-          return {
-            url: path,
-            adapterId: selectedAdapter?.id
-          };
-        }));
+          this.urlService.setUiState(undefined);
+          this.urlService.setModels(models.map(({ path, selectedAdapter }) => {
+            return {
+              url: path,
+              adapterId: selectedAdapter?.id
+            };
+          }));
 
-        this.modelLoaderService.changesToUpload.update(() => ({}));
-
+          this.modelLoaderService.changesToUpload.update(() => ({}));
+        }
+      } else {
         // TODO: add errors handling
+        alert(curModel.errorMessage);
       }
     }
   }
