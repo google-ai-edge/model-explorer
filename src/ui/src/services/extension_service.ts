@@ -61,25 +61,25 @@ export class ExtensionService {
         };
         requestData.body = JSON.stringify(cmd);
 
-    if (localStorage.getItem('mock-api') === 'true' && cmd.cmdId === 'execute') {
-      const response: AdapterExecuteResponse = {
-        log_file: '',
-        stdout: '',
-        perf_data: {
-          'ttir-graph': {
-            results: {
-              'forward0': {
-                value: 1,
-                bgColor: '#ff0000',
-                textColor: '#000000'
+        if (localStorage.getItem('mock-api') === 'true' && cmd.cmdId === 'execute') {
+          const response: AdapterExecuteResponse = {
+            log_file: '',
+            stdout: '',
+            perf_data: {
+              'ttir-graph': {
+                results: {
+                  'forward0': {
+                    value: 1,
+                    bgColor: '#ff0000',
+                    textColor: '#000000'
+                  }
+                }
               }
             }
-          }
-        }
-      };
+          };
 
-      return { cmdResp: response as T };
-    }
+          return { cmdResp: response as T };
+        }
 
     if (localStorage.getItem('mock-api') === 'true' && cmd.cmdId === 'override') {
       const response: AdapterOverrideResponse = {
@@ -131,7 +131,7 @@ export class ExtensionService {
         };
       }
 
-      if (localStorage.getItem('mock-api') === 'true') {
+      if (localStorage.getItem('mock-api') === 'true' && cmd.cmdId === 'convert') {
         json = {
           ...json,
           graphs: json.graphs.map((graph: { nodes: { attrs: { key: string, value: string }[]}[]}) => ({
