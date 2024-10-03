@@ -168,17 +168,19 @@ export class ModelLoaderService implements ModelLoaderServiceInterface {
         fieldsToUpdate,
       );
 
-      this.models.update((curModels) => {
-        curModels.push({
-          ...modelItem,
-          path: updatedPath ?? modelItem.path,
+      if (modelItem.status() !== ModelItemStatus.ERROR) {
+        this.models.update((curModels) => {
+          curModels.push({
+            ...modelItem,
+            path: updatedPath ?? modelItem.path,
+          });
+
+          return curModels;
         });
 
-        return curModels;
-      });
+        modelItem.status.set(ModelItemStatus.DONE);
+      }
     }
-
-    modelItem.status.set(ModelItemStatus.DONE);
 
     return result;
   }
