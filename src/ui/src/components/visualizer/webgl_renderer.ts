@@ -42,7 +42,7 @@ import {MatIconModule} from '@angular/material/icon';
 import {MatMenuModule, MatMenuTrigger} from '@angular/material/menu';
 import {MatSnackBar} from '@angular/material/snack-bar';
 import {MatTooltip, MatTooltipModule} from '@angular/material/tooltip';
-import {safeAnchorEl} from 'safevalues/dom';
+import {setAnchorHref} from 'safevalues/dom';
 import * as three from 'three';
 
 import {AppService} from './app_service';
@@ -2633,7 +2633,7 @@ export class WebglRenderer implements OnInit, OnDestroy {
     // Download canvas data as png.
     const link = document.createElement('a');
     link.download = 'model_explorer_graph.png';
-    safeAnchorEl.setHref(link, canvas.toDataURL());
+    setAnchorHref(link, canvas.toDataURL());
     link.click();
     this.webglRendererThreejsService.setSceneBackground(
       new THREE.Color(0xffffff),

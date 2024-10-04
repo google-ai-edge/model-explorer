@@ -16,7 +16,7 @@
  * ==============================================================================
  */
 
-import {safeLocation} from 'safevalues/dom';
+import {setLocationHref} from 'safevalues/dom';
 import {IS_EXTERNAL} from '../common/flags';
 import {INTERNAL_COLAB} from '../common/utils';
 
@@ -55,7 +55,7 @@ export class ServerDirectorService {
         switch (directive.name) {
           // Refresh page with the given url.
           case DirectiveName.RefreshPage:
-            safeLocation.setHref(
+            setLocationHref(
               window.location,
               directive.url,
             );

@@ -25,7 +25,7 @@ import {
 } from '@angular/core';
 import {MatButtonModule} from '@angular/material/button';
 import {MatIconModule} from '@angular/material/icon';
-import {safeAnchorEl} from 'safevalues/dom';
+import {setAnchorHref} from 'safevalues/dom';
 
 import {AppService} from './app_service';
 import {exportToResource} from './common/utils';
@@ -73,7 +73,7 @@ export class SelectionPanel {
     const dataUrl = `data:text/json;charset=utf-8, ${encodeURIComponent(
       JSON.stringify([subgraph], null, 2),
     )}`;
-    safeAnchorEl.setHref(link, dataUrl);
+    setAnchorHref(link, dataUrl);
     link.click();
   }
 
