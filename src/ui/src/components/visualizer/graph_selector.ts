@@ -46,6 +46,8 @@ import type { ModelLoaderServiceInterface } from '../../common/model_loader_serv
 import { NodeDataProviderExtensionService } from './node_data_provider_extension_service';
 import type { ModelGraph } from './common/model_graph.js';
 import { ModelItemStatus } from '../../common/types.js';
+import { MatDialogModule, MatDialog } from '@angular/material/dialog';
+import { GraphErrorsDialog } from '../graph_error_dialog/graph_error_dialog.js';
 
 /** A graph collection in the dropdown menu. */
 export interface GraphCollectionItem {
@@ -80,6 +82,7 @@ const LABEL_WIDTHS: {[label: string]: number} = {};
     MatSelectModule,
     MatTooltipModule,
     ReactiveFormsModule,
+    MatDialogModule
   ],
   templateUrl: './graph_selector.ng.html',
   styleUrls: ['./graph_selector.scss'],
@@ -94,6 +97,7 @@ export class GraphSelector {
   selectedGraphCollectionLabel = '';
   selectedCollection?: GraphCollection;
   maxGraphItemIdWidth = 0;
+  graphLoadingError = signal('');
 
   graphCollectionItems: Signal<GraphCollectionItem[]> = computed(() => {
     const config = this.appService.config();
@@ -178,6 +182,7 @@ export class GraphSelector {
     private readonly urlService: UrlService,
     private readonly overlay: Overlay,
     private readonly viewContainerRef: ViewContainerRef,
+    private readonly dialog: MatDialog
   ) {
     // Update selected graph when the data source in app service is updated.
     effect(() => {
@@ -290,8 +295,8 @@ export class GraphSelector {
           this.modelLoaderService.changesToUpload.update(() => ({}));
         }
       } else {
-        // TODO: add errors handling
-        alert(curModel.errorMessage);
+        this.graphLoadingError.update(() => curModel.errorMessage ?? '');
+        this.dialog.open(GraphErrorsDialog, {});
       }
     }
   }
