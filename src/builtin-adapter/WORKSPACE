@@ -28,9 +28,9 @@ http_archive(
     ],
 )
 
-TENSORFLOW_COMMIT = "9e0f7896da725cdfb04d5d2160433b4a699e3362"
+TENSORFLOW_COMMIT = "32f376e44ba50279a98bf131108782f408d0a496"
 
-TENSORFLOW_SHA256 = "f147c9d84d75aad0fb276eca96d588e768be251c4a4723d61b06297fa2d61b5d"
+TENSORFLOW_SHA256 = "14c2e18223107a312b4a801ddcbdcd6fb9dca1d9ebed59149f2830334c3ec7e2"
 
 http_archive(
     name = "org_tensorflow",
@@ -40,14 +40,6 @@ http_archive(
         "https://github.com/tensorflow/tensorflow/archive/" + TENSORFLOW_COMMIT +
         ".tar.gz",
     ],
-)
-
-# ===== protobuf =====
-http_archive(
-    name = "com_google_protobuf",
-    sha256 = "a0b6b02197b4df8d55492841b605295e187a3c45dad7ec187a668d396e48bb75",
-    strip_prefix = "protobuf-28.2",
-    url = "https://github.com/protocolbuffers/protobuf/archive/9fff46d7327c699ef970769d5c9fd0e44df08fc7.tar.gz",
 )
 
 http_archive(
@@ -121,3 +113,50 @@ tf_workspace1()
 load("@org_tensorflow//tensorflow:workspace0.bzl", "tf_workspace0")
 
 tf_workspace0()
+
+load(
+    "@local_tsl//third_party/gpus/cuda/hermetic:cuda_json_init_repository.bzl",
+    "cuda_json_init_repository",
+)
+
+cuda_json_init_repository()
+
+load(
+    "@cuda_redist_json//:distributions.bzl",
+    "CUDA_REDISTRIBUTIONS",
+    "CUDNN_REDISTRIBUTIONS",
+)
+load(
+    "@local_tsl//third_party/gpus/cuda/hermetic:cuda_redist_init_repositories.bzl",
+    "cuda_redist_init_repositories",
+    "cudnn_redist_init_repository",
+)
+
+cuda_redist_init_repositories(
+    cuda_redistributions = CUDA_REDISTRIBUTIONS,
+)
+
+cudnn_redist_init_repository(
+    cudnn_redistributions = CUDNN_REDISTRIBUTIONS,
+)
+
+load(
+    "@local_tsl//third_party/gpus/cuda/hermetic:cuda_configure.bzl",
+    "cuda_configure",
+)
+
+cuda_configure(name = "local_config_cuda")
+
+load(
+    "@local_tsl//third_party/nccl/hermetic:nccl_redist_init_repository.bzl",
+    "nccl_redist_init_repository",
+)
+
+nccl_redist_init_repository()
+
+load(
+    "@local_tsl//third_party/nccl/hermetic:nccl_configure.bzl",
+    "nccl_configure",
+)
+
+nccl_configure(name = "local_config_nccl")
