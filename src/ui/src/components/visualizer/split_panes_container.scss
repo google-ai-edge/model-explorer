@@ -41,6 +41,14 @@
       cursor: pointer;
       flex-shrink: 0;
 
+      &.extra-left-padding {
+        padding-left: 36px;
+      }
+
+      &.extra-right-padding {
+        padding-right: 36px;
+      }
+
       .buttons-container {
         display: flex;
         align-items: center;
@@ -65,6 +73,13 @@
           width: 18px;
         }
       }
+
+      .divider {
+        width: 1px;
+        height: 12px;
+        background-color: #999;
+        margin: 0 4px 0 12px;
+      }
     }
 
     split-pane {
@@ -82,6 +97,10 @@
       .pane-title-container {
         background-color: #ea8600;
         color: white;
+
+        .divider {
+          background-color: white;
+        }
       }
     }
 
@@ -192,6 +211,15 @@
       width: 1px;
       border-left: 1px solid #999;
     }
+  }
+
+  .sync-navigation-container {
+    position: absolute;
+    transform: translate(-22px, 0);
+    top: 0px;
+    height: 24px;
+    // Over resizer.
+    z-index: 250; 
   }
 }
 

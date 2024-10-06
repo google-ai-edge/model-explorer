@@ -28,6 +28,7 @@ import {
   NodeDataProviderData,
   NodeDataProviderResultProcessedData,
   NodeDataProviderRunData,
+  ReadFileResp,
   ThresholdItem,
 } from './common/types';
 import {genUid, isOpNode} from './common/utils';
@@ -42,10 +43,6 @@ interface ProcessedGradientItem {
   stop: number;
   bgColor?: Rgb;
   textColor?: Rgb;
-}
-
-declare interface ReadFileResp {
-  content: string;
 }
 
 declare interface ExternalReadFileResp {

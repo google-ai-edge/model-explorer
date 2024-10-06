@@ -75,7 +75,9 @@ limitations under the License.
       </div>
     }
 
-    <div class="pane-title-container" *ngIf="hasSplitPane">
+    <div class="pane-title-container" *ngIf="hasSplitPane"
+        [class.extra-left-padding]="i === 1"
+        [class.extra-right-padding]="i === 0">
       <div class="pane-title">
         {{getPaneTitle(pane)}}
       </div>
@@ -103,4 +105,12 @@ limitations under the License.
       (mousedown)="handleMouseDownResizer($event, panesContainer)">
     <div class="resizer-line"></div>
   </div>
+
+  <!-- Sync navigation -->
+  @if (hasSplitPane && allPanesLoaded()) {
+    <div class="sync-navigation-container"
+        [style.left]="resizerLeft">
+      <sync-navigation-button></sync-navigation-button>
+    </div>
+  }
 </div>

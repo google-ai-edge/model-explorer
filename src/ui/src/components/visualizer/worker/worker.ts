@@ -161,6 +161,7 @@ self.addEventListener('message', (event: Event) => {
           workerEvent.forRestoringSnapshotAfterTogglingFlattenLayers,
         targetDeepestGroupNodeIdsToExpand:
           workerEvent.targetDeepestGroupNodeIdsToExpand,
+        triggerNavigationSync: workerEvent.triggerNavigationSync,
       };
       postMessage(resp);
       break;

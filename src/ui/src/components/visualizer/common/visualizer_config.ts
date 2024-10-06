@@ -16,6 +16,7 @@
  * ==============================================================================
  */
 
+import {SyncNavigationData} from './sync_navigation';
 import {NodeStylerRule, RendererType} from './types';
 
 /** Configs for the visualizer. */
@@ -58,6 +59,9 @@ export declare interface VisualizerConfig {
 
   /** The default node styler rules. */
   nodeStylerRules?: NodeStylerRule[];
+
+  /** The data for navigation syncing. */
+  syncNavigationData?: SyncNavigationData;
 
   /**
    * Default graph renderer.

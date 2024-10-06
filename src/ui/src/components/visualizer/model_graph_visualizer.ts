@@ -45,6 +45,7 @@ import {
   NodeDataProviderData,
   NodeDataProviderGraphData,
   NodeInfo,
+  SyncNavigationModeChangedEvent,
 } from './common/types';
 import {genUid, inInputElement, isOpNode} from './common/utils';
 import {type VisualizerConfig} from './common/visualizer_config';
@@ -53,6 +54,7 @@ import {ExtensionService} from './extension_service';
 import {NodeDataProviderExtensionService} from './node_data_provider_extension_service';
 import {NodeStylerService} from './node_styler_service';
 import {SplitPanesContainer} from './split_panes_container';
+import {SyncNavigationService} from './sync_navigation_service';
 import {ThreejsService} from './threejs_service';
 import {TitleBar} from './title_bar';
 import {UiStateService} from './ui_state_service';
@@ -70,6 +72,7 @@ import {WorkerService} from './worker_service';
     ExtensionService,
     NodeDataProviderExtensionService,
     NodeStylerService,
+    SyncNavigationService,
     UiStateService,
     WorkerService,
   ],
@@ -109,6 +112,10 @@ export class ModelGraphVisualizer implements OnInit, OnDestroy, OnChanges {
   /** Triggered when a remote node data paths are updated. */
   @Output() readonly remoteNodeDataPathsChanged = new EventEmitter<string[]>();
 
+  /** Triggered when the sync navigation mode is changed. */
+  @Output() readonly syncNavigationModeChanged =
+    new EventEmitter<SyncNavigationModeChangedEvent>();
+
   /** Triggered when the selected node is changed. */
   @Output() readonly selectedNodeChanged = new EventEmitter<NodeInfo>();
 
@@ -140,6 +147,7 @@ export class ModelGraphVisualizer implements OnInit, OnDestroy, OnChanges {
     private readonly uiStateService: UiStateService,
     private readonly nodeDataProviderExtensionService: NodeDataProviderExtensionService,
     private readonly nodeStylerService: NodeStylerService,
+    readonly syncNavigationService: SyncNavigationService,
   ) {
 
     effect(() => {
@@ -199,6 +207,12 @@ export class ModelGraphVisualizer implements OnInit, OnDestroy, OnChanges {
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((event) => {
         this.modelGraphProcessed.next(event);
+      });
+
+    this.syncNavigationService.syncNavigationModeChanged$
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((event) => {
+        this.syncNavigationModeChanged.next(event);
       });
 
     this.initThreejs();

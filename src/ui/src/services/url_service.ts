@@ -19,6 +19,7 @@
 import {Injectable} from '@angular/core';
 import {Params, Router} from '@angular/router';
 
+import {SyncNavigationModeChangedEvent} from '../components/visualizer/common/types';
 import {VisualizerUiState} from '../components/visualizer/common/visualizer_ui_state';
 
 /** All URL query parameter keys. */
@@ -43,6 +44,7 @@ declare interface OldEncodedUrlData {
 declare interface EncodedUrlData {
   models: ModelSource[];
   nodeData?: string[];
+  sync?: SyncNavigationModeChangedEvent;
   // Target model names (e.g. model.tflite) that each of the `nodeData` above
   // is applied to.
   nodeDataTargets?: string[];
@@ -65,6 +67,7 @@ export declare interface ModelSource {
 export class UrlService {
   private models: ModelSource[] = [];
   private nodeData?: string[] = [];
+  private syncNavigation?: SyncNavigationModeChangedEvent;
   private nodeDataTargets?: string[] = [];
   private uiState?: VisualizerUiState;
   private prevQueryParamStr = '';
@@ -107,6 +110,15 @@ export class UrlService {
     this.updateUrl();
   }
 
+  getSyncNavigation(): SyncNavigationModeChangedEvent | undefined {
+    return this.syncNavigation;
+  }
+
+  setSyncNavigation(syncNavigation: SyncNavigationModeChangedEvent) {
+    this.syncNavigation = syncNavigation;
+    this.updateUrl();
+  }
+
   getNodeDataTargets(): string[] {
     return this.nodeDataTargets || [];
   }
@@ -125,6 +137,7 @@ export class UrlService {
         nodeData: this.nodeData,
         nodeDataTargets: this.nodeDataTargets,
         uiState: this.uiState,
+        sync: this.syncNavigation,
       };
       queryParams[QueryParamKey.DATA] = JSON.stringify(data);
       queryParams[QueryParamKey.RENDERER] = this.renderer;
@@ -194,6 +207,7 @@ export class UrlService {
       this.models = decodedData.models;
       this.uiState = decodedData.uiState;
       this.nodeData = decodedData.nodeData;
+      this.syncNavigation = decodedData.sync;
       this.nodeDataTargets = decodedData.nodeDataTargets;
     }
 
