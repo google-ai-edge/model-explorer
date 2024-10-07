@@ -19,6 +19,7 @@ on:
           - Linux_runner_8_core
           - macos-latest
           - macos-13
+          - windows-latest
 
       python-version:
         description: 'Python Version'
