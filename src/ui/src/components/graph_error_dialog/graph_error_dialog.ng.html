@@ -16,14 +16,12 @@ limitations under the License.
 ==============================================================================
 -->
 
-<div mat-dialog-title>
-  <div class="title">Graph loading errors</div>
-</div>
-<div mat-dialog-content class="dialog-content">
-    @for (error of errors; track $index) {
-      <p>{{error}}</p>
+<h2 mat-dialog-title class="error-dialog-title">Graph loading errors</h2>
+<ul mat-dialog-content class="error-dialog-items">
+    @for (error of data.errorMessages; track $index) {
+      <li><code>{{error}}</code></li>
     }
-</div>
+</ul>
 <div mat-dialog-actions align="end">
   <button mat-button mat-dialog-close>Close</button>
 </div>
