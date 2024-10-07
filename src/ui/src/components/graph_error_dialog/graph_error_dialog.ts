@@ -17,10 +17,14 @@
  */
 
 import {CommonModule} from '@angular/common';
-import {Component, Input} from '@angular/core';
+import {Component, Inject } from '@angular/core';
 import {MatButtonModule} from '@angular/material/button';
-import {MatDialogModule} from '@angular/material/dialog';
+import {MAT_DIALOG_DATA, MatDialogModule} from '@angular/material/dialog';
 import {MatIconModule} from '@angular/material/icon';
+
+export interface ErrorDialogData {
+	errorMessages: string[];
+}
 
 /**
  * A dialog showing errors from loading graphs.
@@ -33,5 +37,5 @@ import {MatIconModule} from '@angular/material/icon';
   styleUrls: ['./graph_error_dialog.scss'],
 })
 export class GraphErrorsDialog {
-	@Input() errors: string[] = [];
+	constructor(@Inject(MAT_DIALOG_DATA) public data: ErrorDialogData) {}
 }
