@@ -296,7 +296,13 @@ export class GraphSelector {
         }
       } else {
         this.graphLoadingError.update(() => curModel.errorMessage ?? '');
-        this.dialog.open(GraphErrorsDialog, {});
+        this.dialog.open(GraphErrorsDialog, {
+          width: 'clamp(10rem, 30vmin, 30rem)',
+          height: 'clamp(10rem, 30vmin, 30rem)',
+          data: {
+            errorMessages: [curModel.errorMessage ?? '']
+          }
+        });
       }
     }
   }
