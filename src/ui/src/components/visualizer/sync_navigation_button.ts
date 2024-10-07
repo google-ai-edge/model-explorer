@@ -113,14 +113,13 @@ export class SyncNavigationButton {
           SyncNavigationMode.MATCH_NODE_ID,
           SyncNavigationMode.VISUALIZER_CONFIG,
           SyncNavigationMode.UPLOAD_MAPPING_FROM_COMPUTER,
-          SyncNavigationMode.LOAD_MAPPING_FROM_CNS,
         ]
       : [
           SyncNavigationMode.DISABLED,
           SyncNavigationMode.MATCH_NODE_ID,
           SyncNavigationMode.UPLOAD_MAPPING_FROM_COMPUTER,
-          SyncNavigationMode.LOAD_MAPPING_FROM_CNS,
         ];
+
     // If there is sync navigation data passed through visualizer config, set
     // the sync navigation data for the "visualizer config" mode and select the
     // mode by default.

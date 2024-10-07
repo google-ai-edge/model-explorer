@@ -696,7 +696,12 @@ export class WebglRenderer implements OnInit, OnDestroy {
             data.nodeId,
           );
           const mappedNode = this.curModelGraph.nodesById[mappedNodeId];
-          if (mappedNode && mappedNode.id !== this.selectedNodeId) {
+          const hideInLayout = isOpNode(mappedNode) && mappedNode.hideInLayout;
+          if (
+            mappedNode &&
+            mappedNode.id !== this.selectedNodeId &&
+            !hideInLayout
+          ) {
             this.revealNode(mappedNodeId, false);
           }
         }
