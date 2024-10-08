@@ -208,7 +208,6 @@ cc_library(
         "@com_google_absl//absl/strings:str_format",
         "@com_google_absl//absl/strings:string_view",
         "@llvm-project//llvm:Support",
-        "@com_google_protobuf//:protobuf_lite",
         "@org_tensorflow//tensorflow/cc/saved_model:reader",
         "//formats:schema_structs",
         "@org_tensorflow//tensorflow/core:framework",
