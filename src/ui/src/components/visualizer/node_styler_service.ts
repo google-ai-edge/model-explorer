@@ -110,23 +110,20 @@ export class NodeStylerService {
     private readonly appService: AppService,
     private readonly localStorageService: LocalStorageService,
   ) {
-    effect(
-      () => {
-        const rules = this.rules();
+    effect(() => {
+      const rules = this.rules();
 
-        if (!this.appService.testMode) {
-          // Save rules to local storage on changes.
-          this.localStorageService.setItem(
-            LOCAL_STORAGE_KEY_NODE_STYLER_RULES,
-            JSON.stringify(rules),
-          );
-        }
+      if (!this.appService.testMode) {
+        // Save rules to local storage on changes.
+        this.localStorageService.setItem(
+          LOCAL_STORAGE_KEY_NODE_STYLER_RULES,
+          JSON.stringify(rules),
+        );
+      }
 
-        // Compute matched nodes.
-        this.computeMatchedNodes(rules);
-      },
-      {allowSignalWrites: true},
-    );
+      // Compute matched nodes.
+      this.computeMatchedNodes(rules);
+    });
 
     // Load rules from local storage in non-test mode.
     if (!this.appService.testMode) {

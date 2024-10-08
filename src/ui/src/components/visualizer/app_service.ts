@@ -106,7 +106,7 @@ export class AppService {
 
   readonly doubleClickedNode = signal<NodeInfo | undefined>(undefined);
 
-  testMode: boolean = false;
+  testMode = false;
 
   private groupNodeChildrenCountThresholdFromUrl: string | null = null;
 

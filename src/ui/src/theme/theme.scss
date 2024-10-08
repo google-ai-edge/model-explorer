@@ -106,6 +106,7 @@ $blue-palette: (
   @include mat.list-theme($theme);
   @include mat.menu-theme($theme);
   @include mat.progress-spinner-theme($theme);
+  @include mat.radio-theme($theme);
   @include mat.select-theme($theme);
   @include mat.sidenav-theme($theme);
   @include mat.slide-toggle-theme($theme);

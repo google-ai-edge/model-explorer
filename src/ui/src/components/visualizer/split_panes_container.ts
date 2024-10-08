@@ -16,16 +16,18 @@
  * ==============================================================================
  */
 
-import {animate, state, style, transition, trigger} from '@angular/animations';
+import {animate, style, transition, trigger} from '@angular/animations';
 import {CommonModule} from '@angular/common';
 import {
   AfterViewInit,
   ChangeDetectionStrategy,
   ChangeDetectorRef,
   Component,
+  computed,
   effect,
   ElementRef,
   QueryList,
+  Signal,
   ViewChild,
   ViewChildren,
 } from '@angular/core';
@@ -48,6 +50,7 @@ import {
 import {GraphPanel} from './graph_panel';
 import {InfoPanel} from './info_panel';
 import {SplitPane} from './split_pane';
+import {SyncNavigationButton} from './sync_navigation_button';
 import {WorkerService} from './worker_service';
 
 interface ProcessingTask {
@@ -69,6 +72,7 @@ interface ProcessingTask {
     MatProgressSpinnerModule,
     MatTooltipModule,
     SplitPane,
+    SyncNavigationButton,
   ],
   templateUrl: './split_panes_container.ng.html',
   styleUrls: ['./split_panes_container.scss'],
@@ -90,6 +94,7 @@ export class SplitPanesContainer implements AfterViewInit {
   @ViewChildren('splitPane') splitPanes = new QueryList<SplitPane>();
 
   readonly processingTasks: Record<string, ProcessingTask[]> = {};
+  readonly allPanesLoaded: Signal<boolean>;
 
   resizingSplitPane = false;
   curLeftWidthFraction = 1;
@@ -103,6 +108,10 @@ export class SplitPanesContainer implements AfterViewInit {
     private readonly workerService: WorkerService,
   ) {
     this.panes = this.appService.panes;
+    this.allPanesLoaded = computed(() =>
+      this.panes().every((pane) => pane.modelGraph != null),
+    );
+
     effect(() => {
       const panes = this.panes();
       if (panes.length >= 1) {
