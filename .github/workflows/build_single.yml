@@ -35,12 +35,14 @@ jobs:
         shell: msys2 {0}
 
     steps:
-      - uses: actions/checkout@v4
       - uses: msys2/setup-msys2@v2
         with:
-            msystem: UCRT64
-            update: true
-            install: git mingw-w64-ucrt-x86_64-gcc
+          update: true
+          install: >-
+            curl
+            git
+            mingw-w64-ucrt-x86_64-gcc
+      - uses: actions/checkout@v4
 
       - name: Set up Python ${{ github.event.inputs.python-version }}
         uses: actions/setup-python@v5
