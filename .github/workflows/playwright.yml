@@ -4,7 +4,7 @@
 # Helpful YAML parser to clarify YAML syntax:
 # https://yaml-online-parser.appspot.com/
 
-name: Formatting
+name: Playwright Tests
 
 on:
   workflow_call:
@@ -14,8 +14,8 @@ on:
         type: string
 
 jobs:
-  check-code-style:
-    name: Code Style
+  test:
+    timeout-minutes: 15
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -29,9 +29,11 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install pyink
-          pip install "black[jupyter]"
+          python -m playwright install --with-deps
+          python3 -m pip install Pillow
 
-      - name: Check Code Style
+      - name: Run tests
         run: |
-          ci/code_style_check.sh
+          src/server/scripts/setup_local_dev.sh
+          model-explorer
+          pytest ci/playwright_test.py
