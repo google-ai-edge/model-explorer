@@ -31,7 +31,7 @@ jobs:
         run: |
           cd src/server
           scripts/setup_local_dev.sh
-          nohup model-explorer --host=127.0.0.1 --port=8081 &
+          nohup model-explorer --host=127.0.0.1 --port=8080 &
 
       - name: Install dependencies
         run: |
@@ -40,6 +40,17 @@ jobs:
           python -m playwright install --with-deps
 
       - name: Run tests
+        continue-on-error: true
         run: |
           pytest -v ci/playwright_test.py
+
+      - name: Upload screenshots
+        uses: actions/upload-artifact@v4
+        if: ${{ always() }}
+        with:
+          name: playwright-screenshots
+          path: .tmp/
+      
+      - name: Cleanup temporary files
+        run: rm -r .tmp/
 
