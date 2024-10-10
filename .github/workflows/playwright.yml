@@ -41,5 +41,5 @@ jobs:
 
       - name: Run tests
         run: |
-          pytest ci/playwright_test.py
+          PWDEBUG=1 pytest -v ci/playwright_test.py
 
