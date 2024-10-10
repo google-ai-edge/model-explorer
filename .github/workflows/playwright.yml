@@ -49,8 +49,10 @@ jobs:
         if: ${{ always() }}
         with:
           name: playwright-screenshots
-          path: .tmp/
+          path: build/
       
       - name: Cleanup temporary files
-        run: rm -r .tmp/
+        run: |
+          ls -l build/
+          rm -r build/
 
