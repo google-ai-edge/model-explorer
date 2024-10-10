@@ -40,7 +40,6 @@ jobs:
           python -m playwright install --with-deps
 
       - name: Run tests
-        continue-on-error: true
         run: |
           pytest -v ci/playwright_test.py
 
@@ -50,9 +49,5 @@ jobs:
         with:
           name: playwright-screenshots
           path: build/
-      
-      - name: Cleanup temporary files
-        run: |
-          ls -l build/
-          rm -r build/
+
 
