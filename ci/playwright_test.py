@@ -17,37 +17,36 @@ import re
 import time
 from playwright.sync_api import Page, expect
 from PIL import Image, ImageChops
+import tempfile
 
 LOCAL_SERVER = "http://localhost:8080/"
 TEST_FILES_DIR = "src/server/test/"
-TMP_SCREENSHOT_DIR = "src/server/test/tmp/"
 EXPECTED_SCREENSHOT_DIR = "src/server/screenshots/"
 
 
-def compare_images(image_suffix: str, threshold: int = 0):
-  tmp_image = Image.open(TMP_SCREENSHOT_DIR + image_suffix).convert("L")
-  expected_image = Image.open(EXPECTED_SCREENSHOT_DIR + image_suffix).convert(
-      "L"
-  )
+def matched_images(actual_image_path, expected_image_path, threshold: int = 0):
+  actual_image = Image.open(actual_image_path).convert("L")
+  expected_image = Image.open(expected_image_path).convert("L")
 
-  if tmp_image.size != expected_image.size:
+  if actual_image.size != expected_image.size:
     return False
-
-  diff = ImageChops.difference(tmp_image, expected_image)
+  diff = ImageChops.difference(actual_image, expected_image)
   max_diff = diff.getextrema()[1]
   if max_diff <= threshold:
     return True
   return False
 
 
-def test_homepage(page: Page):
+def test_homepage(page: Page, tmp_path):
   page.goto(LOCAL_SERVER)
   expect(page).to_have_title(re.compile("Model Explorer"))
-  page.screenshot(path=TMP_SCREENSHOT_DIR + "homepage.png")
-  assert compare_images("homepage.png")
+  actual_image_path = tmp_path / "homepage.png"
+  page.screenshot(path=actual_image_path)
+  expected_image_path = EXPECTED_SCREENSHOT_DIR + "homepage.png"
+  assert matched_images(actual_image_path, expected_image_path)
 
 
-def test_litert_direct_adapter(page: Page):
+def test_litert_direct_adapter(page: Page, tmp_path):
   page.goto(LOCAL_SERVER)
   page.get_by_placeholder("Absolute file paths (").fill(
       TEST_FILES_DIR + "fully_connected.tflite"
@@ -57,11 +56,13 @@ def test_litert_direct_adapter(page: Page):
   page.get_by_text("TFLite adapter (Flatbuffer)").click()
   page.get_by_role("button", name="View selected models").click()
   page.locator("canvas").first.click(position={"x": 469, "y": 340})
-  page.screenshot(path=TMP_SCREENSHOT_DIR + "litert_direct.png")
-  assert compare_images("litert_direct.png")
+  actual_image_path = tmp_path / "litert_direct.png"
+  page.screenshot(path=actual_image_path)
+  expected_image_path = EXPECTED_SCREENSHOT_DIR + "litert_direct.png"
+  assert matched_images(actual_image_path, expected_image_path)
 
 
-def test_litert_mlir_adapter(page: Page):
+def test_litert_mlir_adapter(page: Page, tmp_path):
   page.goto(LOCAL_SERVER)
   page.get_by_placeholder("Absolute file paths (").fill(
       TEST_FILES_DIR + "fully_connected.tflite"
@@ -71,11 +72,13 @@ def test_litert_mlir_adapter(page: Page):
   page.get_by_text("TFLite adapter (MLIR)").click()
   page.get_by_role("button", name="View selected models").click()
   page.locator("canvas").first.click(position={"x": 514, "y": 332})
-  page.screenshot(path=TMP_SCREENSHOT_DIR + "litert_mlir.png")
-  assert compare_images("litert_mlir.png")
+  actual_image_path = tmp_path / "litert_mlir.png"
+  page.screenshot(path=actual_image_path)
+  expected_image_path = EXPECTED_SCREENSHOT_DIR + "litert_mlir.png"
+  assert matched_images(actual_image_path, expected_image_path)
 
 
-def test_tf_mlir_adapter(page: Page):
+def test_tf_mlir_adapter(page: Page, tmp_path):
   page.goto(LOCAL_SERVER)
   page.get_by_placeholder("Absolute file paths (").fill(
       TEST_FILES_DIR + "simple_add/saved_model.pb"
@@ -85,11 +88,13 @@ def test_tf_mlir_adapter(page: Page):
   page.get_by_text("TF adapter (MLIR) Default").click()
   page.get_by_role("button", name="View selected models").click()
   page.locator("canvas").first.click(position={"x": 444, "y": 281})
-  page.screenshot(path=TMP_SCREENSHOT_DIR + "tf_mlir.png")
-  assert compare_images("tf_mlir.png")
+  actual_image_path = tmp_path / "tf_mlir.png"
+  page.screenshot(path=actual_image_path)
+  expected_image_path = EXPECTED_SCREENSHOT_DIR + "tf_mlir.png"
+  assert matched_images(actual_image_path, expected_image_path)
 
 
-def test_tf_direct_adapter(page: Page):
+def test_tf_direct_adapter(page: Page, tmp_path):
   page.goto(LOCAL_SERVER)
   page.get_by_placeholder("Absolute file paths (").fill(
       TEST_FILES_DIR + "simple_add/saved_model.pb"
@@ -101,11 +106,13 @@ def test_tf_direct_adapter(page: Page):
   page.get_by_text("__inference__traced_save_36", exact=True).click()
   page.get_by_text("__inference_add_6").click()
   page.locator("canvas").first.click(position={"x": 723, "y": 278})
-  page.screenshot(path=TMP_SCREENSHOT_DIR + "tf_direct.png")
-  assert compare_images("tf_direct.png")
+  actual_image_path = tmp_path / "tf_direct.png"
+  page.screenshot(path=actual_image_path)
+  expected_image_path = EXPECTED_SCREENSHOT_DIR + "tf_direct.png"
+  assert matched_images(actual_image_path, expected_image_path)
 
 
-def test_tf_graphdef_adapter(page: Page):
+def test_tf_graphdef_adapter(page: Page, tmp_path):
   page.goto(LOCAL_SERVER)
   page.get_by_placeholder("Absolute file paths (").fill(
       TEST_FILES_DIR + "graphdef_foo.pbtxt"
@@ -113,11 +120,13 @@ def test_tf_graphdef_adapter(page: Page):
   page.get_by_role("button", name="Add").click()
   page.get_by_role("button", name="View selected models").click()
   page.locator("canvas").first.click(position={"x": 468, "y": 344})
-  page.screenshot(path=TMP_SCREENSHOT_DIR + "graphdef.png")
-  assert compare_images("graphdef.png")
+  actual_image_path = tmp_path / "graphdef.png"
+  page.screenshot(path=actual_image_path)
+  expected_image_path = EXPECTED_SCREENSHOT_DIR + "graphdef.png"
+  assert matched_images(actual_image_path, expected_image_path)
 
 
-def test_shlo_mlir_adapter(page: Page):
+def test_shlo_mlir_adapter(page: Page, tmp_path):
   page.goto(LOCAL_SERVER)
   page.get_by_placeholder("Absolute file paths (").fill(
       TEST_FILES_DIR + "stablehlo_sin.mlir"
@@ -127,5 +136,7 @@ def test_shlo_mlir_adapter(page: Page):
   page.locator("canvas").first.dblclick(position={"x": 442, "y": 339})
   time.sleep(0.5)  # Delay for the animation
   page.locator("canvas").first.click(position={"x": 488, "y": 408})
-  page.screenshot(path=TMP_SCREENSHOT_DIR + "shlo_mlir.png")
-  assert compare_images("shlo_mlir.png")
+  actual_image_path = tmp_path / "shlo_mlir.png"
+  page.screenshot(path=actual_image_path)
+  expected_image_path = EXPECTED_SCREENSHOT_DIR + "shlo_mlir.png"
+  assert matched_images(actual_image_path, expected_image_path)

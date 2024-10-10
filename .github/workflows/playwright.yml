@@ -36,14 +36,10 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          python -m pip install pytest-playwright
+          python -m pip install pytest-playwright Pillow
           python -m playwright install --with-deps
-          python3 -m pip install Pillow
 
       - name: Run tests
         run: |
           pytest ci/playwright_test.py
-      
-      - name: Clean up the temp files
-        run: |
-          rm -r src/server/test/tmp
+
