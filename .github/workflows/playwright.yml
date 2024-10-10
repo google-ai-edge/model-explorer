@@ -37,3 +37,7 @@ jobs:
           src/server/scripts/setup_local_dev.sh
           model-explorer
           pytest ci/playwright_test.py
+      
+      - name: Clean up the temp files
+        run: |
+          rm -r src/server/test/tmp
