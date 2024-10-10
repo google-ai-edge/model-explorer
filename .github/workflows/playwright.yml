@@ -31,7 +31,7 @@ jobs:
         run: |
           cd src/server
           scripts/setup_local_dev.sh
-          nohup model-explorer &
+          nohup model-explorer --host=127.0.0.1 --port=8081 &
 
       - name: Install dependencies
         run: |
@@ -41,5 +41,5 @@ jobs:
 
       - name: Run tests
         run: |
-          PWDEBUG=1 pytest -v ci/playwright_test.py
+          pytest -v ci/playwright_test.py
 

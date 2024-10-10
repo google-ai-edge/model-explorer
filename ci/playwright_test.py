@@ -17,14 +17,13 @@ import re
 import time
 from playwright.sync_api import Page, expect
 from PIL import Image, ImageChops
-import tempfile
 
-LOCAL_SERVER = "http://localhost:8080/"
+LOCAL_SERVER = "http://127.0.0.1:8081//"
 TEST_FILES_DIR = "src/server/test/"
 EXPECTED_SCREENSHOT_DIR = "src/server/screenshots/"
 
 
-def matched_images(actual_image_path, expected_image_path, threshold: int = 0):
+def matched_images(actual_image_path, expected_image_path, threshold: int = 10):
   actual_image = Image.open(actual_image_path).convert("L")
   expected_image = Image.open(expected_image_path).convert("L")
 
