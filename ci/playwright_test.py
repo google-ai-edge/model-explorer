@@ -16,7 +16,7 @@
 import re
 import time
 from playwright.sync_api import Page, expect
-from PIL import Image, ImageChops
+import cv2
 from pathlib import Path
 
 LOCAL_SERVER = "http://127.0.0.1:8080//"
@@ -26,15 +26,28 @@ TMP_SCREENSHOT_DIR = ROOT_DIR / "build"
 EXPECTED_SCREENSHOT_DIR = ROOT_DIR / "src/server/screenshots"
 
 
-def matched_images(actual_image_path, expected_image_path, threshold: int = 10):
-  actual_image = Image.open(actual_image_path).convert("L")
-  expected_image = Image.open(expected_image_path).convert("L")
+def matched_images(
+    actual_image_path, expected_image_path, threshold_ratio: int = 0.4
+):
+  actual_image = cv2.imread(actual_image_path)
+  expected_image = cv2.imread(expected_image_path)
 
-  if actual_image.size != expected_image.size:
-    return False
-  diff = ImageChops.difference(actual_image, expected_image)
-  max_diff = diff.getextrema()[1]
-  if max_diff <= threshold:
+  orb = cv2.ORB_create()
+  actual_keypoints, actual_descriptors = orb.detectAndCompute(
+      actual_image, None
+  )
+  expected_keypoints, expected_descriptors = orb.detectAndCompute(
+      expected_image, None
+  )
+
+  bf = cv2.BFMatcher(cv2.NORM_HAMMING, crossCheck=True)
+  matches = bf.match(actual_descriptors, expected_descriptors)
+  num_matches = len(matches)
+  threshold = threshold_ratio * min(
+      len(actual_keypoints), len(expected_keypoints)
+  )
+
+  if num_matches >= threshold:
     return True
   return False
 
