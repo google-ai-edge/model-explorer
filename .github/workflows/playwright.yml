@@ -16,7 +16,7 @@ on:
 jobs:
   test:
     name: Local Build & Test
-    timeout-minutes: 15
+    timeout-minutes: 10
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -27,10 +27,11 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Build local server
+      - name: Turn up local server
         run: |
           cd src/server
           scripts/setup_local_dev.sh
+          nohup model-explorer &
 
       - name: Install dependencies
         run: |
@@ -41,7 +42,6 @@ jobs:
 
       - name: Run tests
         run: |
-          model-explorer
           pytest ci/playwright_test.py
       
       - name: Clean up the temp files
