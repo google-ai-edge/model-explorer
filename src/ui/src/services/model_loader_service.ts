@@ -122,8 +122,6 @@ export class ModelLoaderService implements ModelLoaderServiceInterface {
       );
     }
 
-    modelItem.status.set(ModelItemStatus.DONE);
-
     return result;
   }
 
