@@ -16,7 +16,7 @@ limitations under the License.
 ==============================================================================
 -->
 
-<h2 mat-dialog-title class="error-dialog-title">Graph loading errors</h2>
+<h2 mat-dialog-title class="error-dialog-title">{{data.title ?? 'Graph Errors'}}</h2>
 <ul mat-dialog-content class="error-dialog-items">
     @for (error of data.errorMessages; track $index) {
       <li><code>{{error}}</code></li>

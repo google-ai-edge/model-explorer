@@ -24,6 +24,7 @@ import {MatIconModule} from '@angular/material/icon';
 
 export interface ErrorDialogData {
 	errorMessages: string[];
+	title?: string
 }
 
 /**
