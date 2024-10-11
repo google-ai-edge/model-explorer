@@ -218,37 +218,49 @@ export class GraphSelector {
     if (curModel) {
       const result = await this.modelLoaderService.executeModel(curModel);
 
-      if (result) {
-        this.modelLoaderService.loadedGraphCollections.update((prevGraphCollections) => {
-          if (!prevGraphCollections) {
-            return undefined;
+      if (curModel.status() !== ModelItemStatus.ERROR) {
+        if (result) {
+          this.modelLoaderService.loadedGraphCollections.update((prevGraphCollections) => {
+            if (!prevGraphCollections) {
+              return undefined;
+            }
+
+            return [...prevGraphCollections];
+          });
+
+          this.urlService.setUiState(undefined);
+          this.urlService.setModels(models.map(({ path, selectedAdapter }) => {
+            return {
+              url: path,
+              adapterId: selectedAdapter?.id
+            };
+          }));
+
+          this.modelLoaderService.changesToUpload.update(() => ({}));
+
+          if (result.perf_data) {
+            const runId = genUid();
+            const modelGraph = curPane?.modelGraph as ModelGraph;
+
+            this.nodeDataProviderExtensionService.addRun(
+              runId,
+              `${modelGraph.id} (Performance Trace)`,
+              curModel.selectedAdapter?.id ?? '',
+              modelGraph,
+              result.perf_data,
+            );
           }
-
-          return [...prevGraphCollections];
-        });
-
-        this.urlService.setUiState(undefined);
-        this.urlService.setModels(models.map(({ path, selectedAdapter }) => {
-          return {
-            url: path,
-            adapterId: selectedAdapter?.id
-          };
-        }));
-
-        this.modelLoaderService.changesToUpload.update(() => ({}));
-
-        if (result.perf_data) {
-          const runId = genUid();
-          const modelGraph = curPane?.modelGraph as ModelGraph;
-
-          this.nodeDataProviderExtensionService.addRun(
-            runId,
-            `${modelGraph.id} (Performance Trace)`,
-            curModel.selectedAdapter?.id ?? '',
-            modelGraph,
-            result.perf_data,
-          );
         }
+      } else {
+        this.graphLoadingError.update(() => curModel.errorMessage ?? '');
+        this.dialog.open(GraphErrorsDialog, {
+          width: 'clamp(10rem, 30vmin, 30rem)',
+          height: 'clamp(10rem, 30vmin, 30rem)',
+          data: {
+            errorMessages: [curModel.errorMessage ?? ''],
+            title: 'Graph Execution Errors'
+          }
+        });
       }
     }
   }
@@ -300,7 +312,8 @@ export class GraphSelector {
           width: 'clamp(10rem, 30vmin, 30rem)',
           height: 'clamp(10rem, 30vmin, 30rem)',
           data: {
-            errorMessages: [curModel.errorMessage ?? '']
+            errorMessages: [curModel.errorMessage ?? ''],
+            title: 'Graph Loading Errors'
           }
         });
       }
