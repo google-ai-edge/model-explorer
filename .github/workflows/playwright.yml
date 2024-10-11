@@ -4,7 +4,7 @@
 # Helpful YAML parser to clarify YAML syntax:
 # https://yaml-online-parser.appspot.com/
 
-name: Formatting
+name: Playwright Tests
 
 on:
   workflow_call:
@@ -14,8 +14,9 @@ on:
         type: string
 
 jobs:
-  check-code-style:
-    name: Code Style
+  test:
+    name: Local Build & Test
+    timeout-minutes: 12
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -26,12 +27,27 @@ jobs:
         with:
           python-version: '3.11'
 
+      - name: Turn up local server
+        run: |
+          cd src/server
+          scripts/setup_local_dev.sh
+          nohup model-explorer --host=127.0.0.1 --port=8080 &
+
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install pyink
-          pip install "black[jupyter]"
+          python -m pip install pytest-playwright opencv-python
+          python -m playwright install --with-deps
 
-      - name: Check Code Style
+      - name: Run tests
         run: |
-          ci/code_style_check.sh
+          pytest -v ci/playwright_test.py
+
+      - name: Upload screenshots
+        uses: actions/upload-artifact@v4
+        if: ${{ always() }}
+        with:
+          name: playwright-screenshots
+          path: build/
+
+
