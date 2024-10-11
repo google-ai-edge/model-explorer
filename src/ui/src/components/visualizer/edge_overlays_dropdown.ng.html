@@ -1,0 +1,97 @@
+<!--
+@license
+Copyright 2024 The Model Explorer Authors. All Rights Reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+==============================================================================
+-->
+
+<div class="container"
+    [bubble]="help"
+    [overlaySize]="helpPopupSize"
+    [hoverDelayMs]="10">
+  <div class="mat-icon-container view"
+      [bubbleClick]="edgeOverlaysPopup"
+      [overlaySize]="edgeOverlaysPopupSize"
+      (opened)="opened=true"
+      (closed)="opened=false"
+      (click)="handleClickOnEdgeOverlaysButton()">
+    <mat-icon class="toolbar-icon">polyline</mat-icon>
+  </div>
+</div>
+
+<ng-template #help>
+  <div class="model-explorer-help-popup">
+    Show custom edge overlays on graph
+  </div>
+</ng-template>
+
+<ng-template #edgeOverlaysPopup>
+  <div class="model-explorer-edge-overlays-popup">
+    <div class="label">
+      <div>Edge overlays</div>
+      <div class="icon-container close" bubbleClose>
+        <mat-icon>close</mat-icon>
+      </div>
+    </div>
+
+    <!-- Loaded overlays -->
+    <div class="loaded-overlays-container">
+      @if (overlaysSets().length === 0) {
+        <div class="no-overlays-label">
+          No loaded edge overlays
+        </div>
+      } @else {
+        @for (overlaySet of overlaysSets(); track overlaySet.id) {
+          <div class="overlay-set-container">
+            <div class="overlay-set-label">
+              {{overlaySet.name}}
+              <div class="icon-container delete" (click)="handleDeleteOverlaySet(overlaySet)">
+                <mat-icon>delete</mat-icon>
+              </div>
+            </div>
+            @for (overlay of overlaySet.overlays; track overlay.id) {
+              <div class="overlay-item">
+                <label>
+                  <input type="checkbox" [checked]="overlay.selected"
+                      (change)="toggleOverlaySelection(overlay)"/>
+                  {{overlay.name}}
+                </label>
+                @if (overlay.selected) {
+                  <div class="view-label" (click)="handleClickViewOverlay(overlay)">
+                    View
+                  </div>
+                }
+              </div>
+            }
+          </div>
+        }
+      }
+    </div>
+
+    <!-- Buttons to load the json -->
+    <div class="upload-container">
+      <div class="description">Load from computer</div>
+      <button class="upload-json-file-button upload"
+          mat-flat-button color="primary"
+          (click)="input.click()">
+        Upload
+      </button>
+    </div>
+    <input class="upload-json-file-input"
+        type="file" #input
+        multiple
+        accept=".json"
+        (change)="handleClickUpload(input)">
+  </div>
+</ng-template>

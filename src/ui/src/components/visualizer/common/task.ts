@@ -24,4 +24,5 @@ export declare interface TaskData {
 /** The type of a task. */
 export enum TaskType {
   SYNC_NAVIGATION = 'sync_navigation',
+  EDGE_OVERLAYS = 'edge_overlays',
 }

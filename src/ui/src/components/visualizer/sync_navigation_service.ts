@@ -96,6 +96,7 @@ export class SyncNavigationService {
     const url = `/read_file?path=${path}`;
     const resp = await fetch(url);
     if (!resp.ok) {
+      this.loadingFromCns.set(false);
       return `Failed to load JSON file "${path}"`;
     }
 

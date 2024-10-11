@@ -46,6 +46,7 @@ import {
   SubgraphBreadcrumbItem,
 } from './common/types';
 import {isGroupNode} from './common/utils';
+import {EdgeOverlaysDropdown} from './edge_overlays_dropdown';
 import {SearchBar} from './search_bar';
 import {SnapshotManager} from './snapshot_manager';
 import {SubgraphBreadcrumbs} from './subgraph_breadcrumbs';
@@ -60,6 +61,7 @@ import {WebglRenderer} from './webgl_renderer';
     Bubble,
     BubbleClick,
     CommonModule,
+    EdgeOverlaysDropdown,
     MatButtonModule,
     MatIconModule,
     MatMenuModule,
@@ -202,6 +204,10 @@ export class RendererWrapper {
 
   get showSubgraphBreadcrumbs(): boolean {
     return !this.inPopup && this.curSubgraphBreadcrumbs.length > 1;
+  }
+
+  get showEdgeOverlaysDropdown(): boolean {
+    return !this.inPopup;
   }
 
   get disableExpandCollapseAllButton(): boolean {

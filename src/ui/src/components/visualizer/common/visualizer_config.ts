@@ -16,6 +16,7 @@
  * ==============================================================================
  */
 
+import {EdgeOverlaysData} from './edge_overlays';
 import {SyncNavigationData} from './sync_navigation';
 import {NodeStylerRule, RendererType} from './types';
 
@@ -62,6 +63,12 @@ export declare interface VisualizerConfig {
 
   /** The data for navigation syncing. */
   syncNavigationData?: SyncNavigationData;
+
+  /** List of data for edge overlays that will be applied to the left pane. */
+  edgeOverlaysDataListLeftPane?: EdgeOverlaysData[];
+
+  /** List of data for edge overlays that will be applied to the right pane. */
+  edgeOverlaysDataListRightPane?: EdgeOverlaysData[];
 
   /**
    * Default graph renderer.

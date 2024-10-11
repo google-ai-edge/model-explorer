@@ -271,4 +271,9 @@ export declare interface ModelEdge {
 
   // The following are for webgl rendering.
   curvePoints?: Point[];
+
+  // The label of the edge.
+  //
+  // If set, it will be rendered on edge instead of tensor shape.
+  label?: string;
 }

@@ -33,7 +33,6 @@ import {MatTooltipModule} from '@angular/material/tooltip';
 
 import {Bubble} from '../bubble/bubble';
 import {BubbleClick} from '../bubble/bubble_click';
-
 import {AppService} from './app_service';
 import {
   LOCAL_STORAGE_KEY_SHOW_ON_EDGE_ITEM_TYPES,

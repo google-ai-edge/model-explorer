@@ -62,9 +62,13 @@ export class WebglRendererEdgeTextsService {
   genLabelsOnEdges(
     edges: Array<{index: number; edge: ModelEdge}>,
     color: three.Color,
+    extraOffsetToEdge = 0,
+    y = 95,
+    fontSize?: number,
   ): LabelData[] {
     const edgeLabelFontSize =
-      this.appService.config()?.edgeLabelFontSize ||
+      fontSize ??
+      this.appService.config()?.edgeLabelFontSize ??
       DEFAULT_EDGE_LABEL_FONT_SIZE;
     const disallowVerticalEdgeLabels =
       this.appService.config()?.disallowVerticalEdgeLabels || false;
@@ -80,32 +84,39 @@ export class WebglRendererEdgeTextsService {
       }
 
       // Find the tensor shape.
-      let tensorShape = '?';
-      const outputsMetadata = fromNode.outputsMetadata || {};
-      for (const outputId of Object.keys(outputsMetadata)) {
-        const outgoingEdge = (fromNode.outgoingEdges || []).find(
-          (curEdge) =>
-            curEdge.sourceNodeOutputId === outputId &&
-            curEdge.targetNodeId === edge.toNodeId,
-        );
-        if (outgoingEdge != null) {
-          tensorShape = outputsMetadata[outputId]['shape'] || '?';
-          tensorShape = tensorShape
-            .split('')
-            .map((char) => {
-              if (char === 'x') {
-                char = 'x';
-              }
-              if (char === '∗') {
-                char = '*';
-              }
-              if (char === '') {
-                char = '';
-              }
-              return charsInfo[char] == null ? '?' : char;
-            })
-            .join('');
-          break;
+      let edgeLabel = '?';
+      if (edge.label != null) {
+        edgeLabel = edge.label;
+        if (edgeLabel === '') {
+          continue;
+        }
+      } else {
+        const outputsMetadata = fromNode.outputsMetadata || {};
+        for (const outputId of Object.keys(outputsMetadata)) {
+          const outgoingEdge = (fromNode.outgoingEdges || []).find(
+            (curEdge) =>
+              curEdge.sourceNodeOutputId === outputId &&
+              curEdge.targetNodeId === edge.toNodeId,
+          );
+          if (outgoingEdge != null) {
+            edgeLabel = outputsMetadata[outputId]['shape'] || '?';
+            edgeLabel = edgeLabel
+              .split('')
+              .map((char) => {
+                if (char === 'x') {
+                  char = 'x';
+                }
+                if (char === '∗') {
+                  char = '*';
+                }
+                if (char === '') {
+                  char = '';
+                }
+                return charsInfo[char] == null ? '?' : char;
+              })
+              .join('');
+            break;
+          }
         }
       }
 
@@ -137,20 +148,25 @@ export class WebglRendererEdgeTextsService {
       // Use '3' to take some padding into account when calculating text length.
       const curveLength = curvePath.getLength();
       const space = edgeLabelFontSize / 2 / curveLength;
-      const textLongerThanCurve = space * (tensorShape.length + 3) > 1;
+      const textLongerThanCurve = space * (edgeLabel.length + 3) > 1;
       const renderWholeTextFn = () => {
         const pos = curvePath.getPointAt(0.5) as three.Vector2;
+        const posX = pos.x;
+        const posY =
+          curvePoints[0].y === curvePoints[curvePoints.length - 1].y
+            ? pos.y - 10 - extraOffsetToEdge
+            : pos.y;
         labels.push({
-          id: `${edge.id}_${tensorShape}`,
+          id: `${edge.id}_${edgeLabel}`,
           nodeId: edge.toNodeId,
-          label: tensorShape,
+          label: edgeLabel,
           height: edgeLabelFontSize,
           hAlign: 'center',
           vAlign: 'center',
           weight: FontWeight.MEDIUM,
-          x: pos.x,
-          y: 95,
-          z: pos.y,
+          x: posX,
+          y,
+          z: posY,
           color,
           borderColor: {r: 1, g: 1, b: 1},
         });
@@ -176,12 +192,12 @@ export class WebglRendererEdgeTextsService {
         const startPosition = Math.max(
           0,
           // 5 is the estimated height of the arrow head.
-          Math.min(0.25, 1 - tensorShape.length * space - 5 / curveLength),
+          Math.min(0.25, 1 - edgeLabel.length * space - 5 / curveLength),
         );
         const maxOffset = Math.max(
           0.05,
           // 5 is the estimated height of the arrow head.
-          1 - 5 / curveLength - startPosition - space * tensorShape.length,
+          1 - 5 / curveLength - startPosition - space * edgeLabel.length,
         );
         // const step = 10 / curveLength;
         const step = 0.05;
@@ -193,8 +209,8 @@ export class WebglRendererEdgeTextsService {
           let prevAngle: number | undefined = undefined;
           charInfoList = [];
           let curPosition = curStartPosition;
-          for (let i = 0; i < tensorShape.length; i++) {
-            const char = tensorShape[i];
+          for (let i = 0; i < edgeLabel.length; i++) {
+            const char = edgeLabel[i];
             const pos = curvePath.getPointAt(
               Math.min(curPosition, 1),
             ) as three.Vector2;
@@ -237,8 +253,8 @@ export class WebglRendererEdgeTextsService {
 
             const charInfo = charsInfo[char];
             let nextCharXadvance = 0;
-            if (i !== tensorShape.length - 1) {
-              const nextChar = tensorShape[i + 1];
+            if (i !== edgeLabel.length - 1) {
+              const nextChar = edgeLabel[i + 1];
               nextCharXadvance = charsInfo[nextChar].xadvance;
             }
             const delta =
@@ -271,8 +287,8 @@ export class WebglRendererEdgeTextsService {
               char: string;
             }> = [];
             let curPosition = charInfoList[0].position;
-            for (let i = tensorShape.length - 1; i >= 0; i--) {
-              const char = tensorShape[i];
+            for (let i = edgeLabel.length - 1; i >= 0; i--) {
+              const char = edgeLabel[i];
               const pos = curvePath.getPointAt(
                 Math.min(1, curPosition),
               ) as three.Vector2;
@@ -294,7 +310,7 @@ export class WebglRendererEdgeTextsService {
               const charInfo = charsInfo[char];
               let nextCharXadvance = 0;
               if (i >= 1) {
-                const nextCharInfo = charsInfo[tensorShape[i - 1]];
+                const nextCharInfo = charsInfo[edgeLabel[i - 1]];
                 nextCharXadvance = nextCharInfo.xadvance;
               }
               const delta =
@@ -323,9 +339,15 @@ export class WebglRendererEdgeTextsService {
               hAlign: '',
               vAlign: '',
               weight: FontWeight.MEDIUM,
-              x: pos.x + Math.sin(angle) * (-edgeLabelFontSize * 1.5),
-              y: 95,
-              z: pos.y + Math.cos(angle) * (-edgeLabelFontSize * 1.5),
+              x:
+                pos.x +
+                Math.sin(angle) *
+                  (-edgeLabelFontSize * 1.5 - extraOffsetToEdge),
+              y,
+              z:
+                pos.y +
+                Math.cos(angle) *
+                  (-edgeLabelFontSize * 1.5 - extraOffsetToEdge),
               color,
               angle,
               edgeTextMode: true,
