@@ -21,9 +21,9 @@ from pathlib import Path
 
 LOCAL_SERVER = "http://127.0.0.1:8080//"
 ROOT_DIR = Path(__file__).parent.parent
-TEST_FILES_DIR = ROOT_DIR / "src/server/test"
+TEST_FILES_DIR = ROOT_DIR / "test/test_models"
 TMP_SCREENSHOT_DIR = ROOT_DIR / "build"
-EXPECTED_SCREENSHOT_DIR = ROOT_DIR / "src/server/screenshots"
+EXPECTED_SCREENSHOT_DIR = ROOT_DIR / "test/screenshots_golden/chrome-linux"
 
 
 def matched_images(
