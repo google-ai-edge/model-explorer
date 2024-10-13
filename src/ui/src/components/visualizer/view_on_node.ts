@@ -45,6 +45,7 @@ import {
   ShowOnNodeItemData,
   ShowOnNodeItemType,
 } from './common/types';
+import {getRunName} from './common/utils';
 import {LocalStorageService} from './local_storage_service';
 import {NodeDataProviderExtensionService} from './node_data_provider_extension_service';
 
@@ -101,7 +102,7 @@ export class ViewOnNode {
           ),
         )
       : [];
-    return runs.map((run) => run.runName);
+    return runs.map((run) => getRunName(run, modelGraph));
   });
   private savedNodeDataProviderRunNames: string[] = [];
 

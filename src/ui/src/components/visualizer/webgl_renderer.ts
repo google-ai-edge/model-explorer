@@ -752,6 +752,19 @@ export class WebglRenderer implements OnInit, OnDestroy {
             !hideInLayout
           ) {
             this.revealNode(mappedNodeId, false);
+            this.syncNavigationService.showNoMappedNodeMessageTrigger$.next(
+              undefined,
+            );
+          } else {
+            if (mappedNodeId !== '' && (!mappedNode || hideInLayout)) {
+              this.syncNavigationService.showNoMappedNodeMessageTrigger$.next(
+                {},
+              );
+            } else if (mappedNodeId === '') {
+              this.syncNavigationService.showNoMappedNodeMessageTrigger$.next(
+                undefined,
+              );
+            }
           }
         }
       });

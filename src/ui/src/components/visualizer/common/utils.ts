@@ -541,11 +541,14 @@ export function getOpNodeDataProviderKeyValuePairsForAttrsTable(
       type.replace(NODE_DATA_PROVIDER_SHOW_ON_NODE_TYPE_PREFIX, ''),
     );
   const runs = Object.values(curNodeDataProviderRuns).filter((run) =>
-    runNames.includes(run.runName),
+    runNames.includes(getRunName(run, {id: modelGraphId})),
   );
   for (const run of runs) {
     const value = (run.results || {})?.[modelGraphId][node.id]?.strValue || '-';
-    keyValuePairs.push({key: run.runName, value});
+    keyValuePairs.push({
+      key: getRunName(run, {id: modelGraphId}),
+      value,
+    });
   }
   return keyValuePairs;
 }
@@ -1052,4 +1055,14 @@ export function getIntersectionPoints(rect1: Rect, rect2: Rect) {
   const intersection2 = getIntersection(rect2, center2, center1);
 
   return {intersection1, intersection2};
+}
+
+/** Gets the run name for the given run. */
+export function getRunName(
+  run: NodeDataProviderRunData,
+  modelGraphIdLike?: {id: string},
+): string {
+  return (
+    run.nodeDataProviderData?.[modelGraphIdLike?.id || '']?.name ?? run.runName
+  );
 }

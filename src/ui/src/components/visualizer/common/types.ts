@@ -236,8 +236,24 @@ export declare interface NodeInfo {
   node?: ModelNode;
 }
 
+/** Supported aggregated stats. */
+export type AggregatedStat = 'min' | 'max' | 'sum' | 'avg';
+
 /** Node data provider data for a single graph. */
 export declare interface NodeDataProviderGraphData {
+  /**
+   * The name of the node data.
+   *
+   * The node data's name (mainly used for display purposes) is determined by
+   * the following sources, in order of priority:
+   *
+   * 1) an explicitly specified name from this field, which overrides any other
+   *    source;
+   * 2) the `name` parameter in the API call, if applicable;
+   * 3) the JSON file name, if the data is loaded from a JSON file.
+   */
+  name?: string;
+
   /**
    * Node data indexed by node keys.
    *
@@ -282,7 +298,28 @@ export declare interface NodeDataProviderGraphData {
    */
   gradient?: GradientItem[];
 
-  // https://gist.github.com/Myndex/e1025706436736166561d339fd667493
+  /**
+   * Whether to hide the corresponding column in aggregated stats table
+   * (the first table).
+   *
+   * If all columns in that table are hidden, the whole table will be hidden.
+   */
+  hideInAggregatedStatsTable?: boolean;
+
+  /**
+   * Whether to hide the corresponding column in children stats table
+   * (the second table).
+   *
+   * If all columns in that table are hidden, the whole table will be hidden.
+   */
+  hideInChildrenStatsTable?: boolean;
+
+  /**
+   * The stats to hide in the aggregated stats table (the first table).
+   *
+   * The value for the hidden stat will be displayed as '-'.
+   */
+  hideAggregatedStats?: AggregatedStat[];
 }
 
 /** The top level node data provider data, indexed by graph id. */

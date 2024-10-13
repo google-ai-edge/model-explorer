@@ -41,6 +41,9 @@ export class SyncNavigationService {
   readonly syncNavigationModeChanged$ =
     new Subject<SyncNavigationModeChangedEvent>();
 
+  // {} means showing the message, and undefined means hiding the message.
+  readonly showNoMappedNodeMessageTrigger$ = new Subject<{} | undefined>();
+
   private savedProcessedSyncNavigationData: Record<
     string,
     ProcessedSyncNavigationData
