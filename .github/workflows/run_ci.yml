@@ -1,20 +1,22 @@
 # Helpful YAML parser to clarify YAML syntax:
 # https://yaml-online-parser.appspot.com/
 
-name: Run Server Code CI
+name: Run CI
 
 on:
   push:
     branches: ["main"]
     paths:
       - 'src/server/**'
-      - '.github/workflow/**'
+      - 'src/ui/**'
+      - '.github/workflows/**'
       - 'ci/**'
   pull_request:
     branches: ["main"]
     paths:
       - 'src/server/**'
-      - '.github/workflow/**'
+      - 'src/ui/**'
+      - '.github/workflows/**'
       - 'ci/**'
 
 concurrency:
