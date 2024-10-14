@@ -32,12 +32,17 @@ jobs:
         with:
           node-version: 'latest'
 
-      - name: Build & Turn up latest local server
+      - name: Build from latest UI source code
         run: |
           cd src/ui
           npm install -g @angular/cli
           npm install
           ./scripts/build_and_update_python_package.sh
+
+      - name: Turn up local server
+        run: |
+          cd src/server
+          ./scripts/setup_local_dev.sh
           nohup model-explorer --host=127.0.0.1 --port=8080 &
 
       - name: Install dependencies
