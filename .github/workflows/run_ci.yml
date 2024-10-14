@@ -1,7 +1,7 @@
 # Helpful YAML parser to clarify YAML syntax:
 # https://yaml-online-parser.appspot.com/
 
-name: Run Server Code CI
+name: Run CI
 
 on:
   push:
