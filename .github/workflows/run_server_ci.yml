@@ -9,14 +9,14 @@ on:
     paths:
       - 'src/server/**'
       - 'src/ui/**'
-      - '.github/workflow/**'
+      - '.github/workflows/**'
       - 'ci/**'
   pull_request:
     branches: ["main"]
     paths:
       - 'src/server/**'
       - 'src/ui/**'
-      - '.github/workflow/**'
+      - '.github/workflows/**'
       - 'ci/**'
 
 concurrency:
