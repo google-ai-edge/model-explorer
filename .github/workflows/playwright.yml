@@ -27,10 +27,17 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Turn up local server
+      - name: Setup node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 'latest'
+
+      - name: Build & Turn up latest local server
         run: |
-          cd src/server
-          scripts/setup_local_dev.sh
+          cd src/ui
+          npm install -g @angular/cli
+          npm install
+          ./scripts/build_and_update_python_package.sh
           nohup model-explorer --host=127.0.0.1 --port=8080 &
 
       - name: Install dependencies

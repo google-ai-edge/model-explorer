@@ -8,12 +8,14 @@ on:
     branches: ["main"]
     paths:
       - 'src/server/**'
+      - 'src/ui/**'
       - '.github/workflow/**'
       - 'ci/**'
   pull_request:
     branches: ["main"]
     paths:
       - 'src/server/**'
+      - 'src/ui/**'
       - '.github/workflow/**'
       - 'ci/**'
 
