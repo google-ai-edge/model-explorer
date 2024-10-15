@@ -17,117 +17,133 @@
  */
 
 .container {
-  .icon-container {
+  .mat-icon-container {
+    width: 20px;
+    height: 20px;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    color: #666;
-
-    // These are for positioning the dropdown menu better.
-    padding-bottom: 12px;
-    margin-bottom: -12px;
-
-    mat-icon {
-      margin-right: 4px;
-    }
-
-    mat-spinner {
-      margin-right: 6px;
-    }
-
-    .label {
-      font-size: 13px;
-    }
+    opacity: 0.6;
 
     &:hover {
-      color: #444;
+      opacity: 0.9;
+    }
+
+    mat-icon {
+      font-size: 20px;
+      width: 20px;
+      height: 20px;
     }
   }
 }
 
-::ng-deep .model-explorer-node-data-provider-dropdown {
+::ng-deep bubble-container:has(.model-explorer-edge-overlays-popup) {
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+}
+
+::ng-deep .model-explorer-edge-overlays-popup {
+  padding: 12px;
+  padding-top: 10px;
   font-size: 12px;
   background-color: white;
   display: flex;
   flex-direction: column;
-  padding-bottom: 8px;
 
-  .section-label {
-    padding: 8px 12px;
-    font-size: 11px;
-    background: #f1f1f1;
-    font-weight: 500;
-    text-transform: uppercase;
+  .icon-container {
+    cursor: pointer;
+    opacity: 0.8;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 
-    .address-container {
-      text-transform: none;
-      font-weight: normal;
-      letter-spacing: normal;
+    &:hover {
+      opacity: 1;
+    }
+
+    mat-icon {
+      font-size: 16px;
+      width: 16px;
+      height: 16px;
       color: #777;
-      line-height: 12px;
-      padding-bottom: 5px;
+    }
+  }
+
+  .label {
+    font-weight: 500;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.0727em;
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    &:not(:first-child) {
+      margin-top: 12px;
+    }
+  }
+
+  .loaded-overlays-container {
+    display: flex;
+    flex-direction: column;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #ccc;
+    gap: 8px;
+
+    .no-overlays-label {
+      color: #999;
+    }
+
+    .overlay-set-label {
       display: flex;
-      align-items: flex-start;
-      margin-top: -4px;
-      margin-left: -2px;
+      align-items: center;
+      justify-content: space-between;
+      font-weight: 700;
+      line-height: 15px;
+      word-break: break-all;
+      margin-bottom: 4px;
+    }
 
-      .address-label {
-        overflow: hidden;
-        line-break: anywhere;
-        line-height: 12px;
-        flex-grow: 1;
-        padding-top: 3px;
-      }
+    .overlay-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
 
-      .settings-icon-container {
+      label {
         display: flex;
         align-items: center;
-        justify-content: center;
-        margin-right: 4px;
-        pointer-events: all;
         cursor: pointer;
-        opacity: 0.7;
+        line-height: 15px;
+        word-break: break-all;
+        gap: 4px;
+        user-select: none;
+
+        input {
+          cursor: pointer;
+        }
+      }
+
+      .view-label {
+        cursor: pointer;
+        color: #00639b;
+        opacity: .8;
+        user-select: none;
+        line-height: 15px;
 
         &:hover {
           opacity: 1;
         }
-
-        mat-icon {
-          font-size: 16px;
-          width: 16px;
-          height: 16px;
-        }
       }
     }
-
-    &.upload {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      min-width: 180px;
-
-      a {
-        font-size: 11px;
-        letter-spacing: normal;
-        text-transform: none;
-        pointer-events: all;
-      }
-    }
-  }
-
-  .description {
-    font-size: 12px;
-    color: #777;
-    line-height: 18px;
-    letter-spacing: normal;
   }
 
   .upload-container {
     display: flex;
     flex-direction: column;
     align-items: flex-start;
-    padding: 0 16px;
+    padding: 0 16px 0 0;
     margin-top: 12px;
   }
 
@@ -170,15 +186,8 @@
     }
   }
 
-  .upload-per-node-data-input {
+  .upload-json-file-input {
     display: none;
   }
 
-  .no-extension,
-  .loading-extension {
-    padding: 12px 0 4px 16px;
-    color: #999;
-    font-size: 13px;
-    letter-spacing: normal;
-  }
 }

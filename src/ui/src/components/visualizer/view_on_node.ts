@@ -33,7 +33,6 @@ import {MatTooltipModule} from '@angular/material/tooltip';
 
 import {Bubble} from '../bubble/bubble';
 import {BubbleClick} from '../bubble/bubble_click';
-
 import {AppService} from './app_service';
 import {
   LOCAL_STORAGE_KEY_SHOW_ON_EDGE_ITEM_TYPES,
@@ -46,6 +45,7 @@ import {
   ShowOnNodeItemData,
   ShowOnNodeItemType,
 } from './common/types';
+import {getRunName} from './common/utils';
 import {LocalStorageService} from './local_storage_service';
 import {NodeDataProviderExtensionService} from './node_data_provider_extension_service';
 
@@ -102,7 +102,7 @@ export class ViewOnNode {
           ),
         )
       : [];
-    return runs.map((run) => run.runName);
+    return runs.map((run) => getRunName(run, modelGraph));
   });
   private savedNodeDataProviderRunNames: string[] = [];
 

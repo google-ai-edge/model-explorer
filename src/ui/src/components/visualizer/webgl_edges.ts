@@ -201,6 +201,7 @@ export class WebglEdges {
   constructor(
     private readonly color: WebglColor,
     private readonly edgeWidth: number,
+    private readonly arrowScale = 1,
   ) {
     this.planeGeo = new THREE.PlaneGeometry(1, 1);
     this.planeGeo.rotateX(-Math.PI / 2);
@@ -217,12 +218,15 @@ export class WebglEdges {
 
     // Create arrow head geo.
     const triangle = new THREE.Shape();
+    const arrowBaseSize = ARROW_BASE_SIZE * arrowScale;
+    const arrowHeight = ARROW_HEIGHT * arrowScale;
+    const arrowThickness = ARROW_THICKNESS * arrowScale;
     triangle
-      .moveTo(-ARROW_BASE_SIZE / 2, -ARROW_HEIGHT)
-      .lineTo(0, -ARROW_THICKNESS)
-      .lineTo(ARROW_BASE_SIZE / 2, -ARROW_HEIGHT)
+      .moveTo(-arrowBaseSize / 2, -arrowHeight)
+      .lineTo(0, -arrowThickness)
+      .lineTo(arrowBaseSize / 2, -arrowHeight)
       .lineTo(0, 0)
-      .lineTo(-ARROW_BASE_SIZE / 2, -ARROW_HEIGHT);
+      .lineTo(-arrowBaseSize / 2, -arrowHeight);
     this.arrowHeadGeometry = new THREE.ShapeGeometry(triangle);
     this.arrowHeadGeometry.rotateX(-Math.PI / 2);
 
@@ -280,6 +284,15 @@ export class WebglEdges {
           endPt.x + nodeGlobalX,
           endPt.y + nodeGlobalY,
         ];
+        const savedCurEndpoints = [...curEndpoints];
+
+        // Move the last segment inward a little bit so that it doesn't go out
+        // of the arrowhead.
+        if (i === points.length - 2 && points.length >= 2) {
+          const f = Math.atan2(endPt.y - startPt.y, endPt.x - startPt.x);
+          curEndpoints[2] -= (Math.cos(f) * ARROW_HEIGHT * this.arrowScale) / 2;
+          curEndpoints[3] -= (Math.sin(f) * ARROW_HEIGHT * this.arrowScale) / 2;
+        }
 
         const savedSegment = this.savedEdgeSegments[segmentId];
         if (forceNoAnimation) {
@@ -308,7 +321,7 @@ export class WebglEdges {
         // Arrowheads.
         if (i === points.length - 2) {
           const arrowHeadId = edge.id;
-          const curLastSegmentEndpoints = curEndpoints;
+          const curLastSegmentEndpoints = savedCurEndpoints;
           const savedArrowHead = this.savedArrowHeads[arrowHeadId];
           if (forceNoAnimation) {
             lastSegmentEndPoints.push(...curLastSegmentEndpoints);

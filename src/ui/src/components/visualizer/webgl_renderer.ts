@@ -110,6 +110,7 @@ import {ThreejsService} from './threejs_service';
 import {UiStateService} from './ui_state_service';
 import {WebglEdges} from './webgl_edges';
 import {WebglRendererAttrsTableService} from './webgl_renderer_attrs_table_service';
+import {WebglRendererEdgeOverlaysService} from './webgl_renderer_edge_overlays_service';
 import {WebglRendererEdgeTextsService} from './webgl_renderer_edge_texts_service';
 import {WebglRendererIdenticalLayerService} from './webgl_renderer_identical_layer_service';
 import {
@@ -198,6 +199,7 @@ type RenderElement = RenderElementNode | RenderElementEdge;
   providers: [
     WebglRendererAttrsTableService,
     WebglRendererEdgeTextsService,
+    WebglRendererEdgeOverlaysService,
     WebglRendererIdenticalLayerService,
     WebglRendererIoHighlightService,
     WebglRendererIoTracingService,
@@ -447,6 +449,7 @@ export class WebglRenderer implements OnInit, OnDestroy {
     private readonly viewContainerRef: ViewContainerRef,
     private readonly webglRendererAttrsTableService: WebglRendererAttrsTableService,
     readonly webglRendererEdgeTextsService: WebglRendererEdgeTextsService,
+    private readonly webglRendererEdgeOverlaysService: WebglRendererEdgeOverlaysService,
     private readonly webglRendererIdenticalLayerService: WebglRendererIdenticalLayerService,
     private readonly webglRendererIoHighlightService: WebglRendererIoHighlightService,
     private readonly webglRendererIoTracingService: WebglRendererIoTracingService,
@@ -459,6 +462,7 @@ export class WebglRenderer implements OnInit, OnDestroy {
   ) {
     this.webglRendererAttrsTableService.init(this);
     this.webglRendererEdgeTextsService.init(this);
+    this.webglRendererEdgeOverlaysService.init(this);
     this.webglRendererIdenticalLayerService.init(this);
     this.webglRendererIoHighlightService.init(this);
     this.webglRendererIoTracingService.init(this);
@@ -601,6 +605,7 @@ export class WebglRenderer implements OnInit, OnDestroy {
       // data needed to update nodes styles correctly.
       this.webglRendererIoHighlightService.updateIncomingAndOutgoingHighlights();
       this.webglRendererIdenticalLayerService.updateIdenticalLayerIndicators();
+      this.webglRendererEdgeOverlaysService.updateOverlaysData();
       this.updateNodesStyles();
       this.webglRendererThreejsService.render();
 
@@ -610,6 +615,50 @@ export class WebglRenderer implements OnInit, OnDestroy {
           paneIndex: this.appService.getPaneIndexById(this.paneId) || 0,
           nodeId: this.selectedNodeId,
         });
+      }
+
+      // Automatically reveal all nodes in the edge overlays (if existed).
+      if (this.webglRendererEdgeOverlaysService.curOverlays.length > 0) {
+        const deepestExpandedGroupNodeIds =
+          this.webglRendererEdgeOverlaysService.getDeepestExpandedGroupNodeIds();
+        if (deepestExpandedGroupNodeIds.length > 0) {
+          this.sendRelayoutGraphRequest(
+            this.selectedNodeId,
+            deepestExpandedGroupNodeIds,
+          );
+        } else {
+          this.webglRendererEdgeOverlaysService.updateOverlaysEdges();
+          this.webglRendererThreejsService.render();
+        }
+      } else {
+        this.webglRendererEdgeOverlaysService.clearOverlaysEdges();
+        this.webglRendererThreejsService.render();
+      }
+    });
+
+    // Handle selected edge overlays changes.
+    effect(() => {
+      this.webglRendererEdgeOverlaysService.edgeOverlaysService.selectedOverlayIds();
+      this.webglRendererEdgeOverlaysService.updateOverlaysData();
+
+      // Automatically reveal all nodes in the edge overlays (if existed).
+      if (this.selectedNodeId !== '') {
+        if (this.webglRendererEdgeOverlaysService.curOverlays.length > 0) {
+          const deepestExpandedGroupNodeIds =
+            this.webglRendererEdgeOverlaysService.getDeepestExpandedGroupNodeIds();
+          if (deepestExpandedGroupNodeIds.length > 0) {
+            this.sendRelayoutGraphRequest(
+              this.selectedNodeId,
+              deepestExpandedGroupNodeIds,
+            );
+          } else {
+            this.webglRendererEdgeOverlaysService.updateOverlaysEdges();
+            this.webglRendererThreejsService.render();
+          }
+        } else {
+          this.webglRendererEdgeOverlaysService.clearOverlaysEdges();
+          this.webglRendererThreejsService.render();
+        }
       }
     });
 
@@ -703,6 +752,19 @@ export class WebglRenderer implements OnInit, OnDestroy {
             !hideInLayout
           ) {
             this.revealNode(mappedNodeId, false);
+            this.syncNavigationService.showNoMappedNodeMessageTrigger$.next(
+              undefined,
+            );
+          } else {
+            if (mappedNodeId !== '' && (!mappedNode || hideInLayout)) {
+              this.syncNavigationService.showNoMappedNodeMessageTrigger$.next(
+                {},
+              );
+            } else if (mappedNodeId === '') {
+              this.syncNavigationService.showNoMappedNodeMessageTrigger$.next(
+                undefined,
+              );
+            }
           }
         }
       });
@@ -1431,6 +1493,15 @@ export class WebglRenderer implements OnInit, OnDestroy {
     return node.height || 0;
   }
 
+  getNodeRect(node: ModelNode): Rect {
+    return {
+      x: this.getNodeX(node),
+      y: this.getNodeY(node),
+      width: this.getNodeWidth(node),
+      height: this.getNodeHeight(node),
+    };
+  }
+
   getNodeLabelRelativeY(node: ModelNode): number {
     return 14;
   }
@@ -1673,6 +1744,7 @@ export class WebglRenderer implements OnInit, OnDestroy {
     this.renderGraph();
     this.webglRendererIoHighlightService.updateIncomingAndOutgoingHighlights();
     this.webglRendererIdenticalLayerService.updateIdenticalLayerIndicators();
+    this.webglRendererEdgeOverlaysService.updateOverlaysEdges();
     this.updateNodesStyles();
     if (rectToZoomFit) {
       const zoomFitFn = () => {

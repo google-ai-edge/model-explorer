@@ -1,0 +1,50 @@
+node {
+  name: "foo"
+  op: "Foo"
+}
+library {
+  function {
+    signature {
+      name: "Add"
+      input_arg {
+        name: "a"
+      }
+      input_arg {
+        name: "b"
+      }
+      output_arg {
+        name: "output"
+      }
+    }
+    node_def {
+      name: "sum"
+      op: "Add"
+      input: "a"
+      input: "b"
+    }
+    ret {
+      key: "output"
+      value: "sum"
+    }
+  }
+  function {
+    signature {
+      name: "Square"
+      input_arg {
+        name: "x"
+      }
+      output_arg {
+        name: "val"
+      }
+    }
+    node_def {
+      name: "output"
+      op: "Softmax"
+      input: "x"
+    }
+    ret {
+      key: "val"
+      value: "output"
+    }
+  }
+}

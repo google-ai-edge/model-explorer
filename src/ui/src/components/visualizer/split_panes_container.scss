@@ -220,6 +220,28 @@
     height: 24px;
     // Over resizer.
     z-index: 250; 
+
+    .no-mapped-node-message {
+      position: absolute;
+      top: 28px;
+      width: 140px;
+      font-size: 12px;
+      left: -44px;
+      background-color: #a00;
+      color: white;
+      padding: 2px 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 99px;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 100ms;
+
+      &.show {
+        opacity: 1;
+      }
+    }
   }
 }
 

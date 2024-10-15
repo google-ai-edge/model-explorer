@@ -1,0 +1,42 @@
+# Helpful YAML parser to clarify YAML syntax:
+# https://yaml-online-parser.appspot.com/
+
+name: Run CI
+
+on:
+  push:
+    branches: ["main"]
+    paths:
+      - 'src/server/**'
+      - 'src/ui/**'
+      - '.github/workflows/**'
+      - 'ci/**'
+  pull_request:
+    branches: ["main"]
+    paths:
+      - 'src/server/**'
+      - 'src/ui/**'
+      - '.github/workflows/**'
+      - 'ci/**'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  run-formatting:
+    name: Formatting
+    uses: ./.github/workflows/formatting.yml
+    with:
+      trigger-sha: ${{ github.event.pull_request.head.sha }}
+  
+  run-tests:
+    name: Playwright Tests
+    uses: ./.github/workflows/playwright.yml
+    with:
+      trigger-sha: ${{ github.event.pull_request.head.sha }}
+
+
+
+
+

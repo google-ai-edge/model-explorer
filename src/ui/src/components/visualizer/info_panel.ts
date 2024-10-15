@@ -53,7 +53,12 @@ import {
   SearchMatchType,
   SearchResults,
 } from './common/types';
-import {getNamespaceLabel, isGroupNode, isOpNode} from './common/utils';
+import {
+  getNamespaceLabel,
+  getRunName,
+  isGroupNode,
+  isOpNode,
+} from './common/utils';
 import {ExpandableInfoText} from './expandable_info_text';
 import {HoverableLabel} from './hoverable_label';
 import {InfoPanelService} from './info_panel_service';
@@ -758,7 +763,7 @@ export class InfoPanel {
         nodeDataProvidersSection.items.push({
           id: run.runId,
           section: nodeDataProvidersSection,
-          label: run.runName,
+          label: getRunName(run, this.curModelGraph),
           value: strValue,
           canShowOnNode: run.done,
           showOnNode: this.curShowOnNodeDataProviderRuns[run.runId] != null,

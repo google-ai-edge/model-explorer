@@ -1,0 +1,65 @@
+# YAML schema for GitHub Actions:
+# https://help.github.com/en/actions/automating-your-workflow-with-github-actions/workflow-syntax-for-github-actions
+#
+# Helpful YAML parser to clarify YAML syntax:
+# https://yaml-online-parser.appspot.com/
+
+name: Playwright Tests
+
+on:
+  workflow_call:
+    inputs:
+      trigger-sha:
+        required: true
+        type: string
+
+jobs:
+  test:
+    name: Local Build & Test
+    timeout-minutes: 12
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Setup node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 'latest'
+
+      - name: Build from latest UI source code
+        run: |
+          cd src/ui
+          npm install -g @angular/cli
+          npm install
+          ./scripts/build_and_update_python_package.sh
+
+      - name: Turn up local server
+        run: |
+          cd src/server
+          ./scripts/setup_local_dev.sh
+          nohup model-explorer --host=127.0.0.1 --port=8080 &
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install pytest-playwright opencv-python
+          python -m playwright install --with-deps
+
+      - name: Run tests
+        run: |
+          pytest -v ci/playwright_test.py
+
+      - name: Upload screenshots
+        uses: actions/upload-artifact@v4
+        if: ${{ always() }}
+        with:
+          name: playwright-screenshots
+          path: build/
+
+

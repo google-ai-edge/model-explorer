@@ -19,7 +19,7 @@
 import {TaskData, TaskType} from './task';
 
 /** The data for navigation syncing. */
-export interface SyncNavigationData extends TaskData {
+export declare interface SyncNavigationData extends TaskData {
   type: TaskType.SYNC_NAVIGATION;
 
   mapping: SyncNavigationMapping;

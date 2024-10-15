@@ -24,6 +24,7 @@ import {
   ChangeDetectorRef,
   Component,
   computed,
+  DestroyRef,
   effect,
   ElementRef,
   QueryList,
@@ -31,6 +32,7 @@ import {
   ViewChild,
   ViewChildren,
 } from '@angular/core';
+import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
 import {MatIconModule} from '@angular/material/icon';
 import {MatProgressSpinnerModule} from '@angular/material/progress-spinner';
 import {MatTooltipModule} from '@angular/material/tooltip';
@@ -51,6 +53,7 @@ import {GraphPanel} from './graph_panel';
 import {InfoPanel} from './info_panel';
 import {SplitPane} from './split_pane';
 import {SyncNavigationButton} from './sync_navigation_button';
+import {SyncNavigationService} from './sync_navigation_service';
 import {WorkerService} from './worker_service';
 
 interface ProcessingTask {
@@ -91,6 +94,8 @@ interface ProcessingTask {
 })
 export class SplitPanesContainer implements AfterViewInit {
   @ViewChild('panesContainer') panesContainer!: ElementRef<HTMLElement>;
+  @ViewChild('noMappedNodeMessage')
+  noMappedNodeMessage?: ElementRef<HTMLElement>;
   @ViewChildren('splitPane') splitPanes = new QueryList<SplitPane>();
 
   readonly processingTasks: Record<string, ProcessingTask[]> = {};
@@ -102,9 +107,13 @@ export class SplitPanesContainer implements AfterViewInit {
 
   curUpdateProcessingProgressReq?: UpdateProcessingProgressRequest;
 
+  private hideNoMappedNodeMessageTimeoutId = -1;
+
   constructor(
     private readonly changeDetectorRef: ChangeDetectorRef,
     private readonly appService: AppService,
+    private readonly destroyRef: DestroyRef,
+    private readonly syncNavigationService: SyncNavigationService,
     private readonly workerService: WorkerService,
   ) {
     this.panes = this.appService.panes;
@@ -142,6 +151,16 @@ export class SplitPanesContainer implements AfterViewInit {
           break;
       }
     });
+
+    this.syncNavigationService.showNoMappedNodeMessageTrigger$
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((data) => {
+        if (data === undefined) {
+          this.hideNoMappedNodeMessage();
+        } else {
+          this.showNoMappedNodeMessage();
+        }
+      });
   }
 
   ngAfterViewInit() {
@@ -295,5 +314,37 @@ export class SplitPanesContainer implements AfterViewInit {
       task.error = req.error;
       this.changeDetectorRef.detectChanges();
     }
+  }
+
+  private hideNoMappedNodeMessage() {
+    const ele = this.noMappedNodeMessage?.nativeElement;
+    if (!ele) {
+      return;
+    }
+
+    if (this.hideNoMappedNodeMessageTimeoutId >= 0) {
+      clearTimeout(this.hideNoMappedNodeMessageTimeoutId);
+      this.hideNoMappedNodeMessageTimeoutId = -1;
+    }
+
+    ele.classList.remove('show');
+  }
+
+  private showNoMappedNodeMessage() {
+    const ele = this.noMappedNodeMessage?.nativeElement;
+    if (!ele) {
+      return;
+    }
+
+    if (this.hideNoMappedNodeMessageTimeoutId >= 0) {
+      clearTimeout(this.hideNoMappedNodeMessageTimeoutId);
+      this.hideNoMappedNodeMessageTimeoutId = -1;
+    }
+
+    // Hide after 3 seconds.
+    ele.classList.add('show');
+    this.hideNoMappedNodeMessageTimeoutId = setTimeout(() => {
+      ele.classList.remove('show');
+    }, 3000);
   }
 }

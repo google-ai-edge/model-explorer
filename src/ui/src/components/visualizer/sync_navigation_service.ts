@@ -41,6 +41,9 @@ export class SyncNavigationService {
   readonly syncNavigationModeChanged$ =
     new Subject<SyncNavigationModeChangedEvent>();
 
+  // {} means showing the message, and undefined means hiding the message.
+  readonly showNoMappedNodeMessageTrigger$ = new Subject<{} | undefined>();
+
   private savedProcessedSyncNavigationData: Record<
     string,
     ProcessedSyncNavigationData
@@ -96,6 +99,7 @@ export class SyncNavigationService {
     const url = `/read_file?path=${path}`;
     const resp = await fetch(url);
     if (!resp.ok) {
+      this.loadingFromCns.set(false);
       return `Failed to load JSON file "${path}"`;
     }
 

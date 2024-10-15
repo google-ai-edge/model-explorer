@@ -37,8 +37,8 @@ import {debounceTime} from 'rxjs/operators';
 import {AppService} from './app_service';
 import {NODE_DATA_PROVIDER_SHOW_ON_NODE_TYPE_PREFIX} from './common/consts';
 import {GroupNode, ModelGraph, OpNode} from './common/model_graph';
-import {NodeDataProviderRunData} from './common/types';
-import {isGroupNode, isOpNode} from './common/utils';
+import {AggregatedStat, NodeDataProviderRunData} from './common/types';
+import {getRunName, isGroupNode, isOpNode} from './common/utils';
 import {InfoPanelService, SortingDirection} from './info_panel_service';
 import {NodeDataProviderExtensionService} from './node_data_provider_extension_service';
 import {Paginator} from './paginator';
@@ -62,6 +62,7 @@ interface ChildrenStatRow {
   index: number;
   colValues: number[];
   colStrs: string[];
+  colHidden: boolean[];
 }
 
 interface StatRow {
@@ -89,12 +90,14 @@ interface RunItem {
   runName: string;
   done: boolean;
   error?: string;
+  hideInAggregatedStatsTable?: boolean;
 }
 
 interface ChildrenStatsCol {
   colIndex: number;
   runIndex: number;
   label: string;
+  hideInChildrenStatsTable?: boolean;
 }
 
 const CHILDREN_STATS = ['Sum %'];
@@ -202,9 +205,12 @@ export class NodeDataProviderSummaryPanel implements OnChanges {
         for (const run of runs) {
           this.runItems.push({
             runId: run.runId,
-            runName: run.runName,
+            runName: this.getRunName(run),
             done: run.done,
             error: run.error,
+            hideInAggregatedStatsTable: (run.nodeDataProviderData ?? {})[
+              this.curModelGraph.id
+            ]?.hideInAggregatedStatsTable,
           });
         }
         this.changeDetectorRef.markForCheck();
@@ -445,6 +451,10 @@ export class NodeDataProviderSummaryPanel implements OnChanges {
     return `${value}`;
   }
 
+  getHideStatsTableCol(index: number): boolean {
+    return this.runItems[index]?.hideInAggregatedStatsTable === true;
+  }
+
   trackByRunId(index: number, runItem: RunItem): string {
     return runItem.runId;
   }
@@ -528,6 +538,50 @@ export class NodeDataProviderSummaryPanel implements OnChanges {
 
   get curChildrenStatSortingColIndex(): number {
     return this.infoPanelService.curChildrenStatSortingColIndex;
+  }
+
+  get showStatsTable(): boolean {
+    if (!this.curModelGraph) {
+      return false;
+    }
+
+    const runs = this.nodeDataProviderExtensionService.getRunsForModelGraph(
+      this.curModelGraph,
+    );
+    let hide = true;
+    for (const run of runs) {
+      if (!run.nodeDataProviderData) {
+        continue;
+      }
+      const curData = run.nodeDataProviderData[this.curModelGraph.id];
+      if (!curData.hideInAggregatedStatsTable) {
+        hide = false;
+        break;
+      }
+    }
+    return !hide;
+  }
+
+  get showChildrenStatsTable(): boolean {
+    if (!this.curModelGraph) {
+      return false;
+    }
+
+    const runs = this.nodeDataProviderExtensionService.getRunsForModelGraph(
+      this.curModelGraph,
+    );
+    let hide = true;
+    for (const run of runs) {
+      if (!run.nodeDataProviderData) {
+        continue;
+      }
+      const curData = run.nodeDataProviderData[this.curModelGraph.id];
+      if (!curData.hideInChildrenStatsTable) {
+        hide = false;
+        break;
+      }
+    }
+    return !hide;
   }
 
   private genOrderedNodes() {
@@ -642,6 +696,23 @@ export class NodeDataProviderSummaryPanel implements OnChanges {
     this.curStatRows[2].values = stats.map((stat) => stat.sum);
     this.curStatRows[3].values = stats.map((stat) => stat.sum / stat.count);
 
+    // Hide stat values based on hideAggregatedStats.
+    const allStats: AggregatedStat[] = ['min', 'max', 'sum', 'avg'];
+    for (let i = 0; i < runs.length; i++) {
+      const run = runs[i];
+      const statsToHide: AggregatedStat[] =
+        run.nodeDataProviderData?.[this.curModelGraph.id]
+          ?.hideAggregatedStats ?? [];
+      for (let j = 0; j < allStats.length; j++) {
+        const stat = allStats[j];
+        if (statsToHide.includes(stat)) {
+          // Set the value to positive infinity so that it will be displayed as
+          // '-' in the table. See `getStatValue()`.
+          this.curStatRows[j].values[i] = Number.POSITIVE_INFINITY;
+        }
+      }
+    }
+
     // Generate children stats columns.
     this.childrenStatsCols = [];
     let childrenStatColIndex = 0;
@@ -650,7 +721,10 @@ export class NodeDataProviderSummaryPanel implements OnChanges {
         this.childrenStatsCols.push({
           colIndex: childrenStatColIndex,
           runIndex: i,
-          label: `${runs[i].runName} • ${childrenStat}`,
+          label: `${this.getRunName(runs[i])} • ${childrenStat}`,
+          hideInChildrenStatsTable:
+            runs[i].nodeDataProviderData?.[this.curModelGraph.id]
+              ?.hideInChildrenStatsTable,
         });
         childrenStatColIndex++;
       }
@@ -667,6 +741,7 @@ export class NodeDataProviderSummaryPanel implements OnChanges {
       const node = this.curModelGraph.nodesById[nodeId];
       const colValues: number[] = [];
       const colStrs: string[] = [];
+      const colHidden: boolean[] = [];
       for (let runIndex = 0; runIndex < runs.length; runIndex++) {
         const run = runs[runIndex];
         const curResults = run.results || {};
@@ -697,6 +772,10 @@ export class NodeDataProviderSummaryPanel implements OnChanges {
         }
         colValues.push(sumPct);
         colStrs.push(hasValue ? sumPct.toFixed(1) : '-');
+        colHidden.push(
+          run.nodeDataProviderData?.[this.curModelGraph.id]
+            ?.hideInChildrenStatsTable === true,
+        );
       }
       this.curChildrenStatRows.push({
         id: nodeId,
@@ -704,6 +783,7 @@ export class NodeDataProviderSummaryPanel implements OnChanges {
         index: i,
         colValues,
         colStrs,
+        colHidden,
       });
     }
     this.savedChildrenStatRows = [...this.curChildrenStatRows];
@@ -849,5 +929,9 @@ export class NodeDataProviderSummaryPanel implements OnChanges {
         return parts.join('__');
       })
       .join(',');
+  }
+
+  private getRunName(run: NodeDataProviderRunData): string {
+    return getRunName(run, this.curModelGraph);
   }
 }

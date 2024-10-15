@@ -51,108 +51,116 @@ limitations under the License.
   </div>
 
   <!-- Stats table -->
-  <div class="table-container" #statsTableContainer
-      [class.collapsed]="statsTableCollapsed">
-    <div class="table-title-container">
-      <div class="title-label-container"
-          (click)="handleToggleExpandCollapseStatsTable(statsTableContainer)">
-        <mat-icon>{{statsTableTitleIcon}}</mat-icon>
-        {{statsTableTitle}}
+  @if (showStatsTable) {
+    <div class="table-container" #statsTableContainer
+        [class.collapsed]="statsTableCollapsed">
+      <div class="table-title-container">
+        <div class="title-label-container"
+            (click)="handleToggleExpandCollapseStatsTable(statsTableContainer)">
+          <mat-icon>{{statsTableTitleIcon}}</mat-icon>
+          {{statsTableTitle}}
+        </div>
       </div>
+      <table border="0" cellspacing="0" cellpadding="0" *ngIf="showResults">
+        <thead>
+          <tr>
+            <th class="stats">
+              Stat
+            </th>
+            <th *ngFor="let runItem of runItems; let i = index"
+                class="value-col"
+                [class.hidden]="runItem.hideInAggregatedStatsTable">
+              <div class="header-content">
+                <div class="index-number">{{i + 1}}</div>
+                <div class="stat-label">{{runItem.runName}}</div>
+              </div>
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let row of curStatRows; trackBy: trackByStat">
+            <td>{{row.stat}}</td>
+            <td *ngFor="let value of row.values; let i = index"
+                class="value-col"
+                [class.hidden]="getHideStatsTableCol(i)">
+              {{getStatValue(value)}}
+            </td>
+          </tr>
+        </tbody>
+      </table>
     </div>
-    <table border="0" cellspacing="0" cellpadding="0" *ngIf="showResults">
-      <thead>
-        <tr>
-          <th class="stats">
-            Stat
-          </th>
-          <th *ngFor="let runItem of runItems; let i = index"
-              class="value-col">
-            <div class="header-content">
-              <div class="index-number">{{i + 1}}</div>
-              <div class="stat-label">{{runItem.runName}}</div>
-            </div>
-          </th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr *ngFor="let row of curStatRows; trackBy: trackByStat">
-          <td>{{row.stat}}</td>
-          <td *ngFor="let value of row.values"
-              class="value-col">
-            {{getStatValue(value)}}
-          </td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
+  }
 
   <!-- Children stats table -->
-  <div class="table-container children-stats" #childrenStatsTableContainer
-      [class.collapsed]="childrenStatsTableCollapsed">
-    <div class="table-title-container">
-      <div class="title-label-container"
-          (click)="handleToggleExpandCollapseChildrenStatsTable(childrenStatsTableContainer)">
-        <mat-icon>{{childrenStatsTableTitleIcon}}</mat-icon>
-        {{childrenStatsTableTitle}}
+  @if (showChildrenStatsTable) {
+    <div class="table-container children-stats" #childrenStatsTableContainer
+        [class.collapsed]="childrenStatsTableCollapsed">
+      <div class="table-title-container">
+        <div class="title-label-container"
+            (click)="handleToggleExpandCollapseChildrenStatsTable(childrenStatsTableContainer)">
+          <mat-icon>{{childrenStatsTableTitleIcon}}</mat-icon>
+          {{childrenStatsTableTitle}}
+        </div>
+        @if (childrenStatRowsCount > tablePageSize && !childrenStatsTableCollapsed) {
+          <paginator #childrenStatsPaginator
+              [pageSize]="tablePageSize" [itemsCount]="childrenStatRowsCount"
+              (change)="handleChildrenStatsTablePaginatorChanged($event)">
+          </paginator>
+        }
       </div>
-      @if (childrenStatRowsCount > tablePageSize && !childrenStatsTableCollapsed) {
-        <paginator #childrenStatsPaginator
-            [pageSize]="tablePageSize" [itemsCount]="childrenStatRowsCount"
-            (change)="handleChildrenStatsTablePaginatorChanged($event)">
-        </paginator>
-      }
+      <ng-container *ngTemplateOutlet="nodeFilter;context:{$implicit: childrenStatsTableNodeFilter}">
+      </ng-container>
+      <table class="children-stats-results" *ngIf="showResults"
+          border="0" cellspacing="0" cellpadding="0">
+        <thead>
+          <tr>
+            <th class="index"
+                (click)="handleClickChildrenStatsHeader(-2)">
+              <div class="header-content">
+                #
+                <mat-icon *ngIf="curChildrenStatSortingColIndex === -2" class="sort">
+                  {{curChildrenStatSortingDirection === 'asc' ? 'arrow_upward' : 'arrow_downward'}}
+                </mat-icon>
+              </div>
+            </th>
+            <th class="header node-label"
+                (click)="handleClickChildrenStatsHeader(-1)">
+              <div class="header-content">
+                Node
+                <mat-icon *ngIf="curChildrenStatSortingColIndex === -1" class="sort">
+                  {{curChildrenStatSortingDirection === 'asc' ? 'arrow_upward' : 'arrow_downward'}}
+                </mat-icon>
+              </div>
+            </th>
+            <th *ngFor="let col of childrenStatsCols" class="value-col"
+                [class.hidden]="col.hideInChildrenStatsTable"
+                (click)="handleClickChildrenStatsHeader(col.colIndex)">
+              <div class="header-content">
+                <div class="index-number">{{col.runIndex + 1}}</div>
+                <div class="stat-label">{{col.label}}</div>
+                <mat-icon *ngIf="col.colIndex === curChildrenStatSortingColIndex" class="sort">
+                  {{curChildrenStatSortingDirection === 'asc' ? 'arrow_upward' : 'arrow_downward'}}
+                </mat-icon>
+              </div>
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let row of curPageChildrenStatRows; trackBy: trackByNodeId">
+            <td>{{row.index}}</td>
+            <td class="node-label"
+                (click)="handleClickNodeLabel(row.id)">
+              {{row.label}}
+            </td>
+            <td *ngFor="let strValue of row.colStrs; let i = index" class="value-col"
+                [class.hidden]="row.colHidden[i]">
+              {{strValue}}
+            </td>
+          </tr>
+        </tbody>
+      </table>
     </div>
-    <ng-container *ngTemplateOutlet="nodeFilter;context:{$implicit: childrenStatsTableNodeFilter}">
-    </ng-container>
-    <table class="children-stats-results" *ngIf="showResults"
-        border="0" cellspacing="0" cellpadding="0">
-      <thead>
-        <tr>
-          <th class="index"
-              (click)="handleClickChildrenStatsHeader(-2)">
-            <div class="header-content">
-              #
-              <mat-icon *ngIf="curChildrenStatSortingColIndex === -2" class="sort">
-                {{curChildrenStatSortingDirection === 'asc' ? 'arrow_upward' : 'arrow_downward'}}
-              </mat-icon>
-            </div>
-          </th>
-          <th class="header node-label"
-              (click)="handleClickChildrenStatsHeader(-1)">
-            <div class="header-content">
-              Node
-              <mat-icon *ngIf="curChildrenStatSortingColIndex === -1" class="sort">
-                {{curChildrenStatSortingDirection === 'asc' ? 'arrow_upward' : 'arrow_downward'}}
-              </mat-icon>
-            </div>
-          </th>
-          <th *ngFor="let col of childrenStatsCols" class="value-col"
-              (click)="handleClickChildrenStatsHeader(col.colIndex)">
-            <div class="header-content">
-              <div class="index-number">{{col.runIndex + 1}}</div>
-              <div class="stat-label">{{col.label}}</div>
-              <mat-icon *ngIf="col.colIndex === curChildrenStatSortingColIndex" class="sort">
-                {{curChildrenStatSortingDirection === 'asc' ? 'arrow_upward' : 'arrow_downward'}}
-              </mat-icon>
-            </div>
-          </th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr *ngFor="let row of curPageChildrenStatRows; trackBy: trackByNodeId">
-          <td>{{row.index}}</td>
-          <td class="node-label"
-              (click)="handleClickNodeLabel(row.id)">
-            {{row.label}}
-          </td>
-          <td *ngFor="let strValue of row.colStrs" class="value-col">
-            {{strValue}}
-          </td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
+  }
 
   <!-- Results table -->
   <div class="table-container results" #nodeDataTableContainer

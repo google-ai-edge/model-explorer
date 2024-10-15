@@ -901,9 +901,9 @@ export class WebglRendererIoHighlightService {
     targetNodeId: string,
   ): ModelEdge | undefined {
     const groupNodeId = namespace === '' ? '' : `${namespace}___group___`;
-    return this.webglRenderer.curModelGraph.edgesByGroupNodeIds[
-      groupNodeId
-    ].find((edge) => {
+    return (
+      this.webglRenderer.curModelGraph.edgesByGroupNodeIds[groupNodeId] ?? []
+    ).find((edge) => {
       const fromNode =
         this.webglRenderer.curModelGraph.nodesById[edge.fromNodeId];
       const toNode = this.webglRenderer.curModelGraph.nodesById[edge.toNodeId];
