@@ -82,6 +82,23 @@ export class WebglRendererEdgeOverlaysService {
       return;
     }
 
+    // Keep track of number of edges for a given pair of nodes. If there are
+    // more than 1 edges, we will shift the edges to avoid overlapping.
+    //
+    // From sorted edge key (nodeId1->nodeId2) to the number of edges for that
+    // pair.
+    const seenEdgePairs: Record<string, number> = {};
+    const totalEdgePairs: Record<string, number> = {};
+
+    // Populate totalEdgePairs.
+    for (let i = 0; i < this.curOverlays.length; i++) {
+      const subgraph = this.curOverlays[i];
+      for (const {sourceNodeId, targetNodeId, label} of subgraph.edges) {
+        this.addToEdgePairs(sourceNodeId, targetNodeId, totalEdgePairs);
+      }
+    }
+    console.log(totalEdgePairs);
+
     for (let i = 0; i < this.curOverlays.length; i++) {
       const subgraph = this.curOverlays[i];
       const edgeWidth = subgraph.edgeWidth ?? DEFAULT_EDGE_WIDTH;
@@ -98,9 +115,18 @@ export class WebglRendererEdgeOverlaysService {
         const targetNode = this.webglRenderer.curModelGraph.nodesById[
           targetNodeId
         ] as OpNode;
+        const curEdgesCount = this.addToEdgePairs(
+          sourceNodeId,
+          targetNodeId,
+          seenEdgePairs,
+        );
+        const totalEdgesCount =
+          totalEdgePairs[this.getEdgeKey(sourceNodeId, targetNodeId)];
+        const xOffsetFactor = (1 / (totalEdgesCount + 1)) * curEdgesCount - 0.5;
         const {intersection1, intersection2} = getIntersectionPoints(
           this.webglRenderer.getNodeRect(sourceNode),
           this.webglRenderer.getNodeRect(targetNode),
+          xOffsetFactor,
         );
         // Edge.
         edges.push({
@@ -189,5 +215,24 @@ export class WebglRendererEdgeOverlaysService {
       }
     }
     return [...ids];
+  }
+
+  private addToEdgePairs(
+    nodeId1: string,
+    nodeId2: string,
+    pairs: Record<string, number>,
+  ): number {
+    const key = this.getEdgeKey(nodeId1, nodeId2);
+    if (pairs[key] === undefined) {
+      pairs[key] = 0;
+    }
+    pairs[key]++;
+    return pairs[key];
+  }
+
+  private getEdgeKey(nodeId1: string, nodeId2: string): string {
+    return nodeId1.localeCompare(nodeId2) < 0
+      ? `${nodeId1}___${nodeId2}`
+      : `${nodeId2}___${nodeId1}`;
   }
 }

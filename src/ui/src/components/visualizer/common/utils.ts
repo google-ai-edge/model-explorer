@@ -983,12 +983,19 @@ export function getMultiLineLabelExtraHeight(label: string): number {
  * Calculates the closest intersection points of a line (L) connecting
  * the centers of two rectangles (rect1 and rect2) with the sides of these
  * rectangles.
+ *
+ * xOffsetFactor is used to shift the center of the rectangle to the left or
+ * right by a certain factor of the width of the rectangle.
  */
-export function getIntersectionPoints(rect1: Rect, rect2: Rect) {
+export function getIntersectionPoints(
+  rect1: Rect,
+  rect2: Rect,
+  xOffsetFactor = 0,
+) {
   // Function to calculate the center of a rectangle
   function getCenter(rect: Rect) {
     return {
-      x: rect.x + rect.width / 2,
+      x: rect.x + rect.width / 2 + xOffsetFactor * rect.width,
       y: rect.y + rect.height / 2,
     };
   }
