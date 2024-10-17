@@ -10,16 +10,6 @@ name: PyPI Build Single Platform & Python Version Adapters
 on:
   workflow_dispatch:
     inputs:
-      runner:
-        description: 'Hosted Runner'
-        required: true
-        default: Linux_runner_8_core
-        type: choice
-        options:
-          - Linux_runner_8_core
-          - macos-latest
-          - macos-13
-
       python-version:
         description: 'Python Version'
         required: true
@@ -39,9 +29,19 @@ on:
 
 jobs:
   build_release:
-    runs-on: ${{ github.event.inputs.runner }}
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: msys2 {0}
 
     steps:
+      - uses: msys2/setup-msys2@v2
+        with:
+          update: true
+          install: >-
+            curl
+            git
+            mingw-w64-ucrt-x86_64-gcc
       - uses: actions/checkout@v4
 
       - name: Set up Python ${{ github.event.inputs.python-version }}
