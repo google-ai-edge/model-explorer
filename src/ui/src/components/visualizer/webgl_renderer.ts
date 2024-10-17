@@ -740,27 +740,35 @@ export class WebglRenderer implements OnInit, OnDestroy {
         }
 
         if (data.paneIndex !== this.appService.getPaneIndexById(this.paneId)) {
-          const mappedNodeId = this.syncNavigationService.getMappedNodeId(
-            data.paneIndex,
-            data.nodeId,
-          );
-          const mappedNode = this.curModelGraph.nodesById[mappedNodeId];
-          const hideInLayout = isOpNode(mappedNode) && mappedNode.hideInLayout;
-          if (
-            mappedNode &&
-            mappedNode.id !== this.selectedNodeId &&
-            !hideInLayout
-          ) {
-            this.revealNode(mappedNodeId, false);
+          // Clicking on the empty space. Hide the no mapped node message.
+          if (data.nodeId === '') {
             this.syncNavigationService.showNoMappedNodeMessageTrigger$.next(
               undefined,
             );
-          } else {
-            if (mappedNodeId !== '' && (!mappedNode || hideInLayout)) {
+          }
+          // Clicking on a node.
+          else {
+            const mappedNodeId = this.syncNavigationService.getMappedNodeId(
+              data.paneIndex,
+              data.nodeId,
+            );
+            const mappedNode = this.curModelGraph.nodesById[mappedNodeId];
+            const hideInLayout =
+              isOpNode(mappedNode) && mappedNode.hideInLayout;
+            if (
+              mappedNode &&
+              mappedNode.id !== this.selectedNodeId &&
+              !hideInLayout
+            ) {
+              this.revealNode(mappedNodeId, false);
+              this.syncNavigationService.showNoMappedNodeMessageTrigger$.next(
+                undefined,
+              );
+            } else if (!mappedNode || hideInLayout) {
               this.syncNavigationService.showNoMappedNodeMessageTrigger$.next(
                 {},
               );
-            } else if (mappedNodeId === '') {
+            } else {
               this.syncNavigationService.showNoMappedNodeMessageTrigger$.next(
                 undefined,
               );

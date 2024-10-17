@@ -86,7 +86,12 @@ export class SyncNavigationService {
         // Fallback to the original node id if not found.
         const mapping = curSyncNavigationData?.mapping ?? {};
         const inversedMapping = curSyncNavigationData?.inversedMapping ?? {};
-        return mapping[nodeId] ?? inversedMapping[nodeId] ?? nodeId;
+        const targetMapping = paneIndex === 0 ? mapping : inversedMapping;
+        const mappedNodeId = targetMapping[nodeId];
+        if (mappedNodeId) {
+          return mappedNodeId;
+        }
+        return curSyncNavigationData?.disableMappingFallback ? '' : nodeId;
       }
       default:
         return nodeId;

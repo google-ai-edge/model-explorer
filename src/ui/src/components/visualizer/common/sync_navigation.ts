@@ -22,12 +22,27 @@ import {TaskData, TaskType} from './task';
 export declare interface SyncNavigationData extends TaskData {
   type: TaskType.SYNC_NAVIGATION;
 
+  /**
+   * Specifies the mapping for navigation syncing.
+   *
+   * When user selects a node on one side, Model Explorer will try to find the
+   * mapped node on the other side and select it automacitally. If the mapped
+   * node is not found, Model Explorer will try to find the node with the same
+   * node id on the other side. This fallback behavior can be disabled by
+   * setting `disableMappingFallback` below to true.
+   */
   mapping: SyncNavigationMapping;
+
+  /**
+   * Whether to disable the fallback behavior (find the node with the same id)
+   * when the mapped node is not found from the `mapping` field above.
+   */
+  disableMappingFallback?: boolean;
 }
 
 /**
- * The mapping for navigation syncing, from node id from one side to node id
- * from another side.
+ * The mapping for navigation syncing, from node id from left side to node id
+ * from right side.
  */
 export type SyncNavigationMapping = Record<string, string>;
 
