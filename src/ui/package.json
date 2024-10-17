@@ -29,7 +29,7 @@
     "zone.js": "~0.14.3"
   },
   "devDependencies": {
-    "@angular-devkit/build-angular": "^18.1.0",
+    "@angular-devkit/build-angular": "^18.1.2",
     "@angular/cli": "^18.1.0",
     "@angular/compiler-cli": "^18.1.0",
     "@types/d3": "5.7.0",
@@ -41,7 +41,7 @@
     "karma-coverage": "~2.2.0",
     "karma-jasmine": "~5.1.0",
     "karma-jasmine-html-reporter": "~2.1.0",
-    "rollup": "^4.21.3",
+    "rollup": "^4.24.0",
     "typescript": "~5.5.2"
   },
   "overrides": {
