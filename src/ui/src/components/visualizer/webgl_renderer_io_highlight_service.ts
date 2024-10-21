@@ -930,28 +930,22 @@ export class WebglRendererIoHighlightService {
   ): Point[] {
     const points: Point[] = [];
 
-    const startX = startNode.globalX || 0;
-    const startY = startNode.globalY || 0;
-    const startWidth = startNode.width || 0;
-    const startHeight = startNode.height || 0;
-    const endX = endNode.globalX || 0;
-    const endY = endNode.globalY || 0;
-    const endWidth = endNode.width || 0;
-    const endHeight = endNode.height || 0;
+    const startCenterX = this.webglRenderer.getNodeX(startNode) + (this.webglRenderer.getNodeWidth(startNode) / 2);
+    const startCenterY = this.webglRenderer.getNodeY(startNode) + (this.webglRenderer.getNodeHeight(startNode) / 2)
+    const endCenterX = this.webglRenderer.getNodeX(endNode) + (this.webglRenderer.getNodeWidth(endNode) / 2)
+    const endCenterY = this.webglRenderer.getNodeY(endNode) + (this.webglRenderer.getNodeHeight(endNode) / 2)
 
-    const startAnchorX = startX + startWidth / 2;
-    const startAnchorY = endY > startY ? startY + startHeight : startY;
-    const endAnchorX = endX + endWidth / 2;
-    const endAnchorY = endY > startY ? endY : endY + endHeight;
+    const startAnchor = this.getBestAnchorPointOnNode(endCenterX, endCenterY, startNode);
+    const endAnchor = this.getBestAnchorPointOnNode(startCenterX, startCenterY, endNode);
 
     points.push(
       {
-        x: startAnchorX + (startNode.x || 0) - startX,
-        y: startAnchorY + (startNode.y || 0) - startY,
+        x: startAnchor.x - (startNode.globalX || 0),
+        y: startAnchor.y - (startNode.globalY || 0),
       },
       {
-        x: endAnchorX + (endNode.x || 0) - startX,
-        y: endAnchorY + (endNode.y || 0) - startY,
+        x: endAnchor.x - (endNode.globalX || 0),
+        y: endAnchor.y - (endNode.globalY || 0),
       },
     );
 
@@ -1042,6 +1036,6 @@ export class WebglRendererIoHighlightService {
     x2: number,
     y2: number,
   ): number {
-    return Math.pow(x1 - x2, 2) + Math.pow(y1 - y2, 2);
+    return Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2);
   }
 }
