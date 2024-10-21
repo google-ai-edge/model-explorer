@@ -97,7 +97,6 @@ export class WebglRendererEdgeOverlaysService {
         this.addToEdgePairs(sourceNodeId, targetNodeId, totalEdgePairs);
       }
     }
-    console.log(totalEdgePairs);
 
     for (let i = 0; i < this.curOverlays.length; i++) {
       const subgraph = this.curOverlays[i];
