@@ -83,6 +83,12 @@
     &:not(:first-child) {
       margin-top: 12px;
     }
+
+    .right-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
   }
 
   .loaded-overlays-container {
