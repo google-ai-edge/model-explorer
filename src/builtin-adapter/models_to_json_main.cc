@@ -17,6 +17,7 @@
 #include <vector>
 
 #include "absl/log/log.h"
+#include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "tensorflow/compiler/mlir/init_mlir.h"
 #include "models_to_json_lib.h"
@@ -47,9 +48,9 @@ int main(int argc, char* argv[]) {
   std::vector<mlir::Flag> flag_list = {
       mlir::Flag::CreateFlag(kInputFileFlag, &input_file,
                              "Input filename or directory",
-                             mlir::Flag::kRequired),
+                             mlir::Flag::kOptional),
       mlir::Flag::CreateFlag(kOutputFileFlag, &output_file, "Output filename",
-                             mlir::Flag::kRequired),
+                             mlir::Flag::kOptional),
       mlir::Flag::CreateFlag(
           kConstElementCountLimitFlag, &const_element_count_limit,
           "The maximum number of constant elements. If the number exceeds this "
@@ -66,6 +67,11 @@ int main(int argc, char* argv[]) {
 
   if (input_file.empty() || output_file.empty()) {
     LOG(ERROR) << "Input or output files cannot be empty.";
+    return 1;
+  }
+
+  if (output_file.empty()) {
+    LOG(ERROR) << "Output filename cannot be empty.";
     return 1;
   }
 

@@ -145,6 +145,7 @@ cc_binary(
         ":models_to_json_lib",
         ":visualize_config",
         "@com_google_absl//absl/log",
+        "@com_google_absl//absl/status",
         "@com_google_absl//absl/status:statusor",
         "@org_tensorflow//tensorflow/compiler/mlir:init_mlir",
         "@org_tensorflow//tensorflow/compiler/mlir/lite/tools:command_line_flags",
