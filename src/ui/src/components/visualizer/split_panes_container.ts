@@ -38,9 +38,7 @@ import {MatProgressSpinnerModule} from '@angular/material/progress-spinner';
 import {MatTooltipModule} from '@angular/material/tooltip';
 import {combineLatest, fromEvent} from 'rxjs';
 import {takeUntil} from 'rxjs/operators';
-
 import {Bubble} from '../bubble/bubble';
-
 import {AppService} from './app_service';
 import {Pane} from './common/types';
 import {
@@ -49,8 +47,6 @@ import {
   WorkerEvent,
   WorkerEventType,
 } from './common/worker_events';
-import {GraphPanel} from './graph_panel';
-import {InfoPanel} from './info_panel';
 import {SplitPane} from './split_pane';
 import {SyncNavigationButton} from './sync_navigation_button';
 import {SyncNavigationService} from './sync_navigation_service';
@@ -69,8 +65,6 @@ interface ProcessingTask {
   imports: [
     Bubble,
     CommonModule,
-    GraphPanel,
-    InfoPanel,
     MatIconModule,
     MatProgressSpinnerModule,
     MatTooltipModule,

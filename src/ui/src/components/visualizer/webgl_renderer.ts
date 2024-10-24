@@ -194,7 +194,6 @@ type RenderElement = RenderElementNode | RenderElementEdge;
     MatIconModule,
     MatMenuModule,
     MatTooltipModule,
-    IoTree,
   ],
   providers: [
     WebglRendererAttrsTableService,

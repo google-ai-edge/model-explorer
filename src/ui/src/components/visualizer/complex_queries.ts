@@ -39,7 +39,6 @@ import {
   SearchMatchType,
   SearchNodeType,
 } from './common/types';
-import {IoTree} from './io_tree';
 
 interface SearchMatchTypeOption {
   type: SearchMatchType;
@@ -57,13 +56,7 @@ interface SearchNodeTypeOption {
 @Component({
   standalone: true,
   selector: 'complex-queries',
-  imports: [
-    CommonModule,
-    IoTree,
-    MatIconModule,
-    MatMenuModule,
-    MatTooltipModule,
-  ],
+  imports: [CommonModule, MatIconModule, MatMenuModule, MatTooltipModule],
   templateUrl: './complex_queries.ng.html',
   styleUrls: ['./complex_queries.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,

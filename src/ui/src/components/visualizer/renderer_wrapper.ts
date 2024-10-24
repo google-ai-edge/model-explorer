@@ -34,10 +34,7 @@ import {MatButtonModule} from '@angular/material/button';
 import {MatIconModule} from '@angular/material/icon';
 import {MatMenuModule} from '@angular/material/menu';
 import {MatTooltipModule} from '@angular/material/tooltip';
-
 import {Bubble} from '../bubble/bubble';
-import {BubbleClick} from '../bubble/bubble_click';
-
 import {AppService} from './app_service';
 import {type ModelGraph} from './common/model_graph';
 import {
@@ -59,7 +56,6 @@ import {WebglRenderer} from './webgl_renderer';
   selector: 'renderer-wrapper',
   imports: [
     Bubble,
-    BubbleClick,
     CommonModule,
     EdgeOverlaysDropdown,
     MatButtonModule,
