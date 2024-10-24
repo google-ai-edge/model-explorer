@@ -886,6 +886,20 @@ export class WebglRenderer implements OnInit, OnDestroy {
           );
           deepestExpandedGroupNodeIds = groupNodeIds;
         }
+        // Add the parent node of the selected node if it is not set in
+        // deepestExpandedGroupNodeIds.
+        else {
+          const selectedNode =
+            this.curModelGraph.nodesById[paneState.selectedNodeId];
+          const nsParentId = selectedNode?.nsParentId || '';
+          if (
+            selectedNode &&
+            nsParentId &&
+            !deepestExpandedGroupNodeIds.includes(nsParentId)
+          ) {
+            deepestExpandedGroupNodeIds.push(nsParentId);
+          }
+        }
         if (
           paneState.selectedNodeId !== '' ||
           deepestExpandedGroupNodeIds.length > 0
