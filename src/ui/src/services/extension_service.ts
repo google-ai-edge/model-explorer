@@ -172,18 +172,6 @@ export class ExtensionService {
       }
       const json = await resp.json() as Extension[];
 
-      if (localStorage.getItem('mock-api') === 'true') {
-        json.forEach((extension) => {
-          if (extension.id === 'tt_adapter') {
-            extension.supportedCommands = [
-              'override',
-              'execute',
-              'convert'
-            ];
-          }
-        });
-      }
-
       return json;
     } catch (e) {
       console.error('Failed to get extensions.', e);

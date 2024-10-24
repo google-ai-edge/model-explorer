@@ -376,18 +376,6 @@ export class GraphSelector {
     return `${graph.id} (${graph.nodes.length} nodes)`;
   }
 
-  get shouldShowOverrideButton() {
-    const extensionId = this.getCurrentExtensionId();
-
-    return this.modelLoaderService.getSupportedCommandsForExtension(extensionId).includes('override');
-  }
-
-  get shouldShowExecuteButton() {
-    const extensionId = this.getCurrentExtensionId();
-
-    return this.modelLoaderService.getSupportedCommandsForExtension(extensionId).includes('execute');
-  }
-
   get hasChangesToUpload() {
     return this.modelLoaderService.hasChangesToUpload;
   }

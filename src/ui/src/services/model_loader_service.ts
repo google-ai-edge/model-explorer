@@ -322,12 +322,6 @@ export class ModelLoaderService implements ModelLoaderServiceInterface {
     return result;
   }
 
-  getSupportedCommandsForExtension(extensionId: string) {
-    const extension = this.extensionService.extensions.find(({ id }) => extensionId === id);
-
-    return extension?.supportedCommands ?? [];
-  }
-
   private async readTextFile(path: string): Promise<string> {
     const resp = await fetch(`${READ_TEXT_FILE_API_PATH}?path=${path}`);
     const jsonObj = (await resp.json()) as ReadTextFileResponse;
