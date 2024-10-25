@@ -32,7 +32,9 @@ EXPECTED_SCREENSHOT_DIR = ROOT_DIR / "test/screenshots_golden/chrome-linux"
 # of mismatched pixels. `threshold` can be set between 0 to 1, 0 means the images
 # are identical. Default to 40 pixel tolerance 40/(1280*720) = 0.000043.
 def matched_images(
-    actual_image_path: Path, expected_image_path: Path, threshold: float = 0.000043
+    actual_image_path: Path,
+    expected_image_path: Path,
+    threshold: float = 0.000043,
 ):
   actual_image = Image.open(actual_image_path).convert("L")
   expected_image = Image.open(expected_image_path).convert("L")
