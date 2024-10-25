@@ -32,7 +32,7 @@ EXPECTED_SCREENSHOT_DIR = ROOT_DIR / "test/screenshots_golden/chrome-linux"
 # of mismatched pixels. `threshold` can be set between 0 to 1, 0 means the images
 # are identical.
 def matched_images(
-    actual_image_path: Path, expected_image_path: Path, threshold: float = 0.05
+    actual_image_path: Path, expected_image_path: Path, threshold: float = 0.005
 ):
   actual_image = Image.open(actual_image_path).convert("L")
   expected_image = Image.open(expected_image_path).convert("L")
@@ -42,12 +42,9 @@ def matched_images(
   diff = ImageChops.difference(actual_image, expected_image)
   diff_list = list(diff.getdata())
   mismatch_ratio = sum(pixel != 0 for pixel in diff_list) * 1.0 / len(diff_list)
-  # Save the diff screenshot whenever it's not identical for debugging purpose
-  # but will not directly fail the test.
-  if mismatch_ratio != 0:
+  if mismatch_ratio > threshold:
     DEBUG_SCREENSHOT_DIR.mkdir(parents=True, exist_ok=True)
     diff.save(DEBUG_SCREENSHOT_DIR / actual_image_path.name)
-  if mismatch_ratio > threshold:
     logging.error(
         "".join([
             "Screenshot [",
@@ -63,7 +60,12 @@ def matched_images(
 
 def delay_view_model(page: Page):
   page.get_by_role("button", name="View selected models").click()
-  time.sleep(0.5)
+  time.sleep(2)  # Delay for the animation
+
+
+def delay_click_canvas(page: Page, x: int, y: int):
+  time.sleep(2)  # Delay for the animation
+  page.locator("canvas").first.click(position={"x": x, "y": y})
 
 
 def delay_take_screenshot(page: Page, file_path: str):
@@ -88,7 +90,7 @@ def test_litert_direct_adapter(page: Page):
   page.get_by_role("button", name="Add").click()
   page.get_by_text("arrow_drop_down").click()
   page.get_by_text("TFLite adapter (Flatbuffer)").click()
-  page.get_by_role("button", name="View selected models").click()
+  delay_view_model(page)
   page.locator("canvas").first.click(position={"x": 469, "y": 340})
   actual_image_path = TMP_SCREENSHOT_DIR / "litert_direct.png"
   delay_take_screenshot(page, actual_image_path)
@@ -104,7 +106,7 @@ def test_litert_mlir_adapter(page: Page):
   page.get_by_role("button", name="Add").click()
   page.get_by_text("arrow_drop_down").click()
   page.get_by_text("TFLite adapter (MLIR)").click()
-  page.get_by_role("button", name="View selected models").click()
+  delay_view_model(page)
   page.locator("canvas").first.click(position={"x": 514, "y": 332})
   actual_image_path = TMP_SCREENSHOT_DIR / "litert_mlir.png"
   delay_take_screenshot(page, actual_image_path)
@@ -120,7 +122,7 @@ def test_tf_mlir_adapter(page: Page):
   page.get_by_role("button", name="Add").click()
   page.get_by_text("arrow_drop_down").click()
   page.get_by_text("TF adapter (MLIR) Default").click()
-  page.get_by_role("button", name="View selected models").click()
+  delay_view_model(page)
   page.locator("canvas").first.click(position={"x": 444, "y": 281})
   actual_image_path = TMP_SCREENSHOT_DIR / "tf_mlir.png"
   delay_take_screenshot(page, actual_image_path)
@@ -139,8 +141,7 @@ def test_tf_direct_adapter(page: Page):
   delay_view_model(page)
   page.get_by_text("__inference__traced_save_36", exact=True).click()
   page.get_by_text("__inference_add_6").click()
-  page.get_by_text("fit_screen").click()
-  page.locator("canvas").first.click(position={"x": 205, "y": 265})
+  delay_click_canvas(page, 205, 265)
   actual_image_path = TMP_SCREENSHOT_DIR / "tf_direct.png"
   delay_take_screenshot(page, actual_image_path)
   expected_image_path = EXPECTED_SCREENSHOT_DIR / "tf_direct.png"
@@ -153,7 +154,7 @@ def test_tf_graphdef_adapter(page: Page):
       TEST_FILES_DIR / "graphdef_foo.pbtxt"
   )
   page.get_by_role("button", name="Add").click()
-  page.get_by_role("button", name="View selected models").click()
+  delay_view_model(page)
   page.locator("canvas").first.click(position={"x": 468, "y": 344})
   actual_image_path = TMP_SCREENSHOT_DIR / "graphdef.png"
   delay_take_screenshot(page, actual_image_path)
@@ -167,10 +168,9 @@ def test_shlo_mlir_adapter(page: Page):
       TEST_FILES_DIR / "stablehlo_sin.mlir"
   )
   page.get_by_role("button", name="Add").click()
-  page.get_by_role("button", name="View selected models").click()
+  delay_view_model(page)
   page.get_by_text("unfold_more_double").click()
-  time.sleep(0.5)  # Delay for the animation
-  page.locator("canvas").first.click(position={"x": 454, "y": 416})
+  delay_click_canvas(page, 454, 416)
   actual_image_path = TMP_SCREENSHOT_DIR / "shlo_mlir.png"
   delay_take_screenshot(page, actual_image_path)
   expected_image_path = EXPECTED_SCREENSHOT_DIR / "shlo_mlir.png"
