@@ -82,6 +82,19 @@ limitations under the License.
               (change)="handleTextChange($event)"
             />
           }
+        } @else if (editable?.input_type === 'grid') {
+          @for (item of splitEditableList(text); track $index) {
+            <input
+              [type]="item.type"
+              [value]="item.value"
+              [attr.data-index]="$index"
+              [step]="$any(editable)?.step ?? 1"
+              [min]="$any(editable)?.min_value ?? 0"
+              [max]="$any(editable)?.max_value ?? 100"
+              (change)="handleTextChange($event)"
+            />
+            <span class="text-separator">&nbsp;{{$any(editable)?.separator ?? 'x'}}&nbsp;</span>
+          }
         } @else {
           {{text}}
         }
@@ -106,6 +119,19 @@ limitations under the License.
           [max]="$any(editable)?.max_value ?? 100"
           (change)="handleTextChange($event)"
         />
+      }
+    } @else if (editable?.input_type === 'grid') {
+      @for (item of splitEditableList(text); track $index) {
+        <input
+          [type]="item.type"
+          [value]="item.value"
+          [attr.data-index]="$index"
+          [step]="$any(editable)?.step ?? 1"
+          [min]="$any(editable)?.min_value ?? 0"
+          [max]="$any(editable)?.max_value ?? 100"
+          (change)="handleTextChange($event)"
+        />
+        <span class="text-separator">&nbsp;{{$any(editable)?.separator ?? 'x'}}&nbsp;</span>
       }
     } @else {
       {{text}}

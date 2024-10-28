@@ -166,7 +166,15 @@ export interface EditableValueListAttribute {
   options: string[];
 }
 
-export type EditableAttributeTypes = EditableIntAttribute | EditableValueListAttribute;
+export interface EditableGridAttribute {
+  input_type: 'grid';
+  separator?: string;
+  min_value: number;
+  max_value: number;
+  step: number;
+}
+
+export type EditableAttributeTypes = EditableIntAttribute | EditableValueListAttribute | EditableGridAttribute;
 
 export interface EditableAttribute extends KeyValue {
   editable?: EditableAttributeTypes;

@@ -126,7 +126,7 @@ export class ExpandableInfoText implements AfterViewInit, OnDestroy, OnChanges {
     const target = evt.target as HTMLInputElement | HTMLSelectElement;
     let updatedValue = target.value;
 
-    if (this.editable?.input_type === 'int_list') {
+    if (this.editable?.input_type === 'int_list' || this.editable?.input_type === 'grid') {
       updatedValue = `[${this.splitEditableList(this.text).map(({ value }, index) => {
         if (index.toString() === target.dataset['index']) {
           return target.value;
