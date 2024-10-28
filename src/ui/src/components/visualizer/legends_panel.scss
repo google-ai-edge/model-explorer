@@ -16,7 +16,7 @@
  * ==============================================================================
  */
 
-@import 'variables';
+@use 'variables';
 
 $block_width: 30px;
 $block_height: 14px;
@@ -54,7 +54,7 @@ $block_height: 14px;
     }
 
     .artificial-layer-key {
-      border: 1px solid $artificial-layer;
+      border: 1px solid variables.$artificial-layer;
       width: $block_width;
       height: $block_height;
       background-color: #f1f1f1;
@@ -63,7 +63,7 @@ $block_height: 14px;
     .selected-node-key {
       width: $block_width;
       height: $block_height;
-      border: 2px solid $selection-color;
+      border: 2px solid variables.$selection-color;
       border-radius: 5px;
       background-color: #c2e7ff;
     }
@@ -79,14 +79,14 @@ $block_height: 14px;
       width: $block_width;
       height: $block_height;
       border-radius: 5px;
-      border: 2px solid $incoming-edge-color;
+      border: 2px solid variables.$incoming-edge-color;
     }
 
     .output-key {
       width: $block_width;
       height: $block_height;
       border-radius: 5px;
-      border: 2px solid $outgoing-edge-color;
+      border: 2px solid variables.$outgoing-edge-color;
     }
 
     .shortcut {

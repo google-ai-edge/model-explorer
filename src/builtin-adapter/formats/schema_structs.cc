@@ -64,6 +64,14 @@ llvm::json::Object GraphEdge::Json() {
   return json_edge;
 }
 
+const char GraphNodeConfig::kPinToGroupTop[] = "pinToGroupTop";
+
+llvm::json::Object GraphNodeConfig::Json() {
+  llvm::json::Object json_config;
+  json_config[kPinToGroupTop] = pin_to_group_top;
+  return json_config;
+}
+
 const char GraphNode::kNodeId[] = "id";
 const char GraphNode::kNodeLabel[] = "label";
 const char GraphNode::kNodeName[] = "namespace";
@@ -72,6 +80,7 @@ const char GraphNode::kNodeAttrs[] = "attrs";
 const char GraphNode::kIncomingEdges[] = "incomingEdges";
 const char GraphNode::kInputsMetadata[] = "inputsMetadata";
 const char GraphNode::kOutputsMetadata[] = "outputsMetadata";
+const char GraphNode::kConfig[] = "config";
 
 llvm::json::Object GraphNode::Json() {
   llvm::json::Object json_node;
@@ -105,6 +114,11 @@ llvm::json::Object GraphNode::Json() {
   for (Metadata& metadata : outputs_metadata) {
     json_outputs_metadata->push_back(metadata.Json());
   }
+
+  if (config.has_value()) {  // Only add config if it exists
+    json_node[kConfig] = config->Json();
+  }
+
   return json_node;
 }
 

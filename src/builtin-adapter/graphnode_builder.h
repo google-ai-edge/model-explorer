@@ -77,6 +77,11 @@ class GraphNodeBuilder {
                             absl::string_view attr_key,
                             absl::string_view attr_value);
 
+  // Sets the node to be pinned to the top of the group it belongs to.
+  // User needs to ensure the node's namespace is indeed a layer for the pinning
+  // to work.
+  void SetPinToGroupTop(bool pin_to_group_top);
+
   // Returns the node that has been created by this class.
   GraphNode Build() && { return std::move(node_); }
 

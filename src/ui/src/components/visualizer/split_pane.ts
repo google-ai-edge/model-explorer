@@ -23,9 +23,11 @@ import {
   ChangeDetectorRef,
   Component,
   Input,
+  OnInit,
 } from '@angular/core';
 import {AppService} from './app_service';
 import type {Pane} from './common/types';
+import {EdgeOverlaysService} from './edge_overlays_service';
 import {GraphPanel} from './graph_panel';
 import {InfoPanel} from './info_panel';
 import {SplitPaneService} from './split_pane_service';
@@ -36,7 +38,7 @@ import {SubgraphSelectionService} from './subgraph_selection_service';
   standalone: true,
   selector: 'split-pane',
   imports: [CommonModule, GraphPanel, InfoPanel],
-  providers: [SubgraphSelectionService, SplitPaneService],
+  providers: [EdgeOverlaysService, SubgraphSelectionService, SplitPaneService],
   templateUrl: './split_pane.ng.html',
   styleUrls: ['./split_pane.scss'],
   animations: [
@@ -59,13 +61,37 @@ import {SubgraphSelectionService} from './subgraph_selection_service';
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class SplitPane {
+export class SplitPane implements OnInit {
   @Input({required: true}) pane!: Pane;
 
   constructor(
     private readonly appService: AppService,
     private readonly changeDetectorRef: ChangeDetectorRef,
+    private readonly edgeOverlaysService: EdgeOverlaysService,
   ) {}
+
+  ngOnInit() {
+    // Load edge overlays stored in config.
+    const config = this.appService.config();
+    const panes = this.appService.panes();
+    if (
+      panes.length > 0 &&
+      panes[0].id === this.pane.id &&
+      config?.edgeOverlaysDataListLeftPane
+    ) {
+      for (const data of config.edgeOverlaysDataListLeftPane) {
+        this.edgeOverlaysService.addEdgeOverlayData(data);
+      }
+    } else if (
+      panes.length > 1 &&
+      panes[1].id === this.pane.id &&
+      config?.edgeOverlaysDataListRightPane
+    ) {
+      for (const data of config.edgeOverlaysDataListRightPane) {
+        this.edgeOverlaysService.addEdgeOverlayData(data);
+      }
+    }
+  }
 
   refresh() {
     this.changeDetectorRef.markForCheck();

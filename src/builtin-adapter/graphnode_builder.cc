@@ -110,5 +110,13 @@ void GraphNodeBuilder::AppendAttrToMetadata(const EdgeType edge_type,
   }
 }
 
+void GraphNodeBuilder::SetPinToGroupTop(bool pin_to_group_top) {
+  if (node_.config.has_value()) {
+    node_.config->pin_to_group_top = pin_to_group_top;
+  } else {
+    node_.config = GraphNodeConfig{.pin_to_group_top = pin_to_group_top};
+  }
+}
+
 }  // namespace visualization_client
 }  // namespace tooling

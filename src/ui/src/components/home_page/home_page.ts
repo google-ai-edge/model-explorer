@@ -58,7 +58,10 @@ import {ModelSourceInput} from '../model_source_input/model_source_input';
 import {OpenInNewTabButton} from '../open_in_new_tab_button/open_in_new_tab_button';
 import {OpenSourceLibsDialog} from '../open_source_libs_dialog/open_source_libs_dialog';
 import {SettingsDialog} from '../settings_dialog/settings_dialog';
-import {ModelGraphProcessedEvent} from '../visualizer/common/types';
+import {
+  ModelGraphProcessedEvent,
+  SyncNavigationModeChangedEvent,
+} from '../visualizer/common/types';
 import {VisualizerConfig} from '../visualizer/common/visualizer_config';
 import {VisualizerUiState} from '../visualizer/common/visualizer_ui_state';
 import {Logo} from '../visualizer/logo';
@@ -111,6 +114,7 @@ export class HomePage implements AfterViewInit {
   benchmark = false;
   remoteNodeDataPaths: string[] = [];
   remoteNodeDataTargetModels: string[] = [];
+  syncNavigation?: SyncNavigationModeChangedEvent;
   hasUploadedModels = signal<boolean>(false);
   shareButtonTooltip: Signal<string> = signal<string>('');
 
@@ -162,6 +166,9 @@ export class HomePage implements AfterViewInit {
     // Remote node data paths encoded in the url.
     this.remoteNodeDataPaths = this.urlService.getNodeDataSources();
     this.remoteNodeDataTargetModels = this.urlService.getNodeDataTargets();
+
+    // Sync navigation.
+    this.syncNavigation = this.urlService.getSyncNavigation();
   }
 
   ngAfterViewInit() {
@@ -276,10 +283,20 @@ export class HomePage implements AfterViewInit {
       );
       this.remoteProcessedNodeDataTargetModels.add(modelName);
     }
+
+    if (this.syncNavigation) {
+      this.modelGraphVisualizer?.syncNavigationService.loadSyncNavigationDataFromEvent(
+        this.syncNavigation,
+      );
+    }
   }
 
   handleRemoteNodeDataPathsChanged(paths: string[]) {
     this.urlService.setNodeDataSources(paths);
+  }
+
+  handleSyncNavigationModeChanged(event: SyncNavigationModeChangedEvent) {
+    this.urlService.setSyncNavigation(event);
   }
 
   handleClickShowThirdPartyLibraries() {

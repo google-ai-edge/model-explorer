@@ -55,6 +55,7 @@ import {
   getOpNodeFieldLabelsFromShowOnNodeItemTypes,
   getOpNodeInputsKeyValuePairsForAttrsTable,
   getOpNodeOutputsKeyValuePairsForAttrsTable,
+  getRunName,
   isGroupNode,
   isOpNode,
   splitLabel,
@@ -493,6 +494,7 @@ export function getNodeHeight(
       showOnNodeItemTypes,
       node,
       nodeDataProviderRuns,
+      modelGraph,
     );
   } else if (isGroupNode(node)) {
     attrsTableRowCount = getGroupNodeAttrsTableRowCount(
@@ -583,6 +585,7 @@ function getOpNodeAttrsTableRowCount(
   showOnNodeItemTypes: Record<string, ShowOnNodeItemData>,
   node: OpNode,
   nodeDataProviderRuns: Record<string, NodeDataProviderRunData>,
+  modelGraph: ModelGraph,
 ): number {
   // Basic info fields.
   const baiscFieldIds =
@@ -623,7 +626,7 @@ function getOpNodeAttrsTableRowCount(
         ) &&
         Object.values(nodeDataProviderRuns).some(
           (run) =>
-            run.runName ===
+            getRunName(run, modelGraph) ===
             showOnNodeItemType.replace(
               NODE_DATA_PROVIDER_SHOW_ON_NODE_TYPE_PREFIX,
               '',

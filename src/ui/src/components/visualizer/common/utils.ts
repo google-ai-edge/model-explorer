@@ -48,6 +48,7 @@ import {
   ProcessedNodeQuery,
   ProcessedNodeRegexQuery,
   ProcessedNodeStylerRule,
+  Rect,
   SearchMatch,
   SearchMatchType,
   SearchNodeType,
@@ -540,11 +541,14 @@ export function getOpNodeDataProviderKeyValuePairsForAttrsTable(
       type.replace(NODE_DATA_PROVIDER_SHOW_ON_NODE_TYPE_PREFIX, ''),
     );
   const runs = Object.values(curNodeDataProviderRuns).filter((run) =>
-    runNames.includes(run.runName),
+    runNames.includes(getRunName(run, {id: modelGraphId})),
   );
   for (const run of runs) {
     const value = (run.results || {})?.[modelGraphId][node.id]?.strValue || '-';
-    keyValuePairs.push({key: run.runName, value});
+    keyValuePairs.push({
+      key: getRunName(run, {id: modelGraphId}),
+      value,
+    });
   }
   return keyValuePairs;
 }
@@ -973,4 +977,99 @@ export function splitLabel(label: string): string[] {
 /** Get the extra height for multi-line label. */
 export function getMultiLineLabelExtraHeight(label: string): number {
   return (splitLabel(label).length - 1) * NODE_LABEL_LINE_HEIGHT;
+}
+
+/**
+ * Calculates the closest intersection points of a line (L) connecting
+ * the centers of two rectangles (rect1 and rect2) with the sides of these
+ * rectangles.
+ *
+ * xOffsetFactor is used to shift the center of the rectangle to the left or
+ * right by a certain factor of the width of the rectangle.
+ */
+export function getIntersectionPoints(
+  rect1: Rect,
+  rect2: Rect,
+  xOffsetFactor = 0,
+) {
+  // Function to calculate the center of a rectangle
+  function getCenter(rect: Rect) {
+    return {
+      x: rect.x + rect.width / 2 + xOffsetFactor * rect.width,
+      y: rect.y + rect.height / 2,
+    };
+  }
+
+  // Function to calculate intersection between a line and a rectangle
+  function getIntersection(rect: Rect, center1: Point, center2: Point) {
+    // Line parameters
+    const dx = center2.x - center1.x;
+    const dy = center2.y - center1.y;
+
+    // Check for intersection with each of the four sides of the rectangle
+    let tMin = Number.MAX_VALUE;
+    let intersection: Point = {x: 0, y: 0};
+
+    // Left side (x = rect.x)
+    if (dx !== 0) {
+      const t = (rect.x - center1.x) / dx;
+      const y = center1.y + t * dy;
+      if (t >= 0 && y >= rect.y && y <= rect.y + rect.height && t < tMin) {
+        tMin = t;
+        intersection = {x: rect.x, y};
+      }
+    }
+
+    // Right side (x = rect.x + rect.width)
+    if (dx !== 0) {
+      const t = (rect.x + rect.width - center1.x) / dx;
+      const y = center1.y + t * dy;
+      if (t >= 0 && y >= rect.y && y <= rect.y + rect.height && t < tMin) {
+        tMin = t;
+        intersection = {x: rect.x + rect.width, y};
+      }
+    }
+
+    // Top side (y = rect.y)
+    if (dy !== 0) {
+      const t = (rect.y - center1.y) / dy;
+      const x = center1.x + t * dx;
+      if (t >= 0 && x >= rect.x && x <= rect.x + rect.width && t < tMin) {
+        tMin = t;
+        intersection = {x, y: rect.y};
+      }
+    }
+
+    // Bottom side (y = rect.y + rect.height)
+    if (dy !== 0) {
+      const t = (rect.y + rect.height - center1.y) / dy;
+      const x = center1.x + t * dx;
+      if (t >= 0 && x >= rect.x && x <= rect.x + rect.width && t < tMin) {
+        tMin = t;
+        intersection = {x, y: rect.y + rect.height};
+      }
+    }
+
+    return intersection;
+  }
+
+  // Get the centers of the rectangles
+  const center1 = getCenter(rect1);
+  const center2 = getCenter(rect2);
+
+  // Find the closest intersection point of the line with rect1 and rect2
+  const intersection1 = getIntersection(rect1, center1, center2);
+  const intersection2 = getIntersection(rect2, center2, center1);
+
+  return {intersection1, intersection2};
+}
+
+/** Gets the run name for the given run. */
+export function getRunName(
+  run: NodeDataProviderRunData,
+  modelGraphIdLike?: {id: string},
+): string {
+  return (
+    run.nodeDataProviderData?.[modelGraphIdLike?.id || '']?.name ?? run.runName
+  );
 }

@@ -81,6 +81,13 @@ const jsonAdapterExtension: AdapterExtension = {
   description:
     'Loads JSON graphs data file or tfjs model from the given url or uploaded file and convert them to Model Explorer format.',
 };
+const dataNexusAdapterExtension: AdapterExtension = {
+  type: ExtensionType.ADAPTER,
+  fileExts: ['data_nexus'],
+  id: InternalAdapterExtId.DATA_NEXUS,
+  name: 'Data Nexus adapter',
+  description: 'Loads data from Data Nexus.',
+};
 
 /** All internal extensions. */
 export const INTERNAL_ADAPTER_EXTENSIONS: AdapterExtension[] = [
@@ -91,4 +98,5 @@ export const INTERNAL_ADAPTER_EXTENSIONS: AdapterExtension[] = [
   graphdefAdapterExtension,
   mlirAdapterExtension,
   jsonAdapterExtension,
+  dataNexusAdapterExtension,
 ];

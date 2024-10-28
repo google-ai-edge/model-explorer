@@ -16,27 +16,29 @@
  * ==============================================================================
  */
 
-import {animate, state, style, transition, trigger} from '@angular/animations';
+import {animate, style, transition, trigger} from '@angular/animations';
 import {CommonModule} from '@angular/common';
 import {
   AfterViewInit,
   ChangeDetectionStrategy,
   ChangeDetectorRef,
   Component,
+  computed,
+  DestroyRef,
   effect,
   ElementRef,
   QueryList,
+  Signal,
   ViewChild,
   ViewChildren,
 } from '@angular/core';
+import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
 import {MatIconModule} from '@angular/material/icon';
 import {MatProgressSpinnerModule} from '@angular/material/progress-spinner';
 import {MatTooltipModule} from '@angular/material/tooltip';
 import {combineLatest, fromEvent} from 'rxjs';
 import {takeUntil} from 'rxjs/operators';
-
 import {Bubble} from '../bubble/bubble';
-
 import {AppService} from './app_service';
 import {Pane} from './common/types';
 import {
@@ -45,9 +47,9 @@ import {
   WorkerEvent,
   WorkerEventType,
 } from './common/worker_events';
-import {GraphPanel} from './graph_panel';
-import {InfoPanel} from './info_panel';
 import {SplitPane} from './split_pane';
+import {SyncNavigationButton} from './sync_navigation_button';
+import {SyncNavigationService} from './sync_navigation_service';
 import {WorkerService} from './worker_service';
 
 interface ProcessingTask {
@@ -63,12 +65,11 @@ interface ProcessingTask {
   imports: [
     Bubble,
     CommonModule,
-    GraphPanel,
-    InfoPanel,
     MatIconModule,
     MatProgressSpinnerModule,
     MatTooltipModule,
     SplitPane,
+    SyncNavigationButton,
   ],
   templateUrl: './split_panes_container.ng.html',
   styleUrls: ['./split_panes_container.scss'],
@@ -87,9 +88,12 @@ interface ProcessingTask {
 })
 export class SplitPanesContainer implements AfterViewInit {
   @ViewChild('panesContainer') panesContainer!: ElementRef<HTMLElement>;
+  @ViewChild('noMappedNodeMessage')
+  noMappedNodeMessage?: ElementRef<HTMLElement>;
   @ViewChildren('splitPane') splitPanes = new QueryList<SplitPane>();
 
   readonly processingTasks: Record<string, ProcessingTask[]> = {};
+  readonly allPanesLoaded: Signal<boolean>;
 
   resizingSplitPane = false;
   curLeftWidthFraction = 1;
@@ -97,12 +101,20 @@ export class SplitPanesContainer implements AfterViewInit {
 
   curUpdateProcessingProgressReq?: UpdateProcessingProgressRequest;
 
+  private hideNoMappedNodeMessageTimeoutId = -1;
+
   constructor(
     private readonly changeDetectorRef: ChangeDetectorRef,
     private readonly appService: AppService,
+    private readonly destroyRef: DestroyRef,
+    private readonly syncNavigationService: SyncNavigationService,
     private readonly workerService: WorkerService,
   ) {
     this.panes = this.appService.panes;
+    this.allPanesLoaded = computed(() =>
+      this.panes().every((pane) => pane.modelGraph != null),
+    );
+
     effect(() => {
       const panes = this.panes();
       if (panes.length >= 1) {
@@ -133,6 +145,16 @@ export class SplitPanesContainer implements AfterViewInit {
           break;
       }
     });
+
+    this.syncNavigationService.showNoMappedNodeMessageTrigger$
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((data) => {
+        if (data === undefined) {
+          this.hideNoMappedNodeMessage();
+        } else {
+          this.showNoMappedNodeMessage();
+        }
+      });
   }
 
   ngAfterViewInit() {
@@ -286,5 +308,37 @@ export class SplitPanesContainer implements AfterViewInit {
       task.error = req.error;
       this.changeDetectorRef.detectChanges();
     }
+  }
+
+  private hideNoMappedNodeMessage() {
+    const ele = this.noMappedNodeMessage?.nativeElement;
+    if (!ele) {
+      return;
+    }
+
+    if (this.hideNoMappedNodeMessageTimeoutId >= 0) {
+      clearTimeout(this.hideNoMappedNodeMessageTimeoutId);
+      this.hideNoMappedNodeMessageTimeoutId = -1;
+    }
+
+    ele.classList.remove('show');
+  }
+
+  private showNoMappedNodeMessage() {
+    const ele = this.noMappedNodeMessage?.nativeElement;
+    if (!ele) {
+      return;
+    }
+
+    if (this.hideNoMappedNodeMessageTimeoutId >= 0) {
+      clearTimeout(this.hideNoMappedNodeMessageTimeoutId);
+      this.hideNoMappedNodeMessageTimeoutId = -1;
+    }
+
+    // Hide after 3 seconds.
+    ele.classList.add('show');
+    this.hideNoMappedNodeMessageTimeoutId = setTimeout(() => {
+      ele.classList.remove('show');
+    }, 3000);
   }
 }

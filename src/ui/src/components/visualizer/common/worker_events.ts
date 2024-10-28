@@ -118,6 +118,7 @@ export declare interface RelayoutGraphRequest extends WorkerEventBase {
   clearAllExpandStates?: boolean;
   forRestoringSnapshotAfterTogglingFlattenLayers?: boolean;
   nodeStylerQueries?: NodeStylerRule[];
+  triggerNavigationSync?: boolean;
 }
 
 /** The response for re-laying out the whole graph. */
@@ -130,6 +131,7 @@ export declare interface RelayoutGraphResponse extends WorkerEventBase {
   rectToZoomFit?: Rect;
   forRestoringSnapshotAfterTogglingFlattenLayers?: boolean;
   targetDeepestGroupNodeIdsToExpand?: string[];
+  triggerNavigationSync?: boolean;
 }
 
 /** The request for locating a node. */

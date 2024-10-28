@@ -16,7 +16,7 @@
  * ==============================================================================
  */
 
-@import 'variables';
+@use 'variables';
 
 :host {
   position: relative;
@@ -67,7 +67,7 @@
         align-items: center;
 
         &.search-match {
-          background-color: $search-match-color;
+          background-color: variables.$search-match-color;
         }
 
         .index {
@@ -197,7 +197,7 @@
       vertical-align: text-top;
 
       &.search-match {
-        background-color: $search-match-color;
+        background-color: variables.$search-match-color;
       }
 
       &:hover.has-hover-values {
@@ -258,7 +258,7 @@
       }
 
       &.search-match {
-        background-color: $search-match-color;
+        background-color: variables.$search-match-color;
       }
     }
 
@@ -290,7 +290,7 @@
     padding: 0 12px;
 
     &.search-match {
-      background-color: $search-match-color;
+      background-color: variables.$search-match-color;
     }
 
     .label-row {

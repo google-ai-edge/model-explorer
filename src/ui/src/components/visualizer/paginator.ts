@@ -28,15 +28,13 @@ import {
 
 import {MatIconModule} from '@angular/material/icon';
 
-import {IoTree} from './io_tree';
-
 /**
  * A paginator for navigating through pages.
  */
 @Component({
   standalone: true,
   selector: 'paginator',
-  imports: [CommonModule, IoTree, MatIconModule],
+  imports: [CommonModule, MatIconModule],
   templateUrl: './paginator.ng.html',
   styleUrls: ['./paginator.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,

@@ -42,7 +42,7 @@ import {MatIconModule} from '@angular/material/icon';
 import {MatMenuModule, MatMenuTrigger} from '@angular/material/menu';
 import {MatSnackBar} from '@angular/material/snack-bar';
 import {MatTooltip, MatTooltipModule} from '@angular/material/tooltip';
-import {safeAnchorEl} from 'safevalues/dom';
+import {setAnchorHref} from 'safevalues/dom';
 import * as three from 'three';
 
 import {AppService} from './app_service';
@@ -105,10 +105,12 @@ import {NodeDataProviderExtensionService} from './node_data_provider_extension_s
 import {NodeStylerService} from './node_styler_service';
 import {SplitPaneService} from './split_pane_service';
 import {SubgraphSelectionService} from './subgraph_selection_service';
+import {SyncNavigationService} from './sync_navigation_service';
 import {ThreejsService} from './threejs_service';
 import {UiStateService} from './ui_state_service';
 import {WebglEdges} from './webgl_edges';
 import {WebglRendererAttrsTableService} from './webgl_renderer_attrs_table_service';
+import {WebglRendererEdgeOverlaysService} from './webgl_renderer_edge_overlays_service';
 import {WebglRendererEdgeTextsService} from './webgl_renderer_edge_texts_service';
 import {WebglRendererIdenticalLayerService} from './webgl_renderer_identical_layer_service';
 import {
@@ -192,11 +194,11 @@ type RenderElement = RenderElementNode | RenderElementEdge;
     MatIconModule,
     MatMenuModule,
     MatTooltipModule,
-    IoTree,
   ],
   providers: [
     WebglRendererAttrsTableService,
     WebglRendererEdgeTextsService,
+    WebglRendererEdgeOverlaysService,
     WebglRendererIdenticalLayerService,
     WebglRendererIoHighlightService,
     WebglRendererIoTracingService,
@@ -398,6 +400,7 @@ export class WebglRenderer implements OnInit, OnDestroy {
             workerEvent.rectToZoomFit,
             workerEvent.forRestoringSnapshotAfterTogglingFlattenLayers,
             workerEvent.targetDeepestGroupNodeIdsToExpand,
+            workerEvent.triggerNavigationSync,
           );
         }
         break;
@@ -440,10 +443,12 @@ export class WebglRenderer implements OnInit, OnDestroy {
     private readonly snackBar: MatSnackBar,
     private readonly splitPaneService: SplitPaneService,
     private readonly subgraphSelectionService: SubgraphSelectionService,
+    private readonly syncNavigationService: SyncNavigationService,
     private readonly uiStateService: UiStateService,
     private readonly viewContainerRef: ViewContainerRef,
     private readonly webglRendererAttrsTableService: WebglRendererAttrsTableService,
     readonly webglRendererEdgeTextsService: WebglRendererEdgeTextsService,
+    private readonly webglRendererEdgeOverlaysService: WebglRendererEdgeOverlaysService,
     private readonly webglRendererIdenticalLayerService: WebglRendererIdenticalLayerService,
     private readonly webglRendererIoHighlightService: WebglRendererIoHighlightService,
     private readonly webglRendererIoTracingService: WebglRendererIoTracingService,
@@ -456,6 +461,7 @@ export class WebglRenderer implements OnInit, OnDestroy {
   ) {
     this.webglRendererAttrsTableService.init(this);
     this.webglRendererEdgeTextsService.init(this);
+    this.webglRendererEdgeOverlaysService.init(this);
     this.webglRendererIdenticalLayerService.init(this);
     this.webglRendererIoHighlightService.init(this);
     this.webglRendererIoTracingService.init(this);
@@ -484,45 +490,39 @@ export class WebglRenderer implements OnInit, OnDestroy {
       });
 
     // Handle changes for node to locate.
-    effect(
-      () => {
-        const nodeInfoToLocate = this.appService.curToLocateNodeInfo();
-        if (nodeInfoToLocate?.rendererId !== this.rendererId) {
-          return;
-        }
+    effect(() => {
+      const nodeInfoToLocate = this.appService.curToLocateNodeInfo();
+      if (nodeInfoToLocate?.rendererId !== this.rendererId) {
+        return;
+      }
 
-        if (nodeInfoToLocate) {
-          this.sendLocateNodeRequest(
-            nodeInfoToLocate.nodeId,
-            nodeInfoToLocate.rendererId,
-            nodeInfoToLocate.noNodeShake,
-            nodeInfoToLocate.select,
-          );
-        }
-        this.appService.curToLocateNodeInfo.set(undefined);
-      },
-      {allowSignalWrites: true},
-    );
+      if (nodeInfoToLocate) {
+        this.sendLocateNodeRequest(
+          nodeInfoToLocate.nodeId,
+          nodeInfoToLocate.rendererId,
+          nodeInfoToLocate.noNodeShake,
+          nodeInfoToLocate.select,
+        );
+      }
+      this.appService.curToLocateNodeInfo.set(undefined);
+    });
 
     // Handle changes for node to reveal
-    effect(
-      () => {
-        const pane = this.appService.getPaneById(this.paneId);
-        if (!pane || !pane.modelGraph) {
-          return;
-        }
+    effect(() => {
+      const pane = this.appService.getPaneById(this.paneId);
+      if (!pane || !pane.modelGraph) {
+        return;
+      }
 
-        const nodeIdToReveal = pane.nodeIdToReveal;
-        if (!nodeIdToReveal) {
-          return;
-        }
-        const success = this.revealNode(nodeIdToReveal);
-        if (success) {
-          this.appService.setNodeToReveal(this.paneId, undefined);
-        }
-      },
-      {allowSignalWrites: true},
-    );
+      const nodeIdToReveal = pane.nodeIdToReveal;
+      if (!nodeIdToReveal) {
+        return;
+      }
+      const success = this.revealNode(nodeIdToReveal);
+      if (success) {
+        this.appService.setNodeToReveal(this.paneId, undefined);
+      }
+    });
 
     effect(() => {
       const runs = this.nodeDataProviderExtensionService.getRunsForModelGraph(
@@ -585,7 +585,9 @@ export class WebglRenderer implements OnInit, OnDestroy {
         return;
       }
 
-      this.selectedNodeId = info?.nodeId || '';
+      const selectedNodeId = info?.nodeId || '';
+      const selectedNodeChanged = this.selectedNodeId !== selectedNodeId;
+      this.selectedNodeId = selectedNodeId;
 
       if (this.tracing) {
         if (
@@ -602,8 +604,61 @@ export class WebglRenderer implements OnInit, OnDestroy {
       // data needed to update nodes styles correctly.
       this.webglRendererIoHighlightService.updateIncomingAndOutgoingHighlights();
       this.webglRendererIdenticalLayerService.updateIdenticalLayerIndicators();
+      this.webglRendererEdgeOverlaysService.updateOverlaysData();
       this.updateNodesStyles();
       this.webglRendererThreejsService.render();
+
+      // Trigger a navigation sync request (if enabled).
+      if (selectedNodeChanged && info.triggerNavigationSync) {
+        this.syncNavigationService.updateNavigationSource({
+          paneIndex: this.appService.getPaneIndexById(this.paneId) || 0,
+          nodeId: this.selectedNodeId,
+        });
+      }
+
+      // Automatically reveal all nodes in the edge overlays (if existed).
+      if (this.webglRendererEdgeOverlaysService.curOverlays.length > 0) {
+        const deepestExpandedGroupNodeIds =
+          this.webglRendererEdgeOverlaysService.getDeepestExpandedGroupNodeIds();
+        if (deepestExpandedGroupNodeIds.length > 0) {
+          this.sendRelayoutGraphRequest(
+            this.selectedNodeId,
+            deepestExpandedGroupNodeIds,
+          );
+        } else {
+          this.webglRendererEdgeOverlaysService.updateOverlaysEdges();
+          this.webglRendererThreejsService.render();
+        }
+      } else {
+        this.webglRendererEdgeOverlaysService.clearOverlaysEdges();
+        this.webglRendererThreejsService.render();
+      }
+    });
+
+    // Handle selected edge overlays changes.
+    effect(() => {
+      this.webglRendererEdgeOverlaysService.edgeOverlaysService.selectedOverlayIds();
+      this.webglRendererEdgeOverlaysService.updateOverlaysData();
+
+      // Automatically reveal all nodes in the edge overlays (if existed).
+      if (this.selectedNodeId !== '') {
+        if (this.webglRendererEdgeOverlaysService.curOverlays.length > 0) {
+          const deepestExpandedGroupNodeIds =
+            this.webglRendererEdgeOverlaysService.getDeepestExpandedGroupNodeIds();
+          if (deepestExpandedGroupNodeIds.length > 0) {
+            this.sendRelayoutGraphRequest(
+              this.selectedNodeId,
+              deepestExpandedGroupNodeIds,
+            );
+          } else {
+            this.webglRendererEdgeOverlaysService.updateOverlaysEdges();
+            this.webglRendererThreejsService.render();
+          }
+        } else {
+          this.webglRendererEdgeOverlaysService.clearOverlaysEdges();
+          this.webglRendererThreejsService.render();
+        }
+      }
     });
 
     // Handle "download as png".
@@ -674,6 +729,52 @@ export class WebglRenderer implements OnInit, OnDestroy {
       this.updateNodesStyles();
       this.webglRendererThreejsService.render();
     });
+
+    // Handle navigation sync.
+    this.syncNavigationService.navigationSourceChanged$
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((data) => {
+        if (!data) {
+          return;
+        }
+
+        if (data.paneIndex !== this.appService.getPaneIndexById(this.paneId)) {
+          // Clicking on the empty space. Hide the no mapped node message.
+          if (data.nodeId === '') {
+            this.syncNavigationService.showNoMappedNodeMessageTrigger$.next(
+              undefined,
+            );
+          }
+          // Clicking on a node.
+          else {
+            const mappedNodeId = this.syncNavigationService.getMappedNodeId(
+              data.paneIndex,
+              data.nodeId,
+            );
+            const mappedNode = this.curModelGraph.nodesById[mappedNodeId];
+            const hideInLayout =
+              isOpNode(mappedNode) && mappedNode.hideInLayout;
+            if (
+              mappedNode &&
+              mappedNode.id !== this.selectedNodeId &&
+              !hideInLayout
+            ) {
+              this.revealNode(mappedNodeId, false);
+              this.syncNavigationService.showNoMappedNodeMessageTrigger$.next(
+                undefined,
+              );
+            } else if (!mappedNode || hideInLayout) {
+              this.syncNavigationService.showNoMappedNodeMessageTrigger$.next(
+                {},
+              );
+            } else {
+              this.syncNavigationService.showNoMappedNodeMessageTrigger$.next(
+                undefined,
+              );
+            }
+          }
+        }
+      });
   }
 
   ngOnInit() {
@@ -730,6 +831,7 @@ export class WebglRenderer implements OnInit, OnDestroy {
           true,
           snapshot.showOnNodeItemTypes,
           true,
+          false,
         );
         pane.snapshotToRestore = undefined;
       } else {
@@ -783,14 +885,33 @@ export class WebglRenderer implements OnInit, OnDestroy {
           );
           deepestExpandedGroupNodeIds = groupNodeIds;
         }
+        // Add the parent node of the selected node if it is not set in
+        // deepestExpandedGroupNodeIds.
+        else {
+          const selectedNode =
+            this.curModelGraph.nodesById[paneState.selectedNodeId];
+          const nsParentId = selectedNode?.nsParentId || '';
+          if (
+            selectedNode &&
+            nsParentId &&
+            !deepestExpandedGroupNodeIds.includes(nsParentId)
+          ) {
+            deepestExpandedGroupNodeIds.push(nsParentId);
+          }
+        }
         if (
-          paneState.selectedNodeId != '' ||
+          paneState.selectedNodeId !== '' ||
           deepestExpandedGroupNodeIds.length > 0
         ) {
           this.sendRelayoutGraphRequest(
             paneState.selectedNodeId,
             deepestExpandedGroupNodeIds,
             true,
+            undefined,
+            false,
+            undefined,
+            false,
+            false,
           );
         } else {
           initGraphFn();
@@ -1022,10 +1143,8 @@ export class WebglRenderer implements OnInit, OnDestroy {
       return;
     }
     this.handleSelectNode(this.hoveredNodeId);
-    this.handleToggleExpandCollapse(
-      this.curModelGraph.nodesById[this.hoveredNodeId],
-      all,
-    );
+    const node = this.curModelGraph.nodesById[this.hoveredNodeId] as GroupNode;
+    this.handleToggleExpandCollapse(node, all);
   }
 
   handleClickExpandAll(nodeId?: string) {
@@ -1161,16 +1280,16 @@ export class WebglRenderer implements OnInit, OnDestroy {
     // Expand/collapse node on double click. Alt key controls whether to do it
     // for all sub layers.
     if (this.selectedNodeId !== '' && !shiftDown) {
+      const node = this.curModelGraph.nodesById[
+        this.selectedNodeId
+      ] as GroupNode;
       this.appService.updateDoubleClickedNode(
         this.selectedNodeId,
         this.curModelGraph.id,
         this.curModelGraph.collectionLabel || '',
-        this.curModelGraph.nodesById[this.selectedNodeId],
+        node,
       );
-      this.handleToggleExpandCollapse(
-        this.curModelGraph.nodesById[this.selectedNodeId],
-        altDown,
-      );
+      this.handleToggleExpandCollapse(node, altDown);
     }
   }
 
@@ -1287,6 +1406,7 @@ export class WebglRenderer implements OnInit, OnDestroy {
     clearAllExpandStates = false,
     showOnNodeItemTypes?: Record<string, ShowOnNodeItemData>,
     forRestoringSnapshotAfterTogglingFlattenLayers?: boolean,
+    triggerNavigationSync = true,
   ) {
     this.showBusySpinnerWithDelay();
 
@@ -1302,6 +1422,7 @@ export class WebglRenderer implements OnInit, OnDestroy {
       rectToZoomFit,
       clearAllExpandStates,
       forRestoringSnapshotAfterTogglingFlattenLayers,
+      triggerNavigationSync,
     };
     this.workerService.worker.postMessage(req);
   }
@@ -1391,6 +1512,15 @@ export class WebglRenderer implements OnInit, OnDestroy {
 
   getNodeHeight(node: ModelNode): number {
     return node.height || 0;
+  }
+
+  getNodeRect(node: ModelNode): Rect {
+    return {
+      x: this.getNodeX(node),
+      y: this.getNodeY(node),
+      width: this.getNodeWidth(node),
+      height: this.getNodeHeight(node),
+    };
   }
 
   getNodeLabelRelativeY(node: ModelNode): number {
@@ -1544,7 +1674,7 @@ export class WebglRenderer implements OnInit, OnDestroy {
     return this.webglRendererThreejsService.fps;
   }
 
-  private handleSelectNode(nodeId: string) {
+  private handleSelectNode(nodeId: string, triggerNavigationSync = true) {
     this.appService.selectNode(this.paneId, {
       nodeId,
       rendererId: this.rendererId,
@@ -1552,6 +1682,7 @@ export class WebglRenderer implements OnInit, OnDestroy {
         nodeId === ''
           ? false
           : isGroupNode(this.curModelGraph.nodesById[nodeId]),
+      triggerNavigationSync,
     });
   }
 
@@ -1626,6 +1757,7 @@ export class WebglRenderer implements OnInit, OnDestroy {
     rectToZoomFit?: Rect,
     forRestoringSnapshotAfterTogglingFlattenLayers?: boolean,
     targetDeepestGroupNodeIdsToExpand?: string[],
+    triggerNavigationSync?: boolean,
   ) {
     this.updateCurModelGraph(modelGraph);
     this.updateNodesAndEdgesToRender();
@@ -1633,6 +1765,7 @@ export class WebglRenderer implements OnInit, OnDestroy {
     this.renderGraph();
     this.webglRendererIoHighlightService.updateIncomingAndOutgoingHighlights();
     this.webglRendererIdenticalLayerService.updateIdenticalLayerIndicators();
+    this.webglRendererEdgeOverlaysService.updateOverlaysEdges();
     this.updateNodesStyles();
     if (rectToZoomFit) {
       const zoomFitFn = () => {
@@ -1662,7 +1795,7 @@ export class WebglRenderer implements OnInit, OnDestroy {
 
     // Select node.
     if (this.selectedNodeId !== selectedNodeId) {
-      this.handleSelectNode(selectedNodeId || '');
+      this.handleSelectNode(selectedNodeId || '', triggerNavigationSync);
     }
 
     if (!this.inPopup) {
@@ -2633,7 +2766,7 @@ export class WebglRenderer implements OnInit, OnDestroy {
     // Download canvas data as png.
     const link = document.createElement('a');
     link.download = 'model_explorer_graph.png';
-    safeAnchorEl.setHref(link, canvas.toDataURL());
+    setAnchorHref(link, canvas.toDataURL());
     link.click();
     this.webglRendererThreejsService.setSceneBackground(
       new THREE.Color(0xffffff),
@@ -2762,7 +2895,7 @@ export class WebglRenderer implements OnInit, OnDestroy {
     this.changeDetectorRef.detectChanges();
   }
 
-  private revealNode(nodeId: string): boolean {
+  private revealNode(nodeId: string, triggerNavigationSync = true): boolean {
     const node = this.curModelGraph.nodesById[nodeId];
     if (!node) {
       return false;
@@ -2770,6 +2903,12 @@ export class WebglRenderer implements OnInit, OnDestroy {
     this.sendRelayoutGraphRequest(
       nodeId,
       node.nsParentId ? [node.nsParentId] : [],
+      false,
+      undefined,
+      false,
+      undefined,
+      false,
+      triggerNavigationSync,
     );
     return true;
   }

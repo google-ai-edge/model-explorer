@@ -35,7 +35,7 @@ import {MatFormFieldModule} from '@angular/material/form-field';
 import {MatIconModule} from '@angular/material/icon';
 import {MatSelect, MatSelectModule} from '@angular/material/select';
 import {MatTooltipModule} from '@angular/material/tooltip';
-import {safeAnchorEl} from 'safevalues/dom';
+import {setAnchorHref} from 'safevalues/dom';
 import {AppService} from './app_service';
 import {Graph, GraphCollection} from './common/input_graph';
 import {exportToResource} from './common/utils';
@@ -231,7 +231,7 @@ export class GraphSelector {
     const dataUrl = `data:text/json;charset=utf-8, ${encodeURIComponent(
       JSON.stringify(this.selectedCollection, null, 2),
     )}`;
-    safeAnchorEl.setHref(link, dataUrl);
+    setAnchorHref(link, dataUrl);
     link.click();
   }
 

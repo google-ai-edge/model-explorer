@@ -53,6 +53,10 @@ FIX_FORMAT_FLAG=${1}
   -e "\.dot" \
   -e "\.in" \
   -e "\.pyi" \
+  -e "\.tflite" \
+  -e "\.pb" \
+  -e "\.pbtxt" \
+  -e "\.mlir" \
   --output-directory /tmp
 
 LICENSE_CHECK_RESULT=$?

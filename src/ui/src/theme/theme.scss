@@ -62,7 +62,9 @@ $blue-palette: (
 @mixin light-mode() {
   // The `mat.core` mixin applies common styles used by multiple
   // components, such ripples, overlays, high contrast mode, etc.
-  @include mat.core();
+  // copybara:insert_begin(external)
+  // @include mat.core();
+  // copybara:insert_end
 
   // Define the application's color palettes.
   $primary: mat.m2-define-palette($blue-palette, 600);
@@ -106,6 +108,7 @@ $blue-palette: (
   @include mat.list-theme($theme);
   @include mat.menu-theme($theme);
   @include mat.progress-spinner-theme($theme);
+  @include mat.radio-theme($theme);
   @include mat.select-theme($theme);
   @include mat.sidenav-theme($theme);
   @include mat.slide-toggle-theme($theme);

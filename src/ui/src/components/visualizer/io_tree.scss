@@ -16,7 +16,7 @@
  * ==============================================================================
  */
 
-@import 'variables';
+@use 'variables';
 
 .io-tree {
   background-color: transparent;
@@ -94,7 +94,7 @@
         }
 
         .node-label.search-match {
-          background-color: $search-match-color;
+          background-color: variables.$search-match-color;
         }
       }
 
@@ -116,7 +116,7 @@
           vertical-align: text-top;
 
           &.search-match {
-            background-color: $search-match-color;
+            background-color: variables.$search-match-color;
           }
 
           mat-icon.bullet {

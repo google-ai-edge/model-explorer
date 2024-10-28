@@ -34,10 +34,7 @@ import {MatButtonModule} from '@angular/material/button';
 import {MatIconModule} from '@angular/material/icon';
 import {MatMenuModule} from '@angular/material/menu';
 import {MatTooltipModule} from '@angular/material/tooltip';
-
 import {Bubble} from '../bubble/bubble';
-import {BubbleClick} from '../bubble/bubble_click';
-
 import {AppService} from './app_service';
 import {type ModelGraph} from './common/model_graph';
 import {
@@ -46,6 +43,7 @@ import {
   SubgraphBreadcrumbItem,
 } from './common/types';
 import {isGroupNode} from './common/utils';
+import {EdgeOverlaysDropdown} from './edge_overlays_dropdown';
 import {SearchBar} from './search_bar';
 import {SnapshotManager} from './snapshot_manager';
 import {SubgraphBreadcrumbs} from './subgraph_breadcrumbs';
@@ -58,8 +56,8 @@ import {WebglRenderer} from './webgl_renderer';
   selector: 'renderer-wrapper',
   imports: [
     Bubble,
-    BubbleClick,
     CommonModule,
+    EdgeOverlaysDropdown,
     MatButtonModule,
     MatIconModule,
     MatMenuModule,
@@ -202,6 +200,10 @@ export class RendererWrapper {
 
   get showSubgraphBreadcrumbs(): boolean {
     return !this.inPopup && this.curSubgraphBreadcrumbs.length > 1;
+  }
+
+  get showEdgeOverlaysDropdown(): boolean {
+    return !this.inPopup;
   }
 
   get disableExpandCollapseAllButton(): boolean {

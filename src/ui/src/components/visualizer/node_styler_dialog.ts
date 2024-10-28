@@ -31,7 +31,7 @@ import {MatDialogModule} from '@angular/material/dialog';
 import {MatIconModule} from '@angular/material/icon';
 import {MatMenuModule} from '@angular/material/menu';
 import {MatTooltipModule} from '@angular/material/tooltip';
-import {safeAnchorEl} from 'safevalues/dom';
+import {setAnchorHref} from 'safevalues/dom';
 
 import {Bubble} from '../bubble/bubble';
 
@@ -160,7 +160,7 @@ export class NodeStylerDialog {
     const dataUrl = `data:text/json;charset=utf-8, ${encodeURIComponent(
       JSON.stringify(this.rules(), null, 2),
     )}`;
-    safeAnchorEl.setHref(link, dataUrl);
+    setAnchorHref(link, dataUrl);
     link.click();
   }
 

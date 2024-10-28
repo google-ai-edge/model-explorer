@@ -16,7 +16,7 @@
  * ==============================================================================
  */
 
-@import 'variables';
+@use 'variables';
 
 .container {
   padding-top: 12px;
@@ -305,13 +305,17 @@
     }
 
     td.input {
-      color: $incoming-edge-color;
+      color: variables.$incoming-edge-color;
       font-weight: 500;
     }
 
     td.output {
-      color: $outgoing-edge-color;
+      color: variables.$outgoing-edge-color;
       font-weight: 500;
     }
+  }
+
+  .hidden {
+    display: none;
   }
 }
