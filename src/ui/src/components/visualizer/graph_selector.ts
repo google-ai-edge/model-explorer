@@ -209,11 +209,26 @@ export class GraphSelector {
     });
   }
 
-  async handleClickExecuteGraph() {
+  getCurrentGraphInformation() {
     const curPane = this.appService.getSelectedPane();
     const curCollectionLabel = curPane?.modelGraph?.collectionLabel;
+    const curCollection = this.appService.curGraphCollections().find(({ label }) =>label === curCollectionLabel);
     const models = this.modelLoaderService.models();
     const curModel = models.find(({ label }) => label === curCollectionLabel);
+    const changesToUpload = this.modelLoaderService.changesToUpload()[curCollectionLabel ?? ''];
+
+    return {
+      curModel,
+      curCollection,
+      curCollectionLabel,
+      curPane,
+      models,
+      changesToUpload,
+    };
+  }
+
+  async handleClickExecuteGraph() {
+    const { curModel, curPane, models } = this.getCurrentGraphInformation();
 
     if (curModel) {
       const result = await this.modelLoaderService.executeModel(curModel);
@@ -266,12 +281,7 @@ export class GraphSelector {
   }
 
   async handleClickUploadGraph() {
-    const curPane = this.appService.getSelectedPane()
-    const curCollectionLabel = curPane?.modelGraph?.collectionLabel;
-    const curCollection = this.appService.curGraphCollections().find(({ label }) =>label === curCollectionLabel);
-    const models = this.modelLoaderService.models();
-    const curModel = models.find(({ label }) => label === curCollectionLabel);
-    const changesToUpload = this.modelLoaderService.changesToUpload()[curCollectionLabel ?? ''];
+    const { curModel, curCollection, curCollectionLabel, changesToUpload, models } = this.getCurrentGraphInformation();
 
     if (curModel && curCollection && changesToUpload) {
       const updatedGraphCollection = await this.modelLoaderService.overrideModel(
@@ -378,6 +388,10 @@ export class GraphSelector {
 
   get hasChangesToUpload() {
     return this.modelLoaderService.hasChangesToUpload;
+  }
+
+  get hasCurModel() {
+    return this.getCurrentGraphInformation().curModel !== undefined;
   }
 
   get graphHasErrors() {
