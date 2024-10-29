@@ -124,6 +124,16 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+
+    .text-separator:last-child {
+      display: none;
+    }
+  }
+
+  .text-content {
+    .text-separator:last-child {
+      display: none;
+    }
   }
 
   .expanded-text {

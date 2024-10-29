@@ -22,8 +22,12 @@ import {GRAPHS_MODEL_SOURCE_PREFIX} from '../common/consts';
 import {
   AdapterConvertCommand,
   AdapterConvertResponse,
+  type AdapterExecuteCommand,
+  type AdapterExecuteResponse,
+  type AdapterOverrideCommand,
+  type AdapterOverrideResponse,
 } from '../common/extension_command';
-import {ModelLoaderServiceInterface} from '../common/model_loader_service_interface';
+import {ModelLoaderServiceInterface, type ChangesPerGraphAndNode, type ChangesPerNode, type ExecutionCommand} from '../common/model_loader_service_interface';
 import {
   InternalAdapterExtId,
   ModelItem,
@@ -65,10 +69,119 @@ export class ModelLoaderService implements ModelLoaderServiceInterface {
     undefined,
   );
 
+  readonly models = signal<ModelItem[]>([]);
+
+  readonly changesToUpload = signal<ChangesPerGraphAndNode>({});
+
+  readonly graphErrors = signal<string[] | undefined>(undefined);
+
   constructor(
     private readonly settingsService: SettingsService,
     readonly extensionService: ExtensionService,
   ) {}
+
+  get hasChangesToUpload() {
+    return Object.keys(this.changesToUpload()).length > 0;
+  }
+
+  async executeModel(modelItem: ModelItem) {
+    modelItem.status.set(ModelItemStatus.PROCESSING);
+    let updatedPath = modelItem.path;
+    let result: ExecutionCommand | undefined = undefined;
+
+    // User-entered file path.
+    if (modelItem.type === ModelItemType.FILE_PATH) {
+      result = await this.sendExecuteRequest(
+        modelItem,
+        updatedPath,
+      );
+    }
+    // Upload or graph jsons from server.
+    else if (
+      modelItem.type === ModelItemType.LOCAL ||
+      modelItem.type === ModelItemType.GRAPH_JSONS_FROM_SERVER
+    ) {
+      const file = modelItem.file!;
+
+      // Upload the file
+      modelItem.status.set(ModelItemStatus.UPLOADING);
+      const {path, error: uploadError} = await this.uploadModelFile(file);
+      if (uploadError) {
+        modelItem.selected = false;
+        modelItem.status.set(ModelItemStatus.ERROR);
+        modelItem.errorMessage = uploadError;
+        return undefined;
+      }
+
+      updatedPath = path;
+
+      // Send request to backend for processing.
+      result = await this.sendExecuteRequest(
+        modelItem,
+        updatedPath,
+      );
+    }
+
+    return result;
+  }
+
+  async overrideModel(modelItem: ModelItem, graphCollection: GraphCollection, fieldsToUpdate: ChangesPerNode) {
+    modelItem.status.set(ModelItemStatus.PROCESSING);
+    let result: GraphCollection | undefined = undefined;
+    let updatedPath = modelItem.path;
+
+    // User-entered file path.
+    if (modelItem.type === ModelItemType.FILE_PATH) {
+      result = await this.sendOverrideRequest(
+        modelItem,
+        updatedPath,
+        graphCollection,
+        fieldsToUpdate,
+      );
+    }
+    // Upload or graph jsons from server.
+    else if (
+      modelItem.type === ModelItemType.LOCAL ||
+      modelItem.type === ModelItemType.GRAPH_JSONS_FROM_SERVER
+    ) {
+      const file = modelItem.file!;
+
+      // Upload the file
+      modelItem.status.set(ModelItemStatus.UPLOADING);
+      const {path, error: uploadError} = await this.uploadModelFile(file);
+      if (uploadError) {
+        modelItem.selected = false;
+        modelItem.status.set(ModelItemStatus.ERROR);
+        modelItem.errorMessage = uploadError;
+        return undefined;
+      }
+
+      updatedPath = path;
+
+      // Send request to backend for processing.
+      result = await this.sendOverrideRequest(
+        modelItem,
+        updatedPath,
+        graphCollection,
+        fieldsToUpdate,
+      );
+
+      if (modelItem.status() !== ModelItemStatus.ERROR) {
+        this.models.update((curModels) => {
+          curModels.push({
+            ...modelItem,
+            path: updatedPath ?? modelItem.path,
+          });
+
+          return curModels;
+        });
+
+        modelItem.status.set(ModelItemStatus.DONE);
+      }
+    }
+
+    return result;
+  }
 
   async loadModels(modelItems: ModelItem[]) {
     // Create tasks for loading models in the given model items.
@@ -105,6 +218,7 @@ export class ModelLoaderService implements ModelLoaderServiceInterface {
   async loadModel(modelItem: ModelItem): Promise<GraphCollection[]> {
     modelItem.status.set(ModelItemStatus.PROCESSING);
     let result: GraphCollection[] = [];
+    let updatedPath: string | undefined;
 
     // User-entered file path.
     if (modelItem.type === ModelItemType.FILE_PATH) {
@@ -183,6 +297,8 @@ export class ModelLoaderService implements ModelLoaderServiceInterface {
             return [];
           }
 
+          updatedPath = path;
+
           // Send request to backend for processing.
           result = await this.sendConvertRequest(
             modelItem,
@@ -193,6 +309,15 @@ export class ModelLoaderService implements ModelLoaderServiceInterface {
           break;
       }
     }
+
+    this.models.update((curModels) => {
+      curModels.push({
+        ...modelItem,
+        path: updatedPath ?? modelItem.path,
+      });
+
+      return curModels;
+    });
 
     return result;
   }
@@ -277,6 +402,81 @@ export class ModelLoaderService implements ModelLoaderServiceInterface {
     return result;
   }
 
+  private async sendExecuteRequest(
+    modelItem: ModelItem,
+    path: string
+  ) {
+    let result: ExecutionCommand | undefined = undefined;
+
+    modelItem.status.set(ModelItemStatus.PROCESSING);
+
+    const executeCommand: AdapterExecuteCommand = {
+      cmdId: 'execute',
+      extensionId: modelItem.selectedAdapter?.id ?? '',
+      modelPath: path,
+      settings: {},
+      deleteAfterConversion: false
+    }
+
+    const {cmdResp, otherError: cmdError} =
+      await this.extensionService.sendCommandToExtension<AdapterExecuteResponse>(
+        executeCommand,
+      );
+    const error = cmdResp?.error || cmdError;
+
+    if (error) {
+      modelItem.selected = false;
+      modelItem.status.set(ModelItemStatus.ERROR);
+      modelItem.errorMessage = error;
+      return undefined;
+    } else if (cmdResp) {
+      result = cmdResp;
+    }
+
+    modelItem.status.set(ModelItemStatus.DONE);
+
+    return result;
+  }
+
+  private async sendOverrideRequest(
+    modelItem: ModelItem,
+    path: string,
+    graphCollection: GraphCollection,
+    fieldsToUpdate: Record<string, any>
+  ) {
+
+    let result: GraphCollection | undefined = undefined;
+
+    modelItem.status.set(ModelItemStatus.PROCESSING);
+
+    const overrideCommand: AdapterOverrideCommand = {
+      cmdId: 'override',
+      extensionId: modelItem.selectedAdapter?.id || '',
+      modelPath: path,
+      settings: {
+        graphs: graphCollection.graphs,
+        changes: fieldsToUpdate
+      },
+      deleteAfterConversion: false
+    };
+
+    const {cmdResp, otherError: cmdError} =
+      await this.extensionService.sendCommandToExtension<AdapterOverrideResponse>(
+        overrideCommand,
+      );
+    const error = cmdResp?.error || cmdError;
+    if (error) {
+      modelItem.selected = false;
+      modelItem.status.set(ModelItemStatus.ERROR);
+      modelItem.errorMessage = error;
+      return  undefined;
+    } else if (cmdResp) {
+      result = this.processAdapterOverrideResponse(cmdResp, modelItem.label);
+    }
+    modelItem.status.set(ModelItemStatus.DONE);
+    return result;
+  }
+
   private processAdapterConvertResponse(
     resp: AdapterConvertResponse,
     fileName: string,
@@ -292,5 +492,19 @@ export class ModelLoaderService implements ModelLoaderServiceInterface {
       });
     }
     return [];
+  }
+
+  private processAdapterOverrideResponse(
+    resp: AdapterOverrideResponse,
+    label: string,
+  ): GraphCollection | undefined {
+    if (resp.graphs) {
+      return {
+        label,
+        graphs: resp.graphs,
+      }
+    }
+
+    return undefined;
   }
 }

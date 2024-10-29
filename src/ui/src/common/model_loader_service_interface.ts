@@ -19,11 +19,28 @@
 import {WritableSignal} from '@angular/core';
 
 import {GraphCollection} from '../components/visualizer/common/input_graph';
+import type { KeyValue, NodeDataProviderData } from '../components/visualizer/common/types';
 
 import {ModelItem} from './types';
+
+export type ChangesPerNode = Record<string, KeyValue[]>;
+export type ChangesPerGraphAndNode = Record<string, ChangesPerNode>;
+
+export interface ExecutionCommand {
+  stdout: string;
+  log_file: string;
+  perf_trace?: string;
+  perf_data?: NodeDataProviderData
+}
 
 /** The interface of model load service. */
 export interface ModelLoaderServiceInterface {
   loadModels(modelItems: ModelItem[]): Promise<void>;
+  executeModel(modelItem: ModelItem): Promise<ExecutionCommand | undefined>;
+  overrideModel(modelItem: ModelItem, graphCollection: GraphCollection, fieldsToUpdate: ChangesPerNode): Promise<GraphCollection | undefined>;
   get loadedGraphCollections(): WritableSignal<GraphCollection[] | undefined>;
+  get models(): WritableSignal<ModelItem[]>;
+  get changesToUpload(): WritableSignal<ChangesPerGraphAndNode>;
+  get graphErrors(): WritableSignal<string[] | undefined>;
+  get hasChangesToUpload(): boolean;
 }

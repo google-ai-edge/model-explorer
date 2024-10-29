@@ -24,6 +24,7 @@ import {
   Component,
   ElementRef,
   HostBinding,
+  Inject,
   Input,
   OnChanges,
   OnDestroy,
@@ -32,6 +33,8 @@ import {
 import {MatIconModule} from '@angular/material/icon';
 import {MatTooltipModule} from '@angular/material/tooltip';
 import {AppService} from './app_service';
+import { ModelLoaderServiceInterface } from '../../common/model_loader_service_interface';
+import type { EditableAttributeTypes, EditableValueListAttribute } from './common/input_graph';
 
 /** Expandable info text component. */
 @Component({
@@ -45,8 +48,11 @@ import {AppService} from './app_service';
 export class ExpandableInfoText implements AfterViewInit, OnDestroy, OnChanges {
   @Input() text = '';
   @Input() type = '';
+  @Input() collectionLabel = '';
+  @Input() nodeId = '';
   @Input() bgColor = 'transparent';
   @Input() textColor = 'inherit';
+  @Input() editable?: EditableAttributeTypes = undefined;
   @ViewChild('container') container?: ElementRef<HTMLElement>;
   @ViewChild('oneLineText') oneLineText?: ElementRef<HTMLElement>;
 
@@ -56,6 +62,8 @@ export class ExpandableInfoText implements AfterViewInit, OnDestroy, OnChanges {
   private resizeObserver?: ResizeObserver;
 
   constructor(
+    @Inject('ModelLoaderService')
+    private readonly modelLoaderService: ModelLoaderServiceInterface,
     private readonly appService: AppService,
     private readonly changeDetectorRef: ChangeDetectorRef,
   ) {}
@@ -77,6 +85,12 @@ export class ExpandableInfoText implements AfterViewInit, OnDestroy, OnChanges {
       });
       this.resizeObserver.observe(this.container.nativeElement);
     }
+
+    this.text = this.modelLoaderService
+      .changesToUpload()[this.collectionLabel ?? '']
+      ?.[this.nodeId]
+      ?.find(({ key }) => key === this.type)
+      ?.value ?? this.text;
   }
 
   ngOnChanges() {
@@ -90,6 +104,71 @@ export class ExpandableInfoText implements AfterViewInit, OnDestroy, OnChanges {
     if (this.resizeObserver) {
       this.resizeObserver.disconnect();
     }
+  }
+
+  hasCurModel() {
+    const curPane = this.appService.getSelectedPane();
+    const curCollectionLabel = curPane?.modelGraph?.collectionLabel;
+    const models = this.modelLoaderService.models();
+    const curModel = models.find(({ label }) => label === curCollectionLabel);
+
+    return curModel !== undefined;
+  }
+
+  splitEditableList(value: string) {
+    return value
+      .replace(/^\[/iu, '')
+      .replace(/\]$/iu, '')
+      .split(',')
+      .map((part) => {
+        const parsedValue = Number.parseFloat(part);
+
+        if (Number.isNaN(parsedValue)) {
+          return { type: 'text', value: part.trim() };
+        }
+
+        return { type: 'number', value: parsedValue }
+      });
+  }
+
+  handleTextChange(evt: Event) {
+    const target = evt.target as HTMLInputElement | HTMLSelectElement;
+    let updatedValue = target.value;
+
+    if (this.editable?.input_type === 'int_list' || this.editable?.input_type === 'grid') {
+      updatedValue = `[${this.splitEditableList(this.text).map(({ value }, index) => {
+        if (index.toString() === target.dataset['index']) {
+          return target.value;
+        }
+
+        return value;
+      }).join(', ')}]`;
+    }
+
+    const collectionLabel = this.appService.getSelectedPane()?.modelGraph?.collectionLabel;
+    const nodeId = this.appService.getSelectedPane()?.selectedNodeInfo?.nodeId;
+
+    this.modelLoaderService.changesToUpload.update((changesToUpload) => {
+      if (collectionLabel && nodeId) {
+        changesToUpload[collectionLabel] = {...changesToUpload[collectionLabel] };
+
+        const existingChanges = changesToUpload[collectionLabel][nodeId]?.findIndex(({ key }) => key === this.type) ?? -1;
+
+        if (existingChanges !== -1) {
+          changesToUpload[collectionLabel][nodeId].splice(existingChanges, 1);
+        }
+
+        changesToUpload[collectionLabel][nodeId] = [
+          ...(changesToUpload[collectionLabel][nodeId] ?? []),
+          {
+            key: this.type,
+            value: updatedValue
+          }
+        ];
+      }
+
+      return changesToUpload;
+    });
   }
 
   handleToggleExpand(event: MouseEvent, fromExpandedText = false) {
@@ -109,6 +188,10 @@ export class ExpandableInfoText implements AfterViewInit, OnDestroy, OnChanges {
 
   getMaxConstValueCount(): number {
     return this.appService.config()?.maxConstValueCount ?? 0;
+  }
+
+  getEditableOptions(editable: EditableAttributeTypes, value: string) {
+    return [...new Set([value, ...(editable as EditableValueListAttribute).options])];
   }
 
   get hasOverflow(): boolean {

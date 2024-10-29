@@ -21,8 +21,8 @@ import {
   GraphNodeStyle,
   GroupNodeAttributes,
   IncomingEdge,
-  KeyValueList,
   MetadataItem,
+  type KeyValue,
 } from './types';
 
 /** A collection of graphs. This is the input to the visualizer. */
@@ -128,7 +128,7 @@ export declare interface GraphNode {
   subgraphIds?: string[];
 
   /** The attributes of the node.  */
-  attrs?: KeyValueList;
+  attrs?: EditableAttributeList;
 
   /** A list of incoming edges. */
   incomingEdges?: IncomingEdge[];
@@ -149,3 +149,35 @@ export declare interface GraphNode {
   /** Custom configs for the node. */
   config?: GraphNodeConfig;
 }
+
+/** An attirbute representing a list of integers */
+export interface EditableIntAttribute {
+  input_type: 'int_list';
+  min_size: number;
+  max_size: number;
+  min_value: number;
+  max_value: number;
+  step: number;
+}
+
+/** An attribute representing a list of fixed values */
+export interface EditableValueListAttribute {
+  input_type: 'value_list';
+  options: string[];
+}
+
+export interface EditableGridAttribute {
+  input_type: 'grid';
+  separator?: string;
+  min_value: number;
+  max_value: number;
+  step: number;
+}
+
+export type EditableAttributeTypes = EditableIntAttribute | EditableValueListAttribute | EditableGridAttribute;
+
+export interface EditableAttribute extends KeyValue {
+  editable?: EditableAttributeTypes;
+}
+
+export type EditableAttributeList = EditableAttribute[];

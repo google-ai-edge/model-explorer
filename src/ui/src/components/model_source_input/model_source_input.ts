@@ -185,6 +185,7 @@ export class ModelSourceInput {
         const adapterCandidates = ext == null ? [] : [ext];
         return {
           path: modelSource.url,
+          label: modelSource.url.split('/').pop() ?? '',
           type: ModelItemType.GRAPH_JSONS_FROM_SERVER,
           status: signal<ModelItemStatus>(ModelItemStatus.NOT_STARTED),
           selected: adapterCandidates.length > 0,
@@ -200,6 +201,7 @@ export class ModelSourceInput {
         const adapterCandidates = ext == null ? [] : [ext];
         return {
           path: modelSource.url,
+          label: '',
           type: ModelItemType.DATA_NEXUS,
           status: signal<ModelItemStatus>(ModelItemStatus.NOT_STARTED),
           selected: true,
@@ -225,6 +227,7 @@ export class ModelSourceInput {
         }
         return {
           path: modelSource.url,
+          label: modelSource.url.split('/').pop() ?? '',
           type: IS_EXTERNAL ? ModelItemType.FILE_PATH : ModelItemType.REMOTE,
           status: signal<ModelItemStatus>(ModelItemStatus.NOT_STARTED),
           selected: adapterCandidates.length > 0,
@@ -256,6 +259,7 @@ export class ModelSourceInput {
       this.addModelItems([
         {
           path: '<Graphs imported from server>',
+          label: '',
           type: ModelItemType.GRAPH_JSONS_FROM_SERVER,
           status: signal<ModelItemStatus>(ModelItemStatus.NOT_STARTED),
           selected: true,
@@ -273,6 +277,7 @@ export class ModelSourceInput {
         );
         return {
           path: url,
+          label: url.split('/').pop() ?? '',
           type: ModelItemType.FILE_PATH,
           status: signal<ModelItemStatus>(ModelItemStatus.NOT_STARTED),
           selected: adapterCandidates.length > 0,
@@ -317,6 +322,7 @@ export class ModelSourceInput {
         );
         return {
           path: url,
+          label: url.split('/').pop() ?? '',
           type: this.isInternal
             ? ModelItemType.REMOTE
             : ModelItemType.FILE_PATH,
@@ -423,6 +429,7 @@ export class ModelSourceInput {
       if (filePath !== '') {
         modelItems.push({
           path: filePath,
+          label: file.name,
           type: this.isInternal
             ? ModelItemType.REMOTE
             : ModelItemType.FILE_PATH,
@@ -437,6 +444,7 @@ export class ModelSourceInput {
       } else {
         modelItems.push({
           path: file.name,
+          label: file.name,
           type: ModelItemType.LOCAL,
           status: signal<ModelItemStatus>(ModelItemStatus.NOT_STARTED),
           selected: adapterCandidates.length > 0,

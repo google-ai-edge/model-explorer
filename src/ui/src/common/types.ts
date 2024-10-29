@@ -71,6 +71,7 @@ export type Extension = AdapterExtension;
 /** An item in the model table. */
 export interface ModelItem {
   path: string;
+  label: string;
   type: ModelItemType;
   status: WritableSignal<ModelItemStatus>;
   selected: boolean;

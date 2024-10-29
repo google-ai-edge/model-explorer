@@ -23,6 +23,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   ElementRef,
+  Inject,
   Signal,
   ViewChild,
   ViewContainerRef,
@@ -37,9 +38,17 @@ import {MatSelect, MatSelectModule} from '@angular/material/select';
 import {MatTooltipModule} from '@angular/material/tooltip';
 import {setAnchorHref} from 'safevalues/dom';
 import {AppService} from './app_service';
+import {UrlService} from '../../services/url_service';
 import {Graph, GraphCollection} from './common/input_graph';
-import {exportToResource} from './common/utils';
+import {exportToResource, genUid} from './common/utils';
 import {GraphSelectorPanel} from './graph_selector_panel';
+import type { ModelLoaderServiceInterface } from '../../common/model_loader_service_interface';
+import { NodeDataProviderExtensionService } from './node_data_provider_extension_service';
+import type { ModelGraph } from './common/model_graph.js';
+import { ModelItemStatus } from '../../common/types.js';
+import { MatDialogModule, MatDialog } from '@angular/material/dialog';
+import { GraphErrorsDialog } from '../graph_error_dialog/graph_error_dialog.js';
+import { MatSnackBar } from '@angular/material/snack-bar';
 
 /** A graph collection in the dropdown menu. */
 export interface GraphCollectionItem {
@@ -74,6 +83,7 @@ const LABEL_WIDTHS: {[label: string]: number} = {};
     MatSelectModule,
     MatTooltipModule,
     ReactiveFormsModule,
+    MatDialogModule
   ],
   templateUrl: './graph_selector.ng.html',
   styleUrls: ['./graph_selector.scss'],
@@ -165,9 +175,15 @@ export class GraphSelector {
   });
 
   constructor(
+    @Inject('ModelLoaderService')
+    private readonly modelLoaderService: ModelLoaderServiceInterface,
+    private readonly nodeDataProviderExtensionService: NodeDataProviderExtensionService,
     private readonly appService: AppService,
+    private readonly urlService: UrlService,
     private readonly overlay: Overlay,
     private readonly viewContainerRef: ViewContainerRef,
+    private readonly dialog: MatDialog,
+    private readonly snackBar: MatSnackBar,
   ) {
     // Update selected graph when the data source in app service is updated.
     effect(() => {
@@ -192,6 +208,151 @@ export class GraphSelector {
     ref.instance.onClose.subscribe(() => {
       overlayRef.dispose();
     });
+  }
+
+  getCurrentGraphInformation() {
+    const curPane = this.appService.getSelectedPane();
+    const curCollectionLabel = curPane?.modelGraph?.collectionLabel;
+    const curCollection = this.appService.curGraphCollections().find(({ label }) =>label === curCollectionLabel);
+    const models = this.modelLoaderService.models();
+    const curModel = models.find(({ label }) => label === curCollectionLabel);
+    const changesToUpload = this.modelLoaderService.changesToUpload()[curCollectionLabel ?? ''];
+
+    return {
+      curModel,
+      curCollection,
+      curCollectionLabel,
+      curPane,
+      models,
+      changesToUpload,
+    };
+  }
+
+  async handleClickExecuteGraph() {
+    const { curModel, curPane, models } = this.getCurrentGraphInformation();
+
+    if (curModel) {
+      const result = await this.modelLoaderService.executeModel(curModel);
+
+      if (curModel.status() !== ModelItemStatus.ERROR) {
+        if (result) {
+          this.modelLoaderService.loadedGraphCollections.update((prevGraphCollections) => {
+            if (!prevGraphCollections) {
+              return undefined;
+            }
+
+            return [...prevGraphCollections];
+          });
+
+          this.urlService.setUiState(undefined);
+          this.urlService.setModels(models.map(({ path, selectedAdapter }) => {
+            return {
+              url: path,
+              adapterId: selectedAdapter?.id
+            };
+          }));
+
+          this.modelLoaderService.changesToUpload.update(() => ({}));
+          this.modelLoaderService.graphErrors.update(() => undefined);
+
+          if (result.perf_data) {
+            const runId = genUid();
+            const modelGraph = curPane?.modelGraph as ModelGraph;
+
+            this.nodeDataProviderExtensionService.addRun(
+              runId,
+              `${modelGraph.id} (Performance Trace)`,
+              curModel.selectedAdapter?.id ?? '',
+              modelGraph,
+              result.perf_data,
+            );
+          }
+
+          this.snackBar.open('Model updated', 'Dismiss', {
+            duration: 5000,
+            verticalPosition: 'top',
+            horizontalPosition: 'center'
+          });
+        } else {
+          this.modelLoaderService.graphErrors.update((curErrors) => {
+            return [...new Set([...curErrors ?? [], "Graph execution didn't return any results"])];
+          });
+          this.dialog.open(GraphErrorsDialog, {
+            width: 'clamp(10rem, 30vmin, 30rem)',
+            height: 'clamp(10rem, 30vmin, 30rem)',
+            data: {
+              errorMessages: [this.graphHasErrors],
+              title: 'Graph Execution Errors'
+            }
+          });
+        }
+      } else {
+        this.modelLoaderService.graphErrors.update((curErrors) => {
+          return [...new Set([...curErrors ?? [], curModel.errorMessage ?? ''])];
+        });
+        this.dialog.open(GraphErrorsDialog, {
+          width: 'clamp(10rem, 30vmin, 30rem)',
+          height: 'clamp(10rem, 30vmin, 30rem)',
+          data: {
+            errorMessages: [curModel.errorMessage ?? ''],
+            title: 'Graph Execution Errors'
+          }
+        });
+      }
+    }
+  }
+
+  async handleClickUploadGraph() {
+    const { curModel, curCollection, curCollectionLabel, changesToUpload, models } = this.getCurrentGraphInformation();
+
+    if (curModel && curCollection && changesToUpload) {
+      const updatedGraphCollection = await this.modelLoaderService.overrideModel(
+        curModel,
+        curCollection,
+        changesToUpload
+      );
+
+      if (curModel.status() !== ModelItemStatus.ERROR) {
+        if (updatedGraphCollection) {
+          this.modelLoaderService.loadedGraphCollections.update((prevGraphCollections) => {
+            if (!prevGraphCollections) {
+              return undefined;
+            }
+
+            const collectionToUpdate = prevGraphCollections.findIndex(({ label }) => label === curCollectionLabel) ?? -1;
+
+            if (collectionToUpdate !== -1) {
+              prevGraphCollections[collectionToUpdate] = updatedGraphCollection;
+            }
+
+            return [...prevGraphCollections];
+          });
+
+          this.urlService.setUiState(undefined);
+          this.urlService.setModels(models.map(({ path, selectedAdapter }) => {
+            return {
+              url: path,
+              adapterId: selectedAdapter?.id
+            };
+          }));
+
+          this.modelLoaderService.changesToUpload.update(() => ({}));
+          this.modelLoaderService.graphErrors.update(() => undefined);
+        }
+      } else {
+        this.modelLoaderService.graphErrors.update((curErrors) => {
+          return [...new Set([...curErrors ?? [], curModel.errorMessage ?? ''])];
+        });
+        this.dialog.open(GraphErrorsDialog, {
+          width: 'clamp(10rem, 30vmin, 30rem)',
+          height: 'clamp(10rem, 30vmin, 30rem)',
+          data: {
+            errorMessages: [curModel.errorMessage ?? ''],
+            title: 'Graph Loading Errors'
+          }
+        });
+      }
+    }
   }
 
   handleGraphSelectorOpenedChanged(opened: boolean) {
@@ -250,6 +411,18 @@ export class GraphSelector {
     return `${graph.id} (${graph.nodes.length} nodes)`;
   }
 
+  get hasChangesToUpload() {
+    return this.modelLoaderService.hasChangesToUpload;
+  }
+
+  get hasCurModel() {
+    return this.getCurrentGraphInformation().curModel !== undefined;
+  }
+
+  get graphHasErrors() {
+    return this.modelLoaderService.graphErrors() !== undefined;
+  }
+
   get graphSelectorDropdownWidth(): number {
     return this.maxGraphItemIdWidth;
   }
@@ -260,6 +433,15 @@ export class GraphSelector {
 
   get enableExportToResource(): boolean {
     return this.appService.config()?.enableExportToResource === true;
+  }
+
+  private getCurrentExtensionId() {
+    const curPane = this.appService.getSelectedPane();
+    const curCollectionLabel = curPane?.modelGraph?.collectionLabel;
+    const models = this.modelLoaderService.models();
+    const curModel = models.find(({ label }) => label === curCollectionLabel);
+
+    return curModel?.selectedAdapter?.id ?? '';
   }
 
   private getLabelWidth(label: string, fontSize = 12, bold = false): number {
