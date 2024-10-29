@@ -106,6 +106,15 @@ export class ExpandableInfoText implements AfterViewInit, OnDestroy, OnChanges {
     }
   }
 
+  hasCurModel() {
+    const curPane = this.appService.getSelectedPane();
+    const curCollectionLabel = curPane?.modelGraph?.collectionLabel;
+    const models = this.modelLoaderService.models();
+    const curModel = models.find(({ label }) => label === curCollectionLabel);
+
+    return curModel !== undefined;
+  }
+
   splitEditableList(value: string) {
     return value
       .replace(/^\[/iu, '')
