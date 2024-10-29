@@ -61,12 +61,22 @@ module.exports = {
     },
     {
       name: '@electron-forge/maker-deb',
-      config: {},
+      config: {
+        options: {
+          maintainer: 'Google',
+          homepage: 'https://github.com/google-ai-edge/model-explorer',
+          bin: 'Model Explorer',
+        },
+      },
     },
-    {
-      name: '@electron-forge/maker-rpm',
-      config: {},
-    },
+    // {
+    //   name: '@electron-forge/maker-rpm',
+    //   config: {},
+    // },
+    // {
+    //   name: '@electron-forge/maker-flatpak',
+    //   config: {}, // TODO: Mimetype
+    // }
   ],
   plugins: [
     // Fuses are used to enable/disable various Electron functionality
