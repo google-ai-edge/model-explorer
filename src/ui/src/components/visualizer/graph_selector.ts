@@ -48,6 +48,7 @@ import type { ModelGraph } from './common/model_graph.js';
 import { ModelItemStatus } from '../../common/types.js';
 import { MatDialogModule, MatDialog } from '@angular/material/dialog';
 import { GraphErrorsDialog } from '../graph_error_dialog/graph_error_dialog.js';
+import { MatSnackBar } from '@angular/material/snack-bar';
 
 /** A graph collection in the dropdown menu. */
 export interface GraphCollectionItem {
@@ -97,7 +98,6 @@ export class GraphSelector {
   selectedGraphCollectionLabel = '';
   selectedCollection?: GraphCollection;
   maxGraphItemIdWidth = 0;
-  graphLoadingError = signal('');
 
   graphCollectionItems: Signal<GraphCollectionItem[]> = computed(() => {
     const config = this.appService.config();
@@ -182,7 +182,8 @@ export class GraphSelector {
     private readonly urlService: UrlService,
     private readonly overlay: Overlay,
     private readonly viewContainerRef: ViewContainerRef,
-    private readonly dialog: MatDialog
+    private readonly dialog: MatDialog,
+    private readonly snackBar: MatSnackBar,
   ) {
     // Update selected graph when the data source in app service is updated.
     effect(() => {
@@ -252,6 +253,7 @@ export class GraphSelector {
           }));
 
           this.modelLoaderService.changesToUpload.update(() => ({}));
+          this.modelLoaderService.graphErrors.update(() => undefined);
 
           if (result.perf_data) {
             const runId = genUid();
@@ -265,9 +267,29 @@ export class GraphSelector {
               result.perf_data,
             );
           }
+
+          this.snackBar.open('Model updated', 'Dismiss', {
+            duration: 5000,
+            verticalPosition: 'top',
+            horizontalPosition: 'center'
+          });
+        } else {
+          this.modelLoaderService.graphErrors.update((curErrors) => {
+            return [...new Set([...curErrors ?? [], "Graph execution didn't return any results"])];
+          });
+          this.dialog.open(GraphErrorsDialog, {
+            width: 'clamp(10rem, 30vmin, 30rem)',
+            height: 'clamp(10rem, 30vmin, 30rem)',
+            data: {
+              errorMessages: [this.graphHasErrors],
+              title: 'Graph Execution Errors'
+            }
+          });
         }
       } else {
-        this.graphLoadingError.update(() => curModel.errorMessage ?? '');
+        this.modelLoaderService.graphErrors.update((curErrors) => {
+          return [...new Set([...curErrors ?? [], curModel.errorMessage ?? ''])];
+        });
         this.dialog.open(GraphErrorsDialog, {
           width: 'clamp(10rem, 30vmin, 30rem)',
           height: 'clamp(10rem, 30vmin, 30rem)',
@@ -315,9 +337,12 @@ export class GraphSelector {
           }));
 
           this.modelLoaderService.changesToUpload.update(() => ({}));
+          this.modelLoaderService.graphErrors.update(() => undefined);
         }
       } else {
-        this.graphLoadingError.update(() => curModel.errorMessage ?? '');
+        this.modelLoaderService.graphErrors.update((curErrors) => {
+          return [...new Set([...curErrors ?? [], curModel.errorMessage ?? ''])];
+        });
         this.dialog.open(GraphErrorsDialog, {
           width: 'clamp(10rem, 30vmin, 30rem)',
           height: 'clamp(10rem, 30vmin, 30rem)',
