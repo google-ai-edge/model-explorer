@@ -16,17 +16,20 @@
 # Fail on any error.
 set -e
 
+# Remember current directory.
+SCRIPT_DIR="$(pwd)"
+
 # Check python version.
 echo
 echo '#### Check python version'
 
-python --version
+python3 --version
 
 # Create venv.
 echo
 echo '#### Create venv'
 
-python -m venv venv
+python3 -m venv venv
 source venv/bin/activate
 
 # Install packages.
@@ -38,9 +41,11 @@ pip install torch ai-edge-model-explorer pyinstaller model-explorer-onnx \
     --extra-index-url https://pypi.python.org/simple
 
 # Replace the model explorer code with the latest.
+# Move to 'model-explorer/src/electron/pyinstaller/venv/lib/python3.X/site-packages'
 cd venv/lib/python*/site-packages/
 rm -rf model_explorer
-cp -rf "${KOKORO_ARTIFACTS_DIR}/github/model-explorer/src/server/package/src/model_explorer" .
+# Copy 'model-explorer/src/server/package/src/model_explorer/'
+cp -rf "${SCRIPT_DIR}/../../server/package/src/model_explorer" .
 cd -
 
 # Run pyinstaller

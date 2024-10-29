@@ -28,6 +28,15 @@ echo '#### Install packages'
 
 npm install
 
+# Build the python server
+SERVER_DIR="model_explorer_server"
+if [ -d "$SERVER_DIR" ]; then rm -r $SERVER_DIR; fi
+mkdir $SERVER_DIR
+cd ../pyinstaller/
+./build.sh
+mv ./venv/lib/python*/site-packages/model_explorer/dist/model_explorer/* ../app/model_explorer_server
+cd -
+
 # Build and package electron app.
 echo
 echo '#### Build and package electon app'
