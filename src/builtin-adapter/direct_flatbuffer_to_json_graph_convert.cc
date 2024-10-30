@@ -837,6 +837,9 @@ absl::StatusOr<std::string> ConvertFlatbufferDirectlyToJson(
   std::unique_ptr<FlatBufferModelAbslError> model_ptr =
       FlatBufferModelAbslError::VerifyAndBuildFromBuffer(
           model_content.data(), model_content.length());
+  if (model_ptr == nullptr) {
+    return absl::InvalidArgumentError("Failed to build model from buffer.");
+  }
 
   mlir::MLIRContext mlir_context;
   mlir::DialectRegistry registry;
