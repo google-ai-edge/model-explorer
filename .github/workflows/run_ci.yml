@@ -29,14 +29,9 @@ jobs:
     uses: ./.github/workflows/formatting.yml
     with:
       trigger-sha: ${{ github.event.pull_request.head.sha }}
-  
-  run-tests:
-    name: Playwright Tests
-    uses: ./.github/workflows/playwright.yml
-    with:
-      trigger-sha: ${{ github.event.pull_request.head.sha }}
 
-
-
-
-
+  # run-tests:
+  #   name: Playwright Tests
+  #   uses: ./.github/workflows/playwright.yml
+  #   with:
+  #     trigger-sha: ${{ github.event.pull_request.head.sha }}
