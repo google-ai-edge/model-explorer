@@ -435,13 +435,12 @@ export class GraphSelector {
     return this.appService.config()?.enableExportToResource === true;
   }
 
-  private getCurrentExtensionId() {
-    const curPane = this.appService.getSelectedPane();
-    const curCollectionLabel = curPane?.modelGraph?.collectionLabel;
-    const models = this.modelLoaderService.models();
-    const curModel = models.find(({ label }) => label === curCollectionLabel);
+  get selectedOptimizationPolicy(): string {
+    return this.modelLoaderService.selectedOptimizationPolicy();
+  }
 
-    return curModel?.selectedAdapter?.id ?? '';
+  get optimizationPolicies(): string[] {
+    return this.modelLoaderService.optimizationPolicies();
   }
 
   private getLabelWidth(label: string, fontSize = 12, bold = false): number {

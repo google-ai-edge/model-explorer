@@ -26,6 +26,7 @@ import {
   type AdapterExecuteResponse,
   type AdapterOverrideCommand,
   type AdapterOverrideResponse,
+  type ExtensionResponse,
 } from '../common/extension_command';
 import {ModelLoaderServiceInterface, type ChangesPerGraphAndNode, type ChangesPerNode, type ExecutionCommand} from '../common/model_loader_service_interface';
 import {
@@ -349,6 +350,7 @@ export class ModelLoaderService implements ModelLoaderServiceInterface {
       `${LOAD_GRAPHS_JSON_API_PATH}?graph_index=${index}`,
     );
     const json = (await resp.json()) as AdapterConvertResponse;
+    this.processResponseMetadata(json);
     return this.processAdapterConvertResponse(json, name);
   }
 
@@ -399,6 +401,7 @@ export class ModelLoaderService implements ModelLoaderServiceInterface {
       modelItem.errorMessage = error;
       return [];
     } else if (cmdResp) {
+      this.processResponseMetadata(cmdResp);
       result = this.processAdapterConvertResponse(cmdResp, fileName);
     }
     modelItem.status.set(ModelItemStatus.DONE);
@@ -478,6 +481,15 @@ export class ModelLoaderService implements ModelLoaderServiceInterface {
     }
     modelItem.status.set(ModelItemStatus.DONE);
     return result;
+  }
+
+  private processResponseMetadata(resp: ExtensionResponse) {
+    if (resp.metadata?.optimizationPolicies !== undefined) {
+      const policies = resp.metadata?.optimizationPolicies ?? [];
+
+      this.optimizationPolicies.update(() => policies);
+      this.selectedOptimizationPolicy.update(() => policies[0] ?? '');
+    }
   }
 
   private processAdapterConvertResponse(
