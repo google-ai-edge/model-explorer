@@ -75,6 +75,9 @@ export class ModelLoaderService implements ModelLoaderServiceInterface {
 
   readonly graphErrors = signal<string[] | undefined>(undefined);
 
+  readonly optimizationPolicies = signal<string[]>([]);
+  readonly selectedOptimizationPolicy = signal<string>('');
+
   constructor(
     private readonly settingsService: SettingsService,
     readonly extensionService: ExtensionService,
