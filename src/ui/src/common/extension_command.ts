@@ -26,6 +26,15 @@ export declare interface ExtensionCommand {
   extensionId: string;
 }
 
+/** A response received from the extension. */
+export interface ExtensionResponse {
+  error?: string;
+  metadata?: {
+    optimizationPolicies?: string[],
+    [k: string]: any
+  };
+}
+
 /** Adapter's "convert" command. */
 export declare interface AdapterConvertCommand extends ExtensionCommand {
   cmdId: 'convert';
@@ -37,10 +46,9 @@ export declare interface AdapterConvertCommand extends ExtensionCommand {
 }
 
 /** Adapter's "convert" command response. */
-export declare interface AdapterConvertResponse {
+export declare interface AdapterConvertResponse extends ExtensionResponse {
   graphs?: Graph[];
   graphCollections?: GraphCollection[];
-  error?: string;
 }
 
 /** Adapter's "override" command. */
@@ -55,10 +63,9 @@ export declare interface AdapterOverrideCommand extends ExtensionCommand {
 }
 
 /** Adapter's "override" command response. */
-export declare interface AdapterOverrideResponse {
+export declare interface AdapterOverrideResponse extends ExtensionResponse {
   success: boolean;
   graphs?: Graph[];
-  error?: string;
 }
 
 /** Adapter's "execute" command. */
@@ -70,6 +77,5 @@ export declare interface AdapterExecuteCommand extends ExtensionCommand {
 }
 
 /** Adapter's "execute" command response. */
-export declare interface AdapterExecuteResponse extends ExecutionCommand {
-  error?: string;
+export declare interface AdapterExecuteResponse extends ExtensionResponse, ExecutionCommand {
 }
