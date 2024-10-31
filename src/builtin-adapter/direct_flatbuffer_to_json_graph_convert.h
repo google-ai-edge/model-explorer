@@ -17,9 +17,13 @@
 #define TENSORFLOW_COMPILER_MLIR_LITE_EXPERIMENTAL_GOOGLE_TOOLING_DIRECT_FLATBUFFER_TO_JSON_GRAPH_CONVERT_H_
 
 #include <string>
+#include <vector>
 
 #include "absl/status/statusor.h"
 #include "absl/strings/string_view.h"
+#include "llvm/ADT/SmallVector.h"
+#include "mlir/IR/Attributes.h"
+#include "mlir/IR/Builders.h"
 #include "visualize_config.h"
 
 namespace tooling {
@@ -29,6 +33,13 @@ namespace visualization_client {
 // converting to MLIR nor preparing the model for execution.
 absl::StatusOr<std::string> ConvertFlatbufferDirectlyToJson(
     const VisualizeConfig& config, absl::string_view model_path);
+
+// Converts custom options to attributes.
+// Logic referred from `CustomOptionsToAttributes` in
+// tensorflow/compiler/mlir/lite/flatbuffer_operator.cc.
+void CustomOptionsToAttributes(
+    const std::vector<uint8_t>& custom_options, mlir::Builder mlir_builder,
+    llvm::SmallVectorImpl<mlir::NamedAttribute>& attributes);
 
 }  // namespace visualization_client
 }  // namespace tooling

@@ -434,21 +434,6 @@ absl::Status AddAuxiliaryNode(
   return absl::OkStatus();
 }
 
-// Logic referred from `CustomOptionsToAttributes` in
-// tensorflow/compiler/mlir/lite/flatbuffer_operator.cc.
-void CustomOptionsToAttributes(
-    const std::vector<uint8_t>& custom_options, mlir::Builder mlir_builder,
-    llvm::SmallVectorImpl<mlir::NamedAttribute>& attributes) {
-  const flexbuffers::Map& map = flexbuffers::GetRoot(custom_options).AsMap();
-  const flexbuffers::TypedVector& keys = map.Keys();
-  for (size_t i = 0; i < keys.size(); ++i) {
-    const char* key = keys[i].AsKey();
-    const flexbuffers::Reference& value = map[key];
-    attributes.emplace_back(mlir_builder.getNamedAttr(
-        key, mlir_builder.getStringAttr(value.ToString())));
-  }
-}
-
 absl::Status SubgraphIdxToAttributes(
     const tflite::OperatorT& op, const std::vector<std::string>& func_names,
     mlir::Builder mlir_builder,
@@ -896,6 +881,29 @@ absl::StatusOr<std::string> ConvertFlatbufferDirectlyToJson(
   collection.graphs.push_back(std::move(graph));
   llvm::json::Value json_result(collection.Json());
   return llvm::formatv("{0:2}", json_result);
+}
+
+// Logic referred from `CustomOptionsToAttributes` in
+// tensorflow/compiler/mlir/lite/flatbuffer_operator.cc.
+void CustomOptionsToAttributes(
+    const std::vector<uint8_t>& custom_options, mlir::Builder mlir_builder,
+    llvm::SmallVectorImpl<mlir::NamedAttribute>& attributes) {
+  if (custom_options.empty()) {
+    // Avoid calling flexbuffers::GetRoot() with empty data. Otherwise it will
+    // crash.
+    //
+    // TODO(yijieyang): We should use a default value for input custom_options
+    // that is not empty to avoid this check.
+    return;
+  }
+  const flexbuffers::Map& map = flexbuffers::GetRoot(custom_options).AsMap();
+  const flexbuffers::TypedVector& keys = map.Keys();
+  for (size_t i = 0; i < keys.size(); ++i) {
+    const char* key = keys[i].AsKey();
+    const flexbuffers::Reference& value = map[key];
+    attributes.emplace_back(mlir_builder.getNamedAttr(
+        key, mlir_builder.getStringAttr(value.ToString())));
+  }
 }
 
 }  // namespace visualization_client
