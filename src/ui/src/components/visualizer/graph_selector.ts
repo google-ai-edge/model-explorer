@@ -49,6 +49,9 @@ import { ModelItemStatus } from '../../common/types.js';
 import { MatDialogModule, MatDialog } from '@angular/material/dialog';
 import { GraphErrorsDialog } from '../graph_error_dialog/graph_error_dialog.js';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { MatMenuModule } from '@angular/material/menu';
+import { MatButtonToggleModule } from '@angular/material/button-toggle';
+import { MatButtonModule } from '@angular/material/button';
 
 /** A graph collection in the dropdown menu. */
 export interface GraphCollectionItem {
@@ -78,12 +81,15 @@ const LABEL_WIDTHS: {[label: string]: number} = {};
   selector: 'graph-selector',
   imports: [
     CommonModule,
+    MatButtonModule,
+    MatButtonToggleModule,
+    MatDialogModule,
     MatFormFieldModule,
     MatIconModule,
+    MatMenuModule,
     MatSelectModule,
     MatTooltipModule,
     ReactiveFormsModule,
-    MatDialogModule
   ],
   templateUrl: './graph_selector.ng.html',
   styleUrls: ['./graph_selector.scss'],
@@ -405,6 +411,10 @@ export class GraphSelector {
       `${this.selectedGraphCollectionLabel}.json`,
       this.selectedCollection,
     );
+  }
+
+  handleClickSelectOptimizationPolicy(optimizationPolicy: string) {
+    this.modelLoaderService.selectedOptimizationPolicy.update(() => optimizationPolicy);
   }
 
   getGraphLabel(graph: Graph): string {
