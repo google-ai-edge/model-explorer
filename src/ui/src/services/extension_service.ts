@@ -142,7 +142,10 @@ export class ExtensionService {
                 ...processAttribute(key, value)
               }))
             }))
-          }))
+          })),
+          metadata: {
+            optimizationPolicies: ['Foo', 'Bar', 'Baz', 'Quux']
+          }
         };
       }
 
