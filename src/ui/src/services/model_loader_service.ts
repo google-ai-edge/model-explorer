@@ -98,6 +98,9 @@ export class ModelLoaderService implements ModelLoaderServiceInterface {
       result = await this.sendExecuteRequest(
         modelItem,
         updatedPath,
+        {
+          optimizationPolicy: this.selectedOptimizationPolicy()
+        }
       );
     }
     // Upload or graph jsons from server.
@@ -123,6 +126,9 @@ export class ModelLoaderService implements ModelLoaderServiceInterface {
       result = await this.sendExecuteRequest(
         modelItem,
         updatedPath,
+        {
+          optimizationPolicy: this.selectedOptimizationPolicy()
+        }
       );
     }
 
@@ -410,7 +416,8 @@ export class ModelLoaderService implements ModelLoaderServiceInterface {
 
   private async sendExecuteRequest(
     modelItem: ModelItem,
-    path: string
+    path: string,
+    settings: Record<string, any> = {}
   ) {
     let result: ExecutionCommand | undefined = undefined;
 
@@ -420,7 +427,7 @@ export class ModelLoaderService implements ModelLoaderServiceInterface {
       cmdId: 'execute',
       extensionId: modelItem.selectedAdapter?.id ?? '',
       modelPath: path,
-      settings: {},
+      settings,
       deleteAfterConversion: false
     }
 
