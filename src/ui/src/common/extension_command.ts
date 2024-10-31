@@ -72,7 +72,4 @@ export declare interface AdapterExecuteCommand extends ExtensionCommand {
 /** Adapter's "execute" command response. */
 export declare interface AdapterExecuteResponse extends ExecutionCommand {
   error?: string;
-  log_file: string;
-  stdout: string;
-  perf_data?: NodeDataProviderData
 }
