@@ -446,11 +446,11 @@ export class GraphSelector {
   }
 
   get selectedOptimizationPolicy(): string {
-    return this.modelLoaderService.selectedOptimizationPolicy();
+    return this.modelLoaderService.selectedOptimizationPolicy() || (this.modelLoaderService.optimizationPolicies[0] ?? 'Default');
   }
 
   get optimizationPolicies(): string[] {
-    return this.modelLoaderService.optimizationPolicies();
+    return this.modelLoaderService.optimizationPolicies;
   }
 
   private getLabelWidth(label: string, fontSize = 12, bold = false): number {

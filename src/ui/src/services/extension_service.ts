@@ -18,8 +18,8 @@
 
 import {Injectable, signal} from '@angular/core';
 
-import {ExtensionCommand, type AdapterExecuteResponse, type AdapterOverrideResponse} from '../common/extension_command';
-import {Extension} from '../common/types';
+import {ExtensionCommand, type AdapterExecuteResponse, type AdapterOverrideResponse } from '../common/extension_command';
+import {Extension, type ExtensionSettings} from '../common/types';
 import {INTERNAL_COLAB} from '../common/utils';
 
 const EXTERNAL_GET_EXTENSIONS_API_PATH = '/api/v1/get_extensions';
@@ -35,6 +35,8 @@ export class ExtensionService {
   readonly internalColab = INTERNAL_COLAB;
 
   extensions: Extension[] = [];
+
+  extensionSettings = new Map<string, ExtensionSettings>();
 
   constructor() {
     this.loadExtensions();
@@ -155,11 +157,18 @@ export class ExtensionService {
     }
   }
 
+  private processExtensionSettings(extensions: Extension[]) {
+    extensions.forEach(({ id, settings }) => {
+      this.extensionSettings.set(id, settings ?? {});
+    });
+  }
+
   private async loadExtensions() {
     // Talk to BE to get registered extensions.
     let exts: Extension[] = [];
 
     exts = await this.getExtensionsForExternal();
+    this.processExtensionSettings(exts);
     this.extensions = exts;
     this.loading.set(false);
   }
