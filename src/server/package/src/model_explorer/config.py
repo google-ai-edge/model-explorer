@@ -95,6 +95,13 @@ class ModelExplorerConfig:
       exported_program: the ExportedProgram from torch.export.export.
       settings: The settings that config the visualization.
     """
+
+    if torch is None:
+      raise ImportError(
+          '`torch` not found. Please install it via `pip install torch`, '
+          'and restart the Model Explorer server.'
+      )
+
     # Convert the given model to model explorer graphs.
     print('Converting pytorch model to model explorer graphs...')
     adapter = PytorchExportedProgramAdapterImpl(exported_program, settings)
