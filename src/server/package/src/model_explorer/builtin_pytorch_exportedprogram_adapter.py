@@ -15,12 +15,16 @@
 
 from typing import Dict
 
-import torch
-import torch.fx
+try:
+  import torch
+except ImportError:
+  torch = None
 
 from .adapter import Adapter, AdapterMetadata
 from .types import ModelExplorerGraphs
-from .pytorch_exported_program_adater_impl import PytorchExportedProgramAdapterImpl
+
+if torch is not None:
+  from .pytorch_exported_program_adater_impl import PytorchExportedProgramAdapterImpl
 
 
 class BuiltinPytorchExportedProgramAdapter(Adapter):
@@ -40,5 +44,10 @@ class BuiltinPytorchExportedProgramAdapter(Adapter):
     super().__init__()
 
   def convert(self, model_path: str, settings: Dict) -> ModelExplorerGraphs:
+    if torch is None:
+      raise ImportError(
+          'Please install the `torch` package, e.g. via `pip install torch`, '
+          'and restart the Model Explorer server.'
+      )
     ep = torch.export.load(model_path)
     return PytorchExportedProgramAdapterImpl(ep, settings).convert()
