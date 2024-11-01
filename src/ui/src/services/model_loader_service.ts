@@ -82,12 +82,12 @@ export class ModelLoaderService implements ModelLoaderServiceInterface {
     readonly extensionService: ExtensionService,
   ) {}
 
-  get optimizationPolicies(): string[] {
-    return [...this.extensionService.extensionSettings.values()].flatMap(({ optimizationPolicies }) => optimizationPolicies ?? []);
-  }
-
   get hasChangesToUpload() {
     return Object.keys(this.changesToUpload()).length > 0;
+  }
+
+  getOptimizationPolicies(extensionId: string): string[] {
+    return this.extensionService.extensionSettings.get(extensionId)?.optimizationPolicies ?? [];
   }
 
   async executeModel(modelItem: ModelItem) {

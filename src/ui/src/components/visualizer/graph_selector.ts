@@ -446,11 +446,13 @@ export class GraphSelector {
   }
 
   get selectedOptimizationPolicy(): string {
-    return this.modelLoaderService.selectedOptimizationPolicy() || (this.modelLoaderService.optimizationPolicies[0] ?? 'Default');
+    const curExtensionId = this.getCurrentGraphInformation().models[0].selectedAdapter?.id ?? '';
+    return this.modelLoaderService.selectedOptimizationPolicy() || (this.modelLoaderService.getOptimizationPolicies(curExtensionId)[0] ?? 'Default');
   }
 
   get optimizationPolicies(): string[] {
-    return this.modelLoaderService.optimizationPolicies;
+    const curExtensionId = this.getCurrentGraphInformation().models[0].selectedAdapter?.id ?? '';
+    return this.modelLoaderService.getOptimizationPolicies(curExtensionId);
   }
 
   private getLabelWidth(label: string, fontSize = 12, bold = false): number {
