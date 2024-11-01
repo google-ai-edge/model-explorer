@@ -145,9 +145,6 @@ export class ExtensionService {
               }))
             }))
           })),
-          metadata: {
-            optimizationPolicies: ['Foo', 'Bar', 'Baz', 'Quux']
-          }
         };
       }
 
@@ -183,6 +180,17 @@ export class ExtensionService {
         return [];
       }
       const json = await resp.json() as Extension[];
+
+      // TODO: revert mock API changes!
+      if (localStorage.getItem('mock-api') === 'true') {
+        json.forEach((ext) => {
+          if (ext.id === 'tt_adapter') {
+            ext.settings = {
+              optimizationPolicies: ['Foo', 'Bar', 'Baz', 'Quux']
+            };
+          }
+        });
+      }
 
       return json;
     } catch (e) {
