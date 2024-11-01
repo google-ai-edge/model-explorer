@@ -17,7 +17,6 @@
  */
 
 import {Graph, GraphCollection,} from '../components/visualizer/common/input_graph';
-import type { NodeDataProviderData } from '../components/visualizer/common/types.js';
 import type { ChangesPerNode, ExecutionCommand } from './model_loader_service_interface';
 
 /** A command sent to extension. */
@@ -29,10 +28,6 @@ export declare interface ExtensionCommand {
 /** A response received from the extension. */
 export interface ExtensionResponse {
   error?: string;
-  metadata?: {
-    optimizationPolicies?: string[],
-    [k: string]: any
-  };
 }
 
 /** Adapter's "convert" command. */

@@ -41,7 +41,7 @@ export interface ModelLoaderServiceInterface {
   get loadedGraphCollections(): WritableSignal<GraphCollection[] | undefined>;
   get models(): WritableSignal<ModelItem[]>;
   get changesToUpload(): WritableSignal<ChangesPerGraphAndNode>;
-  get optimizationPolicies(): WritableSignal<string[]>;
+  get optimizationPolicies(): string[];
   get selectedOptimizationPolicy(): WritableSignal<string>;
   get graphErrors(): WritableSignal<string[] | undefined>;
   get hasChangesToUpload(): boolean;

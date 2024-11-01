@@ -52,6 +52,11 @@ export declare interface ExtensionBase {
   type: ExtensionType;
 }
 
+export interface ExtensionSettings {
+  optimizationPolicies?: string[],
+  [k: string]: any
+};
+
 /** Metadata of an adapter extension. */
 export declare interface AdapterExtension extends ExtensionBase {
   type: ExtensionType.ADAPTER;
@@ -63,6 +68,7 @@ export declare interface AdapterExtension extends ExtensionBase {
 
   // Used internally to match http/https urls.
   matchHttpUrl?: boolean;
+  settings?: ExtensionSettings
 }
 
 /** Union type for extension. */
