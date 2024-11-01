@@ -23,7 +23,6 @@ dependencies = [
   "requests",
   "termcolor",
   "typing-extensions",
-  "torch >= 2.2",
   "numpy < 2",
 ]
 
