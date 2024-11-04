@@ -19,11 +19,6 @@ from dataclasses import asdict
 from importlib import import_module
 from typing import Any, Dict, Union
 
-try:
-  import torch
-except ImportError:
-  torch = None
-
 from .adapter_runner import AdapterRunner
 from .consts import MODULE_NAME
 from .extension_class_processor import ExtensionClassProcessor
@@ -41,9 +36,7 @@ class ExtensionManager(object, metaclass=Singleton):
           '.builtin_tf_mlir_adapter',
           '.builtin_tf_direct_adapter',
           '.builtin_graphdef_adapter',
-      ]
-      + (['.builtin_pytorch_exportedprogram_adapter'] if torch else [])
-      + [
+          '.builtin_pytorch_exportedprogram_adapter',
           '.builtin_mlir_adapter',
       ]
   )
