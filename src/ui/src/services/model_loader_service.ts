@@ -75,6 +75,8 @@ export class ModelLoaderService implements ModelLoaderServiceInterface {
 
   readonly graphErrors = signal<string[] | undefined>(undefined);
 
+  readonly selectedOptimizationPolicy = signal<string>('');
+
   constructor(
     private readonly settingsService: SettingsService,
     readonly extensionService: ExtensionService,
@@ -82,6 +84,10 @@ export class ModelLoaderService implements ModelLoaderServiceInterface {
 
   get hasChangesToUpload() {
     return Object.keys(this.changesToUpload()).length > 0;
+  }
+
+  getOptimizationPolicies(extensionId: string): string[] {
+    return this.extensionService.extensionSettings.get(extensionId)?.optimizationPolicies ?? [];
   }
 
   async executeModel(modelItem: ModelItem) {
@@ -94,6 +100,9 @@ export class ModelLoaderService implements ModelLoaderServiceInterface {
       result = await this.sendExecuteRequest(
         modelItem,
         updatedPath,
+        {
+          optimizationPolicy: this.selectedOptimizationPolicy()
+        }
       );
     }
     // Upload or graph jsons from server.
@@ -119,6 +128,9 @@ export class ModelLoaderService implements ModelLoaderServiceInterface {
       result = await this.sendExecuteRequest(
         modelItem,
         updatedPath,
+        {
+          optimizationPolicy: this.selectedOptimizationPolicy()
+        }
       );
     }
 
@@ -404,7 +416,8 @@ export class ModelLoaderService implements ModelLoaderServiceInterface {
 
   private async sendExecuteRequest(
     modelItem: ModelItem,
-    path: string
+    path: string,
+    settings: Record<string, any> = {}
   ) {
     let result: ExecutionCommand | undefined = undefined;
 
@@ -414,7 +427,7 @@ export class ModelLoaderService implements ModelLoaderServiceInterface {
       cmdId: 'execute',
       extensionId: modelItem.selectedAdapter?.id ?? '',
       modelPath: path,
-      settings: {},
+      settings,
       deleteAfterConversion: false
     }
 

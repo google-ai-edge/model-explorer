@@ -49,6 +49,9 @@ import { ModelItemStatus } from '../../common/types.js';
 import { MatDialogModule, MatDialog } from '@angular/material/dialog';
 import { GraphErrorsDialog } from '../graph_error_dialog/graph_error_dialog.js';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { MatMenuModule } from '@angular/material/menu';
+import { MatButtonToggleModule } from '@angular/material/button-toggle';
+import { MatButtonModule } from '@angular/material/button';
 
 /** A graph collection in the dropdown menu. */
 export interface GraphCollectionItem {
@@ -78,12 +81,15 @@ const LABEL_WIDTHS: {[label: string]: number} = {};
   selector: 'graph-selector',
   imports: [
     CommonModule,
+    MatButtonModule,
+    MatButtonToggleModule,
+    MatDialogModule,
     MatFormFieldModule,
     MatIconModule,
+    MatMenuModule,
     MatSelectModule,
     MatTooltipModule,
     ReactiveFormsModule,
-    MatDialogModule
   ],
   templateUrl: './graph_selector.ng.html',
   styleUrls: ['./graph_selector.scss'],
@@ -407,6 +413,10 @@ export class GraphSelector {
     );
   }
 
+  handleClickSelectOptimizationPolicy(optimizationPolicy: string) {
+    this.modelLoaderService.selectedOptimizationPolicy.update(() => optimizationPolicy);
+  }
+
   getGraphLabel(graph: Graph): string {
     return `${graph.id} (${graph.nodes.length} nodes)`;
   }
@@ -435,13 +445,14 @@ export class GraphSelector {
     return this.appService.config()?.enableExportToResource === true;
   }
 
-  private getCurrentExtensionId() {
-    const curPane = this.appService.getSelectedPane();
-    const curCollectionLabel = curPane?.modelGraph?.collectionLabel;
-    const models = this.modelLoaderService.models();
-    const curModel = models.find(({ label }) => label === curCollectionLabel);
+  get selectedOptimizationPolicy(): string {
+    const curExtensionId = this.getCurrentGraphInformation().models[0].selectedAdapter?.id ?? '';
+    return this.modelLoaderService.selectedOptimizationPolicy() || (this.modelLoaderService.getOptimizationPolicies(curExtensionId)[0] ?? 'Default');
+  }
 
-    return curModel?.selectedAdapter?.id ?? '';
+  get optimizationPolicies(): string[] {
+    const curExtensionId = this.getCurrentGraphInformation().models[0].selectedAdapter?.id ?? '';
+    return this.modelLoaderService.getOptimizationPolicies(curExtensionId);
   }
 
   private getLabelWidth(label: string, fontSize = 12, bold = false): number {

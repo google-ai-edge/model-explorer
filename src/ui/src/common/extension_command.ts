@@ -17,13 +17,17 @@
  */
 
 import {Graph, GraphCollection,} from '../components/visualizer/common/input_graph';
-import type { NodeDataProviderData } from '../components/visualizer/common/types.js';
 import type { ChangesPerNode, ExecutionCommand } from './model_loader_service_interface';
 
 /** A command sent to extension. */
 export declare interface ExtensionCommand {
   cmdId: string;
   extensionId: string;
+}
+
+/** A response received from the extension. */
+export interface ExtensionResponse {
+  error?: string;
 }
 
 /** Adapter's "convert" command. */
@@ -37,10 +41,9 @@ export declare interface AdapterConvertCommand extends ExtensionCommand {
 }
 
 /** Adapter's "convert" command response. */
-export declare interface AdapterConvertResponse {
+export declare interface AdapterConvertResponse extends ExtensionResponse {
   graphs?: Graph[];
   graphCollections?: GraphCollection[];
-  error?: string;
 }
 
 /** Adapter's "override" command. */
@@ -55,10 +58,9 @@ export declare interface AdapterOverrideCommand extends ExtensionCommand {
 }
 
 /** Adapter's "override" command response. */
-export declare interface AdapterOverrideResponse {
+export declare interface AdapterOverrideResponse extends ExtensionResponse {
   success: boolean;
   graphs?: Graph[];
-  error?: string;
 }
 
 /** Adapter's "execute" command. */
@@ -70,9 +72,5 @@ export declare interface AdapterExecuteCommand extends ExtensionCommand {
 }
 
 /** Adapter's "execute" command response. */
-export declare interface AdapterExecuteResponse extends ExecutionCommand {
-  error?: string;
-  log_file: string;
-  stdout: string;
-  perf_data?: NodeDataProviderData
+export declare interface AdapterExecuteResponse extends ExtensionResponse, ExecutionCommand {
 }
