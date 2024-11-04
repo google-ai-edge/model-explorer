@@ -1,0 +1,34 @@
+<div class="container">
+  @if (hasCurModel) {
+    <div class="mat-icon-container">
+      <button mat-icon-button matTooltip="Upload processed graphs json to server" (click)="handleClickUploadGraph()" [disabled]="!hasChangesToUpload">
+        <mat-icon>upload</mat-icon>
+      </button>
+    </div>
+  }
+
+  @if (hasCurModel) {
+    <div class="mat-icon-container">
+        <mat-button-toggle-group hideSingleSelectionIndicator="true" [disabled]="!isExecuteEnabled && !hasChangesToUpload && !graphHasErrors" disabledInteractive="false" [ngStyle]="{ display: isExecuteEnabled ? 'block' : 'none' }">
+          <mat-button-toggle matTooltip="Execute graph" (click)="handleClickExecuteGraph()">
+            @if (optimizationPolicies.length > 1) {
+              ({{selectedOptimizationPolicy}})
+            }
+            <mat-icon>play_arrow</mat-icon>
+          </mat-button-toggle>
+          @if (optimizationPolicies.length > 1) {
+            <mat-button-toggle [matMenuTriggerFor]="optimizationPolicyMenu">
+              <mat-icon>arrow_drop_down</mat-icon>
+            </mat-button-toggle>
+          }
+        </mat-button-toggle-group>
+
+        <mat-menu #optimizationPolicyMenu="matMenu">
+          @for (optimizationPolicy of optimizationPolicies; track $index) {
+            <button mat-menu-item (click)="handleClickSelectOptimizationPolicy(optimizationPolicy)">{{optimizationPolicy}}</button>
+          }
+        </mat-menu>
+        <mat-spinner diameter="24" [ngStyle]="{ display: !isExecuteEnabled ? 'block' : 'none' }"></mat-spinner>
+    </div>
+  }
+</div>
