@@ -52,7 +52,7 @@ export class GraphEdit {
     private readonly snackBar: MatSnackBar,
   ) {}
 
-    getCurrentGraphInformation() {
+  getCurrentGraphInformation() {
     const curPane = this.appService.getSelectedPane();
     const curCollectionLabel = curPane?.modelGraph?.collectionLabel;
     const curCollection = this.appService.curGraphCollections().find(({ label }) =>label === curCollectionLabel);
@@ -68,6 +68,28 @@ export class GraphEdit {
       models,
       changesToUpload,
     };
+  }
+
+  private showErrorDialog(title: string, ...messages: string[]) {
+    this.modelLoaderService.graphErrors.update((curErrors) => {
+      return [...new Set([...curErrors ?? [], ...messages])];
+    });
+    this.dialog.open(GraphErrorsDialog, {
+      width: 'clamp(10rem, 30vmin, 30rem)',
+      height: 'clamp(10rem, 30vmin, 30rem)',
+      data: {
+        errorMessages: [...messages],
+        title
+      }
+    });
+  }
+
+  private showSuccessMessage(message: string, action = 'Dismiss') {
+    this.snackBar.open(message, action, {
+      duration: 5000,
+      verticalPosition: 'top',
+      horizontalPosition: 'center'
+    });
   }
 
   async handleClickExecuteGraph() {
@@ -113,36 +135,12 @@ export class GraphEdit {
             );
           }
 
-          this.snackBar.open('Model updated', 'Dismiss', {
-            duration: 5000,
-            verticalPosition: 'top',
-            horizontalPosition: 'center'
-          });
+          this.showSuccessMessage('Model updated');
         } else {
-          this.modelLoaderService.graphErrors.update((curErrors) => {
-            return [...new Set([...curErrors ?? [], "Graph execution didn't return any results"])];
-          });
-          this.dialog.open(GraphErrorsDialog, {
-            width: 'clamp(10rem, 30vmin, 30rem)',
-            height: 'clamp(10rem, 30vmin, 30rem)',
-            data: {
-              errorMessages: [this.graphHasErrors],
-              title: 'Graph Execution Errors'
-            }
-          });
+          this.showErrorDialog('Graph Execution Error', "Graph execution didn't return any results");
         }
       } else {
-        this.modelLoaderService.graphErrors.update((curErrors) => {
-          return [...new Set([...curErrors ?? [], curModel.errorMessage ?? ''])];
-        });
-        this.dialog.open(GraphErrorsDialog, {
-          width: 'clamp(10rem, 30vmin, 30rem)',
-          height: 'clamp(10rem, 30vmin, 30rem)',
-          data: {
-            errorMessages: [curModel.errorMessage ?? ''],
-            title: 'Graph Execution Errors'
-          }
-        });
+        this.showErrorDialog('Graph Execution Error', curModel.errorMessage ?? 'An error has occured');
       }
 
       this.isExecuteEnabled = true;
@@ -185,19 +183,13 @@ export class GraphEdit {
 
           this.modelLoaderService.changesToUpload.update(() => ({}));
           this.modelLoaderService.graphErrors.update(() => undefined);
+
+          this.showSuccessMessage('Model uploaded');
+        } else {
+          this.showErrorDialog('Graph Loading Error', "Graph upload didn't return any results");
         }
       } else {
-        this.modelLoaderService.graphErrors.update((curErrors) => {
-          return [...new Set([...curErrors ?? [], curModel.errorMessage ?? ''])];
-        });
-        this.dialog.open(GraphErrorsDialog, {
-          width: 'clamp(10rem, 30vmin, 30rem)',
-          height: 'clamp(10rem, 30vmin, 30rem)',
-          data: {
-            errorMessages: [curModel.errorMessage ?? ''],
-            title: 'Graph Loading Errors'
-          }
-        });
+        this.showErrorDialog('Graph Loading Error', curModel.errorMessage ?? 'An error has occured');
       }
     }
   }
