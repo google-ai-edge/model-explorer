@@ -40,7 +40,7 @@ import { NodeDataProviderExtensionService } from './node_data_provider_extension
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class GraphEdit {
-  isExecuteEnabled = true;
+  isProcessingExecuteRequest = false;
 
   constructor(
     @Inject('ModelLoaderService')
@@ -97,7 +97,7 @@ export class GraphEdit {
     const { curModel, curPane, models } = this.getCurrentGraphInformation();
 
     if (curModel) {
-      this.isExecuteEnabled = false;
+      this.isProcessingExecuteRequest = true;
 
       const result = await this.modelLoaderService.executeModel(curModel);
 
@@ -143,7 +143,7 @@ export class GraphEdit {
         this.showErrorDialog('Graph Execution Error', curModel.errorMessage ?? 'An error has occured');
       }
 
-      this.isExecuteEnabled = true;
+      this.isProcessingExecuteRequest = false;
     }
   }
 

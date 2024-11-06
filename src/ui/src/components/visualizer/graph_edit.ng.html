@@ -1,7 +1,7 @@
 <div class="container">
   @if (hasCurModel) {
     <div class="mat-icon-container">
-      <button mat-icon-button matTooltip="Upload processed graphs json to server" (click)="handleClickUploadGraph()" [disabled]="!hasChangesToUpload">
+      <button mat-icon-button matTooltip="Upload processed graphs json to server" (click)="handleClickUploadGraph()" [disabled]="!hasChangesToUpload || isProcessingExecuteRequest">
         <mat-icon>upload</mat-icon>
       </button>
     </div>
@@ -9,7 +9,7 @@
 
   @if (hasCurModel) {
     <div class="mat-icon-container">
-        <mat-button-toggle-group hideSingleSelectionIndicator="true" [disabled]="!isExecuteEnabled && !hasChangesToUpload && !graphHasErrors" disabledInteractive="false" [ngStyle]="{ display: isExecuteEnabled ? 'block' : 'none' }">
+        <mat-button-toggle-group hideSingleSelectionIndicator="true" [disabled]="isProcessingExecuteRequest && !hasChangesToUpload && !graphHasErrors" disabledInteractive="false" [ngStyle]="{ display: !isProcessingExecuteRequest ? 'block' : 'none' }">
           <mat-button-toggle matTooltip="Execute graph" (click)="handleClickExecuteGraph()">
             @if (optimizationPolicies.length > 1) {
               ({{selectedOptimizationPolicy}})
@@ -28,7 +28,7 @@
             <button mat-menu-item (click)="handleClickSelectOptimizationPolicy(optimizationPolicy)">{{optimizationPolicy}}</button>
           }
         </mat-menu>
-        <mat-spinner diameter="24" [ngStyle]="{ display: !isExecuteEnabled ? 'block' : 'none' }"></mat-spinner>
+        <mat-spinner diameter="24" [ngStyle]="{ display: isProcessingExecuteRequest ? 'block' : 'none' }"></mat-spinner>
     </div>
   }
 </div>
