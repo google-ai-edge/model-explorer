@@ -1,5 +1,6 @@
 {
   "name": "model_explorer_electron",
+  "description": "Visualize machine learning model graphs hierarchically.",
   "version": "0.0.1",
   "main": "src/main.js",
   "scripts": {
@@ -11,22 +12,21 @@
   },
   "author": "Google",
   "license": "Apache-2.0",
-  "description": "",
   "devDependencies": {
-    "@electron-forge/cli": "^7.4.0",
-    "@electron-forge/maker-deb": "^7.4.0",
-    "@electron-forge/maker-dmg": "^7.4.0",
-    "@electron-forge/maker-rpm": "^7.4.0",
-    "@electron-forge/maker-squirrel": "^7.4.0",
-    "@electron-forge/maker-zip": "^7.4.0",
-    "@electron-forge/plugin-auto-unpack-natives": "^7.4.0",
-    "@electron-forge/plugin-fuses": "^7.4.0",
+    "@electron-forge/cli": "^7.5.0",
+    "@electron-forge/maker-deb": "^7.5.0",
+    "@electron-forge/maker-dmg": "^7.5.0",
+    "@electron-forge/maker-rpm": "^7.5.0",
+    "@electron-forge/maker-squirrel": "^7.5.0",
+    "@electron-forge/maker-zip": "^7.5.0",
+    "@electron-forge/plugin-auto-unpack-natives": "^7.5.0",
+    "@electron-forge/plugin-fuses": "^7.5.0",
     "@electron/fuses": "^1.8.0",
     "@electron/osx-sign": "^1.0.5",
     "electron": "^32.0.1"
   },
   "dependencies": {
-    "electron-squirrel-startup": "^1.0.1",
-    "electron-log": "5.2.0"
+    "electron-log": "5.2.0",
+    "electron-squirrel-startup": "^1.0.1"
   }
 }

@@ -20,6 +20,7 @@ const {FusesPlugin} = require('@electron-forge/plugin-fuses');
 const {FuseV1Options, FuseVersion} = require('@electron/fuses');
 const path = require('path');
 const fs = require('node:fs/promises');
+const {execSync} = require('node:child_process');
 
 module.exports = {
   packagerConfig: {
@@ -61,11 +62,22 @@ module.exports = {
     },
     {
       name: '@electron-forge/maker-deb',
-      config: {},
-    },
-    {
-      name: '@electron-forge/maker-rpm',
-      config: {},
+      config: {
+        options: {
+          maintainer: 'Google',
+          homepage: 'https://github.com/google-ai-edge/model-explorer',
+          bin: 'Model Explorer',
+          // '.icns' doesn't seem to work.
+          icon: 'icon_sets/app_icon.iconset/icon_512x512@2x.png',
+          section: 'devel',
+          productName: 'Model Explorer',
+          genericName: 'ML Graph Viewer',
+          // This is overly generic. We should eventually use magic numbers
+          // https://wiki.debian.org/MIME
+          mimeType: ['application/octet-stream'],
+          name: 'model-explorer',
+        },
+      },
     },
   ],
   plugins: [
