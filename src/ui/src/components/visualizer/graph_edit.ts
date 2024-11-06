@@ -16,6 +16,7 @@ import { genUid } from './common/utils';
 import { ModelGraph } from './common/model_graph';
 import { GraphErrorsDialog } from '../graph_error_dialog/graph_error_dialog';
 import { NodeDataProviderExtensionService } from './node_data_provider_extension_service';
+import type { GraphCollection } from './common/input_graph.js';
 
 /**
  * The graph edit component.
@@ -93,7 +94,6 @@ export class GraphEdit {
   }
 
   async handleClickExecuteGraph() {
-    console.log('clicked');
     const { curModel, curPane, models } = this.getCurrentGraphInformation();
 
     if (curModel) {
@@ -103,12 +103,21 @@ export class GraphEdit {
 
       if (curModel.status() !== ModelItemStatus.ERROR) {
         if (result) {
+          // TODO: request new graph
+          const newGraphCollections: GraphCollection[] = [];
           this.modelLoaderService.loadedGraphCollections.update((prevGraphCollections) => {
-            if (!prevGraphCollections) {
-              return undefined;
+            const newGraphCollectionsLabels = newGraphCollections.map(({ label }) => label);
+            const filteredGraphCollections = (prevGraphCollections ?? [])?.filter(({ label }) => !newGraphCollectionsLabels.includes(label));
+            const mergedGraphCollections = [...filteredGraphCollections, ...newGraphCollections];
+
+            const curChanges = this.modelLoaderService.changesToUpload();
+            if (Object.keys(curChanges).length > 0) {
+              console.log(result);
+              // TODO: apply changes to the new graph
+              debugger;
             }
 
-            return [...prevGraphCollections];
+            return mergedGraphCollections;
           });
 
           this.urlService.setUiState(undefined);
@@ -119,7 +128,6 @@ export class GraphEdit {
             };
           }));
 
-          this.modelLoaderService.changesToUpload.update(() => ({}));
           this.modelLoaderService.graphErrors.update(() => undefined);
 
           if (result.perf_data) {
