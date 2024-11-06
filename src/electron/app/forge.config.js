@@ -94,13 +94,6 @@ module.exports = {
     }),
   ],
   hooks: {
-    postPackage: async (forgeConfig, packageResult) => {
-      // Set permissions to 755 so dpkg-deb can read them.
-      // There is only one output path.
-      const output = packageResult.outputPaths[0];
-      const command = `chmod -R 755 '${output}'`;
-      execSync(command);
-    },
     postMake: async (forgeConfig, makeResults) => {
       // Rename the packaged file name from "Model Explorer-xxx.zip" to
       // "model-explorer-xxx.zip".
