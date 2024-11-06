@@ -67,17 +67,18 @@ module.exports = {
           maintainer: 'Google',
           homepage: 'https://github.com/google-ai-edge/model-explorer',
           bin: 'Model Explorer',
+          // '.icns' doesn't seem to work.
+          icon: 'icon_sets/app_icon.iconset/icon_512x512@2x.png',
+          section: 'devel',
+          productName: 'Model Explorer',
+          genericName: 'ML Graph Viewer',
+          // This is overly generic. We should eventually use magic numbers
+          // https://wiki.debian.org/MIME
+          mimeType: ['application/octet-stream'],
+          name: 'model-explorer',
         },
       },
     },
-    // {
-    //   name: '@electron-forge/maker-rpm',
-    //   config: {},
-    // },
-    // {
-    //   name: '@electron-forge/maker-flatpak',
-    //   config: {}, // TODO: Mimetype
-    // }
   ],
   plugins: [
     // Fuses are used to enable/disable various Electron functionality
