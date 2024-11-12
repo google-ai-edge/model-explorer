@@ -1,4 +1,15 @@
 <div class="container">
+  @if (optimizationPolicies.length > 1) {
+    <div class="mat-icon-container">
+      <label for="optimization-policy-select">Opt. Policy</label>
+      <select (change)="handleClickSelectOptimizationPolicy($event)" id="optimization-policy-select">
+        @for (optimizationPolicy of optimizationPolicies; track $index) {
+          <option>{{optimizationPolicy}}</option>
+        }
+      </select>
+    </div>
+  }
+
   @if (hasCurModel) {
     <div class="mat-icon-container">
       <button mat-icon-button matTooltip="Upload processed graphs json to server" (click)="handleClickUploadGraph()" [disabled]="!hasChangesToUpload || isProcessingExecuteRequest">
@@ -9,26 +20,16 @@
 
   @if (hasCurModel) {
     <div class="mat-icon-container">
-        <mat-button-toggle-group hideSingleSelectionIndicator="true" [disabled]="isProcessingExecuteRequest && !hasChangesToUpload && !graphHasErrors" disabledInteractive="false" [ngStyle]="{ display: !isProcessingExecuteRequest ? 'block' : 'none' }">
-          <mat-button-toggle matTooltip="Execute graph" (click)="handleClickExecuteGraph()">
-            @if (optimizationPolicies.length > 1) {
-              ({{selectedOptimizationPolicy}})
-            }
-            <mat-icon>play_arrow</mat-icon>
-          </mat-button-toggle>
-          @if (optimizationPolicies.length > 1) {
-            <mat-button-toggle [matMenuTriggerFor]="optimizationPolicyMenu">
-              <mat-icon>arrow_drop_down</mat-icon>
-            </mat-button-toggle>
-          }
-        </mat-button-toggle-group>
-
-        <mat-menu #optimizationPolicyMenu="matMenu">
-          @for (optimizationPolicy of optimizationPolicies; track $index) {
-            <button mat-menu-item (click)="handleClickSelectOptimizationPolicy(optimizationPolicy)">{{optimizationPolicy}}</button>
-          }
-        </mat-menu>
-        <mat-spinner diameter="24" [ngStyle]="{ display: isProcessingExecuteRequest ? 'block' : 'none' }"></mat-spinner>
+      <button
+        mat-icon-button
+        matTooltip="Execute graph"
+        (click)="handleClickExecuteGraph()"
+        [disabled]="isProcessingExecuteRequest && !hasChangesToUpload && !graphHasErrors"
+        [ngStyle]="{ display: !isProcessingExecuteRequest ? 'block' : 'none' }"
+      >
+        <mat-icon>play_arrow</mat-icon>
+      </button>
+      <mat-spinner diameter="24" [ngStyle]="{ display: isProcessingExecuteRequest ? 'block' : 'none' }"></mat-spinner>
     </div>
   }
 </div>

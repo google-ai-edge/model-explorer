@@ -1,7 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, Component, Inject } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
-import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatDialogModule, MatDialog } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
 import { MatMenuModule } from '@angular/material/menu';
@@ -16,7 +15,6 @@ import { genUid } from './common/utils';
 import { ModelGraph } from './common/model_graph';
 import { GraphErrorsDialog } from '../graph_error_dialog/graph_error_dialog';
 import { NodeDataProviderExtensionService } from './node_data_provider_extension_service';
-import type { GraphCollection } from './common/input_graph.js';
 
 /**
  * The graph edit component.
@@ -29,7 +27,6 @@ import type { GraphCollection } from './common/input_graph.js';
   imports: [
     CommonModule,
     MatButtonModule,
-    MatButtonToggleModule,
     MatDialogModule,
     MatIconModule,
     MatMenuModule,
@@ -106,7 +103,7 @@ export class GraphEdit {
           const newGraphCollections = await this.modelLoaderService.loadModel(curModel);
 
           if (curModel.status() !== ModelItemStatus.ERROR) {
-          this.modelLoaderService.loadedGraphCollections.update((prevGraphCollections) => {
+            this.modelLoaderService.loadedGraphCollections.update((prevGraphCollections) => {
               const curChanges = this.modelLoaderService.changesToUpload();
               if (Object.keys(curChanges).length > 0) {
                 newGraphCollections.forEach((graphCollection) => {
@@ -123,39 +120,41 @@ export class GraphEdit {
                     });
                   }
                 });
+                console.log(result);
+                debugger;
               }
 
-            const newGraphCollectionsLabels = newGraphCollections.map(({ label }) => label);
-            const filteredGraphCollections = (prevGraphCollections ?? [])?.filter(({ label }) => !newGraphCollectionsLabels.includes(label));
-            const mergedGraphCollections = [...filteredGraphCollections, ...newGraphCollections];
+              const newGraphCollectionsLabels = newGraphCollections.map(({ label }) => label);
+              const filteredGraphCollections = (prevGraphCollections ?? [])?.filter(({ label }) => !newGraphCollectionsLabels.includes(label));
+              const mergedGraphCollections = [...filteredGraphCollections, ...newGraphCollections];
 
-            return mergedGraphCollections;
-          });
+              return mergedGraphCollections;
+            });
 
-          this.urlService.setUiState(undefined);
-          this.urlService.setModels(models.map(({ path, selectedAdapter }) => {
-            return {
-              url: path,
-              adapterId: selectedAdapter?.id
-            };
-          }));
+            this.urlService.setUiState(undefined);
+            this.urlService.setModels(models.map(({ path, selectedAdapter }) => {
+              return {
+                url: path,
+                adapterId: selectedAdapter?.id
+              };
+            }));
 
-          this.modelLoaderService.graphErrors.update(() => undefined);
+            this.modelLoaderService.graphErrors.update(() => undefined);
 
-          if (result.perf_data) {
-            const runId = genUid();
-            const modelGraph = curPane?.modelGraph as ModelGraph;
+            if (result.perf_data) {
+              const runId = genUid();
+              const modelGraph = curPane?.modelGraph as ModelGraph;
 
-            this.nodeDataProviderExtensionService.addRun(
-              runId,
-              `${modelGraph.id} (Performance Trace)`,
-              curModel.selectedAdapter?.id ?? '',
-              modelGraph,
-              result.perf_data,
-            );
-          }
+              this.nodeDataProviderExtensionService.addRun(
+                runId,
+                `${modelGraph.id} (Performance Trace)`,
+                curModel.selectedAdapter?.id ?? '',
+                modelGraph,
+                result.perf_data,
+              );
+            }
 
-          this.showSuccessMessage('Model updated');
+            this.showSuccessMessage('Model updated');
           } else {
             this.showErrorDialog('Graph Execution Error', curModel.errorMessage ?? 'An error has occured');
           }
@@ -217,7 +216,8 @@ export class GraphEdit {
     }
   }
 
-  handleClickSelectOptimizationPolicy(optimizationPolicy: string) {
+  handleClickSelectOptimizationPolicy(evt: Event) {
+    const optimizationPolicy = (evt.target as HTMLSelectElement).value;
     this.modelLoaderService.selectedOptimizationPolicy.update(() => optimizationPolicy);
   }
 
