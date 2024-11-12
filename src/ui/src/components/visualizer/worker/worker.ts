@@ -41,8 +41,6 @@ import {GraphProcessor} from './graph_processor';
 import {IdenticalGroupsFinder} from './identical_groups_finder';
 import {updateProcessingProgress} from './utils';
 
-declare const self: ServiceWorkerGlobalScope;
-
 try {
   importScripts('/static_files/worker_deps.js');
 } catch (e) {
