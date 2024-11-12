@@ -156,6 +156,9 @@ export class GraphEdit {
           }
 
           this.showSuccessMessage('Model updated');
+          } else {
+            this.showErrorDialog('Graph Execution Error', curModel.errorMessage ?? 'An error has occured');
+          }
         } else {
           this.showErrorDialog('Graph Execution Error', "Graph execution didn't return any results");
         }
