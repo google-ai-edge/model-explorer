@@ -157,10 +157,14 @@ class PytorchExportedProgramAdapterImpl:
       total_size *= dim
 
     if size_limit < 0 or size_limit >= total_size:
-      return json.dumps(tensor.cpu().detach().to(torch.float32).numpy().tolist())
+      return json.dumps(
+          tensor.cpu().detach().to(torch.float32).numpy().tolist()
+      )
 
     return json.dumps(
-        (tensor.cpu().detach().to(torch.float32).numpy().flatten())[:size_limit].tolist()
+        (tensor.cpu().detach().to(torch.float32).numpy().flatten())[
+            :size_limit
+        ].tolist()
     )
 
   def add_node_attrs(self, fx_node: torch.fx.node.Node, node: GraphNode):
@@ -204,7 +208,14 @@ class PytorchExportedProgramAdapterImpl:
         node.outputsMetadata.append(metadata)
     elif isinstance(out_vals, torch.Tensor):
       dtype = str(out_vals.dtype)
-      shape = json.dumps(list(map(lambda x: int(x) if str(x).isdigit() else str(x), out_vals.shape)))
+      shape = json.dumps(
+          list(
+              map(
+                  lambda x: int(x) if str(x).isdigit() else str(x),
+                  out_vals.shape,
+              )
+          )
+      )
       metadata = MetadataItem(
           id='0', attrs=[KeyValue(key='tensor_shape', value=dtype + shape)]
       )
