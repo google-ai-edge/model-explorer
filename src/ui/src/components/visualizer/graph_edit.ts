@@ -129,13 +129,6 @@ export class GraphEdit {
             const filteredGraphCollections = (prevGraphCollections ?? [])?.filter(({ label }) => !newGraphCollectionsLabels.includes(label));
             const mergedGraphCollections = [...filteredGraphCollections, ...newGraphCollections];
 
-            const curChanges = this.modelLoaderService.changesToUpload();
-            if (Object.keys(curChanges).length > 0) {
-              console.log(result);
-              // TODO: apply changes to the new graph
-              debugger;
-            }
-
             return mergedGraphCollections;
           });
 
