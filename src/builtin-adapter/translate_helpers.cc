@@ -15,6 +15,8 @@
 
 #include "translate_helpers.h"
 
+#include <cstddef>
+#include <cstdint>
 #include <string>
 #include <utility>
 #include <vector>
@@ -26,6 +28,7 @@
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_split.h"
 #include "absl/strings/string_view.h"
+#include "flatbuffers/flexbuffers.h"
 #include "llvm/ADT/STLExtras.h"
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/ADT/StringExtras.h"
@@ -60,17 +63,16 @@ namespace visualization_client {
 namespace {
 using ::mlir::Operation;
 using ::mlir::func::FuncOp;
+using ::mlir::TFL::ConstBytesAttr;
 using ::tooling::visualization_client::OpMetadata;
 
 inline constexpr llvm::StringLiteral kEmptyString("");
-inline constexpr llvm::StringLiteral kSemicolonSeparator(";");
 inline constexpr llvm::StringLiteral kConfigProto("config_proto");
 inline constexpr llvm::StringLiteral kGraphInputs("GraphInputs");
 inline constexpr llvm::StringLiteral kGraphOutputs("GraphOutputs");
 inline constexpr llvm::StringLiteral kTensorName("tensor_name");
 inline constexpr llvm::StringLiteral kTensorIndex("tensor_index");
 inline constexpr llvm::StringLiteral kTensorShape("tensor_shape");
-inline constexpr llvm::StringLiteral kPseudoConst("pseudo_const");
 inline constexpr llvm::StringLiteral kTensorTag("__tensor_tag");
 inline constexpr llvm::StringLiteral kValue("__value");
 
@@ -97,6 +99,33 @@ inline std::string GetTypeString(const mlir::Type& t) {
   return result;
 }
 
+void AddCustomOptions(const ConstBytesAttr& const_bytes_attr,
+                      GraphNodeBuilder& builder) {
+  llvm::StringRef bytes = const_bytes_attr.getValue();
+  std::vector<uint8_t> custom_options;
+  custom_options.assign(bytes.begin(), bytes.end());
+  if (custom_options.empty()) {
+    // Avoid calling flexbuffers::GetRoot() with empty data. Otherwise it will
+    // crash.
+    //
+    // TODO(yijieyang): We should use a default value for input custom_options
+    // that is not empty to avoid this check.
+    return;
+  }
+  const flexbuffers::Map& map = flexbuffers::GetRoot(custom_options).AsMap();
+  if (map.IsTheEmptyMap()) {
+    // The custom_options is not empty but not a valid flex buffer map.
+    builder.AppendNodeAttribute("custom_options", "<non-deserializable>");
+    return;
+  }
+  const flexbuffers::TypedVector& keys = map.Keys();
+  for (size_t i = 0; i < keys.size(); ++i) {
+    const char* key = keys[i].AsKey();
+    const flexbuffers::Reference& value = map[key];
+    builder.AppendNodeAttribute(key, value.ToString());
+  }
+}
+
 void AppendNodeAttrs(const int const_element_count_limit, Operation& operation,
                      GraphNodeBuilder& builder) {
   std::string value;
@@ -116,6 +145,12 @@ void AppendNodeAttrs(const int const_element_count_limit, Operation& operation,
         flat_symbol_attr != nullptr) {
       llvm::StringRef subgraph_id = flat_symbol_attr.getValue();
       builder.AppendSubgraphId(subgraph_id);
+    } else if (const auto const_bytes_attr =
+                   llvm::dyn_cast_or_null<ConstBytesAttr>(attr_val);
+               const_bytes_attr != nullptr) {
+      AddCustomOptions(const_bytes_attr, builder);
+      // Skips adding the const bytes attribute to the graph.
+      continue;
     }
     PrintAttribute(attr_val, const_element_count_limit, sstream);
     if (name == "value") {
