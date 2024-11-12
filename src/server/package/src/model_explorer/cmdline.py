@@ -25,7 +25,7 @@ parser = argparse.ArgumentParser(
     formatter_class=argparse.ArgumentDefaultsHelpFormatter,
 )
 parser.add_argument(
-    'model_paths', nargs='?', help='comma separated model file paths'
+    'model_paths', nargs='*', help='model file paths, space- or comma-separated'
 )
 parser.add_argument('--host', default=DEFAULT_HOST, help='host of the server')
 parser.add_argument(
@@ -76,9 +76,10 @@ args = parser.parse_args()
 def main():
   """Entry point for the command line version of model explorer."""
 
-  model_paths: list[str] = []
-  if args.model_paths is not None and args.model_paths != '':
-    model_paths = [x.strip() for x in args.model_paths.split(',')]
+  model_paths: list[str] = args.model_paths
+  if len(args.model_paths) == 1:
+    comma_separated_model_paths = args.model_paths[0]
+    model_paths = [x.strip() for x in comma_separated_model_paths.split(',')]
 
   node_data_paths: list[str] = []
   if args.node_data_paths is not None and args.node_data_paths != '':

@@ -19,13 +19,19 @@ from typing import Dict, TypedDict, Union
 from urllib.parse import quote
 
 import requests
-import torch
 from typing_extensions import NotRequired
+
+try:
+  import torch
+except ImportError:
+  torch = None
 
 from .consts import DEFAULT_HOST, DEFAULT_SETTINGS
 from .node_data_builder import NodeData
-from .pytorch_exported_program_adater_impl import PytorchExportedProgramAdapterImpl
 from .types import ModelExplorerGraphs
+
+if torch is not None:
+  from .pytorch_exported_program_adater_impl import PytorchExportedProgramAdapterImpl
 
 ModelSource = TypedDict(
     'ModelSource', {'url': str, 'adapterId': NotRequired[str]}
@@ -79,7 +85,7 @@ class ModelExplorerConfig:
   def add_model_from_pytorch(
       self,
       name: str,
-      exported_program: torch.export.ExportedProgram,
+      exported_program: 'torch.export.ExportedProgram',
       settings=DEFAULT_SETTINGS,
   ) -> 'ModelExplorerConfig':
     """Adds the given pytorch model.
@@ -89,6 +95,13 @@ class ModelExplorerConfig:
       exported_program: the ExportedProgram from torch.export.export.
       settings: The settings that config the visualization.
     """
+
+    if torch is None:
+      raise ImportError(
+          '`torch` not found. Please install it via `pip install torch`, '
+          'and restart the Model Explorer server.'
+      )
+
     # Convert the given model to model explorer graphs.
     print('Converting pytorch model to model explorer graphs...')
     adapter = PytorchExportedProgramAdapterImpl(exported_program, settings)

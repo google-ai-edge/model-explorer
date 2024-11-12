@@ -117,17 +117,6 @@ using Buffers = std::vector<std::unique_ptr<tflite::BufferT>>;
 // Maps from op name to op metadata.
 using OpdefsMap = absl::flat_hash_map<std::string, OpMetadata>;
 
-// Returns true if the string is printable.
-bool IsPrintable(absl::string_view str) {
-  for (const char& c : str) {
-    unsigned char uc = static_cast<unsigned char>(c);
-    if ((uc < 0x20) || (uc > 0x7E)) {
-      return false;
-    }
-  }
-  return true;
-}
-
 std::string EdgeInfoDebugString(const EdgeInfo& edge_info) {
   return absl::StrCat("sourceNodeId: ", edge_info.source_node_id,
                       ", sourceNodeOutputId: ", edge_info.source_node_output_id,
@@ -432,21 +421,6 @@ absl::Status AddAuxiliaryNode(
   }
   subgraph.nodes.push_back(std::move(builder).Build());
   return absl::OkStatus();
-}
-
-// Logic referred from `CustomOptionsToAttributes` in
-// tensorflow/compiler/mlir/lite/flatbuffer_operator.cc.
-void CustomOptionsToAttributes(
-    const std::vector<uint8_t>& custom_options, mlir::Builder mlir_builder,
-    llvm::SmallVectorImpl<mlir::NamedAttribute>& attributes) {
-  const flexbuffers::Map& map = flexbuffers::GetRoot(custom_options).AsMap();
-  const flexbuffers::TypedVector& keys = map.Keys();
-  for (size_t i = 0; i < keys.size(); ++i) {
-    const char* key = keys[i].AsKey();
-    const flexbuffers::Reference& value = map[key];
-    attributes.emplace_back(mlir_builder.getNamedAttr(
-        key, mlir_builder.getStringAttr(value.ToString())));
-  }
 }
 
 absl::Status SubgraphIdxToAttributes(
@@ -837,6 +811,9 @@ absl::StatusOr<std::string> ConvertFlatbufferDirectlyToJson(
   std::unique_ptr<FlatBufferModelAbslError> model_ptr =
       FlatBufferModelAbslError::VerifyAndBuildFromBuffer(
           model_content.data(), model_content.length());
+  if (model_ptr == nullptr) {
+    return absl::InvalidArgumentError("Failed to build model from buffer.");
+  }
 
   mlir::MLIRContext mlir_context;
   mlir::DialectRegistry registry;
@@ -893,6 +870,35 @@ absl::StatusOr<std::string> ConvertFlatbufferDirectlyToJson(
   collection.graphs.push_back(std::move(graph));
   llvm::json::Value json_result(collection.Json());
   return llvm::formatv("{0:2}", json_result);
+}
+
+// Logic referred from `CustomOptionsToAttributes` in
+// tensorflow/compiler/mlir/lite/flatbuffer_operator.cc.
+void CustomOptionsToAttributes(
+    const std::vector<uint8_t>& custom_options, mlir::Builder mlir_builder,
+    llvm::SmallVectorImpl<mlir::NamedAttribute>& attributes) {
+  if (custom_options.empty()) {
+    // Avoid calling flexbuffers::GetRoot() with empty data. Otherwise it will
+    // crash.
+    //
+    // TODO(yijieyang): We should use a default value for input custom_options
+    // that is not empty to avoid this check.
+    return;
+  }
+  const flexbuffers::Map& map = flexbuffers::GetRoot(custom_options).AsMap();
+  if (map.IsTheEmptyMap()) {
+    // The custom_options is not empty but not a valid flex buffer map.
+    attributes.emplace_back(mlir_builder.getNamedAttr(
+        "custom_options", mlir_builder.getStringAttr("<non-deserializable>")));
+    return;
+  }
+  const flexbuffers::TypedVector& keys = map.Keys();
+  for (size_t i = 0; i < keys.size(); ++i) {
+    const char* key = keys[i].AsKey();
+    const flexbuffers::Reference& value = map[key];
+    attributes.emplace_back(mlir_builder.getNamedAttr(
+        key, mlir_builder.getStringAttr(value.ToString())));
+  }
 }
 
 }  // namespace visualization_client

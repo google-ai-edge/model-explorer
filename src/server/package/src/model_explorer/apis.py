@@ -15,7 +15,6 @@
 
 from typing import TypedDict, Union
 
-import torch
 from typing_extensions import NotRequired
 
 from . import server
@@ -26,6 +25,11 @@ from .consts import (
     DEFAULT_PORT,
     DEFAULT_SETTINGS,
 )
+
+try:
+  import torch
+except ImportError:
+  torch = None
 
 NodeDataInfo = TypedDict(
     'NodeDataInfo',
@@ -107,7 +111,7 @@ def visualize(
 
 def visualize_pytorch(
     name: str,
-    exported_program: torch.export.ExportedProgram,
+    exported_program: 'torch.export.ExportedProgram',
     host=DEFAULT_HOST,
     port=DEFAULT_PORT,
     extensions: list[str] = [],

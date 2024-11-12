@@ -84,7 +84,7 @@ export const SETTING_HIDE_OP_NODES_WITH_LABELS: Setting = {
   label: 'Hide op nodes with labels below (comma separated)',
   key: SettingKey.HIDE_OP_NODES_WITH_LABELS,
   type: SettingType.TEXT_MULTILINE,
-  defaultValue: 'Const,pseudo_const,pseudo_qconst,ReadVariableOp',
+  defaultValue: 'Const,no_value,pseudo_const,pseudo_qconst,ReadVariableOp',
   help:
     'Removes op nodes from model graphs if their label matches any ' +
     'of the labels entered below.',
