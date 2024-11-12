@@ -104,7 +104,27 @@ export class GraphEdit {
       if (curModel.status() !== ModelItemStatus.ERROR) {
         if (result) {
           const newGraphCollections = await this.modelLoaderService.loadModel(curModel);
+
+          if (curModel.status() !== ModelItemStatus.ERROR) {
           this.modelLoaderService.loadedGraphCollections.update((prevGraphCollections) => {
+              const curChanges = this.modelLoaderService.changesToUpload();
+              if (Object.keys(curChanges).length > 0) {
+                newGraphCollections.forEach((graphCollection) => {
+                  const graphChanges = curChanges[graphCollection.label];
+                  if (graphChanges) {
+                    graphCollection.graphs.forEach((graph) => {
+                      graph.nodes.forEach((node) => {
+                        const nodeChanges = graphChanges[node.id];
+
+                        if (nodeChanges && nodeChanges.length > 0) {
+                          // TODO: apply changes
+                        }
+                      });
+                    });
+                  }
+                });
+              }
+
             const newGraphCollectionsLabels = newGraphCollections.map(({ label }) => label);
             const filteredGraphCollections = (prevGraphCollections ?? [])?.filter(({ label }) => !newGraphCollectionsLabels.includes(label));
             const mergedGraphCollections = [...filteredGraphCollections, ...newGraphCollections];
