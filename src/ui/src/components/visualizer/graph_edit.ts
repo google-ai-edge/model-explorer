@@ -103,8 +103,7 @@ export class GraphEdit {
 
       if (curModel.status() !== ModelItemStatus.ERROR) {
         if (result) {
-          // TODO: request new graph
-          const newGraphCollections: GraphCollection[] = [];
+          const newGraphCollections = await this.modelLoaderService.loadModel(curModel);
           this.modelLoaderService.loadedGraphCollections.update((prevGraphCollections) => {
             const newGraphCollectionsLabels = newGraphCollections.map(({ label }) => label);
             const filteredGraphCollections = (prevGraphCollections ?? [])?.filter(({ label }) => !newGraphCollectionsLabels.includes(label));

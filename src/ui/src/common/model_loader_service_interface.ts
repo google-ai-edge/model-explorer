@@ -36,6 +36,7 @@ export interface ExecutionCommand {
 /** The interface of model load service. */
 export interface ModelLoaderServiceInterface {
   loadModels(modelItems: ModelItem[]): Promise<void>;
+  loadModel(modelItems: ModelItem): Promise<GraphCollection[]>;
   executeModel(modelItem: ModelItem): Promise<ExecutionCommand | undefined>;
   overrideModel(modelItem: ModelItem, graphCollection: GraphCollection, fieldsToUpdate: ChangesPerNode): Promise<GraphCollection | undefined>;
   get loadedGraphCollections(): WritableSignal<GraphCollection[] | undefined>;
