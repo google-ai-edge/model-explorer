@@ -50,6 +50,16 @@ export class GraphEdit {
     private readonly snackBar: MatSnackBar,
   ) {}
 
+  ngOnInit() {
+    if (this.modelLoaderService.selectedOptimizationPolicy() === '') {
+      this.modelLoaderService.selectedOptimizationPolicy.update(() => {
+        const curExtensionId = this.getCurrentGraphInformation().models[0].selectedAdapter?.id ?? '';
+
+        return this.modelLoaderService.getOptimizationPolicies(curExtensionId)[0] || '';
+      });
+    }
+  }
+
   getCurrentGraphInformation() {
     const curPane = this.appService.getSelectedPane();
     const curCollectionLabel = curPane?.modelGraph?.collectionLabel;
@@ -231,11 +241,6 @@ export class GraphEdit {
 
   get graphHasErrors() {
     return this.modelLoaderService.graphErrors() !== undefined;
-  }
-
-  get selectedOptimizationPolicy(): string {
-    const curExtensionId = this.getCurrentGraphInformation().models[0].selectedAdapter?.id ?? '';
-    return this.modelLoaderService.selectedOptimizationPolicy() || (this.modelLoaderService.getOptimizationPolicies(curExtensionId)[0] ?? 'Default');
   }
 
   get optimizationPolicies(): string[] {
