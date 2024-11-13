@@ -61,6 +61,10 @@ FIX_FORMAT_FLAG=${1}
 
 LICENSE_CHECK_RESULT=$?
 
+if [[ ${LICENSE_CHECK_RESULT} != 0 ]]; then
+  echo "License check failed. Please fix the corresponding licenses."
+fi
+
 ############################################################
 # Python formatting
 ############################################################
@@ -72,12 +76,16 @@ echo "Testing python formatting with ${PYINK_COMMAND}"
 ${PYINK_COMMAND}
 PYTHON_FORMAT_RESULT=$?
 
-# Re-enable exit on error now that we are done with the temporary git repo.
-set -e
-
+if [[ ${PYTHON_FORMAT_RESULT} != 0 ]]; then
+  echo "Python formatting issues found." 
+  echo "To apply formatting automatically, run: ./format.sh"
+fi
 if [[ ${LICENSE_CHECK_RESULT}  != 0 || \
       ${PYTHON_FORMAT_RESULT}  != 0 \
    ]]
 then
   exit 1
 fi
+
+# Re-enable exit on error now that we are done with the temporary git repo.
+set -e
