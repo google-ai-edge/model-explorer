@@ -180,12 +180,13 @@ def test_pytorch(page: Page):
   model = torchvision.models.mobilenet_v2().eval()
   inputs = (torch.rand([1, 3, 224, 224]),)
   ep = torch.export.export(model, inputs)
-  pt2_file_path = tempfile.NamedTemporaryFile(suffix=".pt2")
-  torch.export.save(ep, pt2_file_path.name)
+  tmp_dir = tempfile.gettempdir()
+  pt2_file_path = f"{tmp_dir}/pytorch.pt2"
+  torch.export.save(ep, pt2_file_path)
 
   # Load into ME.
   page.goto(LOCAL_SERVER)
-  page.get_by_placeholder("Absolute file paths (").fill(pt2_file_path.name)
+  page.get_by_placeholder("Absolute file paths (").fill(pt2_file_path)
   page.get_by_role("button", name="Add").click()
   delay_view_model(page)
   page.locator("canvas").first.click(position={"x": 458, "y": 334})
