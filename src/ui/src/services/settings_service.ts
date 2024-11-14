@@ -35,6 +35,7 @@ export enum SettingKey {
   DISALLOW_VERTICAL_EDGE_LABELS = 'disallow_vertical_edge_labels',
   KEEP_LAYERS_WITH_A_SINGLE_CHILD = 'keep_layers_with_a_single_child',
   SHOW_OP_NODE_OUT_OF_LAYER_EDGES_WITHOUT_SELECTING = 'show_op_node_out_of_layer_edges_without_selecting',
+  HIGHLIGHT_LAYER_NODE_INPUTS_OUTPUTS = 'highlight_layer_node_inputs_outputs',
 }
 
 /** Setting types. */
@@ -156,6 +157,19 @@ export const SETTING_SHOW_OP_NODE_OUT_OF_LAYER_EDGES_WITHOUT_SELECTING: Setting 
       'especially for larger models.',
   };
 
+/** Setting for highlighting layer node inputs and outputs. */
+export const SETTING_HIGHLIGHT_LAYER_NODE_INPUTS_OUTPUTS: Setting = {
+  label: 'Highlight inputs and outputs of the selected layer node',
+  key: SettingKey.HIGHLIGHT_LAYER_NODE_INPUTS_OUTPUTS,
+  type: SettingType.BOOLEAN,
+  defaultValue: false,
+  help:
+    'By default, inputs and outputs are highlighted only when an op node ' +
+    'is selected. Enable this setting to see inputs and outputs for a ' +
+    'selected layer node, including all its descendant op nodes within ' +
+    'that layer.',
+};
+
 const SETTINGS_LOCAL_STORAGE_KEY = 'model_explorer_settings';
 
 /** All settings. */
@@ -168,7 +182,8 @@ export const ALL_SETTINGS = [
   SETTING_KEEP_LAYERS_WITH_A_SINGLE_CHILD,
   SETTING_SHOW_WELCOME_CARD,
   SETTING_DISALLOW_VERTICAL_EDGE_LABELS,
-  SETTING_SHOW_OP_NODE_OUT_OF_LAYER_EDGES_WITHOUT_SELECTING,
+  SETTING_MAX_CONST_ELEMENT_COUNT_LIMIT,
+  SETTING_HIGHLIGHT_LAYER_NODE_INPUTS_OUTPUTS,
 ];
 
 /**

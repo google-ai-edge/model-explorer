@@ -28,7 +28,8 @@ export class SplitPaneService {
   readonly hiddenInputOpNodeIds = signal<Record<string, boolean>>({});
 
   /**
-   * The output ids that are hidden (i.e. not highlighted) in the model graph.
+   * The {nodeId}___{outputId} that are hidden (i.e. not highlighted) in the
+   * model graph.
    */
   readonly hiddenOutputIds = signal<Record<string, boolean>>({});
 
@@ -71,24 +72,31 @@ export class SplitPaneService {
     }
   }
 
-  toggleOutputVisibility(outputId: string) {
+  toggleOutputVisibility(nodeId: string, outputId: string) {
     this.hiddenOutputIds.update((ids) => {
-      const visible = ids[outputId] === true;
+      const key = `${nodeId}___${outputId}`;
+      const visible = ids[key] === true;
       if (!visible) {
-        ids[outputId] = true;
+        ids[key] = true;
       } else {
-        delete ids[outputId];
+        delete ids[key];
       }
       return {...ids};
     });
   }
 
-  setOutputVisible(outputId: string, allOutputIds: string[]) {
+  setOutputVisible(
+    nodeId: string,
+    outputId: string,
+    allNodeAndOutputIds: Array<{nodeId: string; outputId: string}>,
+  ) {
     // Check if the output is the only visible one.
-    let isNodeTheOnlyVisibleOne = this.hiddenOutputIds()[outputId] !== true;
-    for (const id of allOutputIds) {
-      if (id !== outputId) {
-        if (!this.hiddenOutputIds()[id]) {
+    const key = `${nodeId}___${outputId}`;
+    let isNodeTheOnlyVisibleOne = this.hiddenOutputIds()[key] !== true;
+    for (const {nodeId, outputId} of allNodeAndOutputIds) {
+      const curKey = `${nodeId}___${outputId}`;
+      if (curKey !== key) {
+        if (!this.hiddenOutputIds()[curKey]) {
           isNodeTheOnlyVisibleOne = false;
         }
       }
@@ -101,9 +109,10 @@ export class SplitPaneService {
     // If not, hide the other outputs.
     else {
       const ids: Record<string, boolean> = {};
-      for (const id of allOutputIds) {
-        if (id !== outputId) {
-          ids[id] = true;
+      for (const {nodeId, outputId} of allNodeAndOutputIds) {
+        const curKey = `${nodeId}___${outputId}`;
+        if (curKey !== key) {
+          ids[curKey] = true;
         }
       }
       this.hiddenOutputIds.set(ids);
@@ -114,8 +123,9 @@ export class SplitPaneService {
     return !this.hiddenInputOpNodeIds()[nodeId];
   }
 
-  getOutputVisible(outputId: string): boolean {
-    return !this.hiddenOutputIds()[outputId];
+  getOutputVisible(nodeId: string, outputId: string): boolean {
+    const key = `${nodeId}___${outputId}`;
+    return !this.hiddenOutputIds()[key];
   }
 
   resetInputOutputHiddenIds() {

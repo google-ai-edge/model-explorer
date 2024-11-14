@@ -92,11 +92,31 @@
               background-color: #f6f6f6;
 
               .locator-icon-container {
-                opacity: .8;
+                opacity: 0.8;
               }
             }
           }
         }
+      }
+
+      .target-op-container {
+        display: flex;
+        align-items: center;
+        color: #999;
+        font-weight: normal;
+
+        mat-icon.arrow {
+          font-size: 12px;
+          height: 12px;
+          width: 12px;
+          margin: 0 4px;
+        }
+      }
+
+      .source-op-node-label {
+        color: #999;
+        font-weight: normal;
+        margin-left: 6px;
       }
 
       .metadata-table {
@@ -130,7 +150,7 @@
     box-sizing: border-box;
     background-color: white;
     user-select: none;
-    color: rgba(0, 0, 0, .87);
+    color: rgba(0, 0, 0, 0.87);
 
     &.input,
     &.output,
@@ -254,7 +274,7 @@
       cursor: pointer;
 
       &:hover .locator-icon-container {
-        opacity: .8;
+        opacity: 0.8;
       }
 
       &.search-match {
@@ -341,7 +361,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    opacity: .5;
+    opacity: 0.5;
     margin-left: 4px;
 
     &.left {
@@ -355,7 +375,7 @@
     }
 
     &:hover {
-      opacity: .8;
+      opacity: 0.8;
     }
 
     mat-icon {
@@ -370,12 +390,12 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    opacity: .5;
+    opacity: 0.5;
     padding: 0 11px 0 20px;
     cursor: pointer;
 
     &:hover {
-      opacity: .8;
+      opacity: 0.8;
     }
 
     mat-icon {

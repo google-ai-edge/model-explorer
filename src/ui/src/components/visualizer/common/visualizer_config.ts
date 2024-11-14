@@ -58,6 +58,9 @@ export declare interface VisualizerConfig {
    */
   showOpNodeOutOfLayerEdgesWithoutSelecting?: boolean;
 
+  /** Whether to highlight layer node inputs and outputs. */
+  highlightLayerNodeInputsOutputs?: boolean;
+
   /** The default node styler rules. */
   nodeStylerRules?: NodeStylerRule[];
 
