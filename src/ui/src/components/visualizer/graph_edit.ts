@@ -117,21 +117,20 @@ export class GraphEdit {
               const curChanges = this.modelLoaderService.changesToUpload();
               if (Object.keys(curChanges).length > 0) {
                 newGraphCollections.forEach((graphCollection) => {
-                  const graphChanges = curChanges[graphCollection.label];
-                  if (graphChanges) {
-                    graphCollection.graphs.forEach((graph) => {
-                      graph.nodes.forEach((node) => {
-                        const nodeChanges = graphChanges[node.id];
+                  graphCollection.graphs.forEach((graph) => {
+                    graph.nodes.forEach((node) => {
+                      const nodeChanges = curChanges[graphCollection.label][node.id] ?? [];
 
-                        if (nodeChanges && nodeChanges.length > 0) {
-                          // TODO: apply changes
+                      nodeChanges.forEach(({ key, value }) => {
+                        const nodeToUpdate = node.attrs?.find(({ key: nodeKey }) => nodeKey === key);
+
+                        if (nodeToUpdate) {
+                          nodeToUpdate.value = value;
                         }
                       });
                     });
-                  }
+                  });
                 });
-                console.log(result);
-                debugger;
               }
 
               const newGraphCollectionsLabels = newGraphCollections.map(({ label }) => label);
