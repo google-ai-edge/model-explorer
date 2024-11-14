@@ -14,8 +14,12 @@
 # ==============================================================================
 
 import logging
+import model_explorer
 import re
+import tempfile
 import time
+import torch
+import torchvision
 from playwright.sync_api import Page, expect
 from PIL import Image, ImageChops
 from pathlib import Path
@@ -75,13 +79,17 @@ def delay_take_screenshot(page: Page, file_path: str):
   page.screenshot(path=file_path)
 
 
+def take_and_compare_screenshot(page: Page, name: str):
+  actual_image_path = TMP_SCREENSHOT_DIR / name
+  delay_take_screenshot(page, actual_image_path)
+  expected_image_path = EXPECTED_SCREENSHOT_DIR / name
+  assert matched_images(actual_image_path, expected_image_path)
+
+
 def test_homepage(page: Page):
   page.goto(LOCAL_SERVER)
   expect(page).to_have_title(re.compile("Model Explorer"))
-  actual_image_path = TMP_SCREENSHOT_DIR / "homepage.png"
-  delay_take_screenshot(page, actual_image_path)
-  expected_image_path = EXPECTED_SCREENSHOT_DIR / "homepage.png"
-  assert matched_images(actual_image_path, expected_image_path)
+  take_and_compare_screenshot(page, "homepage.png")
 
 
 def test_litert_direct_adapter(page: Page):
@@ -94,10 +102,8 @@ def test_litert_direct_adapter(page: Page):
   page.get_by_text("TFLite adapter (Flatbuffer)").click()
   delay_view_model(page)
   page.locator("canvas").first.click(position={"x": 469, "y": 340})
-  actual_image_path = TMP_SCREENSHOT_DIR / "litert_direct.png"
-  delay_take_screenshot(page, actual_image_path)
-  expected_image_path = EXPECTED_SCREENSHOT_DIR / "litert_direct.png"
-  assert matched_images(actual_image_path, expected_image_path)
+
+  take_and_compare_screenshot(page, "litert_direct.png")
 
 
 def test_litert_mlir_adapter(page: Page):
@@ -110,10 +116,8 @@ def test_litert_mlir_adapter(page: Page):
   page.get_by_text("TFLite adapter (MLIR)").click()
   delay_view_model(page)
   page.locator("canvas").first.click(position={"x": 514, "y": 332})
-  actual_image_path = TMP_SCREENSHOT_DIR / "litert_mlir.png"
-  delay_take_screenshot(page, actual_image_path)
-  expected_image_path = EXPECTED_SCREENSHOT_DIR / "litert_mlir.png"
-  assert matched_images(actual_image_path, expected_image_path)
+
+  take_and_compare_screenshot(page, "litert_mlir.png")
 
 
 def test_tf_mlir_adapter(page: Page):
@@ -126,10 +130,8 @@ def test_tf_mlir_adapter(page: Page):
   page.get_by_text("TF adapter (MLIR) Default").click()
   delay_view_model(page)
   page.locator("canvas").first.click(position={"x": 444, "y": 281})
-  actual_image_path = TMP_SCREENSHOT_DIR / "tf_mlir.png"
-  delay_take_screenshot(page, actual_image_path)
-  expected_image_path = EXPECTED_SCREENSHOT_DIR / "tf_mlir.png"
-  assert matched_images(actual_image_path, expected_image_path)
+
+  take_and_compare_screenshot(page, "tf_mlir.png")
 
 
 def test_tf_direct_adapter(page: Page):
@@ -144,10 +146,8 @@ def test_tf_direct_adapter(page: Page):
   page.get_by_text("__inference__traced_save_36", exact=True).click()
   page.get_by_text("__inference_add_6").click()
   delay_click_canvas(page, 205, 265)
-  actual_image_path = TMP_SCREENSHOT_DIR / "tf_direct.png"
-  delay_take_screenshot(page, actual_image_path)
-  expected_image_path = EXPECTED_SCREENSHOT_DIR / "tf_direct.png"
-  assert matched_images(actual_image_path, expected_image_path)
+
+  take_and_compare_screenshot(page, "tf_direct.png")
 
 
 def test_tf_graphdef_adapter(page: Page):
@@ -158,10 +158,8 @@ def test_tf_graphdef_adapter(page: Page):
   page.get_by_role("button", name="Add").click()
   delay_view_model(page)
   page.locator("canvas").first.click(position={"x": 468, "y": 344})
-  actual_image_path = TMP_SCREENSHOT_DIR / "graphdef.png"
-  delay_take_screenshot(page, actual_image_path)
-  expected_image_path = EXPECTED_SCREENSHOT_DIR / "graphdef.png"
-  assert matched_images(actual_image_path, expected_image_path)
+
+  take_and_compare_screenshot(page, "graphdef.png")
 
 
 def test_shlo_mlir_adapter(page: Page):
@@ -173,7 +171,111 @@ def test_shlo_mlir_adapter(page: Page):
   delay_view_model(page)
   page.get_by_text("unfold_more_double").click()
   delay_click_canvas(page, 454, 416)
-  actual_image_path = TMP_SCREENSHOT_DIR / "shlo_mlir.png"
-  delay_take_screenshot(page, actual_image_path)
-  expected_image_path = EXPECTED_SCREENSHOT_DIR / "shlo_mlir.png"
-  assert matched_images(actual_image_path, expected_image_path)
+
+  take_and_compare_screenshot(page, "shlo_mlir.png")
+
+
+def test_pytorch(page: Page):
+  # Serialize a pytorch model.
+  model = torchvision.models.mobilenet_v2().eval()
+  inputs = (torch.rand([1, 3, 224, 224]),)
+  ep = torch.export.export(model, inputs)
+  pt2_file_path = tempfile.NamedTemporaryFile(suffix=".pt2")
+  torch.export.save(ep, pt2_file_path.name)
+
+  # Load into ME.
+  page.goto(LOCAL_SERVER)
+  page.get_by_placeholder("Absolute file paths (").fill(pt2_file_path.name)
+  page.get_by_role("button", name="Add").click()
+  delay_view_model(page)
+  page.locator("canvas").first.click(position={"x": 458, "y": 334})
+
+  take_and_compare_screenshot(page, "pytorch.png")
+
+
+def test_reuse_server_non_pytorch(page: Page):
+  # Load a tflite model
+  page.goto(LOCAL_SERVER)
+  page.get_by_placeholder("Absolute file paths (").fill(
+      TEST_FILES_DIR / "fully_connected.tflite"
+  )
+  page.get_by_role("button", name="Add").click()
+  delay_view_model(page)
+
+  # Load a mlir graph and reuse the existing server.
+  mlir_model_path = TEST_FILES_DIR / "stablehlo_sin.mlir"
+  model_explorer.visualize(
+      model_paths=mlir_model_path.as_posix(), reuse_server=True
+  )
+  time.sleep(2)  # Delay for the animation
+
+  take_and_compare_screenshot(page, "reuse_server_non_pytorch.png")
+
+
+def test_reuse_server_pytorch(page: Page):
+  # Load a tflite model
+  page.goto(LOCAL_SERVER)
+  page.get_by_placeholder("Absolute file paths (").fill(
+      TEST_FILES_DIR / "fully_connected.tflite"
+  )
+  page.get_by_role("button", name="Add").click()
+  delay_view_model(page)
+
+  # Load a pytorch model and reuse the existing server.
+  model = torchvision.models.mobilenet_v2().eval()
+  inputs = (torch.rand([1, 3, 224, 224]),)
+  ep = torch.export.export(model, inputs)
+  model_explorer.visualize_pytorch(
+      name="test pytorch", exported_program=ep, reuse_server=True
+  )
+  time.sleep(2)  # Delay for the animation
+
+  take_and_compare_screenshot(page, "reuse_server_pytorch.png")
+
+
+def test_reuse_server_pytorch_from_config(page: Page):
+  # Load a tflite model
+  page.goto(LOCAL_SERVER)
+  page.get_by_placeholder("Absolute file paths (").fill(
+      TEST_FILES_DIR / "fully_connected.tflite"
+  )
+  page.get_by_role("button", name="Add").click()
+  delay_view_model(page)
+
+  # Load a pytorch model and reuse the existing server through config.
+  model = torchvision.models.mobilenet_v2().eval()
+  inputs = (torch.rand([1, 3, 224, 224]),)
+  ep = torch.export.export(model, inputs)
+  config = model_explorer.config()
+  config.add_model_from_pytorch("test pytorch", ep).set_reuse_server()
+  model_explorer.visualize_from_config(config)
+  time.sleep(2)  # Delay for the animation
+
+  take_and_compare_screenshot(page, "reuse_server_pytorch_from_config.png")
+
+
+def test_reuse_server_two_pytorch_models(page: Page):
+  # Serialize a pytorch model (mobilenet v2).
+  model = torchvision.models.mobilenet_v2().eval()
+  inputs = (torch.rand([1, 3, 224, 224]),)
+  ep = torch.export.export(model, inputs)
+  pt2_file_path = tempfile.NamedTemporaryFile(suffix=".pt2")
+  torch.export.save(ep, pt2_file_path.name)
+
+  # Load it into ME.
+  page.goto(LOCAL_SERVER)
+  page.get_by_placeholder("Absolute file paths (").fill(pt2_file_path.name)
+  page.get_by_role("button", name="Add").click()
+  delay_view_model(page)
+
+  # Load another pytorch model (mobilenet v3) and reuse the existing server.
+  model2 = torchvision.models.mobilenet_v3_small().eval()
+  inputs2 = (torch.rand([1, 3, 224, 224]),)
+  ep2 = torch.export.export(model2, inputs2)
+  model_explorer.visualize_pytorch(
+      name="test pytorch", exported_program=ep2, reuse_server=True
+  )
+  time.sleep(2)  # Delay for the animation
+
+  # The screenshot should show "V3" in the center node.
+  take_and_compare_screenshot(page, "reuse_server_two_pytorch_models.png")

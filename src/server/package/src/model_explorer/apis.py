@@ -118,6 +118,9 @@ def visualize_pytorch(
     node_data: Union[NodeDataInfo, list[NodeDataInfo]] = [],
     colab_height=DEFAULT_COLAB_HEIGHT,
     settings=DEFAULT_SETTINGS,
+    reuse_server: bool = False,
+    reuse_server_host: str = DEFAULT_HOST,
+    reuse_server_port: Union[int, None] = None,
 ) -> None:
   """Visualizes a pytorch model.
 
@@ -130,6 +133,11 @@ def visualize_pytorch(
     node_data: The node data or a list of node data to display.
     colab_height: The height of the embedded iFrame when running in colab.
     settings: The settings that config the visualization.
+    reuse_server: Whether to reuse the current server/browser tab(s) to
+        visualize.
+    reuse_server_host: the host of the server to reuse. Default to localhost.
+    reuse_server_port: the port of the server to reuse. If unspecified, it will
+        try to find a running server from port 8080 to 8099.
   """
   # Construct config.
   cur_config = config()
@@ -138,6 +146,11 @@ def visualize_pytorch(
   )
 
   _add_node_data_to_config(node_data=node_data, config=cur_config)
+
+  if reuse_server:
+    cur_config.set_reuse_server(
+        server_host=reuse_server_host, server_port=reuse_server_port
+    )
 
   # Start server.
   server.start(

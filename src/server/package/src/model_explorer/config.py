@@ -29,6 +29,7 @@ except ImportError:
 from .consts import DEFAULT_HOST, DEFAULT_SETTINGS
 from .node_data_builder import NodeData
 from .types import ModelExplorerGraphs
+from .utils import convert_adapter_response
 
 if torch is not None:
   from .pytorch_exported_program_adater_impl import PytorchExportedProgramAdapterImpl
@@ -52,7 +53,8 @@ class ModelExplorerConfig:
 
   def __init__(self) -> None:
     self.model_sources: list[ModelSource] = []
-    self.graphs_list: list[ModelExplorerGraphs] = []
+    # Array of ModelExplorerGraphs or json string.
+    self.graphs_list: list[Union[ModelExplorerGraphs, str]] = []
     self.node_data_sources: list[str] = []
     # List of model names to apply node data to. For the meaning of
     # "model name", see comments in `add_node_data_from_path` method below.
@@ -220,7 +222,9 @@ class ModelExplorerConfig:
     # Return its json string.
     return quote(json.dumps(encoded_url_data))
 
-  def get_model_explorer_graphs(self, index: int) -> ModelExplorerGraphs:
+  def get_model_explorer_graphs(
+      self, index: int
+  ) -> Union[ModelExplorerGraphs, str]:
     return self.graphs_list[index]
 
   def get_node_data(self, index: int) -> Union[NodeData, str]:
@@ -230,13 +234,23 @@ class ModelExplorerConfig:
     return len(self.model_sources) > 0 or len(self.node_data_sources) > 0
 
   def get_transferrable_data(self) -> Dict:
+    # Convert the graphs list to a list of strings.
+    graphs_list = []
+    for graph in self.graphs_list:
+      if isinstance(graph, str):
+        graphs_list.append(graph)
+      else:
+        graphs_list.append(json.dumps(convert_adapter_response(graph)))
+
     return {
+        'graphs_list': json.dumps(graphs_list),
         'model_sources': self.model_sources,
         'node_data_sources': self.node_data_sources,
         'node_data_target_models': self.node_data_target_models,
     }
 
   def set_transferrable_data(self, data: Dict):
+    self.graphs_list = json.loads(data['graphs_list'])
     self.model_sources = data['model_sources']
     self.node_data_sources = data['node_data_sources']
     self.node_data_target_models = data['node_data_target_models']
