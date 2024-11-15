@@ -129,7 +129,10 @@ export class GraphExpander {
     const queue: string[] = [...groupNodeIds];
     while (queue.length > 0) {
       const curGroupNodeId = queue.shift()!;
-      if (seenGroupNodeIds.has(curGroupNodeId)) {
+      if (
+        seenGroupNodeIds.has(curGroupNodeId) ||
+        !this.modelGraph.nodesById[curGroupNodeId]
+      ) {
         continue;
       }
       seenGroupNodeIds.add(curGroupNodeId);
