@@ -60,6 +60,7 @@ import {
   isOpNode,
   splitLabel,
 } from '../common/utils';
+import {VisualizerConfig} from '../common/visualizer_config';
 
 import {Dagre, DagreGraphInstance} from './dagre_types';
 
@@ -114,6 +115,7 @@ export class GraphLayout {
       NodeDataProviderRunData
     >,
     private readonly testMode = false,
+    private readonly config?: VisualizerConfig,
   ) {
     this.dagreGraph = new this.dagre.graphlib.Graph();
   }
@@ -143,6 +145,8 @@ export class GraphLayout {
       this.showOnNodeItemTypes,
       this.nodeDataProviderRuns,
       this.testMode,
+      false,
+      this.config,
     );
 
     // Set nodes/edges to dagre.
@@ -259,6 +263,8 @@ export class GraphLayout {
         this.modelGraph,
         this.showOnNodeItemTypes,
         this.nodeDataProviderRuns,
+        this.testMode,
+        this.config,
       );
       if (subgraphFullWidth < parentNodeWidth) {
         const extraOffsetX = (parentNodeWidth - subgraphFullWidth) / 2;
@@ -318,6 +324,7 @@ export function getNodeWidth(
   showOnNodeItemTypes: Record<string, ShowOnNodeItemData>,
   nodeDataProviderRuns: Record<string, NodeDataProviderRunData>,
   testMode = false,
+  config?: VisualizerConfig,
 ) {
   // Always return 32 in test mode.
   if (testMode) {
@@ -404,6 +411,7 @@ export function getNodeWidth(
         modelGraph.id,
         showOnNodeItemTypes,
         nodeDataProviderRuns,
+        config,
       );
     const nodeDataProviderWidths = getMaxAttrLabelAndValueWidth(
       nodeDataProviderKeyValuePairs,
@@ -475,6 +483,7 @@ export function getNodeHeight(
   nodeDataProviderRuns: Record<string, NodeDataProviderRunData>,
   testMode = false,
   forceRecalculate = false,
+  config?: VisualizerConfig,
 ) {
   if (testMode) {
     return DEFAULT_NODE_HEIGHT;
@@ -495,6 +504,7 @@ export function getNodeHeight(
       node,
       nodeDataProviderRuns,
       modelGraph,
+      config,
     );
   } else if (isGroupNode(node)) {
     attrsTableRowCount = getGroupNodeAttrsTableRowCount(
@@ -521,6 +531,7 @@ export function getLayoutGraph(
   nodeDataProviderRuns: Record<string, NodeDataProviderRunData>,
   testMode = false,
   useFakeNodeSize = false,
+  config?: VisualizerConfig,
 ): LayoutGraph {
   const layoutGraph: LayoutGraph = {
     nodes: {},
@@ -545,6 +556,7 @@ export function getLayoutGraph(
               showOnNodeItemTypes,
               nodeDataProviderRuns,
               testMode,
+              config,
             )),
       height: useFakeNodeSize
         ? 10
@@ -554,6 +566,8 @@ export function getLayoutGraph(
             showOnNodeItemTypes,
             nodeDataProviderRuns,
             testMode,
+            false,
+            config,
           ),
       config: isOpNode(node) ? node.config : undefined,
     };
@@ -586,6 +600,7 @@ function getOpNodeAttrsTableRowCount(
   node: OpNode,
   nodeDataProviderRuns: Record<string, NodeDataProviderRunData>,
   modelGraph: ModelGraph,
+  config?: VisualizerConfig,
 ): number {
   // Basic info fields.
   const baiscFieldIds =
@@ -624,14 +639,19 @@ function getOpNodeAttrsTableRowCount(
         showOnNodeItemType.startsWith(
           NODE_DATA_PROVIDER_SHOW_ON_NODE_TYPE_PREFIX,
         ) &&
-        Object.values(nodeDataProviderRuns).some(
-          (run) =>
+        Object.values(nodeDataProviderRuns).some((run) => {
+          const result = (run.results || {})?.[modelGraph.id]?.[node.id];
+          if (config?.hideEmptyNodeDataEntries && !result) {
+            return false;
+          }
+          return (
             getRunName(run, modelGraph) ===
             showOnNodeItemType.replace(
               NODE_DATA_PROVIDER_SHOW_ON_NODE_TYPE_PREFIX,
               '',
-            ),
-        ),
+            )
+          );
+        }),
     ).length;
 
   return (

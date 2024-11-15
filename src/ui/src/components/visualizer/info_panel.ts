@@ -559,10 +559,6 @@ export class InfoPanel {
     return (connectedNodesMetadataItem?.connectedNodes || []).length > 0;
   }
 
-  trackBySectionLabel(index: number, section: InfoSection): string {
-    return section.label;
-  }
-
   trackByItemIdOrLabel(index: number, item: InfoItem): string {
     return item.id || item.label;
   }
@@ -798,6 +794,9 @@ export class InfoPanel {
         const nodeResult = ((run.results || {})[this.curModelGraph.id] || {})[
           opNode.id
         ];
+        if (this.appService.config()?.hideEmptyNodeDataEntries && !nodeResult) {
+          continue;
+        }
         const strValue = nodeResult?.strValue || '-';
         const bgColor = nodeResult?.bgColor || 'transparent';
         const textColor = nodeResult?.textColor || 'black';

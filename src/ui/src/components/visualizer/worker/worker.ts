@@ -113,6 +113,7 @@ self.addEventListener('message', (event: Event) => {
           workerEvent.showOnNodeItemTypes,
           workerEvent.nodeDataProviderRuns,
           workerEvent.all === true,
+          workerEvent.config,
         );
       } else {
         deepestExpandedGroupNodeIds = handleCollapseGroupNode(
@@ -121,6 +122,7 @@ self.addEventListener('message', (event: Event) => {
           workerEvent.showOnNodeItemTypes,
           workerEvent.nodeDataProviderRuns,
           workerEvent.all === true,
+          workerEvent.config,
         );
       }
       cacheModelGraph(modelGraph, workerEvent.rendererId);
@@ -146,6 +148,7 @@ self.addEventListener('message', (event: Event) => {
         workerEvent.nodeDataProviderRuns,
         workerEvent.targetDeepestGroupNodeIdsToExpand,
         workerEvent.clearAllExpandStates,
+        workerEvent.config,
       );
       cacheModelGraph(modelGraph, workerEvent.rendererId);
       const resp: RelayoutGraphResponse = {
@@ -174,6 +177,7 @@ self.addEventListener('message', (event: Event) => {
         workerEvent.showOnNodeItemTypes,
         workerEvent.nodeDataProviderRuns,
         workerEvent.nodeId,
+        workerEvent.config,
       );
       cacheModelGraph(modelGraph, workerEvent.rendererId);
       const resp: LocateNodeResponse = {
@@ -264,12 +268,15 @@ function handleExpandGroupNode(
   showOnNodeItemTypes: Record<string, ShowOnNodeItemData>,
   nodeDataProviderRuns: Record<string, NodeDataProviderRunData>,
   all: boolean,
+  config?: VisualizerConfig,
 ): string[] {
   const expander = new GraphExpander(
     modelGraph,
     dagre,
     showOnNodeItemTypes,
     nodeDataProviderRuns,
+    false,
+    config,
   );
 
   // Expane group node.
@@ -337,12 +344,15 @@ function handleCollapseGroupNode(
   showOnNodeItemTypes: Record<string, ShowOnNodeItemData>,
   nodeDataProviderRuns: Record<string, NodeDataProviderRunData>,
   all: boolean,
+  config?: VisualizerConfig,
 ): string[] {
   const expander = new GraphExpander(
     modelGraph,
     dagre,
     showOnNodeItemTypes,
     nodeDataProviderRuns,
+    false,
+    config,
   );
 
   if (groupNodeId != null) {
@@ -370,12 +380,15 @@ function handleReLayoutGraph(
   nodeDataProviderRuns: Record<string, NodeDataProviderRunData>,
   targetDeepestGroupNodeIdsToExpand?: string[],
   clearAllExpandStates?: boolean,
+  config?: VisualizerConfig,
 ) {
   const expander = new GraphExpander(
     modelGraph,
     dagre,
     showOnNodeItemTypes,
     nodeDataProviderRuns,
+    false,
+    config,
   );
   expander.reLayoutGraph(
     targetDeepestGroupNodeIdsToExpand,
@@ -388,12 +401,15 @@ function handleLocateNode(
   showOnNodeItemTypes: Record<string, ShowOnNodeItemData>,
   nodeDataProviderRuns: Record<string, NodeDataProviderRunData>,
   nodeId: string,
+  config?: VisualizerConfig,
 ): string[] {
   const expander = new GraphExpander(
     modelGraph,
     dagre,
     showOnNodeItemTypes,
     nodeDataProviderRuns,
+    false,
+    config,
   );
   return expander.expandToRevealNode(nodeId);
 }

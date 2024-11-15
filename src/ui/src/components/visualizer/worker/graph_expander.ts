@@ -29,6 +29,7 @@ import {
   isGroupNode,
   splitLabel,
 } from '../common/utils';
+import {VisualizerConfig} from '../common/visualizer_config';
 
 import {Dagre, DagreGraphInstance} from './dagre_types';
 import {
@@ -55,6 +56,7 @@ export class GraphExpander {
       NodeDataProviderRunData
     >,
     private readonly testMode = false,
+    private readonly config?: VisualizerConfig,
   ) {}
 
   /** Expands the given group node to show its child nodes. */
@@ -85,6 +87,8 @@ export class GraphExpander {
         this.dagre,
         this.showOnNodeItemTypes,
         this.nodeDataProviderRuns,
+        this.testMode,
+        this.config,
       );
       const rect = layout.layout(curGroupNodeId);
       if (this.testMode) {
@@ -107,6 +111,8 @@ export class GraphExpander {
       this.dagre,
       this.showOnNodeItemTypes,
       this.nodeDataProviderRuns,
+      this.testMode,
+      this.config,
     );
     layout.layout();
     if (this.testMode) {
@@ -161,6 +167,8 @@ export class GraphExpander {
         this.dagre,
         this.showOnNodeItemTypes,
         this.nodeDataProviderRuns,
+        this.testMode,
+        this.config,
       );
       const rect = layout.layout(groupNodeId);
       if (this.testMode) {
@@ -180,6 +188,8 @@ export class GraphExpander {
       this.dagre,
       this.showOnNodeItemTypes,
       this.nodeDataProviderRuns,
+      this.testMode,
+      this.config,
     );
     layout.layout();
     if (this.testMode) {
@@ -246,6 +256,7 @@ export class GraphExpander {
       this.nodeDataProviderRuns,
       this.testMode,
       true,
+      this.config,
     );
 
     // From the given group node's parent, layout, update size, and continue to
@@ -265,6 +276,8 @@ export class GraphExpander {
         this.dagre,
         this.showOnNodeItemTypes,
         this.nodeDataProviderRuns,
+        this.testMode,
+        this.config,
       );
       const rect = layout.layout(curGroupNodeId);
       if (this.testMode) {
@@ -287,6 +300,8 @@ export class GraphExpander {
       this.dagre,
       this.showOnNodeItemTypes,
       this.nodeDataProviderRuns,
+      this.testMode,
+      this.config,
     );
     layout.layout();
     if (this.testMode) {
@@ -346,6 +361,8 @@ export class GraphExpander {
         this.dagre,
         this.showOnNodeItemTypes,
         this.nodeDataProviderRuns,
+        this.testMode,
+        this.config,
       );
       layout.layout();
     }
@@ -384,6 +401,8 @@ export class GraphExpander {
       this.dagre,
       this.showOnNodeItemTypes,
       this.nodeDataProviderRuns,
+      this.testMode,
+      this.config,
     );
     layout.layout();
 

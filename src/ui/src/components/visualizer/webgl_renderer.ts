@@ -1393,6 +1393,7 @@ export class WebglRenderer implements OnInit, OnDestroy {
         rendererId,
         noNodeShake,
         select,
+        config: this.appService.config(),
       };
       this.workerService.worker.postMessage(req);
     }
@@ -1423,6 +1424,7 @@ export class WebglRenderer implements OnInit, OnDestroy {
       clearAllExpandStates,
       forRestoringSnapshotAfterTogglingFlattenLayers,
       triggerNavigationSync,
+      config: this.appService.config(),
     };
     this.workerService.worker.postMessage(req);
   }
@@ -1886,6 +1888,7 @@ export class WebglRenderer implements OnInit, OnDestroy {
       paneId: this.paneId,
       all,
       ts: Date.now(),
+      config: this.appService.config(),
     };
     this.workerService.worker.postMessage(req);
   }

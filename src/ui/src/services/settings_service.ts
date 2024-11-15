@@ -36,6 +36,7 @@ export enum SettingKey {
   KEEP_LAYERS_WITH_A_SINGLE_CHILD = 'keep_layers_with_a_single_child',
   SHOW_OP_NODE_OUT_OF_LAYER_EDGES_WITHOUT_SELECTING = 'show_op_node_out_of_layer_edges_without_selecting',
   HIGHLIGHT_LAYER_NODE_INPUTS_OUTPUTS = 'highlight_layer_node_inputs_outputs',
+  HIDE_EMPTY_NODE_DATA_ENTRIES = 'hide_empty_node_data_entries',
 }
 
 /** Setting types. */
@@ -170,6 +171,17 @@ export const SETTING_HIGHLIGHT_LAYER_NODE_INPUTS_OUTPUTS: Setting = {
     'that layer.',
 };
 
+/** Settings for hiding empty noda data entries. */
+export const SETTING_HIDE_EMPTY_NODE_DATA_ENTRIES: Setting = {
+  label: 'Hide node data entries with empty values',
+  key: SettingKey.HIDE_EMPTY_NODE_DATA_ENTRIES,
+  type: SettingType.BOOLEAN,
+  defaultValue: false,
+  help:
+    'Enable this setting to hide node data entries ' +
+    '(on node overlay and in side panel) with empty values.',
+};
+
 const SETTINGS_LOCAL_STORAGE_KEY = 'model_explorer_settings';
 
 /** All settings. */
@@ -184,6 +196,7 @@ export const ALL_SETTINGS = [
   SETTING_DISALLOW_VERTICAL_EDGE_LABELS,
   SETTING_MAX_CONST_ELEMENT_COUNT_LIMIT,
   SETTING_HIGHLIGHT_LAYER_NODE_INPUTS_OUTPUTS,
+  SETTING_HIDE_EMPTY_NODE_DATA_ENTRIES,
 ];
 
 /**
