@@ -83,15 +83,15 @@ export class ExtensionService {
           return { cmdResp: response as T };
         }
 
-    if (localStorage.getItem('mock-api') === 'true' && cmd.cmdId === 'override') {
-      const response: AdapterOverrideResponse = {
-        success: true,
-        // @ts-expect-error
-        graphs: cmd.settings.graphs
-      };
+        if (localStorage.getItem('mock-api') === 'true' && cmd.cmdId === 'override') {
+          const response: AdapterOverrideResponse = {
+            success: true,
+            // @ts-expect-error
+            graphs: cmd.settings.graphs
+          };
 
-      return { cmdResp: response as T };
-    }
+          return { cmdResp: response as T };
+        }
 
         resp = await fetch(EXTERNAL_SEND_CMD_POST_API_PATH, requestData);
       }

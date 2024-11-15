@@ -1,0 +1,35 @@
+<div class="container">
+  @if (optimizationPolicies.length > 1) {
+    <div class="mat-icon-container">
+      <label for="optimization-policy-select">Opt. Policy</label>
+      <select (change)="handleClickSelectOptimizationPolicy($event)" id="optimization-policy-select">
+        @for (optimizationPolicy of optimizationPolicies; track $index) {
+          <option>{{optimizationPolicy}}</option>
+        }
+      </select>
+    </div>
+  }
+
+  @if (hasCurModel) {
+    <div class="mat-icon-container">
+      <button mat-icon-button matTooltip="Upload processed graphs json to server" (click)="handleClickUploadGraph()" [disabled]="!hasChangesToUpload || isProcessingExecuteRequest">
+        <mat-icon>upload</mat-icon>
+      </button>
+    </div>
+  }
+
+  @if (hasCurModel) {
+    <div class="mat-icon-container">
+      <button
+        mat-icon-button
+        matTooltip="Execute graph"
+        (click)="handleClickExecuteGraph()"
+        [disabled]="isProcessingExecuteRequest && !hasChangesToUpload && !graphHasErrors"
+        [ngStyle]="{ display: !isProcessingExecuteRequest ? 'block' : 'none' }"
+      >
+        <mat-icon>play_arrow</mat-icon>
+      </button>
+      <mat-spinner diameter="24" [ngStyle]="{ display: isProcessingExecuteRequest ? 'block' : 'none' }"></mat-spinner>
+    </div>
+  }
+</div>

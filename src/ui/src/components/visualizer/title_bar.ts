@@ -35,6 +35,7 @@ import {Logo} from './logo';
 import {NewVersionChip} from './new_version_chip';
 import {NodeDataProviderDropdown} from './node_data_provider_dropdown';
 import {NodeStyler} from './node_styler';
+import { GraphEdit } from './graph_edit';
 
 /** The title bar component. */
 @Component({
@@ -43,6 +44,7 @@ import {NodeStyler} from './node_styler';
   imports: [
     CommonModule,
     GraphSelector,
+    GraphEdit,
     Logo,
     MatButtonModule,
     MatIconModule,
