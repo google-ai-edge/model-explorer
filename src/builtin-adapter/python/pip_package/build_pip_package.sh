@@ -48,6 +48,7 @@ export TF_PYTHON_VERSION="${VERSION_PARTS[0]}.${VERSION_PARTS[1]}"
 export PROJECT_NAME=${WHEEL_PROJECT_NAME:-ai_edge_model_explorer_adapter}
 BUILD_DIR="gen/adapter_pip"
 BAZEL_FLAGS="--copt=-O3"
+KERNEL="$(uname -s)"
 ARCH="$(uname -m)"
 
 # Build source tree.
@@ -100,7 +101,7 @@ cd "${BUILD_DIR}"
 
 # Assign the wheel name based on the platform and architecture. Naming follows
 # TF released wheel package.
-if test -e "/System/Library/CoreServices/SystemVersion.plist"; then
+if [[ "${KERNEL}" == "Darwin" ]]; then
   if [[ "${ARCH}" == "arm64" ]]; then
     # MacOS Silicon
     WHEEL_PLATFORM_NAME="macosx_12_0_arm64"
@@ -108,10 +109,15 @@ if test -e "/System/Library/CoreServices/SystemVersion.plist"; then
     # MacOS Intel
     WHEEL_PLATFORM_NAME="macosx_10_15_x86_64"
   fi
-elif test -e "/etc/lsb-release"; then
-  # Linux
-  WHEEL_PLATFORM_NAME="manylinux_2_17_x86_64"
+elif [[ "${KERNEL}" == "Linux" ]]; then
+  # Linux aarch64 or x86_64
+  WHEEL_PLATFORM_NAME="manylinux_2_17_${ARCH}"
+else
+  echo "Unsupported operating system: ${KERNEL}" >&2
+  exit 1
 fi
+
+echo "Building wheel for platform: ${WHEEL_PLATFORM_NAME}"
 
 if [[ -n "${WHEEL_PLATFORM_NAME}" ]]; then
   ${PYTHON} setup.py sdist bdist_wheel --plat-name=${WHEEL_PLATFORM_NAME}
