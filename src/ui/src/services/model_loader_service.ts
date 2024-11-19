@@ -26,6 +26,8 @@ import {
   type AdapterExecuteResponse,
   type AdapterOverrideCommand,
   type AdapterOverrideResponse,
+  type AdapterStatusCheckCommand,
+  type AdapterStatusCheckResponse,
 } from '../common/extension_command';
 import {ModelLoaderServiceInterface, type ChangesPerGraphAndNode, type ChangesPerNode, type ExecutionCommand} from '../common/model_loader_service_interface';
 import {
@@ -337,6 +339,30 @@ export class ModelLoaderService implements ModelLoaderServiceInterface {
     return result;
   }
 
+  async checkExecutionStatus(extensionId: string, modelPath: string): Promise<AdapterStatusCheckResponse | undefined> {
+    try {
+      const result = await this.sendStatusCheckRequest(extensionId, modelPath);
+
+      if (result?.error) {
+        return {
+          error: result.error,
+          isDone: true,
+          progress: -1
+        };
+      }
+
+      return result;
+    } catch (error) {
+      console.error(error);
+
+      return {
+        error: (error as Error)?.message ?? '',
+        isDone: true,
+        progress: -1
+      };
+    }
+  }
+
   private async readTextFile(path: string): Promise<string> {
     const resp = await fetch(`${READ_TEXT_FILE_API_PATH}?path=${path}`);
     const jsonObj = (await resp.json()) as ReadTextFileResponse;
@@ -493,6 +519,36 @@ export class ModelLoaderService implements ModelLoaderServiceInterface {
     return result;
   }
 
+  private async sendStatusCheckRequest(
+    extensionId: string,
+    path: string,
+  ) {
+
+    let result: AdapterStatusCheckResponse | undefined = undefined;
+
+    const overrideCommand: AdapterStatusCheckCommand = {
+      cmdId: 'status_check',
+      extensionId,
+      modelPath: path,
+      settings: {},
+      deleteAfterConversion: false
+    };
+
+    const {cmdResp, otherError: cmdError} =
+      await this.extensionService.sendCommandToExtension<AdapterStatusCheckResponse>(
+        overrideCommand,
+      );
+    const error = cmdResp?.error || cmdError;
+
+    if (error) {
+      return undefined;
+    } else if (cmdResp) {
+      result = cmdResp;
+    }
+
+    return result;
+  }
+
   private processAdapterConvertResponse(
     resp: AdapterConvertResponse,
     fileName: string,
@@ -500,12 +556,12 @@ export class ModelLoaderService implements ModelLoaderServiceInterface {
     if (resp.graphs) {
       return [{label: fileName, graphs: resp.graphs}];
     } else if (resp.graphCollections) {
-      return resp.graphCollections.map((item) => {
+      return resp.graphCollections?.map((item) => {
         return {
           label: item.label === '' ? fileName : `${fileName} (${item.label})`,
           graphs: item.graphs,
         };
-      });
+      }) ?? [];
     }
     return [];
   }

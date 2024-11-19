@@ -18,13 +18,21 @@
 
 import {Injectable, signal} from '@angular/core';
 
-import {ExtensionCommand, type AdapterExecuteResponse, type AdapterOverrideResponse } from '../common/extension_command';
+import {ExtensionCommand, type AdapterExecuteResponse, type AdapterOverrideResponse, type AdapterStatusCheckResponse } from '../common/extension_command';
 import {Extension, type ExtensionSettings} from '../common/types';
 import {INTERNAL_COLAB} from '../common/utils';
 
 const EXTERNAL_GET_EXTENSIONS_API_PATH = '/api/v1/get_extensions';
 const EXTERNAL_SEND_CMD_GET_API_PATH = '/api/v1/send_command';
 const EXTERNAL_SEND_CMD_POST_API_PATH = '/apipost/v1/send_command';
+
+const MOCK_STATUS_UPDATE: Required<Omit<AdapterStatusCheckResponse, 'error'>> = {
+  isDone: false,
+  progress: 0,
+  total: 100,
+  timeElapsed: 0,
+  currentStatus: 'executing',
+};
 
 /**
  * Service for managing model explorer extensions.
@@ -62,6 +70,26 @@ export class ExtensionService {
           },
         };
         requestData.body = JSON.stringify(cmd);
+
+        if (localStorage.getItem('mock-api') === 'true' && cmd.cmdId === 'status_check') {
+          if (MOCK_STATUS_UPDATE.isDone) {
+            MOCK_STATUS_UPDATE.isDone = false;
+            MOCK_STATUS_UPDATE.progress = 0;
+            MOCK_STATUS_UPDATE.currentStatus = 'executing';
+            MOCK_STATUS_UPDATE.timeElapsed = 0;
+          }
+
+          MOCK_STATUS_UPDATE.timeElapsed = MOCK_STATUS_UPDATE.timeElapsed + Math.trunc(Math.random() * 100);
+          MOCK_STATUS_UPDATE.progress += Math.trunc(Math.random() * 10);
+
+          if (MOCK_STATUS_UPDATE.progress >= MOCK_STATUS_UPDATE.total) {
+            MOCK_STATUS_UPDATE.isDone = true;
+            MOCK_STATUS_UPDATE.progress = MOCK_STATUS_UPDATE.total;
+            MOCK_STATUS_UPDATE.currentStatus = 'finished';
+          }
+
+          return { cmdResp: MOCK_STATUS_UPDATE as T };
+        }
 
         if (localStorage.getItem('mock-api') === 'true' && cmd.cmdId === 'execute') {
           const response: AdapterExecuteResponse = {
@@ -134,18 +162,13 @@ export class ExtensionService {
       }
 
       if (localStorage.getItem('mock-api') === 'true' && cmd.cmdId === 'convert') {
-        json = {
-          ...json,
-          graphs: json.graphs.map((graph: { nodes: { attrs: { key: string, value: string }[]}[]}) => ({
-            ...graph,
-            nodes: graph.nodes.map((node) => ({
-              ...node,
-              attrs: node.attrs.map(({key, value}) => ({
-                ...processAttribute(key, value)
-              }))
-            }))
-          })),
-        };
+        json.graphs?.forEach((graph: { nodes: { attrs: { key: string, value: string }[]}[]}) => {
+          graph.nodes?.forEach((node) => {
+            node.attrs?.forEach(({key, value}, index) => {
+              node.attrs[index] = processAttribute(key, value);
+            });
+          });
+        });
       }
 
       return {cmdResp: json as T};

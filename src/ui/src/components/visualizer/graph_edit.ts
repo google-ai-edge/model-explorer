@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectionStrategy, Component, Inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, Inject, ChangeDetectorRef } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialogModule, MatDialog } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
@@ -10,11 +10,12 @@ import type { ModelLoaderServiceInterface } from '../../common/model_loader_serv
 import { AppService } from './app_service';
 import { UrlService } from '../../services/url_service';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { ModelItemStatus } from '../../common/types';
+import { ModelItemStatus, type ModelItem } from '../../common/types';
 import { genUid } from './common/utils';
 import { ModelGraph } from './common/model_graph';
 import { GraphErrorsDialog } from '../graph_error_dialog/graph_error_dialog';
 import { NodeDataProviderExtensionService } from './node_data_provider_extension_service';
+import type { NodeDataProviderData, Pane } from './common/types.js';
 
 /**
  * The graph edit component.
@@ -40,6 +41,9 @@ import { NodeDataProviderExtensionService } from './node_data_provider_extension
 export class GraphEdit {
   isProcessingExecuteRequest = false;
 
+  executionProgress = 0;
+  executionTotal = 0;
+
   constructor(
     @Inject('ModelLoaderService')
     private readonly modelLoaderService: ModelLoaderServiceInterface,
@@ -48,6 +52,7 @@ export class GraphEdit {
     private readonly urlService: UrlService,
     private readonly dialog: MatDialog,
     private readonly snackBar: MatSnackBar,
+    private changeDetectorRef: ChangeDetectorRef
   ) {}
 
   ngOnInit() {
@@ -60,7 +65,92 @@ export class GraphEdit {
     }
   }
 
-  getCurrentGraphInformation() {
+  private poolForStatusUpdate(extensionId: string, modelPath: string, updateCallback: (progress: number, total: number) => void | Promise<void>, doneCallback: (status: 'done' | 'timeout') => void | Promise<void>) {
+    const POOL_TIME_MS = 500;
+    const TIMEOUT_MS = 5 * 60 * 1000;
+
+    const startTime = Date.now();
+    const intervalId = setInterval(async () => {
+      const { isDone, total = 100, progress = 0} = (await this.modelLoaderService.checkExecutionStatus(extensionId, modelPath)) ?? {};
+
+      if (progress !== -1) {
+        updateCallback(progress, total);
+      }
+
+      if (isDone) {
+        doneCallback('done');
+        clearInterval(intervalId);
+      } else {
+        const deltaTime = Date.now() - startTime;
+        if (deltaTime > TIMEOUT_MS) {
+          doneCallback('timeout');
+          clearInterval(intervalId);
+        }
+      }
+    }, POOL_TIME_MS);
+  }
+
+  private async updateGraphInformation(curModel: ModelItem, models: ModelItem[], curPane?: Pane, perfData?: NodeDataProviderData) {
+    const newGraphCollections = await this.modelLoaderService.loadModel(curModel);
+
+    if (curModel.status() !== ModelItemStatus.ERROR) {
+      this.modelLoaderService.loadedGraphCollections.update((prevGraphCollections) => {
+        const curChanges = this.modelLoaderService.changesToUpload();
+        if (Object.keys(curChanges).length > 0) {
+          newGraphCollections.forEach((graphCollection) => {
+            graphCollection.graphs.forEach((graph) => {
+              graph.nodes.forEach((node) => {
+                const nodeChanges = curChanges[graphCollection.label][node.id] ?? [];
+
+                nodeChanges.forEach(({ key, value }) => {
+                  const nodeToUpdate = node.attrs?.find(({ key: nodeKey }) => nodeKey === key);
+
+                  if (nodeToUpdate) {
+                    nodeToUpdate.value = value;
+                  }
+                });
+              });
+            });
+          });
+        }
+
+        const newGraphCollectionsLabels = newGraphCollections?.map(({ label }) => label) ?? [];
+        const filteredGraphCollections = (prevGraphCollections ?? [])?.filter(({ label }) => !newGraphCollectionsLabels.includes(label));
+        const mergedGraphCollections = [...filteredGraphCollections, ...newGraphCollections];
+
+        return mergedGraphCollections;
+      });
+
+      this.urlService.setUiState(undefined);
+      this.urlService.setModels(models?.map(({ path, selectedAdapter }) => {
+        return {
+          url: path,
+          adapterId: selectedAdapter?.id
+        };
+      }) ?? []);
+
+      this.modelLoaderService.graphErrors.update(() => undefined);
+
+      if (perfData) {
+        const runId = genUid();
+        const modelGraph = curPane?.modelGraph as ModelGraph;
+
+        this.nodeDataProviderExtensionService.addRun(
+          runId,
+          `${modelGraph.id} (Performance Trace)`,
+          curModel.selectedAdapter?.id ?? '',
+          modelGraph,
+          perfData,
+        );
+      }
+
+      this.showSuccessMessage('Model updated');
+    } else {
+      this.showErrorDialog('Graph Execution Error', curModel.errorMessage ?? 'An error has occured');
+    }
+  }
+
+  private getCurrentGraphInformation() {
     const curPane = this.appService.getSelectedPane();
     const curCollectionLabel = curPane?.modelGraph?.collectionLabel;
     const curCollection = this.appService.curGraphCollections().find(({ label }) =>label === curCollectionLabel);
@@ -110,71 +200,25 @@ export class GraphEdit {
 
       if (curModel.status() !== ModelItemStatus.ERROR) {
         if (result) {
-          const newGraphCollections = await this.modelLoaderService.loadModel(curModel);
+          const updateStatus = (progress: number, total: number) => {
+            this.executionProgress = progress ?? this.executionProgress;
+            this.executionTotal = total;
+            this.changeDetectorRef.detectChanges();
+          };
+          const finishUpdate = async () => {
+            await this.updateGraphInformation(curModel, models, curPane, result.perf_data);
+            this.isProcessingExecuteRequest = false;
+          };
 
-          if (curModel.status() !== ModelItemStatus.ERROR) {
-            this.modelLoaderService.loadedGraphCollections.update((prevGraphCollections) => {
-              const curChanges = this.modelLoaderService.changesToUpload();
-              if (Object.keys(curChanges).length > 0) {
-                newGraphCollections.forEach((graphCollection) => {
-                  graphCollection.graphs.forEach((graph) => {
-                    graph.nodes.forEach((node) => {
-                      const nodeChanges = curChanges[graphCollection.label][node.id] ?? [];
-
-                      nodeChanges.forEach(({ key, value }) => {
-                        const nodeToUpdate = node.attrs?.find(({ key: nodeKey }) => nodeKey === key);
-
-                        if (nodeToUpdate) {
-                          nodeToUpdate.value = value;
-                        }
-                      });
-                    });
-                  });
-                });
-              }
-
-              const newGraphCollectionsLabels = newGraphCollections.map(({ label }) => label);
-              const filteredGraphCollections = (prevGraphCollections ?? [])?.filter(({ label }) => !newGraphCollectionsLabels.includes(label));
-              const mergedGraphCollections = [...filteredGraphCollections, ...newGraphCollections];
-
-              return mergedGraphCollections;
-            });
-
-            this.urlService.setUiState(undefined);
-            this.urlService.setModels(models.map(({ path, selectedAdapter }) => {
-              return {
-                url: path,
-                adapterId: selectedAdapter?.id
-              };
-            }));
-
-            this.modelLoaderService.graphErrors.update(() => undefined);
-
-            if (result.perf_data) {
-              const runId = genUid();
-              const modelGraph = curPane?.modelGraph as ModelGraph;
-
-              this.nodeDataProviderExtensionService.addRun(
-                runId,
-                `${modelGraph.id} (Performance Trace)`,
-                curModel.selectedAdapter?.id ?? '',
-                modelGraph,
-                result.perf_data,
-              );
-            }
-
-            this.showSuccessMessage('Model updated');
-          } else {
-            this.showErrorDialog('Graph Execution Error', curModel.errorMessage ?? 'An error has occured');
-          }
+          this.poolForStatusUpdate(curModel.selectedAdapter?.id ?? '', curModel.path, updateStatus, finishUpdate);
         } else {
-          this.showErrorDialog('Graph Execution Error', "Graph execution didn't return any results");
+          this.showErrorDialog('Graph Execution Error', "Graph execution resulted in an error");
+          this.isProcessingExecuteRequest = false;
         }
       } else {
         this.showErrorDialog('Graph Execution Error', curModel.errorMessage ?? 'An error has occured');
+        this.isProcessingExecuteRequest = false;
       }
-
-      this.isProcessingExecuteRequest = false;
     }
   }
 
@@ -205,12 +249,12 @@ export class GraphEdit {
           });
 
           this.urlService.setUiState(undefined);
-          this.urlService.setModels(models.map(({ path, selectedAdapter }) => {
+          this.urlService.setModels(models?.map(({ path, selectedAdapter }) => {
             return {
               url: path,
               adapterId: selectedAdapter?.id
             };
-          }));
+          }) ?? []);
 
           this.modelLoaderService.changesToUpload.update(() => ({}));
           this.modelLoaderService.graphErrors.update(() => undefined);

@@ -29,7 +29,12 @@
       >
         <mat-icon>play_arrow</mat-icon>
       </button>
-      <mat-spinner diameter="24" [ngStyle]="{ display: isProcessingExecuteRequest ? 'block' : 'none' }"></mat-spinner>
+      <mat-progress-spinner
+        diameter="24"
+        [mode]="executionProgress > 0 ? 'determinate' : 'indeterminate'"
+        [value]="executionProgress"
+        [ngStyle]="{ display: isProcessingExecuteRequest ? 'block' : 'none' }"
+      ></mat-progress-spinner>
     </div>
   }
 </div>

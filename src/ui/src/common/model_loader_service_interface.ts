@@ -22,6 +22,7 @@ import {GraphCollection} from '../components/visualizer/common/input_graph';
 import type { KeyValue, NodeDataProviderData } from '../components/visualizer/common/types';
 
 import {ModelItem} from './types';
+import type { AdapterStatusCheckResponse } from './extension_command';
 
 export type ChangesPerNode = Record<string, KeyValue[]>;
 export type ChangesPerGraphAndNode = Record<string, ChangesPerNode>;
@@ -38,6 +39,7 @@ export interface ModelLoaderServiceInterface {
   loadModels(modelItems: ModelItem[]): Promise<void>;
   loadModel(modelItems: ModelItem): Promise<GraphCollection[]>;
   executeModel(modelItem: ModelItem): Promise<ExecutionCommand | undefined>;
+  checkExecutionStatus(extensionId: string, modelPath: string): Promise<AdapterStatusCheckResponse | undefined>;
   overrideModel(modelItem: ModelItem, graphCollection: GraphCollection, fieldsToUpdate: ChangesPerNode): Promise<GraphCollection | undefined>;
   get loadedGraphCollections(): WritableSignal<GraphCollection[] | undefined>;
   get models(): WritableSignal<ModelItem[]>;

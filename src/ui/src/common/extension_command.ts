@@ -74,3 +74,20 @@ export declare interface AdapterExecuteCommand extends ExtensionCommand {
 /** Adapter's "execute" command response. */
 export declare interface AdapterExecuteResponse extends ExtensionResponse, ExecutionCommand {
 }
+
+/** Adapter's "status check" command. */
+export declare interface AdapterStatusCheckCommand extends ExtensionCommand {
+  cmdId: 'status_check';
+  modelPath: string;
+  settings: Record<string, any>;
+  deleteAfterConversion: boolean;
+}
+
+/** Adapter's "status check" command response. */
+export declare interface AdapterStatusCheckResponse extends ExtensionResponse {
+  isDone: boolean;
+  progress: number;
+  total?: number;
+  timeElapsed?: number;
+  currentStatus?: string;
+}
