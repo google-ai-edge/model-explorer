@@ -255,10 +255,11 @@ export class GraphLayout {
     minX = Math.min(minEdgeX, minX);
     maxX = Math.max(maxEdgeX, maxX);
 
-    // Make sure the subgraph width is at least the width of the root node.
+    // Make sure the subgraph width is at least the width of the root node and
+    // the width of the pin-to-group-top node if it exists.
     let subgraphFullWidth = maxX - minX + LAYOUT_MARGIN_X * 2;
     if (rootNode) {
-      const parentNodeWidth = getNodeWidth(
+      let parentNodeWidth = getNodeWidth(
         rootNode,
         this.modelGraph,
         this.showOnNodeItemTypes,
@@ -266,6 +267,19 @@ export class GraphLayout {
         this.testMode,
         this.config,
       );
+      if (rootNode.pinToTopOpNode) {
+        const pinToTopNodeWidth =
+          getNodeWidth(
+            rootNode.pinToTopOpNode,
+            this.modelGraph,
+            this.showOnNodeItemTypes,
+            this.nodeDataProviderRuns,
+            this.testMode,
+            this.config,
+          ) +
+          LAYOUT_MARGIN_X * 2;
+        parentNodeWidth = Math.max(parentNodeWidth, pinToTopNodeWidth);
+      }
       if (subgraphFullWidth < parentNodeWidth) {
         const extraOffsetX = (parentNodeWidth - subgraphFullWidth) / 2;
         for (const node of nodes) {
@@ -276,6 +290,18 @@ export class GraphLayout {
         }
         subgraphFullWidth = parentNodeWidth;
       }
+    }
+
+    // Special handling for the group node with only one pin-to-group-top
+    // child node.
+    if (
+      nodes.length === 1 &&
+      isOpNode(nodes[0]) &&
+      (nodes[0] as OpNode).config?.pinToGroupTop
+    ) {
+      minX = 0;
+      minY = 0;
+      maxY = -15;
     }
 
     // Offset downwards if the root node has attrs table shown.
