@@ -73,8 +73,10 @@ def _get_latest_version_from_repo(package_json_url: str) -> str:
 
 def _get_release_from_github(version: str) -> dict:
   # Get release data through github API.
+  api_url_base = 'https://api.github.com/repos'
+  repo_name = 'google-ai-edge/model-explorer'
   req = requests.get(
-      f'https://api.github.com/repos/google-ai-edge/model-explorer/releases/tags/model-explorer-v{version}'
+      f'{api_url_base}/{repo_name}/releases/tags/model-explorer-v{version}'
   )
   req_json = json.loads(req.text.encode('utf-8'))
 
@@ -318,9 +320,11 @@ def start(
     if graph_index_str is None:
       return {}
     graph_index = int(graph_index_str)
-    return _make_json_response(
-        convert_adapter_response(config.get_model_explorer_graphs(graph_index))
-    )
+    graphs = config.get_model_explorer_graphs(graph_index)
+    if isinstance(graphs, str):
+      return _make_json_response(json.loads(graphs))
+    else:
+      return _make_json_response(convert_adapter_response(graphs))
 
   @app.route('/api/v1/load_node_data')
   def load_node_data():
@@ -358,7 +362,6 @@ def start(
 
   @app.route('/apipost/v1/update_config', methods=['POST'])
   def update_config():
-    # TODO(do not submit): Update confnig.
     config_data = request.json
     if config and config_data:
       config.set_transferrable_data(config_data)

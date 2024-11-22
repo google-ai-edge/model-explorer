@@ -491,6 +491,7 @@ export class GraphProcessor {
           this.testMode,
           // Use fake node size.
           true,
+          this.config,
         );
 
         // Find root nodes of the layout graph.

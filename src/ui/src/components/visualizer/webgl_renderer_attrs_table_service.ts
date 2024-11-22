@@ -164,6 +164,7 @@ export class WebglRendererAttrsTableService {
             this.webglRenderer.curModelGraph.id,
             this.webglRenderer.curShowOnNodeItemTypes,
             this.webglRenderer.curNodeDataProviderRuns,
+            this.webglRenderer.appService.config(),
           ),
         );
       } else if (isGroupNode(node)) {

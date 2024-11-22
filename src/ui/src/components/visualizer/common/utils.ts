@@ -55,6 +55,7 @@ import {
   ShowOnNodeItemData,
   ShowOnNodeItemType,
 } from './types';
+import {VisualizerConfig} from './visualizer_config';
 
 const CANVAS = new OffscreenCanvas(300, 300);
 
@@ -530,6 +531,7 @@ export function getOpNodeDataProviderKeyValuePairsForAttrsTable(
   modelGraphId: string,
   showOnNodeItemTypes: Record<string, ShowOnNodeItemData>,
   curNodeDataProviderRuns: Record<string, NodeDataProviderRunData>,
+  config?: VisualizerConfig,
 ): KeyValueList {
   const keyValuePairs: KeyValueList = [];
   const runNames = Object.keys(showOnNodeItemTypes)
@@ -544,7 +546,11 @@ export function getOpNodeDataProviderKeyValuePairsForAttrsTable(
     runNames.includes(getRunName(run, {id: modelGraphId})),
   );
   for (const run of runs) {
-    const value = (run.results || {})?.[modelGraphId][node.id]?.strValue || '-';
+    const result = (run.results || {})?.[modelGraphId]?.[node.id];
+    if (config?.hideEmptyNodeDataEntries && !result) {
+      continue;
+    }
+    const value = result?.strValue || '-';
     keyValuePairs.push({
       key: getRunName(run, {id: modelGraphId}),
       value,

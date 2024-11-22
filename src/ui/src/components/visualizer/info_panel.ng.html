@@ -17,36 +17,39 @@ limitations under the License.
 -->
 
 <div class="container" [class.graph-info]="showNodeDataProviderSummary">
-  <div class="section" #sectionEle
-       [class.collapsed]="isSectionCollapsed(section.label)"
-       *ngFor="let section of sections; trackBy: trackBySectionLabel">
-    <div class="header">
-      <button mat-icon-button class="toggle"
-          (click)="handleToggleSection(section.label, sectionEle)">
-        <mat-icon>{{getSectionToggleIcon(section.label)}}</mat-icon>
-      </button>
-      {{section.label}}
-    </div>
-    <div class="items-container">
-      <table class="metadata-table info-attrs">
-        @for (item of section.items; track item.id || item.label) {
-          <tr [class.search-match]="isSearchMatchedAttrId(item.label)">
-            <td class="key"><hoverable-label [label]="item.label"></hoverable-label></td>
-            <td class="value">
-              <expandable-info-text
-                  [text]="item.value" [type]="item.label"
-                  [collectionLabel]="$any(curCollectionLabel)"
-                  [nodeId]="$any(curSelectedNodeId)"
-                  [bgColor]="item.bgColor || 'transparent'"
-                  [textColor]="item.textColor || 'black'"
-                  [editable]="item.editable">
-              </expandable-info-text>
-            </td>
-          </tr>
-        }
-      </table>
-    </div>
-  </div>
+  @for (section of sections; track section.label) {
+    @if (section.items.length > 0) {
+      <div class="section" #sectionEle
+          [class.collapsed]="isSectionCollapsed(section.label)">
+        <div class="header">
+          <button mat-icon-button class="toggle"
+              (click)="handleToggleSection(section.label, sectionEle)">
+            <mat-icon>{{getSectionToggleIcon(section.label)}}</mat-icon>
+          </button>
+          {{section.label}}
+        </div>
+        <div class="items-container">
+          <table class="metadata-table info-attrs">
+            @for (item of section.items; track item.id || item.label) {
+              <tr [class.search-match]="isSearchMatchedAttrId(item.label)">
+                <td class="key"><hoverable-label [label]="item.label"></hoverable-label></td>
+                <td class="value">
+                  <expandable-info-text
+                      [text]="item.value" [type]="item.label"
+                      [collectionLabel]="$any(curCollectionLabel)"
+                      [nodeId]="$any(curSelectedNodeId)"
+                      [bgColor]="item.bgColor || 'transparent'"
+                      [textColor]="item.textColor || 'black'"
+                      [editable]="item.editable">
+                  </expandable-info-text>
+                </td>
+              </tr>
+            }
+          </table>
+        </div>
+      </div>
+    }
+  }
 
   <!-- Summary for node data provider extensions -->
   <div class="section" *ngIf="showNodeDataProviderSummary" #ndpSectionEle
@@ -65,7 +68,7 @@ limitations under the License.
   </div>
 
   <!-- Inputs -->
-  <div class="section inputs" *ngIf="flatInputItems.length > 0" #inputsSectionEle
+  <div class="section inputs" *ngIf="inputItems.length > 0" #inputsSectionEle
        [class.collapsed]="isSectionCollapsed(SectionLabel.INPUTS)">
     <div class="header input">
       <div class="header-label-container">
@@ -81,64 +84,8 @@ limitations under the License.
         </paginator>
       }
     </div>
-    <div class="flat-items-container">
-      @for (item of flatInputItems; track item.opNode.id; let i = $index) {
-        <div class="flat-item">
-          <div class="name-row"
-              [class.search-match]="isSearchMatchedInputValue(getInputTensorTag(item)) || isSearchMatchedInputValue(item.opNode.label)">
-            <div class="index">{{item.index}}</div>
-            @if (item.opNode.hideInLayout) {
-              <div class="name">{{getInputName(item)}}</div>
-            } @else {
-              <div class="name locator"
-                  [attr.data-id]="item.opNode.id"
-                  (click)="handleLocateNode(item.opNode.id, $event)">
-                {{getInputName(item)}}
-                <div class="locator-icon-container"
-                    [matTooltip]="locatorTooltip"
-                    matTooltipClass="multiline-tooltip-left"
-                    matTooltipPosition="right">
-                  <mat-icon class="locator-icon">my_location</mat-icon>
-                </div>
-                <div class="filler"></div>
-                @if (!item.opNode.hideInLayout) {
-                  <div class="visibility-icon-container input"
-                      [matTooltip]="getInputOpNodeToggleVisibilityTooltip(item.opNode.id)"
-                      matTooltipPosition="left"
-                      [class.visible]="getInputOpNodeToggleVisible(item.opNode.id)"
-                      (click)="handleToggleInputOpNodeVisibility(item.opNode.id, flatInputItems, $event)">
-                    <mat-icon>
-                      {{getInputOpNodeToggleVisibilityIcon(item.opNode.id)}}
-                    </mat-icon>
-                  </div>
-                }
-              </div>
-            }
-          </div>
-          <table class="metadata-table">
-            @for (metadataItem of item.metadataList; track metadataItem.key) {
-              @if (getShowMetadata(metadataItem)) {
-                <tr #rowEle
-                    [class.search-match]="isSearchMatchedInputValue(metadataItem.value)">
-                  <td class="key">
-                    <div class="key-container">
-                      <mat-icon class="bullet">circle</mat-icon>
-                      <hoverable-label [label]="metadataItem.key"></hoverable-label>
-                    </div>
-                  </td>
-                  <td class="value">
-                    <expandable-info-text
-                        [text]="metadataItem.value"
-                        [type]="metadataItem.key">
-                    </expandable-info-text>
-                  </td>
-                </tr>
-              }
-            }
-          </table>
-        </div>
-      }
-    </div>
+    <ng-container *ngTemplateOutlet="inputItemsTmpl;context:{'items': inputItemsForCurPage}">
+    </ng-container>
   </div>
 
   <!-- Outputs -->
@@ -158,75 +105,8 @@ limitations under the License.
         </paginator>
       }
     </div>
-    <div class="flat-items-container">
-      @for (item of outputItemsForCurPage; track item.outputId; let i = $index; let last = $last) {
-        <div class="flat-item">
-          <div class="name-row"
-              [class.search-match]="isSearchMatchedOutputValue(item.tensorTag)">
-            <div class="index">{{item.index}}</div>
-            <div class="name">{{getOutputName(item)}}</div>
-            <div class="filler"></div>
-            @if (getHasConnectedToNodes(item)) {
-              <div class="visibility-icon-container output"
-                  [class.visible]="getOutputToggleVisible(item.outputId)"
-                  [matTooltip]="getOutputToggleVisibilityTooltip(item.outputId)"
-                  matTooltipPosition="left"
-                  (click)="handleToggleOutputVisibility(item.outputId, outputItemsForCurPage, $event)">
-                <mat-icon>
-                  {{getOutputToggleVisibilityIcon(item.outputId)}}
-                </mat-icon>
-              </div>
-            }
-          </div>
-          @if (item.metadataList.length > 0) {
-            <table class="metadata-table">
-              @for (metadataItem of item.metadataList; track metadataItem.key) {
-                <tr [class.search-match]="isSearchMatchedOutputValue(metadataItem.value)">
-                  <td class="key">
-                    <div class="key-container">
-                      <mat-icon class="bullet">circle</mat-icon>
-                      <hoverable-label [label]="metadataItem.key"></hoverable-label>
-                    </div>
-                  </td>
-                  <td class="value">
-                    @if (metadataItem.key === outputMetadataConnectedTo) {
-                      @for (targetNode of metadataItem.connectedNodes; track targetNode.id) {
-                        <div class="target-node-container"
-                            [attr.data-id]="targetNode.id"
-                            [class.search-match]="isSearchMatchedOutputValue(targetNode.label)"
-                            [bubble]="namespacePopup"
-                            [overlaySize]="constValuesPopupSize"
-                            [overlayPositions]="outputConnectsToNamespacePopupPosition"
-                            [hoverDelayMs]="50"
-                            (click)="handleLocateNode(targetNode.id, $event)">
-                          {{targetNode.label}}
-                          <div class="locator-icon-container"
-                              [matTooltip]="locatorTooltip"
-                              matTooltipClass="multiline-tooltip-left"
-                              matTooltipPosition="right">
-                            <mat-icon class="locator-icon">my_location</mat-icon>
-                          </div>
-                        </div>
-                        <ng-template #namespacePopup>
-                          <div class="model-explorer-const-values-popup">
-                            <ng-container *ngTemplateOutlet="namespaceHierarchy;context:{'value': getNamespaceLabel(targetNode)}">
-                            </ng-container>
-                          </div>
-                        </ng-template>
-                      }
-                    } @else {
-                      <expandable-info-text
-                          [text]="metadataItem.value">
-                      </expandable-info-text>
-                    }
-                  </td>
-                </tr>
-              }
-            </table>
-          }
-        </div>
-      }
-    </div>
+    <ng-container *ngTemplateOutlet="outputItemsTmpl;context:{'items': outputItemsForCurPage}">
+    </ng-container>
   </div>
 
   <!-- Identical groups -->
@@ -249,6 +129,48 @@ limitations under the License.
     <io-tree [data]="identicalGroupsData" [rendererId]="curRendererId">
     </io-tree>
   </div>
+
+  <!-- Group inputs -->
+  <div class="section inputs" *ngIf="groupInputItems.length > 0" #groupInputsSectionEle
+        [class.collapsed]="isSectionCollapsed(SectionLabel.GROUP_INPUTS)">
+    <div class="header input">
+      <div class="header-label-container">
+        <button mat-icon-button class="toggle"
+            (click)="handleToggleSection(SectionLabel.GROUP_INPUTS, groupInputsSectionEle)">
+          <mat-icon>{{getSectionToggleIcon(SectionLabel.GROUP_INPUTS)}}</mat-icon>
+        </button>
+        layer inputs ({{curGroupInputsCount}})
+      </div>
+      @if (showGroupInputPaginator) {
+        <paginator [pageSize]="ioPageSize" [itemsCount]="curGroupInputsCount"
+            (change)="handleGroupInputPaginatorChanged($event)">
+        </paginator>
+      }
+    </div>
+    <ng-container *ngTemplateOutlet="inputItemsTmpl;context:{'items': groupInputItemsForCurPage}">
+    </ng-container>
+  </div>
+
+  <!-- Group outputs -->
+  <div class="section outputs" *ngIf="groupOutputItems.length > 0" #groupOutputsSectionEle
+        [class.collapsed]="isSectionCollapsed(SectionLabel.GROUP_OUTPUTS)">
+    <div class="header output">
+      <div class="header-label-container">
+        <button mat-icon-button class="toggle"
+            (click)="handleToggleSection(SectionLabel.GROUP_OUTPUTS, groupOutputsSectionEle)">
+          <mat-icon>{{getSectionToggleIcon(SectionLabel.GROUP_OUTPUTS)}}</mat-icon>
+        </button>
+        layer outputs ({{curGroupOutputsCount}})
+      </div>
+      @if (showGroupOutputPaginator) {
+        <paginator [pageSize]="ioPageSize" [itemsCount]="curGroupOutputsCount"
+            (change)="handleGroupOutputPaginatorChanged($event)">
+        </paginator>
+      }
+    </div>
+    <ng-container *ngTemplateOutlet="outputItemsTmpl;context:{'items': groupOutputItemsForCurPage}">
+    </ng-container>
+  </div>
 </div>
 
 <!-- Resizer -->
@@ -270,6 +192,156 @@ limitations under the License.
     @for(ns of value.split('/'); track $index) {
       <div class="namespace-row">
         {{ns}}
+      </div>
+    }
+  </div>
+</ng-template>
+
+<ng-template #inputItemsTmpl let-items="items">
+  <div class="flat-items-container">
+    @for (item of items; track item.opNode.id; let i = $index) {
+      <div class="flat-item">
+        <div class="name-row"
+            [class.search-match]="isSearchMatchedInputValue(getInputTensorTag(item)) || isSearchMatchedInputValue(item.opNode.label)">
+          <div class="index">{{item.index}}</div>
+          @if (item.opNode.hideInLayout) {
+            <div class="name">{{getInputName(item)}}</div>
+            @if (item.targetOpNode) {
+              <div class="target-op-container">
+                <mat-icon class="arrow">arrow_forward</mat-icon>
+                <div class="target-op-node-label">{{item.targetOpNode.label}}</div>
+              </div>
+            }
+          } @else {
+            <div class="name locator"
+                [attr.data-id]="item.opNode.id"
+                (click)="handleLocateNode(item.opNode.id, $event)">
+              {{getInputName(item)}}
+              <div class="locator-icon-container"
+                  [matTooltip]="locatorTooltip"
+                  matTooltipClass="multiline-tooltip-left"
+                  matTooltipPosition="right">
+                <mat-icon class="locator-icon">my_location</mat-icon>
+              </div>
+              @if (item.targetOpNode) {
+                <div class="target-op-container">
+                  <mat-icon class="arrow">arrow_forward</mat-icon>
+                  <div class="target-op-node-label">{{item.targetOpNode.label}}</div>
+                </div>
+              }
+              <div class="filler"></div>
+              @if (!item.opNode.hideInLayout) {
+                <div class="visibility-icon-container input"
+                    [matTooltip]="getInputOpNodeToggleVisibilityTooltip(item.opNode.id)"
+                    matTooltipPosition="left"
+                    [class.visible]="getInputOpNodeToggleVisible(item.opNode.id)"
+                    (click)="handleToggleInputOpNodeVisibility(item.opNode.id, items, $event)">
+                  <mat-icon>
+                    {{getInputOpNodeToggleVisibilityIcon(item.opNode.id)}}
+                  </mat-icon>
+                </div>
+              }
+            </div>
+          }
+        </div>
+        <table class="metadata-table">
+          @for (metadataItem of item.metadataList; track metadataItem.key) {
+            @if (getShowMetadata(metadataItem)) {
+              <tr #rowEle
+                  [class.search-match]="isSearchMatchedInputValue(metadataItem.value)">
+                <td class="key">
+                  <div class="key-container">
+                    <mat-icon class="bullet">circle</mat-icon>
+                    <hoverable-label [label]="metadataItem.key"></hoverable-label>
+                  </div>
+                </td>
+                <td class="value">
+                  <expandable-info-text
+                      [text]="metadataItem.value"
+                      [type]="metadataItem.key">
+                  </expandable-info-text>
+                </td>
+              </tr>
+            }
+          }
+        </table>
+      </div>
+    }
+  </div>
+</ng-template>
+
+<ng-template #outputItemsTmpl let-items="items">
+  <div class="flat-items-container">
+    @for (item of items; track $index; let i = $index; let last = $last) {
+      <div class="flat-item">
+        <div class="name-row"
+            [class.search-match]="isSearchMatchedOutputValue(item.tensorTag)">
+          <div class="index">{{item.index}}</div>
+          <div class="name">{{getOutputName(item)}}</div>
+          @if (item.showSourceOpNode) {
+            <div class="source-op-node-label">
+              ({{item.sourceOpNode.label}})
+            </div>
+          }
+          <div class="filler"></div>
+          @if (getHasConnectedToNodes(item)) {
+            <div class="visibility-icon-container output"
+                [class.visible]="getOutputToggleVisible(item)"
+                [matTooltip]="getOutputToggleVisibilityTooltip(item)"
+                matTooltipPosition="left"
+                (click)="handleToggleOutputVisibility(item, items, $event)">
+              <mat-icon>
+                {{getOutputToggleVisibilityIcon(item)}}
+              </mat-icon>
+            </div>
+          }
+        </div>
+        @if (item.metadataList.length > 0) {
+          <table class="metadata-table">
+            @for (metadataItem of item.metadataList; track metadataItem.key) {
+              <tr [class.search-match]="isSearchMatchedOutputValue(metadataItem.value)">
+                <td class="key">
+                  <div class="key-container">
+                    <mat-icon class="bullet">circle</mat-icon>
+                    <hoverable-label [label]="metadataItem.key"></hoverable-label>
+                  </div>
+                </td>
+                <td class="value">
+                  @if (metadataItem.key === outputMetadataConnectedTo) {
+                    @for (targetNode of metadataItem.connectedNodes; track targetNode.id) {
+                      <div class="target-node-container"
+                          [attr.data-id]="targetNode.id"
+                          [class.search-match]="isSearchMatchedOutputValue(targetNode.label)"
+                          [bubble]="namespacePopup"
+                          [overlaySize]="constValuesPopupSize"
+                          [overlayPositions]="outputConnectsToNamespacePopupPosition"
+                          [hoverDelayMs]="50"
+                          (click)="handleLocateNode(targetNode.id, $event)">
+                        {{targetNode.label}}
+                        <div class="locator-icon-container"
+                            [matTooltip]="locatorTooltip"
+                            matTooltipClass="multiline-tooltip-left"
+                            matTooltipPosition="right">
+                          <mat-icon class="locator-icon">my_location</mat-icon>
+                        </div>
+                      </div>
+                      <ng-template #namespacePopup>
+                        <div class="model-explorer-const-values-popup">
+                          <ng-container *ngTemplateOutlet="namespaceHierarchy;context:{'value': getNamespaceLabel(targetNode)}">
+                          </ng-container>
+                        </div>
+                      </ng-template>
+                    }
+                  } @else {
+                    <expandable-info-text
+                        [text]="metadataItem.value">
+                    </expandable-info-text>
+                  }
+                </td>
+              </tr>
+            }
+          </table>
+        }
       </div>
     }
   </div>

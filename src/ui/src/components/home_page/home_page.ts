@@ -46,7 +46,9 @@ import {
   SETTING_DISALLOW_VERTICAL_EDGE_LABELS,
   SETTING_EDGE_COLOR,
   SETTING_EDGE_LABEL_FONT_SIZE,
+  SETTING_HIDE_EMPTY_NODE_DATA_ENTRIES,
   SETTING_HIDE_OP_NODES_WITH_LABELS,
+  SETTING_HIGHLIGHT_LAYER_NODE_INPUTS_OUTPUTS,
   SETTING_KEEP_LAYERS_WITH_A_SINGLE_CHILD,
   SETTING_MAX_CONST_ELEMENT_COUNT_LIMIT,
   SETTING_SHOW_OP_NODE_OUT_OF_LAYER_EDGES_WITHOUT_SELECTING,
@@ -351,6 +353,12 @@ export class HomePage implements AfterViewInit {
         this.settingsService.getBooleanValue(
           SETTING_SHOW_OP_NODE_OUT_OF_LAYER_EDGES_WITHOUT_SELECTING,
         ),
+      highlightLayerNodeInputsOutputs: this.settingsService.getBooleanValue(
+        SETTING_HIGHLIGHT_LAYER_NODE_INPUTS_OUTPUTS,
+      ),
+      hideEmptyNodeDataEntries: this.settingsService.getBooleanValue(
+        SETTING_HIDE_EMPTY_NODE_DATA_ENTRIES,
+      ),
     };
   }
 

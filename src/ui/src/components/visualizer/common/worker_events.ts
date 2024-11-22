@@ -85,6 +85,7 @@ export declare interface ExpandOrCollapseGroupNodeRequest
   all?: boolean;
   // Timestamp of when the request is sent.
   ts?: number;
+  config?: VisualizerConfig;
 }
 
 /** The response for expanding/collapsing a group node. */
@@ -119,6 +120,7 @@ export declare interface RelayoutGraphRequest extends WorkerEventBase {
   forRestoringSnapshotAfterTogglingFlattenLayers?: boolean;
   nodeStylerQueries?: NodeStylerRule[];
   triggerNavigationSync?: boolean;
+  config?: VisualizerConfig;
 }
 
 /** The response for re-laying out the whole graph. */
@@ -144,6 +146,7 @@ export declare interface LocateNodeRequest extends WorkerEventBase {
   rendererId: string;
   noNodeShake?: boolean;
   select?: boolean;
+  config?: VisualizerConfig;
 }
 
 /** The response for locating a node. */

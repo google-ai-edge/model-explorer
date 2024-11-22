@@ -43,10 +43,12 @@ import {AppService} from './app_service';
 import {TENSOR_TAG_METADATA_KEY, TENSOR_VALUES_KEY} from './common/consts';
 import {GroupNode, ModelGraph, ModelNode, OpNode} from './common/model_graph';
 import {
+  IncomingEdge,
   KeyValue,
   KeyValueList,
   KeyValuePairs,
   NodeDataProviderRunInfo,
+  OutgoingEdge,
   SearchMatchAttr,
   SearchMatchInputMetadata,
   SearchMatchOutputMetadata,
@@ -85,6 +87,8 @@ enum SectionLabel {
   IDENTICAL_GROUPS = 'Identical groups',
   INPUTS = 'inputs',
   OUTPUTS = 'outputs',
+  GROUP_INPUTS = 'layer inputs',
+  GROUP_OUTPUTS = 'layer outputs',
 }
 
 interface InfoItem {
@@ -104,18 +108,21 @@ interface InfoItem {
 interface OutputItem {
   index: number;
   tensorTag: string;
+  sourceOpNode: OpNode;
   outputId: string;
   metadataList: OutputItemMetadata[];
+  showSourceOpNode?: boolean;
 }
 
 interface OutputItemMetadata extends KeyValue {
   connectedNodes?: OpNode[];
 }
 
-interface FlatInputItem {
+interface InputItem {
   index: number;
   opNode: OpNode;
   metadataList: KeyValueList;
+  targetOpNode?: OpNode;
 }
 
 const MIN_WIDTH = 64;
@@ -165,14 +172,21 @@ export class InfoPanel {
   @HostBinding('style.min-width.px') minWidth = DEFAULT_WIDTH;
 
   sections: InfoSection[] = [];
-  flatInputItems: FlatInputItem[] = [];
+  inputItems: InputItem[] = [];
+  inputItemsForCurPage: InputItem[] = [];
   outputItems: OutputItem[] = [];
   outputItemsForCurPage: OutputItem[] = [];
+  groupInputItems: InputItem[] = [];
+  groupInputItemsForCurPage: InputItem[] = [];
+  groupOutputItems: OutputItem[] = [];
+  groupOutputItemsForCurPage: OutputItem[] = [];
   identicalGroupNodes: GroupNode[] = [];
   identicalGroupsData?: TreeNode[];
   curRendererId = '';
   curInputsCount = 0;
   curOutputsCount = 0;
+  curGroupInputsCount = 0;
+  curGroupOutputsCount = 0;
   resizing = false;
   hide = false;
 
@@ -213,8 +227,6 @@ export class InfoPanel {
   private curSearchAttrMatches: SearchMatchAttr[] = [];
   private curSearchInputMatches: SearchMatchInputMetadata[] = [];
   private curSearchOutputMatches: SearchMatchOutputMetadata[] = [];
-  private inputSourceNodes: OpNode[] = [];
-  private inputMetadataList: KeyValuePairs[] = [];
   private savedWidth = 0;
 
   constructor(
@@ -331,18 +343,9 @@ export class InfoPanel {
   }
 
   handleInputPaginatorChanged(curPageIndex: number) {
-    const curInputSourceNodes = this.inputSourceNodes.slice(
+    this.inputItemsForCurPage = this.inputItems.slice(
       curPageIndex * this.ioPageSize,
       (curPageIndex + 1) * this.ioPageSize,
-    );
-    const curInputMetadataList = this.inputMetadataList.slice(
-      curPageIndex * this.ioPageSize,
-      (curPageIndex + 1) * this.ioPageSize,
-    );
-    this.flatInputItems = this.genInputFlatItems(
-      curPageIndex * this.ioPageSize,
-      curInputSourceNodes,
-      curInputMetadataList,
     );
     this.changeDetectorRef.markForCheck();
 
@@ -353,6 +356,26 @@ export class InfoPanel {
 
   handleOutputPaginatorChanged(curPageIndex: number) {
     this.outputItemsForCurPage = this.outputItems.slice(
+      curPageIndex * this.ioPageSize,
+      (curPageIndex + 1) * this.ioPageSize,
+    );
+    this.changeDetectorRef.markForCheck();
+  }
+
+  handleGroupInputPaginatorChanged(curPageIndex: number) {
+    this.groupInputItemsForCurPage = this.groupInputItems.slice(
+      curPageIndex * this.ioPageSize,
+      (curPageIndex + 1) * this.ioPageSize,
+    );
+    this.changeDetectorRef.markForCheck();
+
+    setTimeout(() => {
+      this.updateInputValueContentsExpandable();
+    });
+  }
+
+  handleGroupOutputPaginatorChanged(curPageIndex: number) {
+    this.groupOutputItemsForCurPage = this.groupOutputItems.slice(
       curPageIndex * this.ioPageSize,
       (curPageIndex + 1) * this.ioPageSize,
     );
@@ -434,7 +457,7 @@ export class InfoPanel {
 
   handleToggleInputOpNodeVisibility(
     nodeId: string,
-    allItems: FlatInputItem[],
+    allItems: InputItem[],
     event: MouseEvent,
   ) {
     event.stopPropagation();
@@ -466,7 +489,7 @@ export class InfoPanel {
   }
 
   handleToggleOutputVisibility(
-    outputId: string,
+    item: OutputItem,
     items: OutputItem[],
     event: MouseEvent,
   ) {
@@ -474,31 +497,39 @@ export class InfoPanel {
 
     if (event.altKey) {
       this.splitPaneService.setOutputVisible(
-        outputId,
-        items.map((item) => item.outputId),
+        item.sourceOpNode.id,
+        item.outputId,
+        items.map((item) => ({
+          nodeId: item.sourceOpNode.id,
+          outputId: item.outputId,
+        })),
       );
     } else {
-      this.splitPaneService.toggleOutputVisibility(outputId);
+      this.splitPaneService.toggleOutputVisibility(
+        item.sourceOpNode.id,
+        item.outputId,
+      );
     }
   }
 
-  getOutputToggleVisible(outputId: string): boolean {
-    return this.splitPaneService.getOutputVisible(outputId);
+  getOutputToggleVisible(item: OutputItem): boolean {
+    return this.splitPaneService.getOutputVisible(
+      item.sourceOpNode.id,
+      item.outputId,
+    );
   }
 
-  getOutputToggleVisibilityIcon(outputId: string): string {
-    return this.getOutputToggleVisible(outputId)
-      ? 'visibility'
-      : 'visibility_off';
+  getOutputToggleVisibilityIcon(item: OutputItem): string {
+    return this.getOutputToggleVisible(item) ? 'visibility' : 'visibility_off';
   }
 
-  getOutputToggleVisibilityTooltip(outputId: string): string {
-    return this.getOutputToggleVisible(outputId)
+  getOutputToggleVisibilityTooltip(item: OutputItem): string {
+    return this.getOutputToggleVisible(item)
       ? 'Click to hide highlight'
       : 'Click to show highlight';
   }
 
-  getInputName(item: FlatInputItem): string {
+  getInputName(item: InputItem): string {
     const tensorTagItem = item.metadataList.find(
       (item) => item.key === TENSOR_TAG_METADATA_KEY,
     );
@@ -508,7 +539,7 @@ export class InfoPanel {
       : item.opNode.label;
   }
 
-  getInputTensorTag(item: FlatInputItem): string {
+  getInputTensorTag(item: InputItem): string {
     const tensorTagItem = item.metadataList.find(
       (item) => item.key === TENSOR_TAG_METADATA_KEY,
     );
@@ -528,10 +559,6 @@ export class InfoPanel {
       (metadataItem) => metadataItem.key === this.outputMetadataConnectedTo,
     );
     return (connectedNodesMetadataItem?.connectedNodes || []).length > 0;
-  }
-
-  trackBySectionLabel(index: number, section: InfoSection): string {
-    return section.label;
   }
 
   trackByItemIdOrLabel(index: number, item: InfoItem): string {
@@ -565,7 +592,7 @@ export class InfoPanel {
 
   get showInputPaginator(): boolean {
     return (
-      this.inputSourceNodes.length > this.ioPageSize &&
+      this.inputItems.length > this.ioPageSize &&
       !this.isSectionCollapsed(SectionLabel.INPUTS)
     );
   }
@@ -574,6 +601,20 @@ export class InfoPanel {
     return (
       this.outputItems.length > this.ioPageSize &&
       !this.isSectionCollapsed(SectionLabel.OUTPUTS)
+    );
+  }
+
+  get showGroupInputPaginator(): boolean {
+    return (
+      this.groupInputItems.length > this.ioPageSize &&
+      !this.isSectionCollapsed(SectionLabel.GROUP_INPUTS)
+    );
+  }
+
+  get showGroupOutputPaginator(): boolean {
+    return (
+      this.groupOutputItems.length > this.ioPageSize &&
+      !this.isSectionCollapsed(SectionLabel.GROUP_OUTPUTS)
     );
   }
 
@@ -608,10 +649,10 @@ export class InfoPanel {
 
   private genInfoData() {
     this.sections = [];
-    this.flatInputItems = [];
-    this.inputSourceNodes = [];
-    this.inputMetadataList = [];
+    this.inputItems = [];
     this.outputItems = [];
+    this.groupInputItems = [];
+    this.groupOutputItems = [];
     this.identicalGroupNodes = [];
     this.identicalGroupsData = undefined;
 
@@ -623,6 +664,9 @@ export class InfoPanel {
         this.genInputsOutputsData();
       } else if (isGroupNode(this.curSelectedNode)) {
         this.genInfoDataForSelectedGroupNode();
+        if (this.appService.config()?.highlightLayerNodeInputsOutputs) {
+          this.genGroupInputsOutputsData();
+        }
       }
     }
   }
@@ -757,6 +801,9 @@ export class InfoPanel {
         const nodeResult = ((run.results || {})[this.curModelGraph.id] || {})[
           opNode.id
         ];
+        if (this.appService.config()?.hideEmptyNodeDataEntries && !nodeResult) {
+          continue;
+        }
         const strValue = nodeResult?.strValue || '-';
         const bgColor = nodeResult?.bgColor || 'transparent';
         const textColor = nodeResult?.textColor || 'black';
@@ -784,45 +831,22 @@ export class InfoPanel {
     const selectedOpNode = this.curSelectedNode as OpNode;
     const incomingEdges = selectedOpNode.incomingEdges || [];
 
-    this.inputMetadataList = [];
-    this.inputSourceNodes = [];
-    this.flatInputItems = [];
-    for (const edge of incomingEdges) {
+    this.inputItems = [];
+    for (let i = 0; i < incomingEdges.length; i++) {
+      const edge = incomingEdges[i];
+      const metadataList = this.genInputMetadataList(selectedOpNode, edge);
       const sourceOpNode = this.curModelGraph?.nodesById[
         edge.sourceNodeId
       ] as OpNode;
-      this.inputSourceNodes.push(sourceOpNode);
-      const metadata =
-        (selectedOpNode.inputsMetadata || {})[edge.targetNodeInputId] || {};
-      // Merge the corresponding output metadata with the current input
-      // metadata.
-      const sourceNodeOutputMetadata = {
-        ...((sourceOpNode.outputsMetadata || {})[edge.sourceNodeOutputId] ||
-          {}),
-      };
-      for (const key of Object.keys(sourceNodeOutputMetadata)) {
-        if (metadata[key] == null && key !== TENSOR_TAG_METADATA_KEY) {
-          metadata[key] = sourceNodeOutputMetadata[key];
-        }
-      }
-      this.inputMetadataList.push(metadata);
+      this.inputItems.push({
+        index: i,
+        opNode: sourceOpNode,
+        metadataList,
+      });
     }
-    this.curInputsCount = this.inputSourceNodes.length;
-    if (incomingEdges.length > 0) {
-      const curInputSourceNodes = this.inputSourceNodes.slice(
-        0,
-        this.ioPageSize,
-      );
-      const curInputMetadataList = this.inputMetadataList.slice(
-        0,
-        this.ioPageSize,
-      );
-      this.flatInputItems = this.genInputFlatItems(
-        0,
-        curInputSourceNodes,
-        curInputMetadataList,
-      );
-    }
+
+    this.curInputsCount = this.inputItems.length;
+    this.inputItemsForCurPage = this.inputItems.slice(0, this.ioPageSize);
 
     // Outputs.
     this.outputItems = [];
@@ -830,46 +854,203 @@ export class InfoPanel {
     const outgoingEdges = selectedOpNode.outgoingEdges || [];
     let index = 0;
     for (const outputId of Object.keys(outputsMetadata)) {
-      // The metadata for the current output tensor.
-      const metadataList: OutputItemMetadata[] = [];
-      let tensorTag = '';
-      for (const metadataKey of Object.keys(outputsMetadata[outputId])) {
-        const value = outputsMetadata[outputId][metadataKey];
-        if (metadataKey === TENSOR_TAG_METADATA_KEY) {
-          tensorTag = value;
-        }
-        // Hide all metadata keys that start with '__'.
-        if (metadataKey.startsWith('__')) {
-          continue;
-        }
-        metadataList.push({
-          key: metadataKey,
-          value,
-        });
-      }
-      metadataList.sort((a, b) => a.key.localeCompare(b.key));
-
       // The connected nodes.
       const connectedNodes = outgoingEdges
         .filter((edge) => edge.sourceNodeOutputId === outputId)
         .map(
           (edge) => this.curModelGraph!.nodesById[edge.targetNodeId],
         ) as OpNode[];
-      metadataList.push({
-        key: this.outputMetadataConnectedTo,
-        value: '',
+
+      // Metadata list.
+      const {metadataList, tensorTag} = this.genOutputMetadataList(
+        outgoingEdges,
+        outputsMetadata[outputId],
         connectedNodes,
-      });
+      );
+
       this.outputItems.push({
         index,
         tensorTag,
         outputId,
+        sourceOpNode: selectedOpNode,
         metadataList,
       });
       index++;
     }
     this.curOutputsCount = this.outputItems.length;
     this.outputItemsForCurPage = this.outputItems.slice(0, this.ioPageSize);
+  }
+
+  private genGroupInputsOutputsData() {
+    if (!this.curModelGraph || !this.curSelectedNode) {
+      return;
+    }
+
+    // Inputs.
+    const selectedGroupNode = this.curSelectedNode as GroupNode;
+    const seenInputNodeIds = new Set<string>();
+
+    this.groupInputItems = [];
+    let index = 0;
+    for (const nodeId of selectedGroupNode.descendantsOpNodeIds || []) {
+      const descendantIds = new Set<string>(
+        selectedGroupNode.descendantsOpNodeIds || [],
+      );
+      const opNode = this.curModelGraph?.nodesById[nodeId] as OpNode;
+      const incomingEdges = opNode.incomingEdges || [];
+
+      for (const edge of incomingEdges) {
+        const sourceOpNode = this.curModelGraph?.nodesById[
+          edge.sourceNodeId
+        ] as OpNode;
+
+        // Ignore if the source op node is within the layer.
+        if (descendantIds.has(sourceOpNode.id)) {
+          continue;
+        }
+
+        // Dedup.
+        if (seenInputNodeIds.has(sourceOpNode.id)) {
+          continue;
+        }
+        seenInputNodeIds.add(sourceOpNode.id);
+
+        const metadataList = this.genInputMetadataList(opNode, edge);
+        this.groupInputItems.push({
+          index: index++,
+          opNode: sourceOpNode,
+          metadataList,
+          targetOpNode: opNode,
+        });
+      }
+    }
+
+    this.curGroupInputsCount = this.groupInputItems.length;
+    this.groupInputItemsForCurPage = this.groupInputItems.slice(
+      0,
+      this.ioPageSize,
+    );
+
+    // Outputs.
+    this.groupOutputItems = [];
+    index = 0;
+    for (const nodeId of selectedGroupNode.descendantsOpNodeIds || []) {
+      const descendantIds = new Set<string>(
+        selectedGroupNode.descendantsOpNodeIds || [],
+      );
+      const opNode = this.curModelGraph?.nodesById[nodeId] as OpNode;
+
+      const outputsMetadata = opNode.outputsMetadata || {};
+      const outgoingEdges = opNode.outgoingEdges || [];
+      for (const outputId of Object.keys(outputsMetadata)) {
+        // The connected nodes.
+        const connectedNodes = outgoingEdges
+          .filter((edge) => !descendantIds.has(edge.targetNodeId))
+          .filter((edge) => edge.sourceNodeOutputId === outputId)
+          .map(
+            (edge) => this.curModelGraph!.nodesById[edge.targetNodeId],
+          ) as OpNode[];
+        if (connectedNodes.length === 0) {
+          continue;
+        }
+
+        // Metadata list.
+        const {metadataList, tensorTag} = this.genOutputMetadataList(
+          outgoingEdges,
+          outputsMetadata[outputId],
+          connectedNodes,
+        );
+
+        this.groupOutputItems.push({
+          index,
+          tensorTag,
+          outputId,
+          sourceOpNode: opNode,
+          metadataList,
+          showSourceOpNode: true,
+        });
+        index++;
+      }
+    }
+
+    this.curGroupOutputsCount = this.groupOutputItems.length;
+    this.groupOutputItemsForCurPage = this.groupOutputItems.slice(
+      0,
+      this.ioPageSize,
+    );
+  }
+
+  private genInputMetadataList(
+    opNode: OpNode,
+    edge: IncomingEdge,
+  ): KeyValueList {
+    const sourceOpNode = this.curModelGraph?.nodesById[
+      edge.sourceNodeId
+    ] as OpNode;
+    const metadata =
+      (opNode.inputsMetadata || {})[edge.targetNodeInputId] || {};
+    // Merge the corresponding output metadata with the current input
+    // metadata.
+    const sourceNodeOutputMetadata = {
+      ...((sourceOpNode.outputsMetadata || {})[edge.sourceNodeOutputId] || {}),
+    };
+    for (const key of Object.keys(sourceNodeOutputMetadata)) {
+      if (metadata[key] == null && key !== TENSOR_TAG_METADATA_KEY) {
+        metadata[key] = sourceNodeOutputMetadata[key];
+      }
+    }
+    // Sort by key.
+    const metadataList: KeyValueList = [];
+    Object.entries(metadata).forEach(([key, value]) => {
+      metadataList.push({key, value});
+    });
+    metadataList.sort((a, b) => a.key.localeCompare(b.key));
+    // Add namespace to metadata.
+    metadataList.push({
+      key: this.inputMetadataNamespaceKey,
+      value: getNamespaceLabel(sourceOpNode),
+    });
+    // Add tensor values to metadata if existed.
+    const attrs = sourceOpNode.attrs || {};
+    if (attrs[TENSOR_VALUES_KEY]) {
+      metadataList.push({
+        key: this.inputMetadataValuesKey,
+        value: attrs[TENSOR_VALUES_KEY],
+      });
+    }
+    return metadataList;
+  }
+
+  private genOutputMetadataList(
+    outgoingEdges: OutgoingEdge[],
+    outputMetadata: KeyValuePairs,
+    connectedNodes: OpNode[],
+  ) {
+    const metadataList: OutputItemMetadata[] = [];
+    let tensorTag = '';
+    for (const metadataKey of Object.keys(outputMetadata)) {
+      const value = outputMetadata[metadataKey];
+      if (metadataKey === TENSOR_TAG_METADATA_KEY) {
+        tensorTag = value;
+      }
+      // Hide all metadata keys that start with '__'.
+      if (metadataKey.startsWith('__')) {
+        continue;
+      }
+      metadataList.push({
+        key: metadataKey,
+        value,
+      });
+    }
+    metadataList.sort((a, b) => a.key.localeCompare(b.key));
+
+    metadataList.push({
+      key: this.outputMetadataConnectedTo,
+      value: '',
+      connectedNodes,
+    });
+
+    return {metadataList, tensorTag};
   }
 
   private genInfoDataForSelectedGroupNode() {
@@ -1016,39 +1197,6 @@ export class InfoPanel {
       requestAnimationFrame(animate);
     };
     animate();
-  }
-
-  private genInputFlatItems(
-    startIndex: number,
-    inputSourceNodes: OpNode[],
-    inputMetadataList: KeyValuePairs[],
-  ): FlatInputItem[] {
-    const flatInputItems: FlatInputItem[] = [];
-    for (let i = 0; i < inputSourceNodes.length; i++) {
-      const sourceNode = inputSourceNodes[i];
-      const metadataList: KeyValueList = [];
-      Object.entries(inputMetadataList[i]).forEach(([key, value]) => {
-        metadataList.push({key, value});
-      });
-      metadataList.sort((a, b) => a.key.localeCompare(b.key));
-      metadataList.push({
-        key: this.inputMetadataNamespaceKey,
-        value: getNamespaceLabel(inputSourceNodes[i]),
-      });
-      const attrs = sourceNode.attrs || {};
-      if (attrs[TENSOR_VALUES_KEY]) {
-        metadataList.push({
-          key: this.inputMetadataValuesKey,
-          value: attrs[TENSOR_VALUES_KEY],
-        });
-      }
-      flatInputItems.push({
-        index: i + startIndex,
-        opNode: sourceNode,
-        metadataList,
-      });
-    }
-    return flatInputItems;
   }
 
   private updateInputValueContentsExpandable() {
