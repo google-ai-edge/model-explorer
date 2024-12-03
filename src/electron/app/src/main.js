@@ -150,7 +150,7 @@ async function startServer() {
     path.join(baseDir, 'model_explorer_server'),
     'model_explorer',
   );
-  meServerProcess = spawn(serverBinary, [
+  meServerProcess = spawn(`'${serverBinary}'`, [
     '--extensions=model_explorer_onnx',
     '--host=127.0.0.1',
     '--no_open_in_browser',
