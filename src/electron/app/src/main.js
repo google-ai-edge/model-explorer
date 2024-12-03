@@ -155,8 +155,18 @@ async function startServer() {
     '--host=127.0.0.1',
     '--no_open_in_browser',
     `--port=${meServerPort}`,
-  ]);
+  ], {
+    stdio: 'pipe',
+    shell: true,
+  });
   log.info('Server process spawned');
+
+  meServerProcess.stdout.on('data', (data) => {
+    log.info(`Python: ${data}`);
+  });
+  meServerProcess.stderr.on('data', (data) => {
+    log.error(`Python: ${data}`);
+  });
 }
 
 async function waitForServer() {
