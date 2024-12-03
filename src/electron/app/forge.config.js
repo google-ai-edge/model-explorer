@@ -94,6 +94,13 @@ module.exports = {
     }),
   ],
   hooks: {
+    postPackage: async (forgeConfig, options) => {
+      // Ensure permissions for the built app are permissive enough to allow
+      // us to run the app after all its files are owned by root.
+      for (const outputPath of options.outputPaths) {
+        execSync(`chmod -R a+rx '${outputPath}'`);
+      }
+    },
     postMake: async (forgeConfig, makeResults) => {
       // Rename the packaged file name from "Model Explorer-xxx.zip" to
       // "model-explorer-xxx.zip".
