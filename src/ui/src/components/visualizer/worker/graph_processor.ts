@@ -481,6 +481,7 @@ export class GraphProcessor {
           modelGraph,
           this.showOnNodeItemTypes,
           this.nodeDataProviderRuns,
+          undefined,
           this.testMode,
           // Use fake node size.
           true,

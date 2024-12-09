@@ -39,7 +39,9 @@ import {
   FieldLabel,
   KeyValueList,
   KeyValuePairs,
+  NodeDataProviderResultProcessedData,
   NodeDataProviderRunData,
+  NodeDataProviderValueInfo,
   NodeQuery,
   NodeQueryType,
   NodeStyleId,
@@ -546,7 +548,7 @@ export function getOpNodeDataProviderKeyValuePairsForAttrsTable(
     runNames.includes(getRunName(run, {id: modelGraphId})),
   );
   for (const run of runs) {
-    const result = (run.results || {})?.[modelGraphId]?.[node.id];
+    const result = ((run.results || {})?.[modelGraphId] || {})[node.id];
     if (config?.hideEmptyNodeDataEntries && !result) {
       continue;
     }
@@ -1077,5 +1079,34 @@ export function getRunName(
 ): string {
   return (
     run.nodeDataProviderData?.[modelGraphIdLike?.id || '']?.name ?? run.runName
+  );
+}
+
+/** Generates the sorted value infos for the given group node. */
+export function genSortedValueInfos(
+  groupNode: GroupNode | undefined,
+  modelGraph: ModelGraph,
+  results: Record<string, NodeDataProviderResultProcessedData>,
+): NodeDataProviderValueInfo[] {
+  const bgColorToValueInfo: Record<string, NodeDataProviderValueInfo> = {};
+  const descendantsOpNodeIds =
+    groupNode?.descendantsOpNodeIds || modelGraph.nodes.map((node) => node.id);
+  for (const nodeId of descendantsOpNodeIds) {
+    const node = modelGraph.nodesById[nodeId];
+    const bgColor = results[node.id]?.bgColor || '';
+    if (bgColor) {
+      if (!bgColorToValueInfo[bgColor]) {
+        bgColorToValueInfo[bgColor] = {
+          label: `${results[nodeId]?.value || ''}`,
+          bgColor,
+          count: 1,
+        };
+      } else {
+        bgColorToValueInfo[bgColor].count++;
+      }
+    }
+  }
+  return Object.values(bgColorToValueInfo).sort((a, b) =>
+    a.bgColor.localeCompare(b.bgColor),
   );
 }

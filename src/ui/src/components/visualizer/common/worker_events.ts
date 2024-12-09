@@ -79,6 +79,7 @@ export declare interface ExpandOrCollapseGroupNodeRequest
   expand: boolean;
   showOnNodeItemTypes: Record<string, ShowOnNodeItemData>;
   nodeDataProviderRuns: Record<string, NodeDataProviderRunData>;
+  selectedNodeDataProviderRunId?: string;
   rendererId: string;
   paneId: string;
   // Expand or collapse all groups under the selected group.
@@ -111,6 +112,7 @@ export declare interface RelayoutGraphRequest extends WorkerEventBase {
   modelGraphId: string;
   showOnNodeItemTypes: Record<string, ShowOnNodeItemData>;
   nodeDataProviderRuns: Record<string, NodeDataProviderRunData>;
+  selectedNodeDataProviderRunId?: string;
   targetDeepestGroupNodeIdsToExpand?: string[];
   selectedNodeId: string;
   rendererId: string;
@@ -142,6 +144,7 @@ export declare interface LocateNodeRequest extends WorkerEventBase {
   modelGraphId: string;
   showOnNodeItemTypes: Record<string, ShowOnNodeItemData>;
   nodeDataProviderRuns: Record<string, NodeDataProviderRunData>;
+  selectedNodeDataProviderRunId?: string;
   nodeId: string;
   rendererId: string;
   noNodeShake?: boolean;

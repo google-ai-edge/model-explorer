@@ -55,6 +55,7 @@ export class GraphExpander {
       string,
       NodeDataProviderRunData
     >,
+    private readonly selectedNodeDataProviderRunId: string | undefined,
     private readonly testMode = false,
     private readonly config?: VisualizerConfig,
   ) {}
@@ -87,6 +88,7 @@ export class GraphExpander {
         this.dagre,
         this.showOnNodeItemTypes,
         this.nodeDataProviderRuns,
+        this.selectedNodeDataProviderRunId,
         this.testMode,
         this.config,
       );
@@ -111,6 +113,7 @@ export class GraphExpander {
       this.dagre,
       this.showOnNodeItemTypes,
       this.nodeDataProviderRuns,
+      this.selectedNodeDataProviderRunId,
       this.testMode,
       this.config,
     );
@@ -167,6 +170,7 @@ export class GraphExpander {
         this.dagre,
         this.showOnNodeItemTypes,
         this.nodeDataProviderRuns,
+        this.selectedNodeDataProviderRunId,
         this.testMode,
         this.config,
       );
@@ -188,6 +192,7 @@ export class GraphExpander {
       this.dagre,
       this.showOnNodeItemTypes,
       this.nodeDataProviderRuns,
+      this.selectedNodeDataProviderRunId,
       this.testMode,
       this.config,
     );
@@ -248,12 +253,14 @@ export class GraphExpander {
       this.modelGraph,
       this.showOnNodeItemTypes,
       this.nodeDataProviderRuns,
+      this.selectedNodeDataProviderRunId,
     );
     groupNode.height = getNodeHeight(
       groupNode,
       this.modelGraph,
       this.showOnNodeItemTypes,
       this.nodeDataProviderRuns,
+      this.selectedNodeDataProviderRunId,
       this.testMode,
       true,
       this.config,
@@ -276,6 +283,7 @@ export class GraphExpander {
         this.dagre,
         this.showOnNodeItemTypes,
         this.nodeDataProviderRuns,
+        this.selectedNodeDataProviderRunId,
         this.testMode,
         this.config,
       );
@@ -300,6 +308,7 @@ export class GraphExpander {
       this.dagre,
       this.showOnNodeItemTypes,
       this.nodeDataProviderRuns,
+      this.selectedNodeDataProviderRunId,
       this.testMode,
       this.config,
     );
@@ -361,6 +370,7 @@ export class GraphExpander {
         this.dagre,
         this.showOnNodeItemTypes,
         this.nodeDataProviderRuns,
+        this.selectedNodeDataProviderRunId,
         this.testMode,
         this.config,
       );
@@ -401,6 +411,7 @@ export class GraphExpander {
       this.dagre,
       this.showOnNodeItemTypes,
       this.nodeDataProviderRuns,
+      this.selectedNodeDataProviderRunId,
       this.testMode,
       this.config,
     );
