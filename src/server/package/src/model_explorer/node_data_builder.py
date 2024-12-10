@@ -219,4 +219,4 @@ class GradientItem:
   textColor: Union[str, None] = None
 
 
-type AggregatedStat = Literal['min', 'max', 'sum', 'avg']
+AggregatedStat = Literal['min', 'max', 'sum', 'avg']
