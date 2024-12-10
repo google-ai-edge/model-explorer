@@ -16,7 +16,7 @@
 import json
 import os
 from dataclasses import asdict, dataclass, field
-from typing import Union
+from typing import Literal, Union
 
 from .utils import remove_none
 
@@ -91,6 +91,50 @@ class GraphNodeData:
   #
   # (optional)
   gradient: list['GradientItem'] = field(default_factory=list)
+
+  # Whether to hide the corresponding column in aggregated stats table
+  # (the first table).
+  #
+  # If all columns in that table are hidden, the whole table will be hidden.
+  #
+  # (optional)
+  hideInAggregatedStatsTable: bool = False
+
+  # Whether to hide the corresponding column in children stats table
+  # (the second table).
+  #
+  # If all columns in that table are hidden, the whole table will be hidden.
+  #
+  # (optional)
+  hideInChildrenStatsTable: bool = False
+
+  # The stats to hide in the aggregated stats table (the first table).
+  #
+  # The value for the hidden stat will be displayed as '-'.
+  #
+  # (optional)
+  hideAggregatedStats: Union[None, list['AggregatedStat']] = None
+
+  # Controls whether to display a detailed value distribution summary on the
+  # group node.
+  #
+  # By default, a color bar representing the value distribution of
+  # all descendant nodes is shown at the bottom of the group node. If this
+  # field is set to true, we will show a more detailed summary, with each
+  # value's label, percentage, and count shown on a separate line.
+  #
+  # For now this only works with non-numerical (e.g. string) node data values.
+  #
+  # (optional)
+  showExpandedSummaryOnGroupNode: bool = False
+
+  # Whether to display the label count columns in the children stats table in
+  # the side panel.
+  #
+  # For now this only works with non-numerical (e.g. string) node data values.
+  #
+  # (optional)
+  showLabelCountColumnsInChildrenStatsTable: bool = False
 
   def save_to_file(self, path: str, indent: Union[int, None] = 2) -> None:
     """Writes the data into the given file."""
@@ -173,3 +217,6 @@ class GradientItem:
   #
   # (optional)
   textColor: Union[str, None] = None
+
+
+AggregatedStat = Literal['min', 'max', 'sum', 'avg']
