@@ -17,18 +17,38 @@
  */
 
 import {Graph, GraphCollection,} from '../components/visualizer/common/input_graph';
-import type { ChangesPerNode, ExecutionCommand } from './model_loader_service_interface';
+import type { NodeDataProviderData } from '../components/visualizer/common/types';
+import type { ChangesPerNode } from './model_loader_service_interface';
 
 /** A command sent to extension. */
 export declare interface ExtensionCommand {
   cmdId: string;
   extensionId: string;
+  modelPath: string;
+  settings: Record<string, any>;
+  deleteAfterConversion: boolean;
+}
+
+interface ExtensionGraphResponse<G extends Array<unknown>> {
+  graphs: G;
+  graphCollections?: never;
+  error?: never;
+}
+
+interface ExtensionCollectionResponse<C extends Array<unknown>> {
+  graphs?: never;
+  graphCollections: C;
+  error?: never;
+}
+
+interface ExtensionErrorResponse<E extends unknown = string> {
+  graphs?: never;
+  graphCollections?: never;
+  error: E;
 }
 
 /** A response received from the extension. */
-export interface ExtensionResponse {
-  error?: string;
-}
+export type ExtensionResponse<G extends Array<unknown> = Graph[], C extends Array<unknown> = GraphCollection[], E extends unknown = string> = ExtensionGraphResponse<G> | ExtensionCollectionResponse<C> | ExtensionErrorResponse<E>;
 
 /** Adapter's "convert" command. */
 export declare interface AdapterConvertCommand extends ExtensionCommand {
@@ -38,56 +58,54 @@ export declare interface AdapterConvertCommand extends ExtensionCommand {
   settings: Record<string, any>;
   // Whether to delete the model file at `modelPath` after conversion is done.
   deleteAfterConversion: boolean;
+  perf_trace?: string;
+  perf_data?: NodeDataProviderData;
 }
 
 /** Adapter's "convert" command response. */
-export declare interface AdapterConvertResponse extends ExtensionResponse {
-  graphs?: Graph[];
-  graphCollections?: GraphCollection[];
-}
+export type AdapterConvertResponse = ExtensionResponse;
 
 /** Adapter's "override" command. */
 export declare interface AdapterOverrideCommand extends ExtensionCommand {
   cmdId: 'override';
-  modelPath: string;
   settings: {
     graphs: Graph[];
     changes: ChangesPerNode;
   };
-  deleteAfterConversion: boolean;
 }
 
 /** Adapter's "override" command response. */
-export declare interface AdapterOverrideResponse extends ExtensionResponse {
+export type AdapterOverrideResponse = ExtensionResponse<[{
   success: boolean;
-  graphs?: Graph[];
-}
+}], never>;
 
 /** Adapter's "execute" command. */
 export declare interface AdapterExecuteCommand extends ExtensionCommand {
   cmdId: 'execute';
-  modelPath: string;
-  settings: Record<string, any>;
-  deleteAfterConversion: boolean;
 }
 
+/** Adapter's "execute" results inside the response. */
+export interface AdapterExecuteResults {}
+
 /** Adapter's "execute" command response. */
-export declare interface AdapterExecuteResponse extends ExtensionResponse, ExecutionCommand {
-}
+export type AdapterExecuteResponse = ExtensionResponse<[], never>;
 
 /** Adapter's "status check" command. */
 export declare interface AdapterStatusCheckCommand extends ExtensionCommand {
   cmdId: 'status_check';
-  modelPath: string;
-  settings: Record<string, any>;
-  deleteAfterConversion: boolean;
 }
 
-/** Adapter's "status check" command response. */
-export declare interface AdapterStatusCheckResponse extends ExtensionResponse {
+/** Adapter's "status check" results inside the response. */
+export interface AdapterStatusCheckResults {
   isDone: boolean;
   progress: number;
   total?: number;
   timeElapsed?: number;
   currentStatus?: string;
+  error?: string;
+  stdout?: string;
+  log_file?: string;
 }
+
+/** Adapter's "status check" command response. */
+export type AdapterStatusCheckResponse = ExtensionResponse<[AdapterStatusCheckResults], never>;

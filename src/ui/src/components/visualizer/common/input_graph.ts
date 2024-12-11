@@ -23,6 +23,7 @@ import {
   IncomingEdge,
   MetadataItem,
   type KeyValue,
+  type NodeDataProviderData,
 } from './types';
 
 /** A collection of graphs. This is the input to the visualizer. */
@@ -32,6 +33,7 @@ export declare interface GraphCollection {
 
   /** The graphs inside the collection. */
   graphs: Graph[];
+  perf_data?: NodeDataProviderData;
 }
 
 /** The collection sent from the built-in adapters. */
@@ -89,6 +91,7 @@ export declare interface Graph {
 
   // The level in the graph tree.
   level?: number;
+  perf_data?: NodeDataProviderData;
 }
 
 /** A single node in the graph. */

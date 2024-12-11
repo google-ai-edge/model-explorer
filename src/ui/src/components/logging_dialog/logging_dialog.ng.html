@@ -1,0 +1,43 @@
+<!--
+@license
+Copyright 2024 The Model Explorer Authors. All Rights Reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+==============================================================================
+-->
+
+<div mat-dialog-title class="title-container">
+  <h2>Message log</h2>
+</div>
+<div mat-dialog-content class="dialog-content">
+  <ul>
+    @for (logMessage of messages; track $index) {
+      <li [attr.data-log-level]="logMessage.level">
+        <div class="log-message-header">
+          <span class="log-message-timestamp">{{formatDate(logMessage.timestamp)}}</span>
+          <span class="log-message-level">
+            <mat-icon>{{getLogLevelIcon(logMessage.level)}}</mat-icon>
+          </span>
+        </div>
+        <div class="log-message-messages">
+          @for (message of logMessage.messages; track $index) {
+            <pre class="log-message-message">{{message}}</pre>
+          }
+        </div>
+      </li>
+    }
+  </ul>
+</div>
+<div mat-dialog-actions align="end" class="buttons-container">
+  <button mat-button mat-dialog-close>Close</button>
+</div>

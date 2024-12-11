@@ -12,10 +12,11 @@ import { UrlService } from '../../services/url_service';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { ModelItemStatus, type ModelItem } from '../../common/types';
 import { genUid } from './common/utils';
-import { ModelGraph } from './common/model_graph';
 import { GraphErrorsDialog } from '../graph_error_dialog/graph_error_dialog';
+import { LoggingDialog } from '../logging_dialog/logging_dialog';
 import { NodeDataProviderExtensionService } from './node_data_provider_extension_service';
-import type { NodeDataProviderData, Pane } from './common/types.js';
+import type { Pane } from './common/types';
+import type { LoggingServiceInterface } from '../../common/logging_service_interface';
 
 /**
  * The graph edit component.
@@ -40,11 +41,14 @@ import type { NodeDataProviderData, Pane } from './common/types.js';
 })
 export class GraphEdit {
   isProcessingExecuteRequest = false;
+  isProcessingUploadRequest = false;
 
   executionProgress = 0;
   executionTotal = 0;
 
   constructor(
+    @Inject('LoggingService')
+    private readonly loggingService: LoggingServiceInterface,
     @Inject('ModelLoaderService')
     private readonly modelLoaderService: ModelLoaderServiceInterface,
     private readonly nodeDataProviderExtensionService: NodeDataProviderExtensionService,
@@ -65,32 +69,40 @@ export class GraphEdit {
     }
   }
 
-  private poolForStatusUpdate(extensionId: string, modelPath: string, updateCallback: (progress: number, total: number) => void | Promise<void>, doneCallback: (status: 'done' | 'timeout') => void | Promise<void>) {
+  private poolForStatusUpdate(modelItem: ModelItem, modelPath: string, updateCallback: (progress: number, total: number, stdout?: string) => void | Promise<void>, doneCallback: (status: 'done' | 'timeout') => void | Promise<void>, errorCallback: (error: string) => void | Promise<void>) {
     const POOL_TIME_MS = 500;
     const TIMEOUT_MS = 5 * 60 * 1000;
 
     const startTime = Date.now();
     const intervalId = setInterval(async () => {
-      const { isDone, total = 100, progress = 0} = (await this.modelLoaderService.checkExecutionStatus(extensionId, modelPath)) ?? {};
+      const { isDone, total = 100, progress, error, stdout } = await this.modelLoaderService.checkExecutionStatus(modelItem, modelPath);
 
-      if (progress !== -1) {
-        updateCallback(progress, total);
+      if (error) {
+        errorCallback(error);
+        clearInterval(intervalId);
+        return;
       }
 
       if (isDone) {
         doneCallback('done');
         clearInterval(intervalId);
-      } else {
-        const deltaTime = Date.now() - startTime;
-        if (deltaTime > TIMEOUT_MS) {
-          doneCallback('timeout');
-          clearInterval(intervalId);
-        }
+        return;
+      }
+
+      const deltaTime = Date.now() - startTime;
+      if (deltaTime > TIMEOUT_MS) {
+        doneCallback('timeout');
+        clearInterval(intervalId);
+        return;
+      }
+
+      if (progress !== -1) {
+        updateCallback(progress, total, stdout);
       }
     }, POOL_TIME_MS);
   }
 
-  private async updateGraphInformation(curModel: ModelItem, models: ModelItem[], curPane?: Pane, perfData?: NodeDataProviderData) {
+  private async updateGraphInformation(curModel: ModelItem, models: ModelItem[], curPane?: Pane) {
     const newGraphCollections = await this.modelLoaderService.loadModel(curModel);
 
     if (curModel.status() !== ModelItemStatus.ERROR) {
@@ -131,18 +143,21 @@ export class GraphEdit {
 
       this.modelLoaderService.graphErrors.update(() => undefined);
 
-      if (perfData) {
-        const runId = genUid();
-        const modelGraph = curPane?.modelGraph as ModelGraph;
+      newGraphCollections.forEach(({ perf_data }) => {
+        if (perf_data) {
+          const runId = genUid();
 
-        this.nodeDataProviderExtensionService.addRun(
-          runId,
-          `${modelGraph.id} (Performance Trace)`,
-          curModel.selectedAdapter?.id ?? '',
-          modelGraph,
-          perfData,
-        );
-      }
+          if (curPane?.modelGraph) {
+            this.nodeDataProviderExtensionService.addRun(
+              runId,
+              `${curPane.modelGraph.id} (Performance Trace)`,
+              curModel.selectedAdapter?.id ?? '',
+              curPane.modelGraph,
+              perf_data,
+            );
+          }
+        }
+      });
 
       this.showSuccessMessage('Model updated');
     } else {
@@ -173,8 +188,8 @@ export class GraphEdit {
       return [...new Set([...curErrors ?? [], ...messages])];
     });
     this.dialog.open(GraphErrorsDialog, {
-      width: 'clamp(10rem, 30vmin, 30rem)',
-      height: 'clamp(10rem, 30vmin, 30rem)',
+      width: 'clamp(10rem, 60vw, 60rem)',
+      height: 'clamp(10rem, 60vh, 60rem)',
       data: {
         errorMessages: [...messages],
         title
@@ -194,79 +209,118 @@ export class GraphEdit {
     const { curModel, curPane, models } = this.getCurrentGraphInformation();
 
     if (curModel) {
-      this.isProcessingExecuteRequest = true;
+      try {
+        this.isProcessingExecuteRequest = true;
+        this.loggingService.info('Start executing model', curModel.path);
 
-      const result = await this.modelLoaderService.executeModel(curModel);
+        const result = await this.modelLoaderService.executeModel(curModel);
 
-      if (curModel.status() !== ModelItemStatus.ERROR) {
-        if (result) {
-          const updateStatus = (progress: number, total: number) => {
-            this.executionProgress = progress ?? this.executionProgress;
-            this.executionTotal = total;
-            this.changeDetectorRef.detectChanges();
-          };
-          const finishUpdate = async () => {
-            await this.updateGraphInformation(curModel, models, curPane, result.perf_data);
-            this.isProcessingExecuteRequest = false;
-          };
+        if (curModel.status() !== ModelItemStatus.ERROR) {
+          if (result) {
+            const updateStatus = (progress: number, total: number, stdout?: string) => {
+              this.executionProgress = progress ?? this.executionProgress;
+              this.executionTotal = total;
+              this.loggingService.debug(`Execution progress: ${progress} of ${total}`, curModel.path);
 
-          this.poolForStatusUpdate(curModel.selectedAdapter?.id ?? '', curModel.path, updateStatus, finishUpdate);
+              if (stdout) {
+                this.loggingService.info(stdout);
+              }
+
+              this.changeDetectorRef.detectChanges();
+            };
+
+            const finishUpdate = async (status: 'done' | 'timeout') => {
+              if (status === 'timeout') {
+                this.loggingService.error('Model execute timeout', curModel.path);
+              } else {
+                this.loggingService.info('Model execute finished', curModel.path);
+                await this.updateGraphInformation(curModel, models, curPane);
+                this.loggingService.info('Model updated', curModel.path);
+              }
+
+              this.isProcessingExecuteRequest = false;
+            };
+
+            const showError = (error: string) => {
+              this.executionProgress = 0;
+              this.isProcessingExecuteRequest = false;
+              this.loggingService.error('Graph Execution Error', error);
+              this.showErrorDialog('Graph Execution Error', error);
+            };
+
+            this.poolForStatusUpdate(curModel, curModel.path, updateStatus, finishUpdate, showError);
+          } else {
+            throw new Error("Graph execution resulted in an error");
+          }
         } else {
-          this.showErrorDialog('Graph Execution Error', "Graph execution resulted in an error");
-          this.isProcessingExecuteRequest = false;
+          throw new Error(curModel.errorMessage ?? 'An error has occured');
         }
-      } else {
-        this.showErrorDialog('Graph Execution Error', curModel.errorMessage ?? 'An error has occured');
+      } catch (err) {
+        const errorMessage = (err as Error).message ?? 'An error has occured';
+
+        this.loggingService.error('Graph Execution Error', errorMessage);
+        this.showErrorDialog('Graph Execution Error', errorMessage);
         this.isProcessingExecuteRequest = false;
       }
     }
   }
 
   async handleClickUploadGraph() {
-    const { curModel, curCollection, curCollectionLabel, changesToUpload, models } = this.getCurrentGraphInformation();
+    const { curModel, curCollection, changesToUpload, models, curPane } = this.getCurrentGraphInformation();
 
     if (curModel && curCollection && changesToUpload) {
-      const updatedGraphCollection = await this.modelLoaderService.overrideModel(
-        curModel,
-        curCollection,
-        changesToUpload
-      );
+      try {
+        this.isProcessingUploadRequest = true;
+        this.loggingService.info('Start uploading model', curModel.path);
 
-      if (curModel.status() !== ModelItemStatus.ERROR) {
-        if (updatedGraphCollection) {
-          this.modelLoaderService.loadedGraphCollections.update((prevGraphCollections) => {
-            if (!prevGraphCollections) {
-              return undefined;
-            }
+        const isUploadSuccessful = await this.modelLoaderService.overrideModel(
+          curModel,
+          curCollection,
+          changesToUpload
+        );
 
-            const collectionToUpdate = prevGraphCollections.findIndex(({ label }) => label === curCollectionLabel) ?? -1;
+        this.loggingService.info('Upload finished', curModel.path);
 
-            if (collectionToUpdate !== -1) {
-              prevGraphCollections[collectionToUpdate] = updatedGraphCollection;
-            }
+        if (curModel.status() !== ModelItemStatus.ERROR) {
+          this.loggingService.info('Updating existing models', curModel.path);
 
-            return [...prevGraphCollections];
-          });
+          if (isUploadSuccessful) {
+            await this.updateGraphInformation(curModel, models, curPane);
 
-          this.urlService.setUiState(undefined);
-          this.urlService.setModels(models?.map(({ path, selectedAdapter }) => {
-            return {
-              url: path,
-              adapterId: selectedAdapter?.id
-            };
-          }) ?? []);
+            this.urlService.setUiState(undefined);
+            this.urlService.setModels(models?.map(({ path, selectedAdapter }) => {
+              return {
+                url: path,
+                adapterId: selectedAdapter?.id
+              };
+            }) ?? []);
 
-          this.modelLoaderService.changesToUpload.update(() => ({}));
-          this.modelLoaderService.graphErrors.update(() => undefined);
+            this.modelLoaderService.changesToUpload.update(() => ({}));
+            this.modelLoaderService.graphErrors.update(() => undefined);
 
-          this.showSuccessMessage('Model uploaded');
+            this.showSuccessMessage('Model uploaded');
+          } else {
+            throw new Error("Graph upload didn't return any results");
+          }
         } else {
-          this.showErrorDialog('Graph Loading Error', "Graph upload didn't return any results");
+          throw new Error(curModel.errorMessage ?? 'An error has occured');
         }
-      } else {
-        this.showErrorDialog('Graph Loading Error', curModel.errorMessage ?? 'An error has occured');
+      } catch (err) {
+        const errorMessage =  (err as Error)?.message ?? 'An error has occured.';
+
+        this.loggingService.error('Graph Loading Error', errorMessage);
+        this.showErrorDialog('Graph Loading Error', errorMessage);
+      } finally {
+        this.isProcessingUploadRequest = false;
       }
     }
+  }
+
+  handleLogDialogOpen() {
+    this.dialog.open(LoggingDialog, {
+      width: 'clamp(10rem, 80vw, 100rem)',
+      height: 'clamp(10rem, 80vh, 100rem)'
+    });
   }
 
   handleClickSelectOptimizationPolicy(evt: Event) {

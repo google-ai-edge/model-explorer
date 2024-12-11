@@ -18,21 +18,14 @@
 
 import {Injectable, signal} from '@angular/core';
 
-import {ExtensionCommand, type AdapterExecuteResponse, type AdapterOverrideResponse, type AdapterStatusCheckResponse } from '../common/extension_command';
-import {Extension, type ExtensionSettings} from '../common/types';
+import {type ExtensionCommand} from '../common/extension_command';
+import {type Extension, type ExtensionSettings} from '../common/types';
 import {INTERNAL_COLAB} from '../common/utils';
+import { mockExtensionCommand, mockOptimizationPolicies } from './mock_extension_requests.js';
 
 const EXTERNAL_GET_EXTENSIONS_API_PATH = '/api/v1/get_extensions';
 const EXTERNAL_SEND_CMD_GET_API_PATH = '/api/v1/send_command';
 const EXTERNAL_SEND_CMD_POST_API_PATH = '/apipost/v1/send_command';
-
-const MOCK_STATUS_UPDATE: Required<Omit<AdapterStatusCheckResponse, 'error'>> = {
-  isDone: false,
-  progress: 0,
-  total: 100,
-  timeElapsed: 0,
-  currentStatus: 'executing',
-};
 
 /**
  * Service for managing model explorer extensions.
@@ -50,7 +43,6 @@ export class ExtensionService {
     this.loadExtensions();
   }
 
-  // TODO: revert mock API changes!
   async sendCommandToExtension<T>(
     cmd: ExtensionCommand,
   ): Promise<{cmdResp?: T; otherError?: string}> {
@@ -71,56 +63,6 @@ export class ExtensionService {
         };
         requestData.body = JSON.stringify(cmd);
 
-        if (localStorage.getItem('mock-api') === 'true' && cmd.cmdId === 'status_check') {
-          if (MOCK_STATUS_UPDATE.isDone) {
-            MOCK_STATUS_UPDATE.isDone = false;
-            MOCK_STATUS_UPDATE.progress = 0;
-            MOCK_STATUS_UPDATE.currentStatus = 'executing';
-            MOCK_STATUS_UPDATE.timeElapsed = 0;
-          }
-
-          MOCK_STATUS_UPDATE.timeElapsed = MOCK_STATUS_UPDATE.timeElapsed + Math.trunc(Math.random() * 100);
-          MOCK_STATUS_UPDATE.progress += Math.trunc(Math.random() * 10);
-
-          if (MOCK_STATUS_UPDATE.progress >= MOCK_STATUS_UPDATE.total) {
-            MOCK_STATUS_UPDATE.isDone = true;
-            MOCK_STATUS_UPDATE.progress = MOCK_STATUS_UPDATE.total;
-            MOCK_STATUS_UPDATE.currentStatus = 'finished';
-          }
-
-          return { cmdResp: MOCK_STATUS_UPDATE as T };
-        }
-
-        if (localStorage.getItem('mock-api') === 'true' && cmd.cmdId === 'execute') {
-          const response: AdapterExecuteResponse = {
-            log_file: '',
-            stdout: '',
-            perf_data: {
-              'ttir-graph': {
-                results: {
-                  'forward0': {
-                    value: 1,
-                    bgColor: '#ff0000',
-                    textColor: '#000000'
-                  }
-                }
-              }
-            }
-          };
-
-          return { cmdResp: response as T };
-        }
-
-        if (localStorage.getItem('mock-api') === 'true' && cmd.cmdId === 'override') {
-          const response: AdapterOverrideResponse = {
-            success: true,
-            // @ts-expect-error
-            graphs: cmd.settings.graphs
-          };
-
-          return { cmdResp: response as T };
-        }
-
         resp = await fetch(EXTERNAL_SEND_CMD_POST_API_PATH, requestData);
       }
       if (!resp.ok) {
@@ -129,47 +71,11 @@ export class ExtensionService {
 
       let json = await resp.json();
 
-      function processAttribute(key: string, value: string) {
-        if (value.startsWith('[')) {
-          const arr = value.split(',');
-
-          return {
-            key,
-            value,
-            editable: {
-              input_type: 'int_list',
-              min_size: 1,
-              max_size: arr.length,
-              min_value: 0,
-              max_value: 128,
-              step: 32
-            }
-          };
-        }
-
-        if (value.startsWith('(')) {
-          return { key, value };
-        }
-
-        return {
-          key,
-          value,
-          editable: {
-            input_type: 'value_list',
-            options: ['foo', 'bar', 'baz']
-          }
-        };
+      if (typeof json !== 'object' || json === null) {
+        return {otherError: `Failed to parse command response.`};
       }
 
-      if (localStorage.getItem('mock-api') === 'true' && cmd.cmdId === 'convert') {
-        json.graphs?.forEach((graph: { nodes: { attrs: { key: string, value: string }[]}[]}) => {
-          graph.nodes?.forEach((node) => {
-            node.attrs?.forEach(({key, value}, index) => {
-              node.attrs[index] = processAttribute(key, value);
-            });
-          });
-        });
-      }
+      json = mockExtensionCommand(cmd.cmdId, json);
 
       return {cmdResp: json as T};
     } catch (e) {
@@ -204,16 +110,7 @@ export class ExtensionService {
       }
       const json = await resp.json() as Extension[];
 
-      // TODO: revert mock API changes!
-      if (localStorage.getItem('mock-api') === 'true') {
-        json.forEach((ext) => {
-          if (ext.id === 'tt_adapter') {
-            ext.settings = {
-              optimizationPolicies: ['Foo', 'Bar', 'Baz', 'Quux']
-            };
-          }
-        });
-      }
+      mockOptimizationPolicies(json);
 
       return json;
     } catch (e) {

@@ -24,6 +24,7 @@ import {DemoPage} from '../components/demo_page/demo_page';
 import {HomePage} from '../components/home_page/home_page';
 import {INJECT_WINDOW} from '../inject';
 import {ModelLoaderService} from '../services/model_loader_service';
+import { LoggingService } from '../services/logging_service';
 
 const routes: Routes = [
   {path: '', component: HomePage},
@@ -37,6 +38,7 @@ export const appConfig: ApplicationConfig = {
     provideRouter(routes),
     provideAnimations(),
     {provide: 'ModelLoaderService', useClass: ModelLoaderService},
+    {provide: 'LoggingService', useClass: LoggingService},
     {provide: INJECT_WINDOW, useValue: window},
   ],
 };

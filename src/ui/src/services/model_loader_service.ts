@@ -20,16 +20,14 @@ import {Injectable, signal} from '@angular/core';
 
 import {GRAPHS_MODEL_SOURCE_PREFIX} from '../common/consts';
 import {
-  AdapterConvertCommand,
-  AdapterConvertResponse,
-  type AdapterExecuteCommand,
+  type AdapterConvertResponse,
   type AdapterExecuteResponse,
-  type AdapterOverrideCommand,
   type AdapterOverrideResponse,
-  type AdapterStatusCheckCommand,
   type AdapterStatusCheckResponse,
+  type ExtensionCommand,
+  type ExtensionResponse,
 } from '../common/extension_command';
-import {ModelLoaderServiceInterface, type ChangesPerGraphAndNode, type ChangesPerNode, type ExecutionCommand} from '../common/model_loader_service_interface';
+import {ModelLoaderServiceInterface, type ChangesPerGraphAndNode, type ChangesPerNode } from '../common/model_loader_service_interface';
 import {
   InternalAdapterExtId,
   ModelItem,
@@ -95,7 +93,7 @@ export class ModelLoaderService implements ModelLoaderServiceInterface {
   async executeModel(modelItem: ModelItem) {
     modelItem.status.set(ModelItemStatus.PROCESSING);
     let updatedPath = modelItem.path;
-    let result: ExecutionCommand | undefined = undefined;
+    let result: boolean = false;
 
     // User-entered file path.
     if (modelItem.type === ModelItemType.FILE_PATH) {
@@ -121,7 +119,7 @@ export class ModelLoaderService implements ModelLoaderServiceInterface {
         modelItem.selected = false;
         modelItem.status.set(ModelItemStatus.ERROR);
         modelItem.errorMessage = uploadError;
-        return undefined;
+        return false;
       }
 
       updatedPath = path;
@@ -141,7 +139,7 @@ export class ModelLoaderService implements ModelLoaderServiceInterface {
 
   async overrideModel(modelItem: ModelItem, graphCollection: GraphCollection, fieldsToUpdate: ChangesPerNode) {
     modelItem.status.set(ModelItemStatus.PROCESSING);
-    let result: GraphCollection | undefined = undefined;
+    let result = false;
     let updatedPath = modelItem.path;
 
     // User-entered file path.
@@ -167,7 +165,7 @@ export class ModelLoaderService implements ModelLoaderServiceInterface {
         modelItem.selected = false;
         modelItem.status.set(ModelItemStatus.ERROR);
         modelItem.errorMessage = uploadError;
-        return undefined;
+        return false;
       }
 
       updatedPath = path;
@@ -339,28 +337,22 @@ export class ModelLoaderService implements ModelLoaderServiceInterface {
     return result;
   }
 
-  async checkExecutionStatus(extensionId: string, modelPath: string): Promise<AdapterStatusCheckResponse | undefined> {
-    try {
-      const result = await this.sendStatusCheckRequest(extensionId, modelPath);
+  async checkExecutionStatus(modelItem: ModelItem, modelPath: string) {
+    const result = await this.sendExtensionRequest<AdapterStatusCheckResponse>('status_check', modelItem, modelPath);
 
-      if (result?.error) {
-        return {
-          error: result.error,
-          isDone: true,
-          progress: -1
-        };
-      }
-
-      return result;
-    } catch (error) {
-      console.error(error);
-
+    if (!result || modelItem.status() === ModelItemStatus.ERROR) {
       return {
-        error: (error as Error)?.message ?? '',
         isDone: true,
-        progress: -1
+        progress: -1,
+        error: modelItem.errorMessage ?? 'An error has occured'
       };
     }
+
+    return this.processAdapterStatusCheckResponse(result) ?? {
+      isDone: false,
+      progress: -1,
+      error: 'Empty response'
+    };
   }
 
   private async readTextFile(path: string): Promise<string> {
@@ -411,36 +403,61 @@ export class ModelLoaderService implements ModelLoaderServiceInterface {
     }
   }
 
+  private async sendExtensionRequest<T extends ExtensionResponse<any[], any[]>>(
+    command: string,
+    modelItem: ModelItem,
+    path: string,
+    settings?: Record<string, any>,
+    deleteAfterConversion: boolean = false,
+  ) {
+    try {
+      modelItem.status.set(ModelItemStatus.PROCESSING);
+      const convertCommand: ExtensionCommand = {
+        cmdId: command,
+        extensionId: modelItem.selectedAdapter?.id || '',
+        modelPath: path,
+        settings: settings ?? {},
+        deleteAfterConversion,
+      };
+
+      const { cmdResp, otherError: cmdError } = await this.extensionService.sendCommandToExtension<T>(convertCommand);
+
+      if (cmdError) {
+        throw new Error(cmdError);
+      }
+
+      if (!cmdResp) {
+        throw new Error(`Command "${command}" didn't return any response`);
+      }
+
+      if (cmdResp.error) {
+        throw new Error(cmdResp.error);
+      }
+
+      modelItem.status.set(ModelItemStatus.DONE);
+      return cmdResp;
+    } catch (err) {
+      modelItem.selected = false;
+      modelItem.errorMessage = (err as Partial<Error>)?.message ?? err?.toString() ?? `An error has occured when running command "${command}"`;
+      modelItem.status.set(ModelItemStatus.ERROR);
+
+      return undefined;
+    }
+  }
+
   private async sendConvertRequest(
     modelItem: ModelItem,
     path: string,
     fileName: string,
     deleteAfterConversion: boolean,
   ): Promise<GraphCollection[]> {
-    let result: GraphCollection[] = [];
-    modelItem.status.set(ModelItemStatus.PROCESSING);
-    const convertCommand: AdapterConvertCommand = {
-      cmdId: 'convert',
-      extensionId: modelItem.selectedAdapter?.id || '',
-      modelPath: path,
-      settings: this.settingsService.getAllSettingsValues(),
-      deleteAfterConversion,
-    };
-    const {cmdResp, otherError: cmdError} =
-      await this.extensionService.sendCommandToExtension<AdapterConvertResponse>(
-        convertCommand,
-      );
-    const error = cmdResp?.error || cmdError;
-    if (error) {
-      modelItem.selected = false;
-      modelItem.status.set(ModelItemStatus.ERROR);
-      modelItem.errorMessage = error;
+    const result = await this.sendExtensionRequest<AdapterConvertResponse>('convert', modelItem, path, this.settingsService.getAllSettingsValues(), deleteAfterConversion);
+
+    if (!result || modelItem.status() === ModelItemStatus.ERROR) {
       return [];
-    } else if (cmdResp) {
-      result = this.processAdapterConvertResponse(cmdResp, fileName);
     }
-    modelItem.status.set(ModelItemStatus.DONE);
-    return result;
+
+    return this.processAdapterConvertResponse(result, fileName);
   }
 
   private async sendExecuteRequest(
@@ -448,36 +465,13 @@ export class ModelLoaderService implements ModelLoaderServiceInterface {
     path: string,
     settings: Record<string, any> = {}
   ) {
-    let result: ExecutionCommand | undefined = undefined;
+    const result = await this.sendExtensionRequest<AdapterExecuteResponse>('execute', modelItem, path, settings);
 
-    modelItem.status.set(ModelItemStatus.PROCESSING);
-
-    const executeCommand: AdapterExecuteCommand = {
-      cmdId: 'execute',
-      extensionId: modelItem.selectedAdapter?.id ?? '',
-      modelPath: path,
-      settings,
-      deleteAfterConversion: false
+    if (!result || modelItem.status() === ModelItemStatus.ERROR) {
+      return false;
     }
 
-    const {cmdResp, otherError: cmdError} =
-      await this.extensionService.sendCommandToExtension<AdapterExecuteResponse>(
-        executeCommand,
-      );
-    const error = cmdResp?.error || cmdError;
-
-    if (error) {
-      modelItem.selected = false;
-      modelItem.status.set(ModelItemStatus.ERROR);
-      modelItem.errorMessage = error;
-      return undefined;
-    } else if (cmdResp) {
-      result = cmdResp;
-    }
-
-    modelItem.status.set(ModelItemStatus.DONE);
-
-    return result;
+    return this.processAdapterExecuteResponse(result);
   }
 
   private async sendOverrideRequest(
@@ -487,66 +481,16 @@ export class ModelLoaderService implements ModelLoaderServiceInterface {
     fieldsToUpdate: Record<string, any>
   ) {
 
-    let result: GraphCollection | undefined = undefined;
+    const result = await this.sendExtensionRequest<AdapterOverrideResponse>('override', modelItem, path, {
+      graphs: graphCollection.graphs,
+      changes: fieldsToUpdate,
+    });
 
-    modelItem.status.set(ModelItemStatus.PROCESSING);
-
-    const overrideCommand: AdapterOverrideCommand = {
-      cmdId: 'override',
-      extensionId: modelItem.selectedAdapter?.id || '',
-      modelPath: path,
-      settings: {
-        graphs: graphCollection.graphs,
-        changes: fieldsToUpdate
-      },
-      deleteAfterConversion: false
-    };
-
-    const {cmdResp, otherError: cmdError} =
-      await this.extensionService.sendCommandToExtension<AdapterOverrideResponse>(
-        overrideCommand,
-      );
-    const error = cmdResp?.error || cmdError;
-    if (error) {
-      modelItem.selected = false;
-      modelItem.status.set(ModelItemStatus.ERROR);
-      modelItem.errorMessage = error;
-      return  undefined;
-    } else if (cmdResp) {
-      result = this.processAdapterOverrideResponse(cmdResp, modelItem.label);
-    }
-    modelItem.status.set(ModelItemStatus.DONE);
-    return result;
-  }
-
-  private async sendStatusCheckRequest(
-    extensionId: string,
-    path: string,
-  ) {
-
-    let result: AdapterStatusCheckResponse | undefined = undefined;
-
-    const overrideCommand: AdapterStatusCheckCommand = {
-      cmdId: 'status_check',
-      extensionId,
-      modelPath: path,
-      settings: {},
-      deleteAfterConversion: false
-    };
-
-    const {cmdResp, otherError: cmdError} =
-      await this.extensionService.sendCommandToExtension<AdapterStatusCheckResponse>(
-        overrideCommand,
-      );
-    const error = cmdResp?.error || cmdError;
-
-    if (error) {
-      return undefined;
-    } else if (cmdResp) {
-      result = cmdResp;
+    if (!result || modelItem.status() === ModelItemStatus.ERROR) {
+      return false;
     }
 
-    return result;
+    return this.processAdapterOverrideResponse(result);
   }
 
   private processAdapterConvertResponse(
@@ -554,12 +498,13 @@ export class ModelLoaderService implements ModelLoaderServiceInterface {
     fileName: string,
   ): GraphCollection[] {
     if (resp.graphs) {
-      return [{label: fileName, graphs: resp.graphs}];
+      return [{label: fileName, graphs: resp.graphs }];
     } else if (resp.graphCollections) {
       return resp.graphCollections?.map((item) => {
         return {
           label: item.label === '' ? fileName : `${fileName} (${item.label})`,
           graphs: item.graphs,
+          perf_data: item.perf_data
         };
       }) ?? [];
     }
@@ -568,15 +513,19 @@ export class ModelLoaderService implements ModelLoaderServiceInterface {
 
   private processAdapterOverrideResponse(
     resp: AdapterOverrideResponse,
-    label: string,
-  ): GraphCollection | undefined {
-    if (resp.graphs) {
-      return {
-        label,
-        graphs: resp.graphs,
-      }
-    }
+  ): boolean {
+    return resp?.graphs?.[0].success ?? false;
+  }
 
-    return undefined;
+  private processAdapterStatusCheckResponse(
+    resp: AdapterStatusCheckResponse
+  ) {
+      return resp?.graphs?.[0];
+  }
+
+  private processAdapterExecuteResponse(
+    resp: AdapterExecuteResponse
+  ) {
+    return resp.graphs?.length === 0;
   }
 }

@@ -19,28 +19,21 @@
 import {WritableSignal} from '@angular/core';
 
 import {GraphCollection} from '../components/visualizer/common/input_graph';
-import type { KeyValue, NodeDataProviderData } from '../components/visualizer/common/types';
+import type { KeyValue } from '../components/visualizer/common/types';
 
 import {ModelItem} from './types';
-import type { AdapterStatusCheckResponse } from './extension_command';
+import type { AdapterStatusCheckResults } from './extension_command';
 
 export type ChangesPerNode = Record<string, KeyValue[]>;
 export type ChangesPerGraphAndNode = Record<string, ChangesPerNode>;
-
-export interface ExecutionCommand {
-  stdout: string;
-  log_file: string;
-  perf_trace?: string;
-  perf_data?: NodeDataProviderData
-}
 
 /** The interface of model load service. */
 export interface ModelLoaderServiceInterface {
   loadModels(modelItems: ModelItem[]): Promise<void>;
   loadModel(modelItems: ModelItem): Promise<GraphCollection[]>;
-  executeModel(modelItem: ModelItem): Promise<ExecutionCommand | undefined>;
-  checkExecutionStatus(extensionId: string, modelPath: string): Promise<AdapterStatusCheckResponse | undefined>;
-  overrideModel(modelItem: ModelItem, graphCollection: GraphCollection, fieldsToUpdate: ChangesPerNode): Promise<GraphCollection | undefined>;
+  executeModel(modelItem: ModelItem): Promise<boolean>;
+  checkExecutionStatus(modelItem: ModelItem, modelPath: string): Promise<AdapterStatusCheckResults>;
+  overrideModel(modelItem: ModelItem, graphCollection: GraphCollection, fieldsToUpdate: ChangesPerNode): Promise<boolean>;
   get loadedGraphCollections(): WritableSignal<GraphCollection[] | undefined>;
   get models(): WritableSignal<ModelItem[]>;
   get changesToUpload(): WritableSignal<ChangesPerGraphAndNode>;
