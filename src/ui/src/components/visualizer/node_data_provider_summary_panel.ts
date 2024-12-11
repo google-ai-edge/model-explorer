@@ -37,8 +37,17 @@ import {debounceTime} from 'rxjs/operators';
 import {AppService} from './app_service';
 import {NODE_DATA_PROVIDER_SHOW_ON_NODE_TYPE_PREFIX} from './common/consts';
 import {GroupNode, ModelGraph, OpNode} from './common/model_graph';
-import {AggregatedStat, NodeDataProviderRunData} from './common/types';
-import {getRunName, isGroupNode, isOpNode} from './common/utils';
+import {
+  AggregatedStat,
+  NodeDataProviderRunData,
+  NodeDataProviderValueInfo,
+} from './common/types';
+import {
+  genSortedValueInfos,
+  getRunName,
+  isGroupNode,
+  isOpNode,
+} from './common/utils';
 import {InfoPanelService, SortingDirection} from './info_panel_service';
 import {NodeDataProviderExtensionService} from './node_data_provider_extension_service';
 import {Paginator} from './paginator';
@@ -98,6 +107,7 @@ interface ChildrenStatsCol {
   runIndex: number;
   label: string;
   hideInChildrenStatsTable?: boolean;
+  multiLineHeader?: boolean;
 }
 
 const CHILDREN_STATS = ['Sum %'];
@@ -716,15 +726,45 @@ export class NodeDataProviderSummaryPanel implements OnChanges {
     // Generate children stats columns.
     this.childrenStatsCols = [];
     let childrenStatColIndex = 0;
+    const groupNode = this.curModelGraph.nodesById[
+      this.rootGroupNodeId ?? ''
+    ] as GroupNode;
+    const runIdToValueInfos: Record<string, NodeDataProviderValueInfo[]> = {};
     for (let i = 0; i < runs.length; i++) {
-      for (const childrenStat of CHILDREN_STATS) {
+      const run = runs[i];
+      let childrenStats = CHILDREN_STATS;
+      let valueInfos: NodeDataProviderValueInfo[] = [];
+      let multiLineHeader = false;
+      if (
+        (run.nodeDataProviderData ?? {})[this.curModelGraph.id]
+          ?.showLabelCountColumnsInChildrenStatsTable
+      ) {
+        valueInfos = genSortedValueInfos(
+          groupNode,
+          this.curModelGraph,
+          (run.results ?? {})[this.curModelGraph.id],
+        ).sort((a, b) => a.label.localeCompare(b.label));
+        runIdToValueInfos[run.runId] = valueInfos;
+        childrenStats = valueInfos.map((valueInfo) => `#${valueInfo.label}`);
+        multiLineHeader = true;
+      }
+      for (const childrenStat of childrenStats) {
+        let label = childrenStat;
+        if (runs.length > 1) {
+          if (multiLineHeader) {
+            label = `${this.getRunName(runs[i])}\n${childrenStat}`;
+          } else {
+            label = `${this.getRunName(runs[i])} • ${childrenStat}`;
+          }
+        }
         this.childrenStatsCols.push({
           colIndex: childrenStatColIndex,
           runIndex: i,
-          label: `${this.getRunName(runs[i])} • ${childrenStat}`,
+          label,
           hideInChildrenStatsTable:
             runs[i].nodeDataProviderData?.[this.curModelGraph.id]
               ?.hideInChildrenStatsTable,
+          multiLineHeader,
         });
         childrenStatColIndex++;
       }
@@ -746,36 +786,72 @@ export class NodeDataProviderSummaryPanel implements OnChanges {
         const run = runs[runIndex];
         const curResults = run.results || {};
         // Sum pct.
-        let sumPct = 0;
-        let hasValue = false;
-        if (isOpNode(node)) {
-          const nodeResult = (curResults[this.curModelGraph.id] || {})[nodeId];
-          const value = nodeResult?.value;
-          if (value != null && typeof value === 'number') {
-            sumPct = (value / stats[runIndex].sum) * 100;
-            hasValue = true;
-          }
-        } else if (isGroupNode(node)) {
-          let layerSum = 0;
-          const childrenIds = node.descendantsOpNodeIds || [];
-          for (const childNodeId of childrenIds) {
+        if (!runIdToValueInfos[run.runId]) {
+          let sumPct = 0;
+          let hasValue = false;
+          if (isOpNode(node)) {
             const nodeResult = (curResults[this.curModelGraph.id] || {})[
-              childNodeId
+              nodeId
             ];
             const value = nodeResult?.value;
             if (value != null && typeof value === 'number') {
-              layerSum += value;
+              sumPct = (value / stats[runIndex].sum) * 100;
               hasValue = true;
             }
+          } else if (isGroupNode(node)) {
+            let layerSum = 0;
+            const childrenIds = node.descendantsOpNodeIds || [];
+            for (const childNodeId of childrenIds) {
+              const nodeResult = (curResults[this.curModelGraph.id] || {})[
+                childNodeId
+              ];
+              const value = nodeResult?.value;
+              if (value != null && typeof value === 'number') {
+                layerSum += value;
+                hasValue = true;
+              }
+            }
+            sumPct = (layerSum / stats[runIndex].sum) * 100;
           }
-          sumPct = (layerSum / stats[runIndex].sum) * 100;
+          colValues.push(sumPct);
+          colStrs.push(hasValue ? sumPct.toFixed(1) : '-');
+          colHidden.push(
+            run.nodeDataProviderData?.[this.curModelGraph.id]
+              ?.hideInChildrenStatsTable === true,
+          );
         }
-        colValues.push(sumPct);
-        colStrs.push(hasValue ? sumPct.toFixed(1) : '-');
-        colHidden.push(
-          run.nodeDataProviderData?.[this.curModelGraph.id]
-            ?.hideInChildrenStatsTable === true,
-        );
+        // Label counts.
+        else {
+          const valueInfos = runIdToValueInfos[run.runId];
+          const curResults = run.results || {};
+          const nodeResult = (curResults[this.curModelGraph.id] || {})[nodeId];
+          const value = nodeResult?.value || '';
+          for (const valueInfo of valueInfos) {
+            let count = 0;
+            if (isOpNode(node)) {
+              if (valueInfo.label === value) {
+                count = 1;
+              }
+            } else if (isGroupNode(node)) {
+              const childrenIds = node.descendantsOpNodeIds || [];
+              for (const childNodeId of childrenIds) {
+                const nodeResult = (curResults[this.curModelGraph.id] || {})[
+                  childNodeId
+                ];
+                const childValue = nodeResult?.value || '';
+                if (childValue === valueInfo.label) {
+                  count++;
+                }
+              }
+            }
+            colValues.push(count);
+            colStrs.push(`${count}`);
+            colHidden.push(
+              run.nodeDataProviderData?.[this.curModelGraph.id]
+                ?.hideInChildrenStatsTable === true,
+            );
+          }
+        }
       }
       this.curChildrenStatRows.push({
         id: nodeId,

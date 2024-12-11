@@ -345,6 +345,8 @@ export class WebglRenderer implements OnInit, OnDestroy {
   private prevNodeDataProviderData:
     | Record<string, NodeDataProviderResultProcessedData>
     | undefined = undefined;
+  private prevNodeDataProviderRun: NodeDataProviderRunData | undefined =
+    undefined;
   private readonly nodeBodies = new WebglRoundedRectangles(6);
   private readonly groupNodeIcons = new WebglTexts(this.threejsService);
   private readonly groupNodeIconBgs = new WebglRoundedRectangles(99);
@@ -536,9 +538,14 @@ export class WebglRenderer implements OnInit, OnDestroy {
 
     effect(() => {
       const results = this.webglRendererNdpService.curNodeDataProviderResults();
+      const run = this.webglRendererNdpService.curNodeDataProviderRun();
       if (results !== this.prevNodeDataProviderData) {
-        this.handleCurNodeDataProviderResultsChanged();
+        this.handleCurNodeDataProviderResultsChanged(
+          this.prevNodeDataProviderRun,
+          run,
+        );
         this.prevNodeDataProviderData = results;
+        this.prevNodeDataProviderRun = run;
       }
     });
 
@@ -1389,6 +1396,11 @@ export class WebglRenderer implements OnInit, OnDestroy {
         modelGraphId: this.curModelGraph.id,
         showOnNodeItemTypes: this.curShowOnNodeItemTypes,
         nodeDataProviderRuns: this.curNodeDataProviderRuns,
+        selectedNodeDataProviderRunId:
+          this.nodeDataProviderExtensionService.getSelectedRunForModelGraph(
+            this.paneId,
+            this.curModelGraph,
+          )?.runId,
         nodeId,
         rendererId,
         noNodeShake,
@@ -1416,6 +1428,11 @@ export class WebglRenderer implements OnInit, OnDestroy {
       modelGraphId: this.curModelGraph.id,
       showOnNodeItemTypes: showOnNodeItemTypes || this.curShowOnNodeItemTypes,
       nodeDataProviderRuns: this.curNodeDataProviderRuns,
+      selectedNodeDataProviderRunId:
+        this.nodeDataProviderExtensionService.getSelectedRunForModelGraph(
+          this.paneId,
+          this.curModelGraph,
+        )?.runId,
       selectedNodeId: nodeId,
       targetDeepestGroupNodeIdsToExpand,
       rendererId: this.rendererId,
@@ -1808,10 +1825,31 @@ export class WebglRenderer implements OnInit, OnDestroy {
     }
   }
 
-  private handleCurNodeDataProviderResultsChanged() {
-    this.renderGraph();
-    this.updateNodesStyles();
-    this.webglRendererThreejsService.render();
+  private handleCurNodeDataProviderResultsChanged(
+    prevRun: NodeDataProviderRunData | undefined,
+    curRun: NodeDataProviderRunData | undefined,
+  ) {
+    const prevShowExpandedSummaryOnGroupNode =
+      prevRun?.nodeDataProviderData?.[this.curModelGraph.id]
+        ?.showExpandedSummaryOnGroupNode;
+    const curShowExpandedSummaryOnGroupNode =
+      curRun?.nodeDataProviderData?.[this.curModelGraph.id]
+        ?.showExpandedSummaryOnGroupNode;
+
+    // Relayout the graph if `showExpandedSummaryOnGroupNode` is changed
+    // between previous run and current run.
+    if (
+      prevShowExpandedSummaryOnGroupNode !== curShowExpandedSummaryOnGroupNode
+    ) {
+      this.sendRelayoutGraphRequest(this.selectedNodeId);
+    }
+    // Re-render the graph without re-laying out if
+    // `showExpandedSummaryOnGroupNode` is not changed.do {
+    else {
+      this.renderGraph();
+      this.updateNodesStyles();
+      this.webglRendererThreejsService.render();
+    }
   }
 
   private handleLocateNodeDone(
@@ -1884,6 +1922,11 @@ export class WebglRenderer implements OnInit, OnDestroy {
       expand: expandOverride == null ? !node?.expanded : expandOverride,
       showOnNodeItemTypes: this.curShowOnNodeItemTypes,
       nodeDataProviderRuns: this.curNodeDataProviderRuns,
+      selectedNodeDataProviderRunId:
+        this.nodeDataProviderExtensionService.getSelectedRunForModelGraph(
+          this.paneId,
+          this.curModelGraph,
+        )?.runId,
       rendererId: this.rendererId,
       paneId: this.paneId,
       all,

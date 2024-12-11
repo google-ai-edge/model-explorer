@@ -112,6 +112,7 @@ self.addEventListener('message', (event: Event) => {
           workerEvent.groupNodeId,
           workerEvent.showOnNodeItemTypes,
           workerEvent.nodeDataProviderRuns,
+          workerEvent.selectedNodeDataProviderRunId,
           workerEvent.all === true,
           workerEvent.config,
         );
@@ -121,6 +122,7 @@ self.addEventListener('message', (event: Event) => {
           workerEvent.groupNodeId,
           workerEvent.showOnNodeItemTypes,
           workerEvent.nodeDataProviderRuns,
+          workerEvent.selectedNodeDataProviderRunId,
           workerEvent.all === true,
           workerEvent.config,
         );
@@ -146,6 +148,7 @@ self.addEventListener('message', (event: Event) => {
         modelGraph,
         workerEvent.showOnNodeItemTypes,
         workerEvent.nodeDataProviderRuns,
+        workerEvent.selectedNodeDataProviderRunId,
         workerEvent.targetDeepestGroupNodeIdsToExpand,
         workerEvent.clearAllExpandStates,
         workerEvent.config,
@@ -176,6 +179,7 @@ self.addEventListener('message', (event: Event) => {
         modelGraph,
         workerEvent.showOnNodeItemTypes,
         workerEvent.nodeDataProviderRuns,
+        workerEvent.selectedNodeDataProviderRunId,
         workerEvent.nodeId,
         workerEvent.config,
       );
@@ -242,6 +246,7 @@ function handleProcessGraph(
       dagre,
       showItemOnNodeTypes,
       nodeDataProviderRuns,
+      undefined,
     );
     try {
       layout.layout();
@@ -267,6 +272,7 @@ function handleExpandGroupNode(
   groupNodeId: string | undefined,
   showOnNodeItemTypes: Record<string, ShowOnNodeItemData>,
   nodeDataProviderRuns: Record<string, NodeDataProviderRunData>,
+  selectedNodeDataProviderRunId: string | undefined,
   all: boolean,
   config?: VisualizerConfig,
 ): string[] {
@@ -275,6 +281,7 @@ function handleExpandGroupNode(
     dagre,
     showOnNodeItemTypes,
     nodeDataProviderRuns,
+    selectedNodeDataProviderRunId,
     false,
     config,
   );
@@ -343,6 +350,7 @@ function handleCollapseGroupNode(
   groupNodeId: string | undefined,
   showOnNodeItemTypes: Record<string, ShowOnNodeItemData>,
   nodeDataProviderRuns: Record<string, NodeDataProviderRunData>,
+  selectedNodeDataProviderRunId: string | undefined,
   all: boolean,
   config?: VisualizerConfig,
 ): string[] {
@@ -351,6 +359,7 @@ function handleCollapseGroupNode(
     dagre,
     showOnNodeItemTypes,
     nodeDataProviderRuns,
+    selectedNodeDataProviderRunId,
     false,
     config,
   );
@@ -378,6 +387,7 @@ function handleReLayoutGraph(
   modelGraph: ModelGraph,
   showOnNodeItemTypes: Record<string, ShowOnNodeItemData>,
   nodeDataProviderRuns: Record<string, NodeDataProviderRunData>,
+  selectedNodeDataProviderRunId: string | undefined,
   targetDeepestGroupNodeIdsToExpand?: string[],
   clearAllExpandStates?: boolean,
   config?: VisualizerConfig,
@@ -387,6 +397,7 @@ function handleReLayoutGraph(
     dagre,
     showOnNodeItemTypes,
     nodeDataProviderRuns,
+    selectedNodeDataProviderRunId,
     false,
     config,
   );
@@ -400,6 +411,7 @@ function handleLocateNode(
   modelGraph: ModelGraph,
   showOnNodeItemTypes: Record<string, ShowOnNodeItemData>,
   nodeDataProviderRuns: Record<string, NodeDataProviderRunData>,
+  selectedNodeDataProviderRunId: string | undefined,
   nodeId: string,
   config?: VisualizerConfig,
 ): string[] {
@@ -408,6 +420,7 @@ function handleLocateNode(
     dagre,
     showOnNodeItemTypes,
     nodeDataProviderRuns,
+    selectedNodeDataProviderRunId,
     false,
     config,
   );

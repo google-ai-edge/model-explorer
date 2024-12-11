@@ -320,6 +320,27 @@ export declare interface NodeDataProviderGraphData {
    * The value for the hidden stat will be displayed as '-'.
    */
   hideAggregatedStats?: AggregatedStat[];
+
+  /**
+   * Controls whether to display a detailed value distribution summary on the
+   * group node.
+   *
+   * By default, a color bar representing the value distribution of
+   * all descendant nodes is shown at the bottom of the group node. If this
+   * field is set to true, we will show a more detailed summary, with each
+   * value's label, percentage, and count shown on a separate line.
+   *
+   * For now this only works with non-numerical (e.g. string) node data values.
+   */
+  showExpandedSummaryOnGroupNode?: boolean;
+
+  /**
+   * Whether to display the label count columns in the children stats table in
+   * the side panel.
+   *
+   * For now this only works with non-numerical (e.g. string) node data values.
+   */
+  showLabelCountColumnsInChildrenStatsTable?: boolean;
 }
 
 /** The top level node data provider data, indexed by graph id. */
@@ -346,6 +367,13 @@ export declare interface NodeDataProviderRunData {
   // graphId -> {nodeId -> processed results}
   results?: Record<string, Record<string, NodeDataProviderResultProcessedData>>;
   error?: string;
+}
+
+/** Info for a value in a node data provider run. */
+export declare interface NodeDataProviderValueInfo {
+  label: string;
+  bgColor: string;
+  count: number;
 }
 
 /** The result data for a node in a node data provider run. */

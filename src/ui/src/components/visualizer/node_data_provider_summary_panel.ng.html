@@ -19,7 +19,8 @@ limitations under the License.
 <div class="container">
   <div class="index-container">
     <div class="index-row" *ngFor="let runItem of runItems; let i = index; trackBy: trackByRunId"
-        [class.selected]="isRunItemSelected(runItem)">
+        [class.selected]="isRunItemSelected(runItem)"
+        (click)="handleClickToggleVisibility(runItem, $event)">
       <div class="index-number-container">
         <div class="index-number" *ngIf="runItem.done">{{i + 1}}</div>
         <mat-spinner color="primary" diameter="16" *ngIf="!runItem.done">
@@ -137,7 +138,7 @@ limitations under the License.
                 (click)="handleClickChildrenStatsHeader(col.colIndex)">
               <div class="header-content">
                 <div class="index-number">{{col.runIndex + 1}}</div>
-                <div class="stat-label">{{col.label}}</div>
+                <div class="stat-label" [class.multi-line]="col.multiLineHeader">{{col.label}}</div>
                 <mat-icon *ngIf="col.colIndex === curChildrenStatSortingColIndex" class="sort">
                   {{curChildrenStatSortingDirection === 'asc' ? 'arrow_upward' : 'arrow_downward'}}
                 </mat-icon>

@@ -41,6 +41,18 @@ export const NODE_ATTRS_TABLE_VALUE_MAX_WIDTH = 200;
 /** The height of attrs table row. */
 export const NODE_ATTRS_TABLE_ROW_HEIGHT = 12;
 
+/** The height of the summary row in node data provider. */
+export const EXPANDED_NODE_DATA_PROVIDER_SUMMARY_ROW_HEIGHT = 14;
+
+/** The top padding of the summary row in node data provider. */
+export const EXPANDED_NODE_DATA_PROVIDER_SUMMARY_TOP_PADDING = 6;
+
+/** The bottom padding of the summary row in node data provider. */
+export const EXPANDED_NODE_DATA_PROVIDER_SUMMARY_BOTTOM_PADDING = 6;
+
+/** The font size of the summary row in node data provider. */
+export const EXPANDED_NODE_DATA_PROVIDER_SYUMMARY_FONT_SIZE = 9;
+
 /** The maximum number of children nodes under a group node. */
 export const DEFAULT_GROUP_NODE_CHILDREN_COUNT_THRESHOLD = IS_EXTERNAL
   ? 1000

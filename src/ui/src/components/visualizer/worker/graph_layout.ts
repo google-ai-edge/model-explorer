@@ -17,6 +17,10 @@
  */
 
 import {
+  EXPANDED_NODE_DATA_PROVIDER_SUMMARY_BOTTOM_PADDING,
+  EXPANDED_NODE_DATA_PROVIDER_SUMMARY_ROW_HEIGHT,
+  EXPANDED_NODE_DATA_PROVIDER_SUMMARY_TOP_PADDING,
+  EXPANDED_NODE_DATA_PROVIDER_SYUMMARY_FONT_SIZE,
   LAYOUT_MARGIN_X,
   MAX_IO_ROWS_IN_ATTRS_TABLE,
   NODE_ATTRS_TABLE_FONT_SIZE,
@@ -44,6 +48,7 @@ import {
   ShowOnNodeItemType,
 } from '../common/types';
 import {
+  genSortedValueInfos,
   generateCurvePoints,
   getGroupNodeAttrsKeyValuePairsForAttrsTable,
   getGroupNodeFieldLabelsFromShowOnNodeItemTypes,
@@ -114,6 +119,7 @@ export class GraphLayout {
       string,
       NodeDataProviderRunData
     >,
+    private readonly selectedNodeDataProviderRunId: string | undefined,
     private readonly testMode = false,
     private readonly config?: VisualizerConfig,
   ) {
@@ -144,6 +150,7 @@ export class GraphLayout {
       this.modelGraph,
       this.showOnNodeItemTypes,
       this.nodeDataProviderRuns,
+      this.selectedNodeDataProviderRunId,
       this.testMode,
       false,
       this.config,
@@ -264,6 +271,7 @@ export class GraphLayout {
         this.modelGraph,
         this.showOnNodeItemTypes,
         this.nodeDataProviderRuns,
+        this.selectedNodeDataProviderRunId,
         this.testMode,
         this.config,
       );
@@ -274,6 +282,7 @@ export class GraphLayout {
             this.modelGraph,
             this.showOnNodeItemTypes,
             this.nodeDataProviderRuns,
+            this.selectedNodeDataProviderRunId,
             this.testMode,
             this.config,
           ) +
@@ -349,6 +358,7 @@ export function getNodeWidth(
   modelGraph: ModelGraph,
   showOnNodeItemTypes: Record<string, ShowOnNodeItemData>,
   nodeDataProviderRuns: Record<string, NodeDataProviderRunData>,
+  selectedNodeDataProviderRunId: string | undefined,
   testMode = false,
   config?: VisualizerConfig,
 ) {
@@ -377,6 +387,7 @@ export function getNodeWidth(
   // Figure out the max width of all the labels and values respectively.
   let maxAttrLabelWidth = 0;
   let maxAttrValueWidth = 0;
+  let maxExpandedNodeDataProviderLabelWidth = 0;
   if (isOpNode(node)) {
     // Basic info.
     //
@@ -485,6 +496,38 @@ export function getNodeWidth(
       maxAttrLabelWidth = Math.max(maxAttrLabelWidth, widths.maxAttrLabelWidth);
       maxAttrValueWidth = Math.max(maxAttrValueWidth, widths.maxAttrValueWidth);
     }
+
+    // Expanded node data provider summary.
+    if (
+      isGroupNode(node) &&
+      !node.expanded &&
+      selectedNodeDataProviderRunId &&
+      nodeDataProviderRuns[selectedNodeDataProviderRunId]
+    ) {
+      const run = nodeDataProviderRuns[selectedNodeDataProviderRunId];
+      const showExpandedSummaryOnGroupNode =
+        (run.nodeDataProviderData ?? {})[modelGraph.id]
+          ?.showExpandedSummaryOnGroupNode ?? false;
+      if (showExpandedSummaryOnGroupNode) {
+        const valueInfos = genSortedValueInfos(
+          node,
+          modelGraph,
+          (run.results ?? {})[modelGraph.id],
+        );
+        for (const valueInfo of valueInfos) {
+          const labelWidth =
+            getLabelWidth(
+              `${valueInfo.label} 100% (${valueInfo.count})`,
+              EXPANDED_NODE_DATA_PROVIDER_SYUMMARY_FONT_SIZE,
+              false,
+            ) + 30;
+          maxExpandedNodeDataProviderLabelWidth = Math.max(
+            maxExpandedNodeDataProviderLabelWidth,
+            labelWidth,
+          );
+        }
+      }
+    }
   }
   maxAttrValueWidth = Math.min(
     maxAttrValueWidth,
@@ -498,7 +541,10 @@ export function getNodeWidth(
   if (attrsTableWidth !== NODE_ATTRS_TABLE_LABEL_VALUE_PADDING) {
     attrsTableWidth += ATTRS_TABLE_MARGIN_X * 2;
   }
-  return Math.max(MIN_NODE_WIDTH, Math.max(labelWidth, attrsTableWidth));
+  return Math.max(
+    Math.max(MIN_NODE_WIDTH, Math.max(labelWidth, attrsTableWidth)),
+    maxExpandedNodeDataProviderLabelWidth,
+  );
 }
 
 /** An utility function to get the node height. */
@@ -507,6 +553,7 @@ export function getNodeHeight(
   modelGraph: ModelGraph,
   showOnNodeItemTypes: Record<string, ShowOnNodeItemData>,
   nodeDataProviderRuns: Record<string, NodeDataProviderRunData>,
+  selectedNodeDataProviderRunId: string | undefined,
   testMode = false,
   forceRecalculate = false,
   config?: VisualizerConfig,
@@ -540,11 +587,39 @@ export function getNodeHeight(
     );
   }
 
+  // Count rows in the expanded node data provider data.
+  let expandedNodeDataProviderRowCount = 0;
+  if (
+    isGroupNode(node) &&
+    !node.expanded &&
+    selectedNodeDataProviderRunId &&
+    nodeDataProviderRuns[selectedNodeDataProviderRunId]
+  ) {
+    const run = nodeDataProviderRuns[selectedNodeDataProviderRunId];
+    const showExpandedSummaryOnGroupNode =
+      (run.nodeDataProviderData ?? {})[modelGraph.id]
+        ?.showExpandedSummaryOnGroupNode ?? false;
+    if (showExpandedSummaryOnGroupNode) {
+      const valueInfos = genSortedValueInfos(
+        node,
+        modelGraph,
+        (run.results ?? {})[modelGraph.id],
+      );
+      expandedNodeDataProviderRowCount = valueInfos.length;
+    }
+  }
+
   return (
     DEFAULT_NODE_HEIGHT +
     extraMultiLineLabelHeight +
     attrsTableRowCount * NODE_ATTRS_TABLE_ROW_HEIGHT +
-    (attrsTableRowCount > 0 ? NODE_ATTRS_TABLE_MARGIN_TOP - 4 : 0)
+    (attrsTableRowCount > 0 ? NODE_ATTRS_TABLE_MARGIN_TOP - 4 : 0) +
+    expandedNodeDataProviderRowCount *
+      EXPANDED_NODE_DATA_PROVIDER_SUMMARY_ROW_HEIGHT +
+    (expandedNodeDataProviderRowCount > 0
+      ? EXPANDED_NODE_DATA_PROVIDER_SUMMARY_TOP_PADDING +
+        EXPANDED_NODE_DATA_PROVIDER_SUMMARY_BOTTOM_PADDING
+      : 0)
   );
 }
 
@@ -555,6 +630,7 @@ export function getLayoutGraph(
   modelGraph: ModelGraph,
   showOnNodeItemTypes: Record<string, ShowOnNodeItemData>,
   nodeDataProviderRuns: Record<string, NodeDataProviderRunData>,
+  selectedNodeDataProviderRunId: string | undefined,
   testMode = false,
   useFakeNodeSize = false,
   config?: VisualizerConfig,
@@ -581,6 +657,7 @@ export function getLayoutGraph(
               modelGraph,
               showOnNodeItemTypes,
               nodeDataProviderRuns,
+              selectedNodeDataProviderRunId,
               testMode,
               config,
             )),
@@ -591,6 +668,7 @@ export function getLayoutGraph(
             modelGraph,
             showOnNodeItemTypes,
             nodeDataProviderRuns,
+            selectedNodeDataProviderRunId,
             testMode,
             false,
             config,
@@ -666,7 +744,7 @@ function getOpNodeAttrsTableRowCount(
           NODE_DATA_PROVIDER_SHOW_ON_NODE_TYPE_PREFIX,
         ) &&
         Object.values(nodeDataProviderRuns).some((run) => {
-          const result = (run.results || {})?.[modelGraph.id]?.[node.id];
+          const result = ((run.results || {})?.[modelGraph.id] || {})[node.id];
           if (config?.hideEmptyNodeDataEntries && !result) {
             return false;
           }
