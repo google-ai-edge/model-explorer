@@ -21,6 +21,7 @@
 #include "pybind11/pybind11.h"
 #include "direct_flatbuffer_to_json_graph_convert.h"
 #include "direct_saved_model_to_json_graph_convert.h"
+#include "mediapipe_adapter/mediapipe_to_json.h"
 #include "model_json_graph_convert.h"
 #include "visualize_config.h"
 
@@ -132,6 +133,22 @@ PYBIND11_MODULE(_pywrap_convert_wrapper, m) {
       },
       R"pbdoc(
       Converts a MLIR textual/bytecode file to visualizer JSON string.
+      Raises `RuntimeError` exception if failed.
+      )pbdoc");
+  m.def(
+      "ConvertMediapipeToJson",
+      [](const VisualizeConfig& config,
+         absl::string_view model_path) -> std::string {
+        const absl::StatusOr<std::string> json_or_status =
+            ::tooling::visualization_client::ConvertMediapipeToJson(config,
+                                                                    model_path);
+        if (!json_or_status.ok()) {
+          throw std::runtime_error(json_or_status.status().ToString());
+        }
+        return json_or_status.value();
+      },
+      R"pbdoc(
+      Converts a Mediapipe pipeline to visualizer JSON string.
       Raises `RuntimeError` exception if failed.
       )pbdoc");
 }

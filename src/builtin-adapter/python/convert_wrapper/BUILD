@@ -23,5 +23,6 @@ pybind_extension(
         "//:direct_saved_model_to_json_graph_convert",
         "//:model_json_graph_convert",
         "//:visualize_config",
+        "//mediapipe_adapter:mediapipe_to_json",
     ],
 )
