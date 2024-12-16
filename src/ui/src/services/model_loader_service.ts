@@ -503,8 +503,7 @@ export class ModelLoaderService implements ModelLoaderServiceInterface {
       return resp.graphCollections?.map((item) => {
         return {
           label: item.label === '' ? fileName : `${fileName} (${item.label})`,
-          graphs: item.graphs,
-          perf_data: item.perf_data
+          graphs: item.graphs
         };
       }) ?? [];
     }

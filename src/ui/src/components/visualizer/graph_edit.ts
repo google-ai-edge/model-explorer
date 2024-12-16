@@ -17,6 +17,7 @@ import { LoggingDialog } from '../logging_dialog/logging_dialog';
 import { NodeDataProviderExtensionService } from './node_data_provider_extension_service';
 import type { Pane } from './common/types';
 import type { LoggingServiceInterface } from '../../common/logging_service_interface';
+import type { Graph } from './common/input_graph';
 
 /**
  * The graph edit component.
@@ -143,20 +144,26 @@ export class GraphEdit {
 
       this.modelLoaderService.graphErrors.update(() => undefined);
 
-      newGraphCollections.forEach(({ perf_data }) => {
-        if (perf_data) {
-          const runId = genUid();
 
-          if (curPane?.modelGraph) {
-            this.nodeDataProviderExtensionService.addRun(
-              runId,
-              `${curPane.modelGraph.id} (Performance Trace)`,
-              curModel.selectedAdapter?.id ?? '',
-              curPane.modelGraph,
-              perf_data,
-            );
+      const modelGraphs = this.appService.panes().map((pane) => pane.modelGraph).filter((modelGraph) => modelGraph !== undefined);
+
+      newGraphCollections.forEach((collection) => {
+        collection.graphs.forEach((graph: Partial<Graph>) => {
+          if (graph.perf_data) {
+            const runId = genUid();
+            const modelGraph = modelGraphs.find(({ id }) => id === graph.id);
+
+            if (modelGraph) {
+              this.nodeDataProviderExtensionService.addRun(
+                runId,
+                `${modelGraph.id} (Performance Trace)`,
+                curModel.selectedAdapter?.id ?? '',
+                modelGraph,
+                graph.perf_data,
+              );
+            }
           }
-        }
+        });
       });
 
       this.showSuccessMessage('Model updated');

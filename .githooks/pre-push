@@ -2,20 +2,14 @@
 
 # Build the UI
 cd src/ui
-npm run build
-
-# Delete old files
-rm -rf ../server/package/src/model_explorer/web_app/
-
-# Recreate directory and move files
-mkdir -p ../server/package/src/model_explorer/web_app/
-mv ./dist/* ../server/package/src/model_explorer/web_app/
+npm run deploy
 
 # Check for changes
-if git diff-index --quiet HEAD --; then
+git diff-index --quiet HEAD
+if [ $? -eq 1 ]; then
   # Stage all changes
   git add -A
 
   # Commit the changes
-  git commit -m "chore: rebuild the project" -q
+  git commit -n -q -m "chore: rebuild the project"
 fi
