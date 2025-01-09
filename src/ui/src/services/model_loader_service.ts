@@ -27,7 +27,7 @@ import {
   type ExtensionCommand,
   type ExtensionResponse,
 } from '../common/extension_command';
-import {ModelLoaderServiceInterface, type ChangesPerGraphAndNode, type ChangesPerNode } from '../common/model_loader_service_interface';
+import {ModelLoaderServiceInterface, type OverridesPerGraphAndNode, type OverridesPerNode } from '../common/model_loader_service_interface';
 import {
   InternalAdapterExtId,
   ModelItem,
@@ -71,7 +71,7 @@ export class ModelLoaderService implements ModelLoaderServiceInterface {
 
   readonly models = signal<ModelItem[]>([]);
 
-  readonly changesToUpload = signal<ChangesPerGraphAndNode>({});
+  readonly overrides = signal<OverridesPerGraphAndNode>({});
 
   readonly graphErrors = signal<string[] | undefined>(undefined);
 
@@ -82,15 +82,15 @@ export class ModelLoaderService implements ModelLoaderServiceInterface {
     readonly extensionService: ExtensionService,
   ) {}
 
-  get hasChangesToUpload() {
-    return Object.keys(this.changesToUpload()).length > 0;
+  get hasOverrides() {
+    return Object.keys(this.overrides()).length > 0;
   }
 
   getOptimizationPolicies(extensionId: string): string[] {
     return this.extensionService.extensionSettings.get(extensionId)?.optimizationPolicies ?? [];
   }
 
-  async executeModel(modelItem: ModelItem) {
+  async executeModel(modelItem: ModelItem, overrides: OverridesPerNode = {}) {
     modelItem.status.set(ModelItemStatus.PROCESSING);
     let updatedPath = modelItem.path;
     let result: boolean = false;
@@ -101,7 +101,8 @@ export class ModelLoaderService implements ModelLoaderServiceInterface {
         modelItem,
         updatedPath,
         {
-          optimizationPolicy: this.selectedOptimizationPolicy()
+          optimizationPolicy: this.selectedOptimizationPolicy(),
+          overrides
         }
       );
     }
@@ -129,7 +130,8 @@ export class ModelLoaderService implements ModelLoaderServiceInterface {
         modelItem,
         updatedPath,
         {
-          optimizationPolicy: this.selectedOptimizationPolicy()
+          optimizationPolicy: this.selectedOptimizationPolicy(),
+          overrides
         }
       );
     }
@@ -137,7 +139,7 @@ export class ModelLoaderService implements ModelLoaderServiceInterface {
     return result;
   }
 
-  async overrideModel(modelItem: ModelItem, graphCollection: GraphCollection, fieldsToUpdate: ChangesPerNode) {
+  async overrideModel(modelItem: ModelItem, graphCollection: GraphCollection, overrides: OverridesPerNode) {
     modelItem.status.set(ModelItemStatus.PROCESSING);
     let result = false;
     let updatedPath = modelItem.path;
@@ -148,7 +150,7 @@ export class ModelLoaderService implements ModelLoaderServiceInterface {
         modelItem,
         updatedPath,
         graphCollection,
-        fieldsToUpdate,
+        overrides,
       );
     }
     // Upload or graph jsons from server.
@@ -175,7 +177,7 @@ export class ModelLoaderService implements ModelLoaderServiceInterface {
         modelItem,
         updatedPath,
         graphCollection,
-        fieldsToUpdate,
+        overrides,
       );
 
       if (modelItem.status() !== ModelItemStatus.ERROR) {
@@ -264,7 +266,7 @@ export class ModelLoaderService implements ModelLoaderServiceInterface {
             modelItem,
             filePath,
             fileName,
-            false,
+            false
           );
           break;
       }
@@ -316,7 +318,7 @@ export class ModelLoaderService implements ModelLoaderServiceInterface {
             modelItem,
             path,
             file.name,
-            true,
+            true
           );
           break;
       }
@@ -412,7 +414,7 @@ export class ModelLoaderService implements ModelLoaderServiceInterface {
   ) {
     try {
       modelItem.status.set(ModelItemStatus.PROCESSING);
-      const convertCommand: ExtensionCommand = {
+      const extensionCommand: ExtensionCommand = {
         cmdId: command,
         extensionId: modelItem.selectedAdapter?.id || '',
         modelPath: path,
@@ -420,7 +422,7 @@ export class ModelLoaderService implements ModelLoaderServiceInterface {
         deleteAfterConversion,
       };
 
-      const { cmdResp, otherError: cmdError } = await this.extensionService.sendCommandToExtension<T>(convertCommand);
+      const { cmdResp, otherError: cmdError } = await this.extensionService.sendCommandToExtension<T>(extensionCommand);
 
       if (cmdError) {
         throw new Error(cmdError);
@@ -450,8 +452,18 @@ export class ModelLoaderService implements ModelLoaderServiceInterface {
     path: string,
     fileName: string,
     deleteAfterConversion: boolean,
+    settings: Record<string, any> = {},
   ): Promise<GraphCollection[]> {
-    const result = await this.sendExtensionRequest<AdapterConvertResponse>('convert', modelItem, path, this.settingsService.getAllSettingsValues(), deleteAfterConversion);
+    const result = await this.sendExtensionRequest<AdapterConvertResponse>(
+      'convert',
+      modelItem,
+      path,
+      {
+        ...this.settingsService.getAllSettingsValues(),
+        ...settings
+      },
+      deleteAfterConversion
+    );
 
     if (!result || modelItem.status() === ModelItemStatus.ERROR) {
       return [];
@@ -478,12 +490,12 @@ export class ModelLoaderService implements ModelLoaderServiceInterface {
     modelItem: ModelItem,
     path: string,
     graphCollection: GraphCollection,
-    fieldsToUpdate: Record<string, any>
+    overrides: Record<string, any>
   ) {
 
     const result = await this.sendExtensionRequest<AdapterOverrideResponse>('override', modelItem, path, {
       graphs: graphCollection.graphs,
-      changes: fieldsToUpdate,
+      overrides,
     });
 
     if (!result || modelItem.status() === ModelItemStatus.ERROR) {

@@ -24,21 +24,21 @@ import type { KeyValue } from '../components/visualizer/common/types';
 import {ModelItem} from './types';
 import type { AdapterStatusCheckResults } from './extension_command';
 
-export type ChangesPerNode = Record<string, KeyValue[]>;
-export type ChangesPerGraphAndNode = Record<string, ChangesPerNode>;
+export type OverridesPerNode = Record<string, { named_location: string, attributes: KeyValue[] }>;
+export type OverridesPerGraphAndNode = Record<string, OverridesPerNode>;
 
 /** The interface of model load service. */
 export interface ModelLoaderServiceInterface {
   loadModels(modelItems: ModelItem[]): Promise<void>;
   loadModel(modelItems: ModelItem): Promise<GraphCollection[]>;
-  executeModel(modelItem: ModelItem): Promise<boolean>;
+  executeModel(modelItem: ModelItem, overrides?: OverridesPerNode): Promise<boolean>;
   checkExecutionStatus(modelItem: ModelItem, modelPath: string): Promise<AdapterStatusCheckResults>;
-  overrideModel(modelItem: ModelItem, graphCollection: GraphCollection, fieldsToUpdate: ChangesPerNode): Promise<boolean>;
+  overrideModel(modelItem: ModelItem, graphCollection: GraphCollection, fieldsToUpdate: OverridesPerNode): Promise<boolean>;
   get loadedGraphCollections(): WritableSignal<GraphCollection[] | undefined>;
   get models(): WritableSignal<ModelItem[]>;
-  get changesToUpload(): WritableSignal<ChangesPerGraphAndNode>;
+  get overrides(): WritableSignal<OverridesPerGraphAndNode>;
   getOptimizationPolicies(extensionId: string): string[];
   get selectedOptimizationPolicy(): WritableSignal<string>;
   get graphErrors(): WritableSignal<string[] | undefined>;
-  get hasChangesToUpload(): boolean;
+  get hasOverrides(): boolean;
 }

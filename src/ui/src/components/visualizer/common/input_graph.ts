@@ -16,6 +16,7 @@
  * ==============================================================================
  */
 
+import type { OverridesPerNode } from '../../../common/model_loader_service_interface.js';
 import {
   GraphNodeConfig,
   GraphNodeStyle,
@@ -90,7 +91,11 @@ export declare interface Graph {
 
   // The level in the graph tree.
   level?: number;
+  /** @deprecated Remove after we merge the changes that use only `overlays` */
   perf_data?: NodeDataProviderData;
+  overlays?: Record<string, NodeDataProviderData>;
+  overrides?: OverridesPerNode;
+
 }
 
 /** A single node in the graph. */
@@ -170,7 +175,7 @@ export interface EditableValueListAttribute {
 
 export interface EditableGridAttribute {
   input_type: 'grid';
-  separator?: string;
+  visual_separator?: string;
   min_value: number;
   max_value: number;
   step: number;

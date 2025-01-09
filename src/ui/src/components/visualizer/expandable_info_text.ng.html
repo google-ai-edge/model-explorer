@@ -93,7 +93,7 @@ limitations under the License.
               [max]="$any(editable)?.max_value ?? 100"
               (change)="handleTextChange($event)"
             />
-            <span class="text-separator">&nbsp;{{$any(editable)?.separator ?? 'x'}}&nbsp;</span>
+            <span class="text-separator">&nbsp;{{$any(editable)?.visual_separator ?? 'x'}}&nbsp;</span>
           }
         } @else {
           {{text}}
@@ -131,7 +131,7 @@ limitations under the License.
           [max]="$any(editable)?.max_value ?? 100"
           (change)="handleTextChange($event)"
         />
-        <span class="text-separator">&nbsp;{{$any(editable)?.separator ?? 'x'}}&nbsp;</span>
+        <span class="text-separator">&nbsp;{{$any(editable)?.visual_separator ?? 'x'}}&nbsp;</span>
       }
     } @else {
       {{text}}

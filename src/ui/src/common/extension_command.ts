@@ -17,8 +17,7 @@
  */
 
 import {Graph, GraphCollection,} from '../components/visualizer/common/input_graph';
-import type { NodeDataProviderData } from '../components/visualizer/common/types';
-import type { ChangesPerNode } from './model_loader_service_interface';
+import type { OverridesPerNode } from './model_loader_service_interface';
 
 /** A command sent to extension. */
 export declare interface ExtensionCommand {
@@ -58,8 +57,6 @@ export declare interface AdapterConvertCommand extends ExtensionCommand {
   settings: Record<string, any>;
   // Whether to delete the model file at `modelPath` after conversion is done.
   deleteAfterConversion: boolean;
-  perf_trace?: string;
-  perf_data?: NodeDataProviderData;
 }
 
 /** Adapter's "convert" command response. */
@@ -70,7 +67,7 @@ export declare interface AdapterOverrideCommand extends ExtensionCommand {
   cmdId: 'override';
   settings: {
     graphs: Graph[];
-    changes: ChangesPerNode;
+    overrides: OverridesPerNode;
   };
 }
 

@@ -206,7 +206,7 @@ export class GraphSelector {
     const curCollection = this.appService.curGraphCollections().find(({ label }) =>label === curCollectionLabel);
     const models = this.modelLoaderService.models();
     const curModel = models.find(({ label }) => label === curCollectionLabel);
-    const changesToUpload = this.modelLoaderService.changesToUpload()[curCollectionLabel ?? ''];
+    const changesToUpload = this.modelLoaderService.overrides()[curCollectionLabel ?? ''];
 
     return {
       curModel,

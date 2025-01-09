@@ -21,7 +21,7 @@ import {Injectable, signal} from '@angular/core';
 import {type ExtensionCommand} from '../common/extension_command';
 import {type Extension, type ExtensionSettings} from '../common/types';
 import {INTERNAL_COLAB} from '../common/utils';
-import { mockExtensionCommand, mockOptimizationPolicies } from './mock_extension_requests.js';
+import { mockExtensionCommand } from './mock_extension_requests.js';
 
 const EXTERNAL_GET_EXTENSIONS_API_PATH = '/api/v1/get_extensions';
 const EXTERNAL_SEND_CMD_GET_API_PATH = '/api/v1/send_command';
@@ -109,8 +109,6 @@ export class ExtensionService {
         return [];
       }
       const json = await resp.json() as Extension[];
-
-      mockOptimizationPolicies(json);
 
       return json;
     } catch (e) {

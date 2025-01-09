@@ -35,6 +35,7 @@ import {MatTooltipModule} from '@angular/material/tooltip';
 import {AppService} from './app_service';
 import { ModelLoaderServiceInterface } from '../../common/model_loader_service_interface';
 import type { EditableAttributeTypes, EditableValueListAttribute } from './common/input_graph';
+import type { OpNode } from './common/model_graph.js';
 
 /** Expandable info text component. */
 @Component({
@@ -87,8 +88,9 @@ export class ExpandableInfoText implements AfterViewInit, OnDestroy, OnChanges {
     }
 
     this.text = this.modelLoaderService
-      .changesToUpload()[this.collectionLabel ?? '']
+      .overrides()[this.collectionLabel ?? '']
       ?.[this.nodeId]
+      ?.attributes
       ?.find(({ key }) => key === this.type)
       ?.value ?? this.text;
   }
@@ -145,21 +147,30 @@ export class ExpandableInfoText implements AfterViewInit, OnDestroy, OnChanges {
       }).join(', ')}]`;
     }
 
-    const collectionLabel = this.appService.getSelectedPane()?.modelGraph?.collectionLabel;
-    const nodeId = this.appService.getSelectedPane()?.selectedNodeInfo?.nodeId;
+    const modelGraph = this.appService.getSelectedPane()?.modelGraph;
+    const nodeId = this.appService.getSelectedPane()?.selectedNodeInfo?.nodeId ?? '';
+    const [, namedLocation] = Object.entries((modelGraph?.nodesById?.[nodeId] as OpNode | undefined)?.attrs ?? {}).find(([key]) => key === 'named_location') ?? [];
 
-    this.modelLoaderService.changesToUpload.update((changesToUpload) => {
-      if (collectionLabel && nodeId) {
-        changesToUpload[collectionLabel] = {...changesToUpload[collectionLabel] };
+    this.modelLoaderService.overrides.update((overrides) => {
+      if (modelGraph?.collectionLabel && nodeId) {
+        overrides[modelGraph.collectionLabel] = {...overrides[modelGraph.collectionLabel] };
 
-        const existingChanges = changesToUpload[collectionLabel][nodeId]?.findIndex(({ key }) => key === this.type) ?? -1;
 
-        if (existingChanges !== -1) {
-          changesToUpload[collectionLabel][nodeId].splice(existingChanges, 1);
+        if (!overrides[modelGraph.collectionLabel][nodeId]) {
+          overrides[modelGraph.collectionLabel][nodeId] = {
+            named_location: namedLocation ?? nodeId,
+            attributes: []
+          };
         }
 
-        changesToUpload[collectionLabel][nodeId] = [
-          ...(changesToUpload[collectionLabel][nodeId] ?? []),
+        const existingOverrides = overrides[modelGraph.collectionLabel][nodeId].attributes.findIndex(({ key }) => key === this.type) ?? -1;
+
+        if (existingOverrides !== -1) {
+          overrides[modelGraph.collectionLabel][nodeId].attributes.splice(existingOverrides, 1);
+        }
+
+        overrides[modelGraph.collectionLabel][nodeId].attributes = [
+          ...(overrides[modelGraph.collectionLabel][nodeId].attributes ?? []),
           {
             key: this.type,
             value: updatedValue
@@ -167,7 +178,7 @@ export class ExpandableInfoText implements AfterViewInit, OnDestroy, OnChanges {
         ];
       }
 
-      return changesToUpload;
+      return overrides;
     });
   }
 

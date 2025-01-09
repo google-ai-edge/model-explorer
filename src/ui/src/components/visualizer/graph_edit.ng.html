@@ -12,7 +12,7 @@
 
   @if (hasCurModel) {
     <div class="mat-icon-container">
-      <button mat-icon-button matTooltip="Upload processed graphs json to server" (click)="handleClickUploadGraph()" [disabled]="!hasChangesToUpload || isProcessingExecuteRequest">
+      <button mat-icon-button matTooltip="Upload processed graphs json to server" (click)="handleClickUploadGraph()" [disabled]="!hasOverrides || isProcessingExecuteRequest">
         <mat-icon>upload</mat-icon>
       </button>
     </div>
@@ -24,7 +24,7 @@
         mat-icon-button
         matTooltip="Execute graph"
         (click)="handleClickExecuteGraph()"
-        [disabled]="isProcessingExecuteRequest && !hasChangesToUpload && !graphHasErrors"
+        [disabled]="isProcessingExecuteRequest && !hasOverrides && !graphHasErrors"
         [ngStyle]="{ display: !isProcessingExecuteRequest ? 'block' : 'none' }"
       >
         <mat-icon>play_arrow</mat-icon>
