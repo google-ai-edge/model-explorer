@@ -30,7 +30,9 @@ enum QueryParamKey {
   BENCHMARK = 'benchmark',
   ENABLE_SUBGRAPH_SELECTION = 'ess',
   ENABLE_EXPORT_TO_RESOURCE = 'eetr',
-  ENABLE_EXCLUDE_FROM_QUANTIZATION = 'eefq',
+  ENABLE_EXPORT_SELECTED_NODES = 'eesn',
+  EXPORT_SELECTED_NODES_BUTTON_LABEL = 'esnbl',
+  EXPORT_SELECTED_NODES_BUTTON_ICON = 'esnbi',
   INTERNAL_COLAB = 'internal_colab',
 }
 
@@ -79,7 +81,9 @@ export class UrlService {
   benchmark = false;
   enableSubgraphSelection = false;
   enableExportToResource = false;
-  enableExcludeFromQuantization = false;
+  enableExportSelectedNodes = false;
+  exportSelectedNodesButtonLabel = '';
+  exportSelectedNodesButtonIcon = '';
 
   constructor(private readonly router: Router) {
     this.decodeUrl();
@@ -157,10 +161,18 @@ export class UrlService {
         .enableExportToResource
         ? '1'
         : '0';
-      queryParams[QueryParamKey.ENABLE_EXCLUDE_FROM_QUANTIZATION] = this
-        .enableExcludeFromQuantization
+      queryParams[QueryParamKey.ENABLE_EXPORT_SELECTED_NODES] = this
+        .enableExportSelectedNodes
         ? '1'
         : '0';
+      if (this.exportSelectedNodesButtonLabel) {
+        queryParams[QueryParamKey.EXPORT_SELECTED_NODES_BUTTON_LABEL] =
+          this.exportSelectedNodesButtonLabel;
+      }
+      if (this.exportSelectedNodesButtonIcon) {
+        queryParams[QueryParamKey.EXPORT_SELECTED_NODES_BUTTON_ICON] =
+          this.exportSelectedNodesButtonIcon;
+      }
     } else {
       queryParams[QueryParamKey.BENCHMARK] = '1';
     }
@@ -226,8 +238,12 @@ export class UrlService {
       params.get(QueryParamKey.ENABLE_SUBGRAPH_SELECTION) === '1';
     this.enableExportToResource =
       params.get(QueryParamKey.ENABLE_EXPORT_TO_RESOURCE) === '1';
-    this.enableExcludeFromQuantization =
-      params.get(QueryParamKey.ENABLE_EXCLUDE_FROM_QUANTIZATION) === '1';
+    this.enableExportSelectedNodes =
+      params.get(QueryParamKey.ENABLE_EXPORT_SELECTED_NODES) === '1';
+    this.exportSelectedNodesButtonLabel =
+      params.get(QueryParamKey.EXPORT_SELECTED_NODES_BUTTON_LABEL) ?? '';
+    this.exportSelectedNodesButtonIcon =
+      params.get(QueryParamKey.EXPORT_SELECTED_NODES_BUTTON_ICON) ?? '';
     this.benchmark = params.get(QueryParamKey.BENCHMARK) === '1';
   }
 }

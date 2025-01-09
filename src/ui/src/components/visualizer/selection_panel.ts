@@ -28,7 +28,7 @@ import {MatIconModule} from '@angular/material/icon';
 import {setAnchorHref} from 'safevalues/dom';
 
 import {AppService} from './app_service';
-import {EXCLUDE_FROM_QUANTIZATION_CMD} from './common/consts';
+import {EXPORT_SELECTED_NODES_CMD} from './common/consts';
 import {exportToResource} from './common/utils';
 import {SubgraphSelectionService} from './subgraph_selection_service';
 
@@ -89,14 +89,14 @@ export class SelectionPanel {
     ]);
   }
 
-  handleClickExcludeFromQuantization() {
+  handleClickExportSelectedNodes() {
     // Send the selected nodes and the model graph info to the parent window
     // through postMessage.
     const selectedNodes = this.subgraphSelectionService.selectedNodes();
     const modelGraph = this.appService.getModelGraphFromPane(this.paneId);
     window.parent.postMessage(
       {
-        'cmd': EXCLUDE_FROM_QUANTIZATION_CMD,
+        'cmd': EXPORT_SELECTED_NODES_CMD,
         'nodes': selectedNodes,
         'graph_collection_label': modelGraph?.collectionLabel ?? '',
         'graph_id': modelGraph?.id ?? '',
@@ -109,7 +109,20 @@ export class SelectionPanel {
     return this.appService.config()?.enableExportToResource === true;
   }
 
-  get enableExcludeFromQuantization(): boolean {
-    return this.appService.config()?.enableExcludeFromQuantization === true;
+  get enableExportSelectedNodes(): boolean {
+    return this.appService.config()?.enableExportSelectedNodes === true;
+  }
+
+  get exportSelectedNodesButtonLabel(): string {
+    return (
+      this.appService.config()?.exportSelectedNodesButtonLabel ??
+      'Export selected nodes'
+    );
+  }
+
+  get exportSelectedNodesButtonIcon(): string {
+    return (
+      this.appService.config()?.exportSelectedNodesButtonIcon ?? 'file_upload'
+    );
   }
 }

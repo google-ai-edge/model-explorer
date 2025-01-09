@@ -39,10 +39,10 @@ limitations under the License.
           Export to resource
         </button>
       }
-      @if (enableExcludeFromQuantization) {
-        <button mat-flat-button color="primary" (click)="handleClickExcludeFromQuantization()">
-          <mat-icon>block</mat-icon>
-          Exclude from quantization
+      @if (enableExportSelectedNodes) {
+        <button mat-flat-button color="primary" (click)="handleClickExportSelectedNodes()">
+          <mat-icon>{{exportSelectedNodesButtonIcon}}</mat-icon>
+          {{exportSelectedNodesButtonLabel}}
         </button>
       }
     </div>

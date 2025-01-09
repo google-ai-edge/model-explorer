@@ -46,11 +46,29 @@ export declare interface VisualizerConfig {
   /** Whether to enable subgraph selection. */
   enableSubgraphSelection?: boolean;
 
-  /** Whether to enable export to resource. */
+  /**
+   * Whether to enable the "export to resource" button in the
+   * selection panel.
+   */
   enableExportToResource?: boolean;
 
-  /** Whether to enable exclude from quantization. */
-  enableExcludeFromQuantization?: boolean;
+  /**
+   * Whether to enable the "export selected nodes" button in the
+   * selection panel.
+   */
+  enableExportSelectedNodes?: boolean;
+
+  /**
+   * The label to override the "export selected nodes" button in the
+   * selection panel.
+   */
+  exportSelectedNodesButtonLabel?: string;
+
+  /**
+   * The icon to override the "export selected nodes" button in the
+   * selection panel.
+   */
+  exportSelectedNodesButtonIcon?: string;
 
   /** Whether to keep layers with a single child. */
   keepLayersWithASingleChild?: boolean;

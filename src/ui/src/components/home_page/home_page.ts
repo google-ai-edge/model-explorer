@@ -346,8 +346,11 @@ export class HomePage implements AfterViewInit {
       ),
       enableSubgraphSelection: this.urlService.enableSubgraphSelection,
       enableExportToResource: this.urlService.enableExportToResource,
-      enableExcludeFromQuantization:
-        this.urlService.enableExcludeFromQuantization,
+      enableExportSelectedNodes: this.urlService.enableExportSelectedNodes,
+      exportSelectedNodesButtonLabel:
+        this.urlService.exportSelectedNodesButtonLabel,
+      exportSelectedNodesButtonIcon:
+        this.urlService.exportSelectedNodesButtonIcon,
       keepLayersWithASingleChild: this.settingsService.getBooleanValue(
         SETTING_KEEP_LAYERS_WITH_A_SINGLE_CHILD,
       ),
