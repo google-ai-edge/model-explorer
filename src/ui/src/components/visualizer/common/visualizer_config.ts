@@ -49,6 +49,9 @@ export declare interface VisualizerConfig {
   /** Whether to enable export to resource. */
   enableExportToResource?: boolean;
 
+  /** Whether to enable exclude from quantization. */
+  enableExcludeFromQuantization?: boolean;
+
   /** Whether to keep layers with a single child. */
   keepLayersWithASingleChild?: boolean;
 

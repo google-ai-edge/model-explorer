@@ -39,6 +39,12 @@ limitations under the License.
           Export to resource
         </button>
       }
+      @if (enableExcludeFromQuantization) {
+        <button mat-flat-button color="primary" (click)="handleClickExcludeFromQuantization()">
+          <mat-icon>block</mat-icon>
+          Exclude from quantization
+        </button>
+      }
     </div>
   </div>
 }

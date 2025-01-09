@@ -254,5 +254,9 @@ export const EXTERNAL_LOCAL_DEV_PORT = 8081;
 /** The command to export to resource. */
 export const EXPORT_TO_RESOURCE_CMD = 'model-explorer-export-to-resource';
 
+/** The command to exclude from quantization. */
+export const EXCLUDE_FROM_QUANTIZATION_CMD =
+  'model-explorer-exclude-from-quantization';
+
 /** The line height of node label. */
 export const NODE_LABEL_LINE_HEIGHT = 14;

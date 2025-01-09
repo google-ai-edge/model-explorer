@@ -30,6 +30,7 @@ enum QueryParamKey {
   BENCHMARK = 'benchmark',
   ENABLE_SUBGRAPH_SELECTION = 'ess',
   ENABLE_EXPORT_TO_RESOURCE = 'eetr',
+  ENABLE_EXCLUDE_FROM_QUANTIZATION = 'eefq',
   INTERNAL_COLAB = 'internal_colab',
 }
 
@@ -78,6 +79,7 @@ export class UrlService {
   benchmark = false;
   enableSubgraphSelection = false;
   enableExportToResource = false;
+  enableExcludeFromQuantization = false;
 
   constructor(private readonly router: Router) {
     this.decodeUrl();
@@ -155,6 +157,10 @@ export class UrlService {
         .enableExportToResource
         ? '1'
         : '0';
+      queryParams[QueryParamKey.ENABLE_EXCLUDE_FROM_QUANTIZATION] = this
+        .enableExcludeFromQuantization
+        ? '1'
+        : '0';
     } else {
       queryParams[QueryParamKey.BENCHMARK] = '1';
     }
@@ -220,6 +226,8 @@ export class UrlService {
       params.get(QueryParamKey.ENABLE_SUBGRAPH_SELECTION) === '1';
     this.enableExportToResource =
       params.get(QueryParamKey.ENABLE_EXPORT_TO_RESOURCE) === '1';
+    this.enableExcludeFromQuantization =
+      params.get(QueryParamKey.ENABLE_EXCLUDE_FROM_QUANTIZATION) === '1';
     this.benchmark = params.get(QueryParamKey.BENCHMARK) === '1';
   }
 }
