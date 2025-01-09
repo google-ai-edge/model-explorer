@@ -2820,6 +2820,14 @@ export class WebglRenderer implements OnInit, OnDestroy {
   }
 
   private async openSubgraph(subgraphId: string) {
+    const graph = this.appService.getGraphById(subgraphId);
+    if (!graph) {
+      const msg = `No graph found for subgraph id: "${subgraphId}"`;
+      console.warn(msg);
+      this.snackBar.open(msg, 'Dismiss');
+      return;
+    }
+
     // Add breadcrumb.
     this.appService.addSubgraphBreadcrumbItem(
       this.paneId,
@@ -2829,14 +2837,11 @@ export class WebglRenderer implements OnInit, OnDestroy {
     );
 
     // Open the subgraph in current pane.
-    const graph = this.appService.getGraphById(subgraphId);
-    if (graph) {
-      this.appService.selectNode(this.paneId, undefined);
-      this.appService.setFlattenLayersInCurrentPane(false);
-      this.appService.curInitialUiState.set(undefined);
-      this.appService.curToLocateNodeInfo.set(undefined);
-      this.appService.selectGraphInCurrentPane(graph);
-    }
+    this.appService.selectNode(this.paneId, undefined);
+    this.appService.setFlattenLayersInCurrentPane(false);
+    this.appService.curInitialUiState.set(undefined);
+    this.appService.curToLocateNodeInfo.set(undefined);
+    this.appService.selectGraphInCurrentPane(graph);
   }
 
   private getGroupNodeLabelSeparatorId(

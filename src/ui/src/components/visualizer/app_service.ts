@@ -172,7 +172,10 @@ export class AppService {
               }
               graph.subGraphIds.push(...node.subgraphIds);
               for (const subgraphId of node.subgraphIds) {
-                graphById[subgraphId].parentGraphId = graph.id;
+                const subgraph = graphById[subgraphId];
+                if (subgraph) {
+                  subgraph.parentGraphId = graph.id;
+                }
               }
             }
           }
@@ -190,7 +193,9 @@ export class AppService {
           if (root == null) {
             graphs = rootGraphs;
           } else {
-            graphs = (root.subGraphIds || []).map((id) => graphById[id]);
+            graphs = (root.subGraphIds || [])
+              .map((id) => graphById[id])
+              .filter((graphs) => graphs != null);
           }
           // Sort by node count.
           graphs.sort((g1, g2) => g2.nodes.length - g1.nodes.length);
