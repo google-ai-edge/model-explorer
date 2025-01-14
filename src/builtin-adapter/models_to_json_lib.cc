@@ -24,6 +24,7 @@
 #include "absl/strings/string_view.h"
 #include "direct_flatbuffer_to_json_graph_convert.h"
 #include "direct_saved_model_to_json_graph_convert.h"
+#include "mediapipe_adapter/mediapipe_to_json.h"
 #include "model_json_graph_convert.h"
 #include "status_macros.h"
 #include "visualize_config.h"
@@ -42,6 +43,7 @@ enum ModelFormat {
   kFlatbufferDirect,
   kSavedModelDirect,
   kGraphDefDirect,
+  kMediapipePipeline,
 };
 
 absl::StatusOr<ModelFormat> GetModelFormat(absl::string_view input_file,
@@ -108,6 +110,10 @@ absl::StatusOr<std::string> ConvertModelToJson(const VisualizeConfig& config,
     }
     case kGraphDefDirect: {
       json_output = ConvertGraphDefDirectlyToJson(config, input_file);
+      break;
+    }
+    case kMediapipePipeline: {
+      json_output = ConvertMediapipeToJson(config, input_file);
       break;
     }
     default: {
