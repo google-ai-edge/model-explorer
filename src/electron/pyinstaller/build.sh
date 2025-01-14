@@ -36,17 +36,12 @@ source venv/bin/activate
 echo
 echo '#### Install model explorer packages'
 
-pip install torch ai-edge-model-explorer pyinstaller model-explorer-onnx \
+pip install torch pyinstaller model-explorer-onnx \
     --index-url https://download.pytorch.org/whl/cpu \
     --extra-index-url https://pypi.python.org/simple
 
-# Replace the model explorer code with the latest.
-# Move to 'model-explorer/src/electron/pyinstaller/venv/lib/python3.X/site-packages'
-cd venv/lib/python*/site-packages/
-rm -rf model_explorer
-# Copy 'model-explorer/src/server/package/src/model_explorer/'
-cp -rf "${SCRIPT_DIR}/../../server/package/src/model_explorer" .
-cd -
+# Install local model explorer
+pip install ../../server/package/
 
 # Run pyinstaller
 echo
@@ -54,6 +49,11 @@ echo '#### Run pyinstaller'
 
 cp -f model_explorer.py venv/lib/python*/site-packages/
 cd venv/lib/python*/site-packages/
+
+# This generates a spec file that may be useful to inspect when debugging
+# ./venv/lib/python3.11/site-packages/model_explorer/model_explorer.spec
+#
+# `--python-option u` is required to make python not buffer stdio.
 pyinstaller -y \
   --hidden-import model_explorer.builtin_tflite_flatbuffer_adapter \
   --hidden-import model_explorer.builtin_tflite_mlir_adapter \
@@ -65,6 +65,7 @@ pyinstaller -y \
   --hidden-import model_explorer_onnx.main \
   --copy-metadata ai-edge-model-explorer \
   --add-data "web_app:model_explorer/web_app" \
+  --python-option u \
   model_explorer.py
 cd -
 
