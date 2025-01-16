@@ -92,6 +92,7 @@ const mediapipeAdapterExtension: AdapterExtension = {
   type: ExtensionType.ADAPTER,
   fileExts: ['pbtxt'],
   id: InternalAdapterExtId.MEDIAPIPE,
+  matchGoogleStorageDir: true, // Also accept an entire directory.
   name: 'MediaPipe adapter',
   description:
     'A built-in adapter that converts a MediaPipe Pipeline to Model Explorer format.',
