@@ -16,10 +16,10 @@
  * ==============================================================================
  */
 
-import {Injectable, computed, signal} from '@angular/core';
+import {Injectable, Signal, computed, signal} from '@angular/core';
 import {AppService} from './app_service';
 import {Graph, GraphNode} from './common/input_graph';
-import {ModelGraph} from './common/model_graph';
+import {ModelGraph, OpNode} from './common/model_graph';
 import {IncomingEdge} from './common/types';
 import {isGroupNode, isOpNode} from './common/utils';
 
@@ -35,6 +35,18 @@ export class SubgraphSelectionService {
   readonly selectedNodeCount = computed(
     () => Object.keys(this.selectedNodeIds()).length,
   );
+
+  readonly selectedNodes: Signal<OpNode[]> = computed(() => {
+    if (!this.modelGraph) {
+      return [];
+    }
+    const selectedNodeIds = Object.keys(this.selectedNodeIds()).filter(
+      (nodeId) => this.selectedNodeIds()[nodeId],
+    );
+    return selectedNodeIds.map(
+      (nodeId) => this.modelGraph!.nodesById[nodeId] as OpNode,
+    );
+  });
 
   paneId = '';
 

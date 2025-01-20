@@ -36,6 +36,7 @@ export enum InternalAdapterExtId {
   MLIR = 'builtin_mlir',
   JSON_LOADER = 'builtin_json',
   DATA_NEXUS = 'builtin_data_nexus',
+  MEDIAPIPE = 'builtin_mediapipe',
 }
 
 /** Extension types. */

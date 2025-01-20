@@ -28,10 +28,11 @@ import {MatIconModule} from '@angular/material/icon';
 import {setAnchorHref} from 'safevalues/dom';
 
 import {AppService} from './app_service';
+import {EXPORT_SELECTED_NODES_CMD} from './common/consts';
 import {exportToResource} from './common/utils';
 import {SubgraphSelectionService} from './subgraph_selection_service';
 
-/** A component to handle drag events. */
+/** A component to show actions for selected nodes. */
 @Component({
   standalone: true,
   selector: 'selection-panel',
@@ -88,7 +89,40 @@ export class SelectionPanel {
     ]);
   }
 
+  handleClickExportSelectedNodes() {
+    // Send the selected nodes and the model graph info to the parent window
+    // through postMessage.
+    const selectedNodes = this.subgraphSelectionService.selectedNodes();
+    const modelGraph = this.appService.getModelGraphFromPane(this.paneId);
+    window.parent.postMessage(
+      {
+        'cmd': EXPORT_SELECTED_NODES_CMD,
+        'nodes': selectedNodes,
+        'graph_collection_label': modelGraph?.collectionLabel ?? '',
+        'graph_id': modelGraph?.id ?? '',
+      },
+      '*',
+    );
+  }
+
   get enableExportToResource(): boolean {
     return this.appService.config()?.enableExportToResource === true;
+  }
+
+  get enableExportSelectedNodes(): boolean {
+    return this.appService.config()?.enableExportSelectedNodes === true;
+  }
+
+  get exportSelectedNodesButtonLabel(): string {
+    return (
+      this.appService.config()?.exportSelectedNodesButtonLabel ??
+      'Export selected nodes'
+    );
+  }
+
+  get exportSelectedNodesButtonIcon(): string {
+    return (
+      this.appService.config()?.exportSelectedNodesButtonIcon ?? 'file_upload'
+    );
   }
 }

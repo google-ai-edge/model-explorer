@@ -88,6 +88,15 @@ const dataNexusAdapterExtension: AdapterExtension = {
   name: 'Data Nexus adapter',
   description: 'Loads data from Data Nexus.',
 };
+const mediapipeAdapterExtension: AdapterExtension = {
+  type: ExtensionType.ADAPTER,
+  fileExts: ['pbtxt'],
+  id: InternalAdapterExtId.MEDIAPIPE,
+  matchGoogleStorageDir: true, // Also accept an entire directory.
+  name: 'MediaPipe adapter',
+  description:
+    'A built-in adapter that converts a MediaPipe Pipeline to Model Explorer format.',
+};
 
 /** All internal extensions. */
 export const INTERNAL_ADAPTER_EXTENSIONS: AdapterExtension[] = [
@@ -99,4 +108,5 @@ export const INTERNAL_ADAPTER_EXTENSIONS: AdapterExtension[] = [
   mlirAdapterExtension,
   jsonAdapterExtension,
   dataNexusAdapterExtension,
+  mediapipeAdapterExtension,
 ];
