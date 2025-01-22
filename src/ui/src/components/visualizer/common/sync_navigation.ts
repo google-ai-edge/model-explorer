@@ -31,13 +31,65 @@ export declare interface SyncNavigationData extends TaskData {
    * node id on the other side. This fallback behavior can be disabled by
    * setting `disableMappingFallback` below to true.
    */
-  mapping: SyncNavigationMapping;
+  mapping?: SyncNavigationMapping;
+
+  /**
+   * The more flexible mapping specification for navigation syncing that
+   * supports one to many, many to many, and many to one mapping.
+   *
+   * Model Explorer assumes that a node id from either side will only appear in
+   * one SyncNavigationMappingEntry. For example, the following mapping is not
+   * recommended because 'a' appears in two SyncNavigationMappingEntries:
+   *
+   * ```
+   * {
+   *   mappingEntries: [
+   *     {
+   *       leftNodeIds: ['a'],
+   *       rightNodeIds: ['b', 'c'],
+   *     },
+   *     {
+   *       leftNodeIds: ['a', 'd'],
+   *       rightNodeIds: ['x'],
+   *     },
+   *   ],
+   * }
+   * ```
+   *
+   * This field supersedes the `mapping` field above.
+   */
+  mappingEntries?: SyncNavigationMappingEntry[];
 
   /**
    * Whether to disable the fallback behavior (find the node with the same id)
    * when the mapped node is not found from the `mapping` field above.
    */
   disableMappingFallback?: boolean;
+
+  /**
+   * The border color used to highlight "related nodes". Default to #ff00be
+   * (pink). The highlight is rendered as a colored border around the node.
+   *
+   * == What are "related nodes"?
+   *
+   * Assume we have a mapping from 'a' to ['b', 'c', 'd']. In this case, 'b',
+   * 'c' and 'd' are "related nodes".
+   *
+   * == When are related nodes highlighted?
+   *
+   * - When 'a' is selected in the left pane, 'b', 'c', and 'd' in the right
+   *   pane will be highlighted.
+   * - When 'b', 'c', OR 'd' is selected in the right pane, all of 'b', 'c', and
+   *   'd' in the right pane will be highlighted.
+   */
+  relatedNodesBorderColor?: string;
+
+  /**
+   * The border width used to highlight "related nodes". Default to 2.
+   *
+   * See comments above for "related nodes".
+   */
+  relatedNodesBorderWidth?: number;
 }
 
 /**
@@ -45,6 +97,15 @@ export declare interface SyncNavigationData extends TaskData {
  * from right side.
  */
 export type SyncNavigationMapping = Record<string, string>;
+
+/**
+ * The mapping entry for navigation syncing, used for more flexible mapping
+ * specification, such as one to many, many to many, and many to one mapping.
+ */
+export declare interface SyncNavigationMappingEntry {
+  leftNodeIds: string[];
+  rightNodeIds: string[];
+}
 
 /** The mode of navigation syncing. */
 export enum SyncNavigationMode {

@@ -434,6 +434,56 @@ export class WebglRendererThreejsService {
     }
   }
 
+  zoomFitOnNodes(
+    nodeIds: string[],
+    modelGraph: ModelGraph,
+    transitionDuration: number,
+  ) {
+    if (nodeIds.length === 0) {
+      setTimeout(() => {
+        this.zoomFitGraph(0.9, transitionDuration);
+      });
+    } else {
+      setTimeout(() => {
+        let minX = Infinity;
+        let maxX = -Infinity;
+        let minY = Infinity;
+        let maxY = -Infinity;
+        for (const nodeId of nodeIds) {
+          const node = modelGraph.nodesById[nodeId];
+          if (node) {
+            minX = Math.min(minX, this.webglRenderer.getNodeX(node));
+            maxX = Math.max(
+              maxX,
+              this.webglRenderer.getNodeX(node) +
+                this.webglRenderer.getNodeWidth(node),
+            );
+            minY = Math.min(minY, this.webglRenderer.getNodeY(node));
+            maxY = Math.max(
+              maxY,
+              this.webglRenderer.getNodeY(node) +
+                this.webglRenderer.getNodeHeight(node),
+            );
+          }
+        }
+        this.zoomFit(
+          {
+            x: minX,
+            y: minY,
+            width: maxX - minX,
+            height: maxY - minY,
+          },
+          0.9,
+          transitionDuration,
+          false,
+          true,
+          // Cap min scale when zooming on a node.
+          true,
+        );
+      }, 0);
+    }
+  }
+
   addToScene(object: three.Object3D | undefined) {
     if (object) {
       this.scene.add(object);

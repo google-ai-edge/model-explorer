@@ -26,8 +26,20 @@ import {ReadFileResp, SyncNavigationModeChangedEvent} from './common/types';
 import {Injectable, signal} from '@angular/core';
 import {Subject} from 'rxjs';
 
+type OneToManyMapping = Record<string, string[]>;
+
 declare interface ProcessedSyncNavigationData extends SyncNavigationData {
-  inversedMapping: Record<string, string>;
+  // Stores the mapping from each node id on the left pane to the mapped node
+  // ids on the right pane.
+  leftToRightMapping: OneToManyMapping;
+
+  // Stores the mapping from each node id on the right pane to the mapped node
+  // ids on the left pane.
+  rightToLeftMapping: OneToManyMapping;
+
+  // Stores the related nodes for the left and right panes, indexed by node id.
+  leftRelatedNodes: Record<string, string[]>;
+  rightRelatedNodes: Record<string, string[]>;
 }
 
 /** A service for split pane sync navigation related tasks. */
@@ -57,45 +69,97 @@ export class SyncNavigationService {
   }
 
   updateSyncNavigationData(mode: SyncNavigationMode, data: SyncNavigationData) {
-    // Generate inversed mapping.
+    // Populate extra fields for easy data retrieval.
     const processedData: ProcessedSyncNavigationData = {
       ...data,
-      inversedMapping: {},
+      leftToRightMapping: {},
+      rightToLeftMapping: {},
+      leftRelatedNodes: {},
+      rightRelatedNodes: {},
     };
-    for (const key of Object.keys(data.mapping)) {
-      processedData.inversedMapping[data.mapping[key]] = key;
+    if (data.mappingEntries) {
+      for (const entry of data.mappingEntries) {
+        for (const leftNodeId of entry.leftNodeIds) {
+          processedData.leftToRightMapping[leftNodeId] = entry.rightNodeIds;
+          processedData.leftRelatedNodes[leftNodeId] = entry.leftNodeIds;
+        }
+        for (const rightNodeId of entry.rightNodeIds) {
+          processedData.rightToLeftMapping[rightNodeId] = entry.leftNodeIds;
+          processedData.rightRelatedNodes[rightNodeId] = entry.rightNodeIds;
+        }
+      }
+    } else if (data.mapping) {
+      for (const key of Object.keys(data.mapping)) {
+        const mappedNodeId = data.mapping[key];
+        processedData.leftToRightMapping[key] = [mappedNodeId];
+        processedData.rightToLeftMapping[mappedNodeId] = [key];
+        processedData.leftRelatedNodes[key] = [key];
+        processedData.rightRelatedNodes[mappedNodeId] = [mappedNodeId];
+      }
     }
 
     // Save it.
     this.savedProcessedSyncNavigationData[mode] = processedData;
   }
 
-  getMappedNodeId(paneIndex: number, nodeId: string): string {
+  getMappedNodeIds(paneIndex: number, nodeId: string): string[] {
     const mode = this.mode();
     const curSyncNavigationData: ProcessedSyncNavigationData | undefined =
       this.savedProcessedSyncNavigationData[mode];
 
     switch (mode) {
       case SyncNavigationMode.MATCH_NODE_ID: {
-        return nodeId;
+        return [nodeId];
       }
       case SyncNavigationMode.VISUALIZER_CONFIG:
       case SyncNavigationMode.UPLOAD_MAPPING_FROM_COMPUTER:
       case SyncNavigationMode.LOAD_MAPPING_FROM_CNS: {
         // Get mapped node id from mapping.
         // Fallback to the original node id if not found.
-        const mapping = curSyncNavigationData?.mapping ?? {};
-        const inversedMapping = curSyncNavigationData?.inversedMapping ?? {};
-        const targetMapping = paneIndex === 0 ? mapping : inversedMapping;
-        const mappedNodeId = targetMapping[nodeId];
-        if (mappedNodeId) {
-          return mappedNodeId;
+        const leftToRightMapping =
+          curSyncNavigationData?.leftToRightMapping ?? {};
+        const rightToLeftMapping =
+          curSyncNavigationData?.rightToLeftMapping ?? {};
+        const targetMapping =
+          paneIndex === 0 ? leftToRightMapping : rightToLeftMapping;
+        const mappedNodeIds = targetMapping[nodeId] ?? [];
+        if (mappedNodeIds.length > 0) {
+          return mappedNodeIds;
         }
-        return curSyncNavigationData?.disableMappingFallback ? '' : nodeId;
+        return curSyncNavigationData?.disableMappingFallback ? [] : [nodeId];
       }
       default:
-        return nodeId;
+        return [nodeId];
     }
+  }
+
+  getRelatedNodeIdsFromTheSameSide(
+    paneIndex: number,
+    nodeId: string,
+  ): string[] {
+    const mode = this.mode();
+    const curSyncNavigationData: ProcessedSyncNavigationData | undefined =
+      this.savedProcessedSyncNavigationData[mode];
+
+    switch (mode) {
+      case SyncNavigationMode.MATCH_NODE_ID: {
+        return [nodeId];
+      }
+      case SyncNavigationMode.VISUALIZER_CONFIG:
+      case SyncNavigationMode.UPLOAD_MAPPING_FROM_COMPUTER:
+      case SyncNavigationMode.LOAD_MAPPING_FROM_CNS: {
+        return paneIndex === 0
+          ? curSyncNavigationData?.leftRelatedNodes[nodeId] ?? []
+          : curSyncNavigationData?.rightRelatedNodes[nodeId] ?? [];
+      }
+      default:
+        return [nodeId];
+    }
+  }
+
+  getSyncNavigationData(): SyncNavigationData | undefined {
+    const mode = this.mode();
+    return this.savedProcessedSyncNavigationData[mode];
   }
 
   async loadFromCns(path: string): Promise<string> {
@@ -137,5 +201,9 @@ export class SyncNavigationService {
       return `Failed to parse JSON file. ${e}`;
     }
     return '';
+  }
+
+  setShowNoMappedNodeMessage(show: boolean) {
+    this.showNoMappedNodeMessageTrigger$.next(show ? {} : undefined);
   }
 }
