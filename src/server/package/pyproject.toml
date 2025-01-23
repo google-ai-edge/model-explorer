@@ -23,7 +23,7 @@ dependencies = [
   "requests",
   "termcolor",
   "typing-extensions",
-  "numpy < 2",
+  "numpy",
 ]
 
 [project.scripts]
