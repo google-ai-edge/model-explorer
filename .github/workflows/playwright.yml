@@ -7,6 +7,7 @@
 name: Playwright Tests
 
 on:
+  workflow_dispatch:
   workflow_call:
     inputs:
       trigger-sha:
