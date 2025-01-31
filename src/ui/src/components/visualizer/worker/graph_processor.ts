@@ -366,8 +366,9 @@ export class GraphProcessor {
   generateLayoutGraphConnections(modelGraph: ModelGraph) {
     modelGraph.layoutGraphEdges = {};
 
-    // Find all op nodes that don't have incoming edges.
-    const opNodesWithoutIncomingEdges: OpNode[] = [];
+    // Find all op nodes that don't have incoming edges, or have both incoming
+    // edges and outgoing edges.
+    const seedOpNodes: OpNode[] = [];
     for (const node of modelGraph.nodes) {
       if (!isOpNode(node) || node.hideInLayout) {
         continue;
@@ -376,13 +377,20 @@ export class GraphProcessor {
         (edge) =>
           !(modelGraph.nodesById[edge.sourceNodeId] as OpNode).hideInLayout,
       );
-      if (filteredIncomingEdges.length === 0) {
-        opNodesWithoutIncomingEdges.push(node);
+      const filteredOutgoingEdges = (node.outgoingEdges || []).filter(
+        (edge) =>
+          !(modelGraph.nodesById[edge.targetNodeId] as OpNode).hideInLayout,
+      );
+      if (
+        filteredIncomingEdges.length === 0 ||
+        (filteredIncomingEdges.length > 0 && filteredOutgoingEdges.length > 0)
+      ) {
+        seedOpNodes.push(node);
       }
     }
 
     // Do a BFS from opNodesWithoutIncomingEdges.
-    const queue: OpNode[] = [...opNodesWithoutIncomingEdges];
+    const queue: OpNode[] = [...seedOpNodes];
     const seenNodeIds = new Set<string>();
     while (queue.length > 0) {
       const curNode = queue.shift();
