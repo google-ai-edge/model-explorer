@@ -366,30 +366,37 @@ export class GraphProcessor {
   generateLayoutGraphConnections(modelGraph: ModelGraph) {
     modelGraph.layoutGraphEdges = {};
 
-    // Find all op nodes that don't have incoming edges, or have both incoming
-    // edges and outgoing edges.
-    const seedOpNodes: OpNode[] = [];
+    // Find all op nodes that don't have incoming edges.
+    let seedOpNodes: OpNode[] = [];
+    const allNonHiddenOpNodes: OpNode[] = [];
     for (const node of modelGraph.nodes) {
       if (!isOpNode(node) || node.hideInLayout) {
         continue;
       }
+      allNonHiddenOpNodes.push(node);
       const filteredIncomingEdges = (node.incomingEdges || []).filter(
         (edge) =>
           !(modelGraph.nodesById[edge.sourceNodeId] as OpNode).hideInLayout,
       );
-      const filteredOutgoingEdges = (node.outgoingEdges || []).filter(
-        (edge) =>
-          !(modelGraph.nodesById[edge.targetNodeId] as OpNode).hideInLayout,
-      );
-      if (
-        filteredIncomingEdges.length === 0 ||
-        (filteredIncomingEdges.length > 0 && filteredOutgoingEdges.length > 0)
-      ) {
+      if (filteredIncomingEdges.length === 0) {
         seedOpNodes.push(node);
       }
     }
 
-    // Do a BFS from opNodesWithoutIncomingEdges.
+    // If seedOpNodes is empty, it means all the nodes in the graph have
+    // incoming edges. This indicates that the graph must contain at least one
+    // full cycle without any "root" nodes. For example, the graph might have
+    // one circle, or two disjoint circles, etc.
+    //
+    // Instead of picking one node from each of these disjointed cycles (which
+    // might be expensive to calculate), we will just use all the nodes in the
+    // graph as the seed nodes. The DFS procedure below will handle the dedup
+    // logic correctly.
+    if (seedOpNodes.length === 0 && allNonHiddenOpNodes.length > 0) {
+      seedOpNodes = allNonHiddenOpNodes;
+    }
+
+    // Do a BFS from seedOpNodes.
     const queue: OpNode[] = [...seedOpNodes];
     const seenNodeIds = new Set<string>();
     while (queue.length > 0) {
