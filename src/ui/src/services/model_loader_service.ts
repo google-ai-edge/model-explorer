@@ -92,49 +92,16 @@ export class ModelLoaderService implements ModelLoaderServiceInterface {
 
   async executeModel(modelItem: ModelItem, overrides: OverridesPerNode = {}) {
     modelItem.status.set(ModelItemStatus.PROCESSING);
-    let updatedPath = modelItem.path;
     let result: boolean = false;
 
-    // User-entered file path.
-    if (modelItem.type === ModelItemType.FILE_PATH) {
-      result = await this.sendExecuteRequest(
-        modelItem,
-        updatedPath,
-        {
-          optimizationPolicy: this.selectedOptimizationPolicy(),
-          overrides
-        }
-      );
-    }
-    // Upload or graph jsons from server.
-    else if (
-      modelItem.type === ModelItemType.LOCAL ||
-      modelItem.type === ModelItemType.GRAPH_JSONS_FROM_SERVER
-    ) {
-      const file = modelItem.file!;
-
-      // Upload the file
-      modelItem.status.set(ModelItemStatus.UPLOADING);
-      const {path, error: uploadError} = await this.uploadModelFile(file);
-      if (uploadError) {
-        modelItem.selected = false;
-        modelItem.status.set(ModelItemStatus.ERROR);
-        modelItem.errorMessage = uploadError;
-        return false;
+    result = await this.sendExecuteRequest(
+      modelItem,
+      modelItem.path,
+      {
+        optimizationPolicy: this.selectedOptimizationPolicy(),
+        overrides
       }
-
-      updatedPath = path;
-
-      // Send request to backend for processing.
-      result = await this.sendExecuteRequest(
-        modelItem,
-        updatedPath,
-        {
-          optimizationPolicy: this.selectedOptimizationPolicy(),
-          overrides
-        }
-      );
-    }
+    );
 
     return result;
   }
@@ -142,56 +109,26 @@ export class ModelLoaderService implements ModelLoaderServiceInterface {
   async overrideModel(modelItem: ModelItem, graphCollection: GraphCollection, overrides: OverridesPerNode) {
     modelItem.status.set(ModelItemStatus.PROCESSING);
     let result = false;
-    let updatedPath = modelItem.path;
 
-    // User-entered file path.
-    if (modelItem.type === ModelItemType.FILE_PATH) {
-      result = await this.sendOverrideRequest(
-        modelItem,
-        updatedPath,
-        graphCollection,
-        overrides,
-      );
-    }
-    // Upload or graph jsons from server.
-    else if (
-      modelItem.type === ModelItemType.LOCAL ||
-      modelItem.type === ModelItemType.GRAPH_JSONS_FROM_SERVER
-    ) {
-      const file = modelItem.file!;
+    // Send request to backend for processing.
+    result = await this.sendOverrideRequest(
+      modelItem,
+      modelItem.path,
+      graphCollection,
+      overrides,
+    );
 
-      // Upload the file
-      modelItem.status.set(ModelItemStatus.UPLOADING);
-      const {path, error: uploadError} = await this.uploadModelFile(file);
-      if (uploadError) {
-        modelItem.selected = false;
-        modelItem.status.set(ModelItemStatus.ERROR);
-        modelItem.errorMessage = uploadError;
-        return false;
-      }
-
-      updatedPath = path;
-
-      // Send request to backend for processing.
-      result = await this.sendOverrideRequest(
-        modelItem,
-        updatedPath,
-        graphCollection,
-        overrides,
-      );
-
-      if (modelItem.status() !== ModelItemStatus.ERROR) {
-        this.models.update((curModels) => {
-          curModels.push({
-            ...modelItem,
-            path: updatedPath ?? modelItem.path,
-          });
-
-          return curModels;
+    if (modelItem.status() !== ModelItemStatus.ERROR) {
+      this.models.update((curModels) => {
+        curModels.push({
+          ...modelItem,
+          path: modelItem.path,
         });
 
-        modelItem.status.set(ModelItemStatus.DONE);
-      }
+        return curModels;
+      });
+
+      modelItem.status.set(ModelItemStatus.DONE);
     }
 
     return result;
@@ -232,7 +169,6 @@ export class ModelLoaderService implements ModelLoaderServiceInterface {
   async loadModel(modelItem: ModelItem): Promise<GraphCollection[]> {
     modelItem.status.set(ModelItemStatus.PROCESSING);
     let result: GraphCollection[] = [];
-    let updatedPath: string | undefined;
 
     // User-entered file path.
     if (modelItem.type === ModelItemType.FILE_PATH) {
@@ -265,8 +201,7 @@ export class ModelLoaderService implements ModelLoaderServiceInterface {
           result = await this.sendConvertRequest(
             modelItem,
             filePath,
-            fileName,
-            false
+            fileName
           );
           break;
       }
@@ -302,23 +237,25 @@ export class ModelLoaderService implements ModelLoaderServiceInterface {
         // For other adapters
         default:
           // Upload the file
-          modelItem.status.set(ModelItemStatus.UPLOADING);
-          const {path, error: uploadError} = await this.uploadModelFile(file);
-          if (uploadError) {
-            modelItem.selected = false;
-            modelItem.status.set(ModelItemStatus.ERROR);
-            modelItem.errorMessage = uploadError;
-            return [];
-          }
+          if (!modelItem.isUploaded) {
+            modelItem.status.set(ModelItemStatus.UPLOADING);
+            const {path, error: uploadError} = await this.uploadModelFile(file);
+            if (uploadError) {
+              modelItem.selected = false;
+              modelItem.status.set(ModelItemStatus.ERROR);
+              modelItem.errorMessage = uploadError;
+              return [];
+            }
 
-          updatedPath = path;
+            modelItem.path = path;
+            modelItem.isUploaded = true;
+          }
 
           // Send request to backend for processing.
           result = await this.sendConvertRequest(
             modelItem,
-            path,
-            file.name,
-            true
+            modelItem.path,
+            file.name
           );
           break;
       }
@@ -331,7 +268,7 @@ export class ModelLoaderService implements ModelLoaderServiceInterface {
         ...filteredModels,
         {
           ...modelItem,
-          path: updatedPath ?? modelItem.path,
+          path: modelItem.path,
         }
       ];
     });
@@ -410,7 +347,6 @@ export class ModelLoaderService implements ModelLoaderServiceInterface {
     modelItem: ModelItem,
     path: string,
     settings?: Record<string, any>,
-    deleteAfterConversion: boolean = false,
   ) {
     try {
       modelItem.status.set(ModelItemStatus.PROCESSING);
@@ -419,7 +355,7 @@ export class ModelLoaderService implements ModelLoaderServiceInterface {
         extensionId: modelItem.selectedAdapter?.id || '',
         modelPath: path,
         settings: settings ?? {},
-        deleteAfterConversion,
+        deleteAfterConversion: false,
       };
 
       const { cmdResp, otherError: cmdError } = await this.extensionService.sendCommandToExtension<T>(extensionCommand);
@@ -451,7 +387,6 @@ export class ModelLoaderService implements ModelLoaderServiceInterface {
     modelItem: ModelItem,
     path: string,
     fileName: string,
-    deleteAfterConversion: boolean,
     settings: Record<string, any> = {},
   ): Promise<GraphCollection[]> {
     const result = await this.sendExtensionRequest<AdapterConvertResponse>(
@@ -462,7 +397,6 @@ export class ModelLoaderService implements ModelLoaderServiceInterface {
         ...this.settingsService.getAllSettingsValues(),
         ...settings
       },
-      deleteAfterConversion
     );
 
     if (!result || modelItem.status() === ModelItemStatus.ERROR) {
@@ -509,17 +443,28 @@ export class ModelLoaderService implements ModelLoaderServiceInterface {
     resp: AdapterConvertResponse,
     fileName: string,
   ): GraphCollection[] {
+    const graphCollections = resp.graphCollections?.map((item) => {
+      return {
+        label: item.label === '' ? fileName : `${fileName} (${item.label})`,
+        graphs: item.graphs
+      };
+    }) ?? [];
+
     if (resp.graphs) {
-      return [{label: fileName, graphs: resp.graphs }];
-    } else if (resp.graphCollections) {
-      return resp.graphCollections?.map((item) => {
-        return {
-          label: item.label === '' ? fileName : `${fileName} (${item.label})`,
-          graphs: item.graphs
-        };
-      }) ?? [];
+      graphCollections.push({label: fileName, graphs: resp.graphs });
     }
-    return [];
+
+    graphCollections.forEach((graphCollection) => graphCollection.graphs.forEach((graph) => {
+      if (!graph?.overlays) {
+        graph.overlays = {};
+      }
+
+      if (graph?.perf_data) {
+        graph.overlays['perf_data'] = graph.perf_data;
+      }
+    }));
+
+    return graphCollections;
   }
 
   private processAdapterOverrideResponse(

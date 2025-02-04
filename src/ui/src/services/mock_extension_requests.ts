@@ -56,12 +56,16 @@ export function mockExtensionCommand(command: string, json: any) {
   }
 
   if (command === 'convert') {
-    json.graphs?.forEach((graph: { nodes: { attrs: { key: string, value: string }[]}[]}) => {
+    json.graphs?.forEach((graph: { nodes: { attrs: { key: string, value: string }[]}[], overlays: any }) => {
       graph.nodes?.forEach((node) => {
         node.attrs?.forEach(({key, value}, index) => {
           node.attrs[index] = processAttribute(key, value);
         });
       });
+
+      if (!graph.overlays) {
+        graph.overlays = {};
+      }
     });
 
     return json;

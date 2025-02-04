@@ -83,6 +83,7 @@ export interface ModelItem {
   status: WritableSignal<ModelItemStatus>;
   selected: boolean;
   file?: File;
+  isUploaded?: boolean;
   adapterCandidates?: AdapterExtension[];
   selectedAdapter?: AdapterExtension;
   errorMessage?: string;

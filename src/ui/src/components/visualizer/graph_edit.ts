@@ -69,35 +69,49 @@ export class GraphEdit {
     }
   }
 
-  private poolForStatusUpdate(modelItem: ModelItem, modelPath: string, updateCallback: (progress: number, total: number, stdout?: string) => void | Promise<void>, doneCallback: (status: 'done' | 'timeout') => void | Promise<void>, errorCallback: (error: string) => void | Promise<void>) {
-    const POOL_TIME_MS = 500;
-    const TIMEOUT_MS = 5 * 60 * 1000;
+  private poolForStatusUpdate(modelItem: ModelItem, modelPath: string, updateCallback: (progress: number, total: number, elapsedTime: string, stdout?: string) => void | Promise<void>, doneCallback: (status: 'done' | 'timeout', elapsedTime: string) => void | Promise<void>, errorCallback: (error: string, elapsedTime: string) => void | Promise<void>) {
+    const POOL_TIME_MS = 5 * 1000;
+    const TIMEOUT_MS = 1 * 60 * 60 * 1000;
+
+    type DurationFormat = (duration: number) => string;
+    let intervalFormatter: DurationFormat = (duration) => duration.toString();
+    if ('DurationFormat' in Intl) {
+      // @ts-expect-error This is not included in typescript's definition yet
+      intervalFormatter = (duration) => new Intl.DurationFormat('en-US', { style: 'digital' })?.format({
+        minutes: Math.floor((duration / 1000 / 60)),
+        seconds: Math.floor((duration / 1000) % 60),
+        milliseconds: Math.floor(((duration / 1000) % 1) * 1000)
+      });
+    }
 
     const startTime = Date.now();
     const intervalId = setInterval(async () => {
       const { isDone, total = 100, progress, error, stdout } = await this.modelLoaderService.checkExecutionStatus(modelItem, modelPath);
+      const deltaTime = Date.now() - startTime;
 
       if (error) {
-        errorCallback(error);
+        errorCallback(error, intervalFormatter(deltaTime));
         clearInterval(intervalId);
         return;
       }
 
       if (isDone) {
-        doneCallback('done');
+        doneCallback('done', intervalFormatter(deltaTime));
         clearInterval(intervalId);
         return;
       }
 
-      const deltaTime = Date.now() - startTime;
       if (deltaTime > TIMEOUT_MS) {
-        doneCallback('timeout');
+        doneCallback('timeout', intervalFormatter(deltaTime));
         clearInterval(intervalId);
         return;
       }
 
       if (progress !== -1) {
-        updateCallback(progress, total, stdout);
+        // Regular expression adapted from: https://github.com/chalk/ansi-regex
+        const formattedStdout = stdout?.replaceAll(new RegExp(`[\\u001B\\u009B][[\\]()#;?]*(?:(?:(?:(?:;[-a-zA-Z\\d\\/#&.:=?%@~_]+)*|[a-zA-Z\\d]+(?:;[-a-zA-Z\\d\\/#&.:=?%@~_]*)*)?(?:\\u0007|\\u001B\\u005C|\\u009C))|(?:(?:\\d{1,4}(?:;\\d{0,4})*)?[\\dA-PR-TZcf-nq-uy=><~]))`,'giu'), '');
+
+        updateCallback(progress, total, intervalFormatter(deltaTime), formattedStdout);
       }
     }, POOL_TIME_MS);
   }
@@ -143,6 +157,7 @@ export class GraphEdit {
 
       this.modelLoaderService.overrides.update(() => ({}));
       this.modelLoaderService.graphErrors.update(() => undefined);
+      this.appService.addGraphCollections(newGraphCollections);
 
       const modelGraphs = this.appService.panes().map((pane) => pane.modelGraph).filter((modelGraph) => modelGraph !== undefined);
 
@@ -151,40 +166,20 @@ export class GraphEdit {
           const modelGraph = modelGraphs.find(({ id }) => id === graph.id);
 
           if (modelGraph) {
-            // TODO: cleanup this processing
-            const perfData = graph.overlays?.['perf_data'] ?? graph.perf_data;
-            if (perfData) {
-              const runName = `${modelGraph.id} (Performance Trace)`;
-
-              this.nodeDataProviderExtensionService.getRunsForModelGraph(modelGraph)
-                .filter(({ runName: prevRunName }) => prevRunName === runName)
-                .map(({ runId }) => runId)
-                .forEach((runId) => {
-                  this.nodeDataProviderExtensionService.deleteRun(runId);
-                });
-
-              const newRunId = genUid();
-              this.nodeDataProviderExtensionService.addRun(
-                newRunId,
-                runName,
-                curModel.selectedAdapter?.id ?? '',
-                modelGraph,
-                perfData,
-              );
-            }
-
             Object.entries(graph.overlays ?? {}).forEach(([runName, overlayData]) => {
+              const formattedRunName = runName === 'perf_data' ? `${modelGraph.id} (Performance Trace)` : runName;
+              const newRunId = genUid();
+
               this.nodeDataProviderExtensionService.getRunsForModelGraph(modelGraph)
-                .filter(({ runName: prevRunName }) => prevRunName === runName)
+                .filter(({ runName: prevRunName }) => prevRunName === formattedRunName)
                 .map(({ runId }) => runId)
                 .forEach((runId) => {
                   this.nodeDataProviderExtensionService.deleteRun(runId);
                 });
 
-              const newRunId = genUid();
               this.nodeDataProviderExtensionService.addRun(
                 newRunId,
-                runName,
+                formattedRunName,
                 curModel.selectedAdapter?.id ?? '',
                 modelGraph,
                 overlayData,
@@ -264,10 +259,10 @@ export class GraphEdit {
 
         if (curModel.status() !== ModelItemStatus.ERROR) {
           if (result) {
-            const updateStatus = (progress: number, total: number, stdout?: string) => {
+            const updateStatus = (progress: number, total: number, elapsedTime: string, stdout?: string) => {
               this.executionProgress = progress ?? this.executionProgress;
               this.executionTotal = total;
-              this.loggingService.debug(`Execution progress: ${progress} of ${total}`, curModel.path);
+              this.loggingService.debug(`Execution progress: ${progress} of ${total}`, curModel.path, `Elapsed time: ${elapsedTime}`);
 
               if (stdout) {
                 this.loggingService.info(stdout);
@@ -276,11 +271,11 @@ export class GraphEdit {
               this.changeDetectorRef.detectChanges();
             };
 
-            const finishUpdate = async (status: 'done' | 'timeout') => {
+            const finishUpdate = async (status: 'done' | 'timeout', elapsedTime: string) => {
               if (status === 'timeout') {
-                this.loggingService.error('Model execute timeout', curModel.path);
+                this.loggingService.error('Model execute timeout', curModel.path, `Elapsed time: ${elapsedTime}`);
               } else {
-                this.loggingService.info('Model execute finished', curModel.path);
+                this.loggingService.info('Model execute finished', curModel.path, `Elapsed time: ${elapsedTime}`);
                 await this.updateGraphInformation(curModel, models);
                 this.loggingService.info('Model updated', curModel.path);
               }
@@ -288,10 +283,10 @@ export class GraphEdit {
               this.isProcessingExecuteRequest = false;
             };
 
-            const showError = (error: string) => {
+            const showError = (error: string, elapsedTime: string) => {
               this.executionProgress = 0;
               this.isProcessingExecuteRequest = false;
-              this.loggingService.error('Graph Execution Error', error);
+              this.loggingService.error('Graph Execution Error', error, `Elapsed time: ${elapsedTime}`);
               this.showErrorDialog('Graph Execution Error', error);
             };
 

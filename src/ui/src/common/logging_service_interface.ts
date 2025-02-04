@@ -42,4 +42,5 @@ export interface LoggingServiceInterface {
   error(...messages: string[]): void
   debug(...messages: string[]): void
   getMessages(level?: LogLevel): LogMessage[]
+  clear(): void
 }

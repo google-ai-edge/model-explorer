@@ -21,6 +21,7 @@ import {Component, Inject} from '@angular/core';
 import {MatButtonModule} from '@angular/material/button';
 import {MatDialogModule} from '@angular/material/dialog';
 import {MatIconModule} from '@angular/material/icon';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import type { LoggingServiceInterface, LogLevel } from '../../common/logging_service_interface';
 
 /**
@@ -34,6 +35,7 @@ import type { LoggingServiceInterface, LogLevel } from '../../common/logging_ser
     MatButtonModule,
     MatDialogModule,
     MatIconModule,
+    MatTooltipModule,
   ],
   templateUrl: './logging_dialog.ng.html',
   styleUrls: ['./logging_dialog.scss'],
@@ -60,6 +62,26 @@ export class LoggingDialog {
       case 'log':
       default:
         return 'help';
+    }
+  }
+
+  clearLogs() {
+    this.loggingService.clear();
+  }
+
+  downloadLogs() {
+    const messages = this.loggingService.getMessages();
+
+    if (messages.length > 0) {
+      const tempElement = document.createElement('a');
+      const textUrl = URL.createObjectURL(new Blob([JSON.stringify(messages, null, '\t')], { type: 'application/json' }));
+
+      tempElement.hidden = true;
+      tempElement.download = `logs-${new Date().toISOString()}.json`;
+      tempElement.href = textUrl;
+      tempElement.click();
+
+      URL.revokeObjectURL(textUrl);
     }
   }
 

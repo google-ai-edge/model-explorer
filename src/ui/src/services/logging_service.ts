@@ -68,4 +68,8 @@ export class LoggingService implements LoggingServiceInterface {
 
     return this.messages.filter(({ level: curLevel }) => curLevel === level);
   }
+
+  clear() {
+    this.messages.splice(0, this.messages.length);
+  }
 }

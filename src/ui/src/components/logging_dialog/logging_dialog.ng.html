@@ -18,6 +18,14 @@ limitations under the License.
 
 <div mat-dialog-title class="title-container">
   <h2>Message log</h2>
+  <div class="button-container">
+    <button mat-icon-button matTooltip="Download logs" (click)="downloadLogs()">
+      <mat-icon>download</mat-icon>
+    </button>
+    <button mat-icon-button matTooltip="Clear logs" (click)="clearLogs()">
+      <mat-icon>delete</mat-icon>
+    </button>
+  </div>
 </div>
 <div mat-dialog-content class="dialog-content">
   <ul>
@@ -37,6 +45,7 @@ limitations under the License.
       </li>
     }
   </ul>
+  <div class="scroller-anchor"></div>
 </div>
 <div mat-dialog-actions align="end" class="buttons-container">
   <button mat-button mat-dialog-close>Close</button>

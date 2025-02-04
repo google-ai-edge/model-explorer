@@ -23,11 +23,19 @@
 .title-container {
   border-bottom: 1px solid #ddd;
   display: flex;
+  align-items: center;
+  padding-block-end: 0;
 
   h2 {
     font-size: 24px;
     font-weight: 500;
     margin-block: 0.5em;
+    flex-grow: 1;
+  }
+
+  .button-container {
+    display: flex;
+    gap: 1rem;
   }
 }
 
@@ -35,10 +43,13 @@
 .dialog-content {
   padding: 0 1rem;
   max-height: 100%;
+  overflow: auto;
+  overflow-anchor: auto;
 
   ul {
     margin: 0;
     padding: 0;
+    overflow-anchor: none;
   }
 
   li {
@@ -87,5 +98,13 @@
       tab-size: 4;
       font-family: ui-monospace, monospace;
     }
+  }
+
+  .scroller-anchor {
+    overflow-anchor: auto;
+    height: 1px;
+    width: 100%;
+    background: transparent;
+    overflow: clip;
   }
 }
