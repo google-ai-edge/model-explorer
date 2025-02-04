@@ -21,6 +21,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   ViewContainerRef,
+  signal,
 } from '@angular/core';
 import {MatButtonModule} from '@angular/material/button';
 import {MatDialog, MatDialogModule} from '@angular/material/dialog';
@@ -48,6 +49,7 @@ import {NodeStylerService} from './node_styler_service';
 })
 export class NodeStyler {
   readonly hasNonEmptyNodeStylerRules;
+  readonly dialogOpened = signal<boolean>(false);
 
   constructor(
     private readonly dialog: MatDialog,
@@ -59,7 +61,9 @@ export class NodeStyler {
   }
 
   handleClickOpenDialog() {
-    this.dialog.open(NodeStylerDialog, {
+    this.dialogOpened.set(true);
+
+    const dialogRef = this.dialog.open(NodeStylerDialog, {
       width: '800px',
       height: '600px',
 
@@ -68,6 +72,10 @@ export class NodeStyler {
       viewContainerRef: this.viewContainerRef,
       hasBackdrop: false,
       autoFocus: false,
+    });
+
+    dialogRef.afterClosed().subscribe(() => {
+      this.dialogOpened.set(false);
     });
   }
 }

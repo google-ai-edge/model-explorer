@@ -1,6 +1,6 @@
 [project]
 name = "ai-edge-model-explorer"
-version = "0.1.16"
+version = "0.1.17"
 authors = [
   { name="Google LLC", email="opensource@google.com" },
 ]
@@ -23,7 +23,7 @@ dependencies = [
   "requests",
   "termcolor",
   "typing-extensions",
-  "numpy < 2",
+  "numpy",
 ]
 
 [project.scripts]

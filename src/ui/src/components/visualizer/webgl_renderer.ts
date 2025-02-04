@@ -112,6 +112,7 @@ import {WebglEdges} from './webgl_edges';
 import {WebglRendererAttrsTableService} from './webgl_renderer_attrs_table_service';
 import {WebglRendererEdgeOverlaysService} from './webgl_renderer_edge_overlays_service';
 import {WebglRendererEdgeTextsService} from './webgl_renderer_edge_texts_service';
+import {WebglRendererHighlightNodesService} from './webgl_renderer_highlight_node_service';
 import {WebglRendererIdenticalLayerService} from './webgl_renderer_identical_layer_service';
 import {
   IO_PICKER_ID_SEP,
@@ -199,6 +200,7 @@ type RenderElement = RenderElementNode | RenderElementEdge;
     WebglRendererAttrsTableService,
     WebglRendererEdgeTextsService,
     WebglRendererEdgeOverlaysService,
+    WebglRendererHighlightNodesService,
     WebglRendererIdenticalLayerService,
     WebglRendererIoHighlightService,
     WebglRendererIoTracingService,
@@ -366,6 +368,7 @@ export class WebglRenderer implements OnInit, OnDestroy {
   private curNodeStylerRules: NodeStylerRule[] = [];
   private curProcessedNodeStylerRules: ProcessedNodeStylerRule[] = [];
   private renderedEdgeIdsToHide: string[] = [];
+  private relayoutDoneFn?: () => void;
 
   private readonly selectedNodeInfo = computed(() => {
     const pane = this.appService.getPaneById(this.paneId);
@@ -445,12 +448,13 @@ export class WebglRenderer implements OnInit, OnDestroy {
     private readonly snackBar: MatSnackBar,
     private readonly splitPaneService: SplitPaneService,
     private readonly subgraphSelectionService: SubgraphSelectionService,
-    private readonly syncNavigationService: SyncNavigationService,
+    readonly syncNavigationService: SyncNavigationService,
     private readonly uiStateService: UiStateService,
     private readonly viewContainerRef: ViewContainerRef,
     private readonly webglRendererAttrsTableService: WebglRendererAttrsTableService,
     readonly webglRendererEdgeTextsService: WebglRendererEdgeTextsService,
     private readonly webglRendererEdgeOverlaysService: WebglRendererEdgeOverlaysService,
+    private readonly webglRendererHighlightNodesService: WebglRendererHighlightNodesService,
     private readonly webglRendererIdenticalLayerService: WebglRendererIdenticalLayerService,
     private readonly webglRendererIoHighlightService: WebglRendererIoHighlightService,
     private readonly webglRendererIoTracingService: WebglRendererIoTracingService,
@@ -464,6 +468,7 @@ export class WebglRenderer implements OnInit, OnDestroy {
     this.webglRendererAttrsTableService.init(this);
     this.webglRendererEdgeTextsService.init(this);
     this.webglRendererEdgeOverlaysService.init(this);
+    this.webglRendererHighlightNodesService.init(this);
     this.webglRendererIdenticalLayerService.init(this);
     this.webglRendererIoHighlightService.init(this);
     this.webglRendererIoTracingService.init(this);
@@ -744,41 +749,62 @@ export class WebglRenderer implements OnInit, OnDestroy {
         if (!data) {
           return;
         }
+        this.webglRendererHighlightNodesService.setHighlightNodeIds([]);
 
+        // Handle the case when the current pane is not the source pane, i.e.
+        // when a node is selected in the other pane.
         if (data.paneIndex !== this.appService.getPaneIndexById(this.paneId)) {
           // Clicking on the empty space. Hide the no mapped node message.
           if (data.nodeId === '') {
-            this.syncNavigationService.showNoMappedNodeMessageTrigger$.next(
-              undefined,
-            );
+            this.syncNavigationService.setShowNoMappedNodeMessage(false);
           }
           // Clicking on a node.
           else {
-            const mappedNodeId = this.syncNavigationService.getMappedNodeId(
+            const mappedNodeIds = this.syncNavigationService.getMappedNodeIds(
               data.paneIndex,
               data.nodeId,
             );
-            const mappedNode = this.curModelGraph.nodesById[mappedNodeId];
-            const hideInLayout =
-              isOpNode(mappedNode) && mappedNode.hideInLayout;
-            if (
-              mappedNode &&
-              mappedNode.id !== this.selectedNodeId &&
-              !hideInLayout
-            ) {
-              this.revealNode(mappedNodeId, false);
-              this.syncNavigationService.showNoMappedNodeMessageTrigger$.next(
-                undefined,
-              );
-            } else if (!mappedNode || hideInLayout) {
-              this.syncNavigationService.showNoMappedNodeMessageTrigger$.next(
-                {},
-              );
-            } else {
-              this.syncNavigationService.showNoMappedNodeMessageTrigger$.next(
-                undefined,
+            // Mapped to a single node.
+            if (mappedNodeIds.length < 2) {
+              const mappedNodeId = mappedNodeIds[0] ?? '';
+              const mappedNode = this.curModelGraph.nodesById[mappedNodeId];
+              const hideInLayout =
+                isOpNode(mappedNode) && mappedNode.hideInLayout;
+              if (
+                mappedNode &&
+                mappedNode.id !== this.selectedNodeId &&
+                !hideInLayout
+              ) {
+                this.revealNode(mappedNodeId, false);
+                this.syncNavigationService.setShowNoMappedNodeMessage(false);
+              } else if (!mappedNode || hideInLayout) {
+                this.syncNavigationService.setShowNoMappedNodeMessage(true);
+              } else {
+                this.syncNavigationService.setShowNoMappedNodeMessage(false);
+              }
+            }
+            // Mapped to a list of nodes.
+            else {
+              this.revealAndHighlightNodes(
+                mappedNodeIds,
+                mappedNodeIds.length > 0 ? mappedNodeIds[0] : '',
+                true,
               );
             }
+          }
+        }
+        // This is the case when the current pane is the source pane, i.e. a
+        // node is selected in the current pane that triggers a sync navigation
+        // event.
+        else {
+          const nodeId = data.nodeId;
+          const relatedNodeIds =
+            this.syncNavigationService.getRelatedNodeIdsFromTheSameSide(
+              data.paneIndex,
+              nodeId,
+            );
+          if (relatedNodeIds.length > 1) {
+            this.revealAndHighlightNodes(relatedNodeIds, nodeId, false);
           }
         }
       });
@@ -1822,6 +1848,11 @@ export class WebglRenderer implements OnInit, OnDestroy {
         targetDeepestGroupNodeIdsToExpand || [],
         this.appService.getPaneIndexById(this.paneId),
       );
+    }
+
+    if (this.relayoutDoneFn) {
+      this.relayoutDoneFn();
+      this.relayoutDoneFn = undefined;
     }
   }
 
@@ -3103,5 +3134,78 @@ export class WebglRenderer implements OnInit, OnDestroy {
       this.curModelGraph.collectionLabel || '',
       this.curModelGraph.nodesById[id],
     );
+  }
+
+  private revealAndHighlightNodes(
+    nodeIds: string[],
+    nodeIdToSelect: string,
+    processShowNoMappedNodeMessage: boolean,
+  ) {
+    // Things to do for the nodes.
+    const processNodesFn = () => {
+      // Zoom the group to fit the nodes.
+      this.webglRendererThreejsService.zoomFitOnNodes(
+        nodeIds,
+        this.curModelGraph,
+        ZOOM_FIT_ON_NODE_DURATION,
+      );
+      // Select the first node in the list.
+      if (nodeIdToSelect) {
+        this.appService.selectNode(this.paneId, {
+          nodeId: nodeIdToSelect,
+          rendererId: this.rendererId,
+          isGroupNode: isGroupNode(
+            this.curModelGraph.nodesById[nodeIdToSelect],
+          ),
+          triggerNavigationSync: false,
+        });
+      }
+      // Highlight nodes.
+      this.webglRendererHighlightNodesService.setHighlightNodeIds(nodeIds);
+    };
+    // Calculate the deepest expanded group node ids.
+    const deepestExpandedGroupNodeIds: string[] =
+      this.getDeepestExpandedGroupNodeIdsForNodes(nodeIds);
+    // Reveal them if the ids are non-empty.
+    if (deepestExpandedGroupNodeIds.length > 0) {
+      // Set up the callback function after relayout is done.
+      this.relayoutDoneFn = processNodesFn;
+      // Reveal them and set the first node in the list as selected.
+      this.sendRelayoutGraphRequest('', deepestExpandedGroupNodeIds);
+      if (processShowNoMappedNodeMessage) {
+        this.syncNavigationService.setShowNoMappedNodeMessage(false);
+      }
+    }
+    // No need to reveal them if the ids are empty. Just process them
+    // directly.
+    else if (nodeIds.length > 0 && deepestExpandedGroupNodeIds.length === 0) {
+      processNodesFn();
+      if (processShowNoMappedNodeMessage) {
+        this.syncNavigationService.setShowNoMappedNodeMessage(false);
+      }
+    } else {
+      if (processShowNoMappedNodeMessage) {
+        this.syncNavigationService.setShowNoMappedNodeMessage(true);
+      }
+    }
+  }
+
+  private getDeepestExpandedGroupNodeIdsForNodes(nodeIds: string[]): string[] {
+    const deepestExpandedGroupNodeIdsSet = new Set<string>();
+    for (const nodeId of nodeIds) {
+      const node = this.curModelGraph.nodesById[nodeId];
+      if (isOpNode(node) && node.hideInLayout) {
+        continue;
+      }
+      if (node?.nsParentId) {
+        const parentNode = this.curModelGraph.nodesById[
+          node.nsParentId
+        ] as GroupNode;
+        if (!parentNode.expanded || !this.isNodeRendered(parentNode.id)) {
+          deepestExpandedGroupNodeIdsSet.add(node.nsParentId);
+        }
+      }
+    }
+    return [...deepestExpandedGroupNodeIdsSet];
   }
 }

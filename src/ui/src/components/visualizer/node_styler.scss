@@ -17,6 +17,10 @@
  */
 
 button {
+  &.disabled {
+    pointer-events: none;
+  }
+
   mat-icon.highlight {
     background: linear-gradient(45deg, #0089ff 0 30%, #f1af00 70% 100%);
     background-clip: text;
