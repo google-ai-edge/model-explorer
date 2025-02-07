@@ -31,6 +31,7 @@
   overflow-y: auto;
 
   input {
+    font-family: sans-serif;
     font-size: 12px;
     margin: 4px 10px;
     width: calc(100% - 20px);
@@ -40,6 +41,7 @@
     height: 20px;
     border-radius: 4px;
     padding: 0 2px;
+    min-width: 184px;
   }
 
   .collection-container {
