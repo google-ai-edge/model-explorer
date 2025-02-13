@@ -41,11 +41,7 @@ import {GraphProcessor} from './graph_processor';
 import {IdenticalGroupsFinder} from './identical_groups_finder';
 import {updateProcessingProgress} from './utils';
 
-try {
-  importScripts('/static_files/worker_deps.js');
-} catch (e) {
-  console.error(`Failed to import libs: ${e}`);
-}
+import '../../../../public/static_files/worker_deps.js';
 
 declare var dagre: Dagre;
 
