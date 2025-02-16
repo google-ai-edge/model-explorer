@@ -1,0 +1,1 @@
+../node_modules/my-me/dist/worker.js

@@ -1,0 +1,24 @@
+{
+  "compilerOptions": {
+    "target": "es2017",
+    "module": "ES2015",
+    "noImplicitAny": true,
+    "sourceMap": true,
+    "inlineSources": true,
+    "preserveConstEnums": true,
+    "allowSyntheticDefaultImports": true,
+    "declaration": true,
+    "strict": true,
+    "outDir": "./dist",
+    "noUnusedLocals": true,
+    "noImplicitReturns": true,
+    "noImplicitThis": true,
+    "pretty": true,
+    "noFallthroughCasesInSwitch": true,
+    "allowUnreachableCode": true,
+    "incremental": true,
+    "moduleResolution": "node"
+  },
+  "include": ["./src"],
+  "exclude": ["dist", "node_modules"]
+}
