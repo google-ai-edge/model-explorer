@@ -23,6 +23,7 @@ npm install
 # Clear dist.
 mkdir -p dist
 rm -rf dist/*
+mkdir -p dist/my_worker_path
 
 # Build.
 esbuild --bundle src/script.ts --outdir=dist
@@ -32,7 +33,7 @@ cp src/index.html dist/
 
 # Link worker.js and static_files.
 cd dist
-ln -s ../node_modules/my-me/dist/worker.js worker.js
+ln -s ../../node_modules/my-me/dist/worker.js my_worker_path/worker.js
 ln -s ../node_modules/my-me/dist/static_files static_files
 cd -
 

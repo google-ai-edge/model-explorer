@@ -23,11 +23,11 @@
 modelExplorer.assetFilesBaseUrl =
   'https://unpkg.com/my-me@latest/dist/static_files';
 
-// Set the correct worker.js location.
-//
-// This is needed because it is not at the default location
-// (the same location as the index.html file).
-modelExplorer.workerScriptPath = 'my_worker_path/worker.js';
+// // Set the correct worker.js location.
+// //
+// // This is needed because it is not at the default location
+// // (the same location as the index.html file).
+// modelExplorer.workerScriptPath = 'my_worker_path/worker.js';
 
 // Prepare the graph collections.
 //

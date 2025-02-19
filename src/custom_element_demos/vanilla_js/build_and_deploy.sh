@@ -20,13 +20,12 @@ set -x
 # Clear dist.
 mkdir -p dist
 rm -rf dist/*
-mkdir -p dist/my_worker_path
 
 # Copy files from src.
 cp -r src/* dist/
 
-# Download the worker.js script and put it in dist/my_worker_path.
-curl -o dist/my_worker_path/worker.js -L https://unpkg.com/my-me@latest/dist/worker.js
+# Download the worker.js script and put it in dist/.
+curl -o dist/worker.js -L https://unpkg.com/my-me@latest/dist/worker.js
 
 # Start a local server.
 npx http-server -o dist/

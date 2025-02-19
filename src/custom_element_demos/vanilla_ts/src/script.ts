@@ -19,6 +19,12 @@
 import 'my-me';
 import {graphCollections} from './graph_collections';
 
+// Set the correct worker.js location.
+//
+// This is needed because worker.js is not at the default location
+// (the same location as the index.html file).
+modelExplorer.workerScriptPath = 'my_worker_path/worker.js';
+
 // Create the element with the collections, and add to document body.
 const visualizer = document.createElement('model-explorer-visualizer');
 visualizer.graphCollections = graphCollections;
