@@ -45,7 +45,9 @@ export class NewVersionService {
   });
 
   constructor() {
-    if (IS_EXTERNAL) {
+    // tslint:disable-next-line:no-any
+    const isCustomElement = (window as any)['modelExplorer'] != null;
+    if (IS_EXTERNAL && !isCustomElement) {
       this.checkNewVersion();
     }
   }

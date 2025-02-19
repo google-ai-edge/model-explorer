@@ -7,7 +7,8 @@
     "types": []
   },
   "files": [
-    "src/main.ts"
+    "src/main.ts",
+    "src/custom_element/custom_element.ts"
   ],
   "include": [
     "src/**/*.d.ts"

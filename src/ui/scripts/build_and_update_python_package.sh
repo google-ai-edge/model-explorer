@@ -26,7 +26,7 @@ if [[ ":$dir" != *"/src/ui" ]]; then
 fi
 
 # Build app.
-ng build
+ng build model_explorer
 
 # Remove old app
 cd ../server/package/src/model_explorer/web_app
