@@ -76,18 +76,18 @@ export class ThreejsService {
     //
     // (Install: $ npm install msdf-bmfont-xml -g)
     //
-    // $ msdf-bmfont -f json -m 512,512 -s 50 -r 6 -d 3
-    // ./GoogleSansTextRegular.ttf
-    const staticUrlBase = '/static_files';
+    // $ msdf-bmfont -f json -m 512,512 -s 50 -r 6 -d 3 ./FontRegular.ttf
+    let staticUrlBase =
+      (window as any)['modelExplorer']?.assetFilesBaseUrl ?? 'static_files';
 
     const results = await Promise.all([
-      this.loadFontAtals(`${staticUrlBase}/GoogleSansTextRegular.png`),
-      this.loadFontAtals(`${staticUrlBase}/GoogleSansTextMedium.png`),
-      this.loadFontAtals(`${staticUrlBase}/GoogleSansTextBold.png`),
+      this.loadFontAtals(`${staticUrlBase}/FontRegular.png`),
+      this.loadFontAtals(`${staticUrlBase}/FontMedium.png`),
+      this.loadFontAtals(`${staticUrlBase}/FontBold.png`),
       this.loadFontAtals(`${staticUrlBase}/icons_20240521.png`),
-      this.loadFontInfo(`${staticUrlBase}/GoogleSansTextRegular.json`),
-      this.loadFontInfo(`${staticUrlBase}/GoogleSansTextMedium.json`),
-      this.loadFontInfo(`${staticUrlBase}/GoogleSansTextBold.json`),
+      this.loadFontInfo(`${staticUrlBase}/FontRegular.json`),
+      this.loadFontInfo(`${staticUrlBase}/FontMedium.json`),
+      this.loadFontInfo(`${staticUrlBase}/FontBold.json`),
       this.loadFontInfo(`${staticUrlBase}/icons_20240521.json`),
     ]);
     this.textureRegular = results[0];
