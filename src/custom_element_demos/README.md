@@ -1,4 +1,4 @@
-# Model Explorer Visualizer demos
+# Demos for Model Explorer Visualizer NPM package
 
 This directory contains four demos showcasing the usage of the
 `<model-explorer-visualizer>` custom element from the
