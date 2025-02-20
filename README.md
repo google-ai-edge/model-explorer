@@ -1,4 +1,4 @@
-# Model Explorer [![PyPI version](https://badge.fury.io/py/ai-edge-model-explorer.svg)](https://badge.fury.io/py/ai-edge-model-explorer)
+# Model Explorer [![PyPI version](https://badge.fury.io/py/ai-edge-model-explorer.svg)](https://badge.fury.io/py/ai-edge-model-explorer) [![npm version](https://badge.fury.io/js/ai-edge-model-explorer-visualizer.svg)](https://badge.fury.io/js/ai-edge-model-explorer-visualizer)
 
 Model Explorer offers an intuitive and hierarchical visualization of model
 graphs. It organizes model operations into nested layers, enabling users to
@@ -35,6 +35,13 @@ more details:
 - [Limitations and Known Issues](https://github.com/google-ai-edge/model-explorer/wiki/7.-Limitations-and-Known-Issues)
 
 We invite you to participate in research studies on Model Explorer. Sign up [here](https://docs.google.com/forms/d/e/1FAIpQLScGOkQOIKmIzkt3P0ywhSfwbl-TRb2epEV5J8NTXEesZqc3vw/viewform).
+
+## NPM package
+
+The core visualizer component is available in the
+[ai-edge-model-explorer-visualizer](https://www.npmjs.com/package/ai-edge-model-explorer-visualizer)
+npm pacakge. See the [README.md](src/ui/custom_element_npm/README.md) for
+instructions and check out its [demos](src/custom_element_demos/).
 
 ## Community-contributed adapters
 
