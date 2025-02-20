@@ -25,7 +25,7 @@ rm -rf dist/*
 cp -r src/* dist/
 
 # Download the worker.js script and put it in dist/.
-curl -o dist/worker.js -L https://unpkg.com/my-me@latest/dist/worker.js
+curl -o dist/worker.js -L https://unpkg.com/ai-edge-model-explorer-visualizer@latest/dist/worker.js
 
 # Start a local server.
 npx http-server -o dist/

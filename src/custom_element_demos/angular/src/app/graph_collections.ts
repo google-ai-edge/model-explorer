@@ -16,7 +16,7 @@
  * ==============================================================================
  */
 
-import {GraphCollection} from 'my-me';
+import {GraphCollection} from 'ai-edge-model-explorer-visualizer';
 
 // Prepare the graph collections.
 //

@@ -24,7 +24,7 @@ import {
   viewChild,
 } from '@angular/core';
 import { graphCollections } from './graph_collections';
-import 'my-me';
+import 'ai-edge-model-explorer-visualizer';
 import {
   ModelExplorerVisualizer,
   NodeInfo,
@@ -33,7 +33,7 @@ import {
   SearchMatchType,
   VisualizerConfig,
   VisualizerUiState,
-} from 'my-me';
+} from 'ai-edge-model-explorer-visualizer';
 import { CommonModule } from '@angular/common';
 
 enum ActionOnInit {

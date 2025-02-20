@@ -1,1 +1,1 @@
-../node_modules/my-me/dist/worker.js
+../node_modules/ai-edge-model-explorer-visualizer/dist/worker.js
