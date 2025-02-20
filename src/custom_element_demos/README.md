@@ -1,9 +1,10 @@
 # Model Explorer Visualizer demos
 
 This directory contains four demos showcasing the usage of the
-`<model-explorer-visualizer>` custom element in different JavaScript frameworks
-and environments. See their respective README.md files for more details. Here
-is a summary:
+`<model-explorer-visualizer>` custom element from the
+[ai-edge-model-explorer-visualizer](https://www.npmjs.com/package/ai-edge-model-explorer-visualizer)
+npm package in different JavaScript frameworks and environments.
+See their respective README.md files for more details. Here is a summary:
 
 **Vanilla JS**:
 
