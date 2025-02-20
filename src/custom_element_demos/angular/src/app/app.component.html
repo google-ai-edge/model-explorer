@@ -1,0 +1,94 @@
+<!--
+@license
+Copyright 2024 The Model Explorer Authors. All Rights Reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+==============================================================================
+-->
+
+<div class="container">
+  <div class="left">
+    <!-- Properties -->
+    <div class="section">
+      <div class="title">Properties</div>
+
+      <!--
+        A list of links.
+
+        Upon clicking, the page will be refreshed with a "action_on_init" url
+        parameter added. The demo will set up corresponding properties for
+        the visualizer based on the action to demonstrate how those properties
+        work.
+      -->
+      @for (item of actions; track item.action) {
+        <div class="link-item"
+            [class.current]="item.action === curActionOnInit"
+            (click)="refreshPageWithInitAction(item.action)">
+          {{item.label}}
+        </div>
+      }
+    </div>
+
+    <!-- Events-->
+    <div class="section">
+      <div class="title">Events</div>
+
+      <!-- Selected node -->
+      <div class="event-section">
+        <div class="name">
+          Selected node id
+        </div>
+        <div class="value">
+          {{selectedNodeId()}}
+        </div>
+      </div>
+
+      <!-- Hovered node -->
+      <div class="event-section">
+        <div class="name">
+          Hovered node id
+        </div>
+        <div class="value">
+          {{hoveredNodeId()}}
+        </div>
+      </div>
+
+      <!-- Double-clicked node -->
+      <div class="event-section">
+        <div class="name">
+          Double-clicked node id
+        </div>
+        <div class="value">
+          {{doubleClickNodeId()}}
+        </div>
+      </div>
+    </div>
+
+    <!-- Methods -->
+    <div class="section">
+      <div class="title">Methods</div>
+
+      <!-- Select a node -->
+      <div class="link-item" (click)="handleSelectNode()">
+        Select "Golden gate bridge"
+      </div>
+
+      <!-- Add node data -->
+      <div class="link-item" (click)="handleAddNodeData()">
+        Add "temperature" node data
+      </div>
+    </div>
+  </div>
+  <div class="main" #main>
+  </div>
+</div>
