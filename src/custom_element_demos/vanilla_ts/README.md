@@ -11,7 +11,7 @@ It should open the page `http://localhost:8080/dist` automatically in browser.
 
 # Notes
 
-- Import `my-me` in the main typescript file.
+- Import `ai-edge-model-explorer-visualizer` in the main typescript file.
 - This demo uses symlinks to make the `worker.js` file and `static_files`
   directory from `node_modules` available in the same directory as `index.html`.
 - The `worker.js` file is linked to `dist/my_worker_path/worker.js` instead of

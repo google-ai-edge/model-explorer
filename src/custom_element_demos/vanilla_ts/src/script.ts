@@ -16,7 +16,7 @@
  * ==============================================================================
  */
 
-import 'my-me';
+import 'ai-edge-model-explorer-visualizer';
 import {graphCollections} from './graph_collections';
 
 // Set the correct worker.js location.

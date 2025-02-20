@@ -2,7 +2,7 @@
   "name": "demo",
   "type": "module",
   "dependencies": {
-    "my-me": "*"
+    "ai-edge-model-explorer-visualizer": "*"
   },
   "devDependencies": {
     "esbuild": "^0.25.0",

@@ -13,7 +13,7 @@ It should open the page `http://localhost:4200` automatically in browser.
 
 # Notes
 
-- This demo has a left-side panel to show case how various visualizer APIs work.
+- This demo has a left-side panel to showcase how various visualizer APIs work.
   See comments in `src/app/app.component.ts` for more details.
 - This demo uses symlinks to make the `worker.js` file and `static_files`
   directory from `node_modules` available under the `public` directory.

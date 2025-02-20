@@ -24,7 +24,7 @@ import {graphCollections} from './graph_collection';
 
 export default function Home() {
   React.useEffect(() => {
-    import('my-me');
+    import('ai-edge-model-explorer-visualizer');
   }, []);
 
   return (

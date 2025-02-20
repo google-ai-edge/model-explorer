@@ -33,8 +33,8 @@ cp src/index.html dist/
 
 # Link worker.js and static_files.
 cd dist
-ln -s ../../node_modules/my-me/dist/worker.js my_worker_path/worker.js
-ln -s ../node_modules/my-me/dist/static_files static_files
+ln -s ../../node_modules/ai-edge-model-explorer-visualizer/dist/worker.js my_worker_path/worker.js
+ln -s ../node_modules/ai-edge-model-explorer-visualizer/dist/static_files static_files
 cd -
 
 # Start a local server.
