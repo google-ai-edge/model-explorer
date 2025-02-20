@@ -5,6 +5,7 @@
     "ng": "ng",
     "start": "ng serve model_explorer",
     "build": "ng build model_explorer",
+    "build-npm": "./scripts/build_npm.sh",
     "deploy": "./scripts/build_and_update_python_package.sh",
     "watch": "ng build --watch --configuration development",
     "test": "ng test model_explorer"
@@ -36,6 +37,7 @@
     "@types/d3": "5.7.0",
     "@types/jasmine": "~5.1.0",
     "@types/three": "0.134.0",
+    "esbuild": "^0.25.0",
     "jasmine-core": "~5.1.0",
     "karma": "~6.4.0",
     "karma-chrome-launcher": "~3.2.0",
