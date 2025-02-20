@@ -22,6 +22,9 @@ set -e
 ng build custom_element
 ng build model_explorer
 
+# Build the browser-loadable script.
+esbuild dist/custom_element/browser/main.js --bundle --outfile=dist/custom_element/browser/main_browser.js
+
 # Clear.
 DIST_DIR="custom_element_npm/dist"
 mkdir -p "${DIST_DIR}"
@@ -38,6 +41,7 @@ mkdir -p "${SRC_DIR}/components"
 cp -rf dist/custom_element/browser/static_files/* "${DIST_DIR}/static_files"
 cp -rf dist/custom_element/browser/styles.css "${DIST_DIR}/static_files"
 cp -rf dist/custom_element/browser/main.js "${DIST_DIR}/"
+cp -rf dist/custom_element/browser/main_browser.js "${DIST_DIR}/"
 cp -f dist/model_explorer/browser/worker*.js "${DIST_DIR}/worker.js"
 cp -f src/custom_element/index.d.ts "${SRC_DIR}/custom_element"
 cp -rf src/components/visualizer "${SRC_DIR}/components/"
