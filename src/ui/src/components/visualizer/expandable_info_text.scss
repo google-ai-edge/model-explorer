@@ -16,6 +16,8 @@
  * ==============================================================================
  */
 
+@use 'variables';
+
 :host {
   overflow: hidden;
 }
@@ -160,6 +162,43 @@
       width: 11px;
       height: 11px;
       font-weight: 700;
+    }
+  }
+
+  .percentage-meter {
+    --percentage: 0%;
+
+    display: inline-block;
+    position: relative;
+    border: solid thin #00639b;
+    border-radius: 4px;
+    overflow: hidden;
+    font-size: 10px;
+    width: calc(100% - 12px);
+    height: 14px;
+    vertical-align: middle;
+
+    &::before,
+    &::after {
+      content: '(' attr(data-percentage) ')';
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: absolute;
+      inset: 0;
+      width: 100%;
+    }
+
+    &::before {
+      clip-path: inset(0 calc(100% - var(--percentage)) 0 0);
+      color: #00639b;
+      background: #d7f1ff;
+    }
+
+    &::after {
+      clip-path: inset(0 0 0 var(--percentage));
+      color: black;
+      background: white;
     }
   }
 }

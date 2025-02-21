@@ -16,7 +16,7 @@
  * ==============================================================================
  */
 
-import type { EditableAttributeTypes } from './input_graph.js';
+import type { EditableAttributeTypes, AttributeDisplayType } from './input_graph';
 import {
   GraphNodeConfig,
   GraphNodeStyle,
@@ -204,6 +204,9 @@ export declare interface OpNode extends ModelNodeBase {
   /** The attributes which are editable */
   editableAttrs?: KeyAttributePairs;
 
+  /** Allows for overrides on attribute display types. */
+  attrDisplayTypes?: KeyDisplayTypePairs;
+
   /**
    * Metadata for inputs, indexed by input ids. Each input can have multiple
    * key-value pairs as its metadata.
@@ -283,3 +286,5 @@ export declare interface ModelEdge {
 }
 
 export type KeyAttributePairs = Record<string, EditableAttributeTypes>;
+
+export type KeyDisplayTypePairs = Record<string, AttributeDisplayType>;

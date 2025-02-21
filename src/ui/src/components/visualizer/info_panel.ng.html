@@ -40,7 +40,8 @@ limitations under the License.
                       [nodeId]="$any(curSelectedNodeId)"
                       [bgColor]="item.bgColor || 'transparent'"
                       [textColor]="item.textColor || 'black'"
-                      [editable]="item.editable">
+                      [editable]="item.editable"
+                      [displayType]="$any(item.displayType)">
                   </expandable-info-text>
                 </td>
               </tr>

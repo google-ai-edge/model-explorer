@@ -1,6 +1,16 @@
+import type { Attribute, GraphCollection } from '../components/visualizer/common/input_graph.js';
+
 export const isMockEnabled = localStorage.getItem('mock-api') === 'true';
 
-function processAttribute(key: string, value: string) {
+function processAttribute(key: string, value: string): Attribute {
+  if (key.includes('memory')) {
+    return {
+      key,
+      value,
+      display_type: 'memory'
+    }
+  }
+
   if (key.includes('grid') || key.includes('shape')) {
     return {
       key,
@@ -48,6 +58,30 @@ function processAttribute(key: string, value: string) {
 
 /**
  * @deprecated
+ * @todo Revert mock API changes
+ */
+export function mockGraphCollectionAttributes<T extends GraphCollection>(json: T) {
+  json.graphs?.forEach((graph) => {
+    graph.nodes?.forEach((node) => {
+      node.attrs?.forEach(({key, value}, index) => {
+        node.attrs![index] = processAttribute(key, value);
+      });
+
+      if (!node.attrs?.find(({ key }) => key.includes('memory'))) {
+        node.attrs?.push(processAttribute('memory', '0.5'));
+      }
+    });
+
+    if (!graph.overlays) {
+      graph.overlays = {};
+    }
+  });
+
+  return json;
+}
+
+/**
+ * @deprecated
  * @todo Revert mock API changes!
  */
 export function mockExtensionCommand(command: string, json: any) {
@@ -56,19 +90,7 @@ export function mockExtensionCommand(command: string, json: any) {
   }
 
   if (command === 'convert') {
-    json.graphs?.forEach((graph: { nodes: { attrs: { key: string, value: string }[]}[], overlays: any }) => {
-      graph.nodes?.forEach((node) => {
-        node.attrs?.forEach(({key, value}, index) => {
-          node.attrs[index] = processAttribute(key, value);
-        });
-      });
-
-      if (!graph.overlays) {
-        graph.overlays = {};
-      }
-    });
-
-    return json;
+    return mockGraphCollectionAttributes(json);
   }
 
   return json;

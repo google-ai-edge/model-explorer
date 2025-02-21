@@ -69,7 +69,7 @@ import {NodeDataProviderExtensionService} from './node_data_provider_extension_s
 import {NodeDataProviderSummaryPanel} from './node_data_provider_summary_panel';
 import {Paginator} from './paginator';
 import {SplitPaneService} from './split_pane_service';
-import type { EditableAttributeTypes } from './common/input_graph.js';
+import type { AttributeDisplayType, EditableAttributeTypes } from './common/input_graph.js';
 
 interface InfoSection {
   label: SectionLabel;
@@ -102,7 +102,8 @@ interface InfoItem {
   bgColor?: string;
   textColor?: string;
   loading?: boolean;
-  editable?: EditableAttributeTypes
+  editable?: EditableAttributeTypes;
+  displayType?: AttributeDisplayType;
 }
 
 interface OutputItem {
@@ -778,7 +779,8 @@ export class InfoPanel {
           value: attrs[key],
           canShowOnNode: true,
           showOnNode: this.curShowOnOpNodeAttrIds.has(key),
-          editable: opNode.editableAttrs?.[key]
+          editable: opNode.editableAttrs?.[key],
+          displayType: opNode.attrDisplayTypes?.[key],
         });
       }
       if (attrSection.items.length > 0) {

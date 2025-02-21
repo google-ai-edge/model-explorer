@@ -34,8 +34,8 @@ import {MatIconModule} from '@angular/material/icon';
 import {MatTooltipModule} from '@angular/material/tooltip';
 import {AppService} from './app_service';
 import { ModelLoaderServiceInterface } from '../../common/model_loader_service_interface';
-import type { EditableAttributeTypes, EditableValueListAttribute } from './common/input_graph';
-import type { OpNode } from './common/model_graph.js';
+import type { AttributeDisplayType, EditableAttributeTypes, EditableValueListAttribute } from './common/input_graph';
+import type { OpNode } from './common/model_graph';
 
 /** Expandable info text component. */
 @Component({
@@ -54,6 +54,7 @@ export class ExpandableInfoText implements AfterViewInit, OnDestroy, OnChanges {
   @Input() bgColor = 'transparent';
   @Input() textColor = 'inherit';
   @Input() editable?: EditableAttributeTypes = undefined;
+  @Input() displayType?: AttributeDisplayType = undefined;
   @ViewChild('container') container?: ElementRef<HTMLElement>;
   @ViewChild('oneLineText') oneLineText?: ElementRef<HTMLElement>;
 
@@ -203,6 +204,30 @@ export class ExpandableInfoText implements AfterViewInit, OnDestroy, OnChanges {
 
   getEditableOptions(editable: EditableAttributeTypes, value: string) {
     return [...new Set([value, ...(editable as EditableValueListAttribute).options])];
+  }
+
+  isPercentage(value: string) {
+    const parsedValue = Number.parseFloat(value);
+
+    if (Number.isNaN(parsedValue)) {
+      return false;
+    }
+
+    if (parsedValue < 0 || parsedValue > 1) {
+      return false;
+    }
+
+    return true;
+  }
+
+  formatPercentage(value: string) {
+    const parsedValue = Number.parseFloat(value);
+
+    if (Number.isNaN(parsedValue)) {
+      return '0%';
+    }
+
+    return `${parsedValue * 100}%`;
   }
 
   get hasOverflow(): boolean {

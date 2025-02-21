@@ -25,52 +25,118 @@ limitations under the License.
     [class.expanded]="expanded"
     (click)="handleToggleExpand($event, true)">
   <div class="expanded-text">
-    @if (type === 'values') {
-      @if (getMaxConstValueCount() > 0) {
-        <div class="info-msg">
-          Showing at most
-          <span class="underline"
-              matTooltip="configurable in Settings in homepage"
-              [matTooltipShowDelay]="300"
-              matTooltipPosition='above'>
-            {{getMaxConstValueCount()}} elements
-          </span>
-        </div>
-      } @else if (getMaxConstValueCount() < 0) {
-        <div class="info-msg">
-          Showing
-          <span class="underline"
-              matTooltip="configurable in Settings in homepage"
-              [matTooltipShowDelay]="300"
-              matTooltipPosition='above'>
-            all elements
-          </span>
-        </div>
-      }
-      <div class="monospace-content">{{text}}</div>
-    } @else if (type === 'namespace') {
-      <div class="info-msg">
-        Namespace hierarchy
-      </div>
-      <div class="namespace-content">
-        @for(ns of namespaceComponents; let i = $index; track $index) {
-          <div class="namespace-row">
-            <div class="index">{{i}}</div>
-            <div class="namespace">{{ns}}</div>
+    @switch (type) {
+      @case ('value') {
+        @if (getMaxConstValueCount() > 0) {
+          <div class="info-msg">
+            Showing at most
+            <span class="underline"
+                matTooltip="configurable in Settings in homepage"
+                [matTooltipShowDelay]="300"
+                matTooltipPosition='above'>
+              {{getMaxConstValueCount()}} elements
+            </span>
+          </div>
+        } @else if (getMaxConstValueCount() < 0) {
+          <div class="info-msg">
+            Showing
+            <span class="underline"
+                matTooltip="configurable in Settings in homepage"
+                [matTooltipShowDelay]="300"
+                matTooltipPosition='above'>
+              all elements
+            </span>
           </div>
         }
-      </div>
-    } @else if (type === 'quantization') {
-      <div class="monospace-content">{{formatQuantization}}</div>
-    } @else {
-      <div class="text-content">
-        @if (hasCurModel() && editable?.input_type === 'value_list') {
+        <div class="monospace-content">{{text}}</div>
+      }
+
+      @case ('namespace') {
+        <div class="info-msg">
+          Namespace hierarchy
+        </div>
+        <div class="namespace-content">
+          @for(ns of namespaceComponents; let i = $index; track $index) {
+            <div class="namespace-row">
+              <div class="index">{{i}}</div>
+              <div class="namespace">{{ns}}</div>
+            </div>
+          }
+        </div>
+      }
+
+      @case ('quantization') {
+        <div class="monospace-content">{{formatQuantization}}</div>
+      }
+
+      @default {
+        <div class="text-content">
+          @if (hasCurModel() && editable?.input_type) {
+            @switch (editable?.input_type) {
+              @case ('value_list') {
+                <select (change)="handleTextChange($event)">
+                  @for (option of getEditableOptions(editable!, text); track $index) {
+                    <option [selected]="option === text">{{option}}</option>
+                  }
+                </select>
+              }
+
+              @case ('int_list') {
+                @for (item of splitEditableList(text); track $index) {
+                  <input
+                    [type]="item.type"
+                    [value]="item.value"
+                    [attr.data-index]="$index"
+                    [step]="$any(editable)?.step ?? 1"
+                    [min]="$any(editable)?.min_value ?? 0"
+                    [max]="$any(editable)?.max_value ?? 100"
+                    (change)="handleTextChange($event)"
+                  />
+                }
+              }
+
+              @case ('grid') {
+                @for (item of splitEditableList(text); track $index) {
+                  <input
+                    [type]="item.type"
+                    [value]="item.value"
+                    [attr.data-index]="$index"
+                    [step]="$any(editable)?.step ?? 1"
+                    [min]="$any(editable)?.min_value ?? 0"
+                    [max]="$any(editable)?.max_value ?? 100"
+                    (change)="handleTextChange($event)"
+                  />
+                  <span class="text-separator">&nbsp;{{$any(editable)?.visual_separator ?? 'x'}}&nbsp;</span>
+                }
+              }
+            }
+          } @else {
+            @switch (displayType) {
+              @case ('memory') {
+                <div class="percentage-meter" [attr.data-percentage]="text + '%'" [style]="{ '--percentage': text + '%' }"></div>
+              }
+
+              @default {
+                {{text}}
+              }
+            }
+          }
+        </div>
+      }
+    }
+  </div>
+  <div class="one-line-text" #oneLineText>
+    @if (hasCurModel() && editable?.input_type) {
+      @switch (editable?.input_type) {
+        @case ('value_list') {
           <select (change)="handleTextChange($event)">
             @for (option of getEditableOptions(editable!, text); track $index) {
               <option [selected]="option === text">{{option}}</option>
             }
           </select>
-        } @else if (hasCurModel() && editable?.input_type === 'int_list') {
+        }
+
+        @case ('int_list') {
           @for (item of splitEditableList(text); track $index) {
             <input
               [type]="item.type"
@@ -82,7 +148,9 @@ limitations under the License.
               (change)="handleTextChange($event)"
             />
           }
-        } @else if (hasCurModel() && editable?.input_type === 'grid') {
+        }
+
+        @case ('grid') {
           @for (item of splitEditableList(text); track $index) {
             <input
               [type]="item.type"
@@ -95,46 +163,22 @@ limitations under the License.
             />
             <span class="text-separator">&nbsp;{{$any(editable)?.visual_separator ?? 'x'}}&nbsp;</span>
           }
-        } @else {
-          {{text}}
         }
-      </div>
-    }
-  </div>
-  <div class="one-line-text" #oneLineText>
-    @if (hasCurModel() && editable?.input_type === 'value_list') {
-      <select (change)="handleTextChange($event)">
-        @for (option of getEditableOptions(editable!, text); track $index) {
-          <option [selected]="option === text">{{option}}</option>
-        }
-      </select>
-    } @else if (hasCurModel() && editable?.input_type === 'int_list') {
-      @for (item of splitEditableList(text); track $index) {
-        <input
-          [type]="item.type"
-          [value]="item.value"
-          [attr.data-index]="$index"
-          [step]="$any(editable)?.step ?? 1"
-          [min]="$any(editable)?.min_value ?? 0"
-          [max]="$any(editable)?.max_value ?? 100"
-          (change)="handleTextChange($event)"
-        />
-      }
-    } @else if (hasCurModel() && editable?.input_type === 'grid') {
-      @for (item of splitEditableList(text); track $index) {
-        <input
-          [type]="item.type"
-          [value]="item.value"
-          [attr.data-index]="$index"
-          [step]="$any(editable)?.step ?? 1"
-          [min]="$any(editable)?.min_value ?? 0"
-          [max]="$any(editable)?.max_value ?? 100"
-          (change)="handleTextChange($event)"
-        />
-        <span class="text-separator">&nbsp;{{$any(editable)?.visual_separator ?? 'x'}}&nbsp;</span>
       }
     } @else {
-      {{text}}
+      @switch (displayType) {
+        @case ('memory') {
+          @if (isPercentage(text)) {
+            <div class="percentage-meter" [attr.data-percentage]="formatPercentage(text)" [style]="{ '--percentage': formatPercentage(text) }"></div>
+          } @else {
+            {{text}}
+          }
+        }
+
+        @default {
+          {{text}}
+        }
+      }
     }
   </div>
   <div class="icon-container toggle" (click)="handleToggleExpand($event)">
