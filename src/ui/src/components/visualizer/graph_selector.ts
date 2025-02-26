@@ -52,6 +52,7 @@ export interface GraphCollectionItem {
 export interface GraphItem {
   id: string;
   graph: Graph;
+  level: number;
   nonHiddenNodeCount: number;
   width: number;
 }
@@ -109,7 +110,7 @@ export class GraphSelector {
         collection,
         graphs: [],
       };
-      for (const graph of collection.graphs) {
+      for (const {graph, level} of collection.graphsWithLevel ?? []) {
         if (filterText !== '' && !graph.id.toLowerCase().includes(filterText)) {
           continue;
         }
@@ -122,6 +123,7 @@ export class GraphSelector {
         collectionItem.graphs.push({
           id: graph.id,
           graph,
+          level,
           nonHiddenNodeCount,
           width,
         });

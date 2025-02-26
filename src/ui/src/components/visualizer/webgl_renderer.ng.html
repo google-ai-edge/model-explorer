@@ -99,10 +99,11 @@ limitations under the License.
       [style.left.px]="subgraphIndicatorLeft"
       [style.width.px]="subgraphIndicatorWidth"
       [style.height.px]="subgraphIndicatorHeight"
-      matTooltip="Jump to subgraph"
+      [matTooltip]="subgraphIndicatorTooltip"
+      matTooltipClass="multiline-tooltip-left"
       matTooltipPosition="above"
       (mousedown)="$event.stopPropagation()"
-      (click)="handleClickSubgraphIndicator()">
+      (click)="handleClickSubgraphIndicator($event)">
   </div>
 
   <!-- Hidden menu trigger for subgraph dropdown -->
@@ -117,11 +118,14 @@ limitations under the License.
   <mat-menu #menu="matMenu">
     @for (subgraphId of curSubgraphIdsForMenu; track subgraphId) {
       <div class="model-explorer-menu-item-with-icon"
-          (click)="handleClickSubgraphId(subgraphId)">
+          (click)="handleClickSubgraphId(subgraphId, $event)">
         <mat-icon>subdirectory_arrow_right</mat-icon>
         {{subgraphId}}
       </div>
     }
+    <div class="model-explorer-alt-click-info">
+      Alt-click to open in split pane
+    </div>
   </mat-menu>
 
   <!-- Range zoom -->

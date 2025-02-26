@@ -32,6 +32,12 @@ export declare interface GraphCollection {
 
   /** The graphs inside the collection. */
   graphs: Graph[];
+
+  //////////////////////////////////////////////////////////////////////////////
+  // The following fields are set by model explorer. Users don't need to set
+  // them.
+
+  graphsWithLevel?: GraphWithLevel[];
 }
 
 /** The collection sent from the built-in adapters. */
@@ -83,12 +89,14 @@ export declare interface Graph {
   // The ids of all its subgraphs.
   subGraphIds?: string[];
 
-  // The id of its parent graph. We assume each subgraph only belongs to one
-  // parent.
-  parentGraphId?: string;
+  // The ids of its parent graphs.
+  parentGraphIds?: string[];
+}
 
-  // The level in the graph tree.
-  level?: number;
+/** A graph with its level, used in the graph selector. */
+export declare interface GraphWithLevel {
+  graph: Graph;
+  level: number;
 }
 
 /** A single node in the graph. */
