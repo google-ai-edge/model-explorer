@@ -1,0 +1,1 @@
+../node_modules/ai-edge-model-explorer-visualizer/dist/worker.js

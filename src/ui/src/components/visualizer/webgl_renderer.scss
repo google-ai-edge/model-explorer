@@ -210,3 +210,17 @@
     background-color: rgba(0, 0, 0, 0.04);
   }
 }
+
+::ng-deep .model-explorer-alt-click-info {
+  height: 32px;
+  min-height: 32px;
+  background-color: #f6f6f6;
+  border-top: 1px solid #ddd;
+  box-sizing: border-box;
+  padding: 0 10px;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  color: #777;
+  margin-bottom: -8px;
+}

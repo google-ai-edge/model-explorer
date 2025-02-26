@@ -24,7 +24,7 @@ import {
   LOCAL_STORAGE_KEY_SHOW_ON_EDGE_ITEM_TYPES,
   LOCAL_STORAGE_KEY_SHOW_ON_NODE_ITEM_TYPES,
 } from './common/consts';
-import {Graph, GraphCollection} from './common/input_graph';
+import {Graph, GraphCollection, GraphWithLevel} from './common/input_graph';
 import {ModelGraph, ModelNode} from './common/model_graph';
 import {
   AddSnapshotInfo,
@@ -174,7 +174,12 @@ export class AppService {
               for (const subgraphId of node.subgraphIds) {
                 const subgraph = graphById[subgraphId];
                 if (subgraph) {
-                  subgraph.parentGraphId = graph.id;
+                  if (subgraph.parentGraphIds == null) {
+                    subgraph.parentGraphIds = [];
+                  }
+                  if (subgraph.parentGraphIds.includes(graph.id)) {
+                    subgraph.parentGraphIds.push(graph.id);
+                  }
                 }
               }
             }
@@ -183,11 +188,11 @@ export class AppService {
 
         // Find the 'root' graphs.
         const rootGraphs: Graph[] = collection.graphs.filter(
-          (graph) => graph.parentGraphId == null,
+          (graph) => graph.parentGraphIds == null,
         );
 
         // DFS from root graphs.
-        const dfsOrderedGraphs: Graph[] = [];
+        const dfsOrderedGraphs: GraphWithLevel[] = [];
         const visitGraph = (root?: Graph, level = 0) => {
           let graphs: Graph[] = [];
           if (root == null) {
@@ -197,16 +202,27 @@ export class AppService {
               .map((id) => graphById[id])
               .filter((graphs) => graphs != null);
           }
+
+          // Dedup graphs by their ids.
+          const uniqueGraphs: Graph[] = [];
+          const seenIds: Record<string, boolean> = {};
+          for (const graph of graphs) {
+            if (!seenIds[graph.id]) {
+              uniqueGraphs.push(graph);
+              seenIds[graph.id] = true;
+            }
+          }
+          graphs = uniqueGraphs;
+
           // Sort by node count.
           graphs.sort((g1, g2) => g2.nodes.length - g1.nodes.length);
           for (const graph of graphs) {
-            graph.level = level;
-            dfsOrderedGraphs.push(graph);
+            dfsOrderedGraphs.push({graph, level});
             visitGraph(graph, level + 1);
           }
         };
         visitGraph();
-        collection.graphs = dfsOrderedGraphs;
+        collection.graphsWithLevel = dfsOrderedGraphs;
       }
       newCollections.push(...graphCollections);
       return newCollections;
@@ -275,20 +291,37 @@ export class AppService {
     graph: Graph,
     flattenLayers = false,
     initialLayout = true,
+    openToLeft = false,
   ) {
+    // Keep the current pane and remove the other pane when there are two panes.
+    if (this.panes().length === 2) {
+      this.panes.update((panes) => {
+        if (openToLeft) {
+          return [panes[1]];
+        } else {
+          return [panes[0]];
+        }
+      });
+    }
+
     // Add a new pane.
     const paneId = genUid();
     this.paneIdToGraph[paneId] = graph;
     this.panes.update((panes) => {
       const firstPane = panes[0];
       firstPane.widthFraction = 0.5;
-      panes.push({
+      const newPane: Pane = {
         id: paneId,
         widthFraction: 0.5,
         flattenLayers,
         showOnNodeItemTypes: {[paneId]: this.getSavedShowOnNodeItemTypes()},
         showOnEdgeItemTypes: {[paneId]: this.getSavedShowOnEdgeItemTypes()},
-      });
+      };
+      if (openToLeft) {
+        panes.unshift(newPane);
+      } else {
+        panes.push(newPane);
+      }
       return [...panes];
     });
 
@@ -327,6 +360,11 @@ export class AppService {
       initialLayout,
     };
     this.workerService.worker.postMessage(processGraphReq);
+  }
+
+  getIsGraphInRightPane(graphId: string): boolean {
+    const panes = this.panes();
+    return panes.length === 2 && panes[1].modelGraph?.id === graphId;
   }
 
   processGraph(

@@ -28,6 +28,13 @@ export declare interface VisualizerConfig {
    */
   nodeLabelsToHide?: string[];
 
+  /**
+   * Key-value pairs of node attribute key to value regex. Nodes whose
+   * attribute value matches any regex in the dict will be hidden from the
+   * visualzation.
+   */
+  nodeAttrsToHide?: Record<string, string>;
+
   /** The maximum number of child nodes under a layer node. */
   artificialLayerNodeCountThreshold?: number;
 

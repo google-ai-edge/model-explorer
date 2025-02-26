@@ -30,6 +30,7 @@ import * as three from 'three';
 import {ModelEdge, ModelGraph, NodeType, OpNode} from './common/model_graph';
 import {Point} from './common/types';
 import {generateCurvePoints} from './common/utils';
+import {EdgeOverlaysService} from './edge_overlays_service';
 import {Logo} from './logo';
 import {SplitPaneService} from './split_pane_service';
 import {SubgraphSelectionService} from './subgraph_selection_service';
@@ -50,7 +51,7 @@ const THREE = three;
     ReactiveFormsModule,
     WebglRenderer,
   ],
-  providers: [SubgraphSelectionService, SplitPaneService],
+  providers: [EdgeOverlaysService, SubgraphSelectionService, SplitPaneService],
   templateUrl: './benchmark_runner.ng.html',
   styleUrls: ['./benchmark_runner.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,

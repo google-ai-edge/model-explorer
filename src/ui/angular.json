@@ -94,6 +94,63 @@
           }
         }
       }
+    },
+    "custom_element": {
+      "projectType": "application",
+      "schematics": {
+        "@schematics/angular:component": {
+          "style": "scss"
+        }
+      },
+      "root": "",
+      "sourceRoot": "src",
+      "prefix": "app",
+      "architect": {
+        "build": {
+          "builder": "@angular-devkit/build-angular:application",
+          "options": {
+            "outputPath": "dist/custom_element",
+            "index": "src/index.html",
+            "browser": "src/custom_element/custom_element.ts",
+            "polyfills": [
+              "zone.js"
+            ],
+            "tsConfig": "tsconfig.app.json",
+            "inlineStyleLanguage": "scss",
+            "assets": [
+              {
+                "glob": "**/Font*",
+                "input": "public"
+              },
+              {
+                "glob": "**/icons_*",
+                "input": "public"
+              }
+            ],
+            "styles": [
+              "src/custom_element/styles.scss"
+            ],
+            "scripts": []
+          },
+          "configurations": {
+            "production": {
+              "fileReplacements": [
+                {
+                  "replace": "src/components/visualizer/worker_service.ts",
+                  "with": "src/custom_element/worker_service.ts"
+                }
+              ],
+              "outputHashing": "none"
+            },
+            "development": {
+              "optimization": false,
+              "extractLicenses": false,
+              "sourceMap": true
+            }
+          },
+          "defaultConfiguration": "production"
+        }
+      }
     }
   },
   "cli": {

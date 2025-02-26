@@ -142,6 +142,19 @@ export class GraphProcessor {
       if (this.nodeLabelsToHide.has(graphNode.label.toLowerCase())) {
         opNode.hideInLayout = true;
       }
+      if (this.config?.nodeAttrsToHide) {
+        for (const [attrKey, attrValueRegex] of Object.entries(
+          this.config.nodeAttrsToHide,
+        )) {
+          const attrValue = graphNode.attrs?.find(
+            (attr) => attr.key === attrKey,
+          )?.value;
+          if (attrValue && attrValue.match(attrValueRegex)) {
+            opNode.hideInLayout = true;
+            break;
+          }
+        }
+      }
       if (graphNode.attrs) {
         const attrs: KeyValuePairs = {};
         const editableAttrs: KeyAttributePairs = {};

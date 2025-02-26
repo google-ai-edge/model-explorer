@@ -1276,7 +1276,7 @@ export class WebglRenderer implements OnInit, OnDestroy {
     this.webglRendererIoHighlightService.handleClickIoPicker(isInput, nodeId);
   }
 
-  handleClickSubgraphIndicator() {
+  handleClickSubgraphIndicator(event: MouseEvent) {
     if (!this.hoveredSubgraphIndicatorId) {
       return;
     }
@@ -1295,7 +1295,7 @@ export class WebglRenderer implements OnInit, OnDestroy {
     // directly.
     const subgraphIds = node.subgraphIds!;
     if (subgraphIds.length === 1) {
-      this.openSubgraph(subgraphIds[0]);
+      this.clickSubgraph(subgraphIds[0], event);
     }
     // If there are multiple subgraphs linked to the node, open a menu to let
     // users select a subgraph to jump to.
@@ -1305,8 +1305,8 @@ export class WebglRenderer implements OnInit, OnDestroy {
     }
   }
 
-  handleClickSubgraphId(subgraphId: string) {
-    this.openSubgraph(subgraphId);
+  handleClickSubgraphId(subgraphId: string, event: MouseEvent) {
+    this.clickSubgraph(subgraphId, event);
   }
 
   handleDoubleClickOnGraph(altDown: boolean, shiftDown: boolean) {
@@ -1717,6 +1717,25 @@ export class WebglRenderer implements OnInit, OnDestroy {
 
   get fps(): string {
     return this.webglRendererThreejsService.fps;
+  }
+
+  get subgraphIndicatorTooltip(): string {
+    if (!this.hoveredSubgraphIndicatorId) {
+      return '';
+    }
+    const node = this.curModelGraph.nodesById[
+      this.hoveredSubgraphIndicatorId
+    ] as OpNode;
+    if (!isOpNode(node)) {
+      return '';
+    }
+
+    const subgraphIds = node.subgraphIds!;
+    if (subgraphIds.length === 1) {
+      return `Jump to subgraph "${subgraphIds[0]}"\n(alt-click to open in split pane)`;
+    } else {
+      return 'Jump to subgraph';
+    }
   }
 
   private handleSelectNode(nodeId: string, triggerNavigationSync = true) {
@@ -3207,5 +3226,21 @@ export class WebglRenderer implements OnInit, OnDestroy {
       }
     }
     return [...deepestExpandedGroupNodeIdsSet];
+  }
+
+  private clickSubgraph(subgraphId: string, event: MouseEvent) {
+    if (!event.altKey) {
+      this.openSubgraph(subgraphId);
+    }
+    // Alt-clicking opens the subgraph in a split pane.
+    else {
+      const subgraph = this.appService.getGraphById(subgraphId);
+      if (subgraph) {
+        const openToLeft = this.appService.getIsGraphInRightPane(
+          this.curModelGraph.id,
+        );
+        this.appService.openGraphInSplitPane(subgraph, false, true, openToLeft);
+      }
+    }
   }
 }

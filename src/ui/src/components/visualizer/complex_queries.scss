@@ -58,7 +58,8 @@
 
       &.min,
       &.max {
-        width: 50px;
+        width: 46px;
+        flex-shrink: 0;
       }
     }
   }

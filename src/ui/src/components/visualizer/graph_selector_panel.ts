@@ -101,7 +101,7 @@ export class GraphSelectorPanel {
   }
 
   showIndentSymbol(graphItem: GraphItem): boolean {
-    return !this.hasFilteredOutGraphs && (graphItem.graph.level ?? 0) > 0;
+    return !this.hasFilteredOutGraphs && (graphItem.level ?? 0) > 0;
   }
 
   getGraphItemPaddingLeft(graphItem: GraphItem): number {
@@ -109,7 +109,7 @@ export class GraphSelectorPanel {
     if (this.hasFilteredOutGraphs) {
       return DEFAULT_PADDING_LEFT;
     }
-    return DEFAULT_PADDING_LEFT + (graphItem.graph.level ?? 0) * 12;
+    return DEFAULT_PADDING_LEFT + (graphItem.level ?? 0) * 12;
   }
 
   trackByCollection(
