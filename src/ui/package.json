@@ -9,7 +9,7 @@
     "deploy": "./scripts/build_and_update_python_package.sh",
     "watch": "ng build --watch --configuration development",
     "test": "ng test model_explorer",
-    "prepare": "git config --local core.hooksPath .githooks/"
+    "setup-git-hooks": "cd ../.. && git config --local core.hooksPath .githooks/"
   },
   "private": true,
   "dependencies": {
