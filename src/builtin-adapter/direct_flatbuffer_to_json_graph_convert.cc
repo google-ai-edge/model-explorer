@@ -15,6 +15,7 @@
 
 #include "direct_flatbuffer_to_json_graph_convert.h"
 
+#include <algorithm>
 #include <cstdint>
 #include <cstring>
 #include <memory>
@@ -29,6 +30,7 @@
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/ascii.h"
+#include "absl/strings/match.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_join.h"
 #include "absl/strings/str_split.h"
@@ -66,8 +68,8 @@
 #include "tensorflow/compiler/mlir/lite/utils/const_tensor_utils.h"
 #include "tensorflow/compiler/mlir/tensorflow/ir/tf_dialect.h"
 #include "tensorflow/compiler/mlir/tensorflow/ir/tf_types.h"
+#include "xla/tsl/platform/env.h"
 #include "tensorflow/core/framework/tensor.pb.h"
-#include "tsl/platform/env.h"
 
 namespace tooling {
 namespace visualization_client {
@@ -745,6 +747,99 @@ void ValidateSubgraph(absl::string_view subgraph_name,
   }
 }
 
+bool IsInRootSpace(absl::string_view node_name) {
+  // If the node name doesn't contain '/', it's in the root namespace.
+  return !absl::StrContains(node_name, '/');
+}
+
+// Returns the shared namespace of the given node namesapces.
+// For example, if the node namespaces are ["a/b/c/d", "a/b/c", "a/b/f"], the
+// shared namespace is "a/b".
+std::string GetSharedNamespace(const std::vector<std::string>& node_names) {
+  bool initialized = false;
+  std::vector<std::string> namespace_parts;
+  int shared_prefix_length = 0;  // Keep track of the shared prefix length.
+
+  for (absl::string_view node_name : node_names) {
+    // We skip the root namespace when finding the shared namespace.
+    if (IsInRootSpace(node_name)) {
+      continue;
+    }
+    if (!initialized) {
+      namespace_parts = absl::StrSplit(node_name, '/');
+      shared_prefix_length = namespace_parts.size();
+      initialized = true;
+      continue;
+    }
+    // Compares the node name, only keep the shared namespace parts.
+    std::vector<std::string> compared_parts = absl::StrSplit(node_name, '/');
+    int min_size = std::min(shared_prefix_length, (int)compared_parts.size());
+    int current_match_length = 0;
+    for (int i = 0; i < min_size; ++i) {
+      if (namespace_parts[i] == compared_parts[i]) {
+        current_match_length++;
+      } else {
+        break;  // Exit inner loop on mismatch.
+      }
+    }
+
+    shared_prefix_length = current_match_length;
+    if (shared_prefix_length == 0) {
+      return "";
+    }
+  }
+  namespace_parts.resize(shared_prefix_length);
+  return absl::StrJoin(namespace_parts, "/");
+}
+
+// Post-processes the subgraph, performing operations after the subgraph is
+// built.
+void PostProcessSubgraph(Subgraph& subgraph) {
+  // Creates a map from node ID to the node's index in the `subgraph.nodes`
+  // vector. This allows for efficient lookup of nodes by ID.
+  absl::flat_hash_map<std::string, int> node_id_to_index;
+  for (int i = 0; i < subgraph.nodes.size(); ++i) {
+    node_id_to_index[subgraph.nodes[i].node_id] = i;
+  }
+
+  // Find the "GraphOutputs" node and get the IDs of its input nodes.
+  // The "GraphOutputs" node is assumed to be closer to the end of the nodes
+  // vector, so the iteration starts from the end for efficiency.
+  std::vector<std::string> input_node_ids;
+  for (int i = subgraph.nodes.size() - 1; i >= 0; --i) {
+    const GraphNode& node = subgraph.nodes[i];
+    if (node.node_label == kGraphOutputs) {
+      // Collect the source node IDs of all incoming edges to the
+      // "GraphOutputs" node. These are the input nodes to "GraphOutputs".
+      for (const GraphEdge& edge : node.incoming_edges) {
+        input_node_ids.push_back(edge.source_node_id);
+      }
+      break;
+    }
+  }
+
+  for (absl::string_view node_id : input_node_ids) {
+    GraphNode& node = subgraph.nodes[node_id_to_index[node_id]];
+    // Only process nodes that are in the root space, so we don't mess up the
+    // namespace of nodes that are already in a nested namespace.
+    if (!IsInRootSpace(node.node_name)) {
+      continue;
+    }
+    std::vector<std::string> parent_node_names;
+    for (const GraphEdge& edge : node.incoming_edges) {
+      const GraphNode& parent_node =
+          subgraph.nodes[node_id_to_index[edge.source_node_id]];
+      parent_node_names.push_back(parent_node.node_name);
+    }
+    const std::string shared_namespace = GetSharedNamespace(parent_node_names);
+    // If a shared namespace exists, prepend it to the current node's name.
+    // This effectively moves the node into the shared namespace.
+    if (!shared_namespace.empty()) {
+      node.node_name = absl::StrCat(shared_namespace, "/", node.node_name);
+    }
+  }
+}
+
 // Adds a subgraph to Graph.
 absl::Status AddSubgraph(
     const VisualizeConfig& config, absl::string_view subgraph_name,
@@ -788,6 +883,7 @@ absl::Status AddSubgraph(
       edge_map, mlir_builder, subgraph));
 
   ValidateSubgraph(subgraph_name, node_ids, edge_map);
+  PostProcessSubgraph(subgraph);
   graph.subgraphs.push_back(std::move(subgraph));
   return absl::OkStatus();
 }
@@ -801,6 +897,35 @@ std::string GetSubgraphName(int subgraph_index, const SubGraphT& subgraph_t) {
 }
 
 }  // namespace
+
+// Logic referred from `CustomOptionsToAttributes` in
+// tensorflow/compiler/mlir/lite/flatbuffer_operator.cc.
+void CustomOptionsToAttributes(
+    const std::vector<uint8_t>& custom_options, mlir::Builder mlir_builder,
+    llvm::SmallVectorImpl<mlir::NamedAttribute>& attributes) {
+  if (custom_options.empty()) {
+    // Avoid calling flexbuffers::GetRoot() with empty data. Otherwise it will
+    // crash.
+    //
+    // TODO(yijieyang): We should use a default value for input custom_options
+    // that is not empty to avoid this check.
+    return;
+  }
+  const flexbuffers::Map& map = flexbuffers::GetRoot(custom_options).AsMap();
+  if (map.IsTheEmptyMap()) {
+    // The custom_options is not empty but not a valid flex buffer map.
+    attributes.emplace_back(mlir_builder.getNamedAttr(
+        "custom_options", mlir_builder.getStringAttr("<non-deserializable>")));
+    return;
+  }
+  const flexbuffers::TypedVector& keys = map.Keys();
+  for (size_t i = 0; i < keys.size(); ++i) {
+    const char* key = keys[i].AsKey();
+    const flexbuffers::Reference& value = map[key];
+    attributes.emplace_back(mlir_builder.getNamedAttr(
+        key, mlir_builder.getStringAttr(value.ToString())));
+  }
+}
 
 absl::StatusOr<std::string> ConvertFlatbufferDirectlyToJson(
     const VisualizeConfig& config, absl::string_view model_path) {
@@ -870,35 +995,6 @@ absl::StatusOr<std::string> ConvertFlatbufferDirectlyToJson(
   collection.graphs.push_back(std::move(graph));
   llvm::json::Value json_result(collection.Json());
   return llvm::formatv("{0:2}", json_result);
-}
-
-// Logic referred from `CustomOptionsToAttributes` in
-// tensorflow/compiler/mlir/lite/flatbuffer_operator.cc.
-void CustomOptionsToAttributes(
-    const std::vector<uint8_t>& custom_options, mlir::Builder mlir_builder,
-    llvm::SmallVectorImpl<mlir::NamedAttribute>& attributes) {
-  if (custom_options.empty()) {
-    // Avoid calling flexbuffers::GetRoot() with empty data. Otherwise it will
-    // crash.
-    //
-    // TODO(yijieyang): We should use a default value for input custom_options
-    // that is not empty to avoid this check.
-    return;
-  }
-  const flexbuffers::Map& map = flexbuffers::GetRoot(custom_options).AsMap();
-  if (map.IsTheEmptyMap()) {
-    // The custom_options is not empty but not a valid flex buffer map.
-    attributes.emplace_back(mlir_builder.getNamedAttr(
-        "custom_options", mlir_builder.getStringAttr("<non-deserializable>")));
-    return;
-  }
-  const flexbuffers::TypedVector& keys = map.Keys();
-  for (size_t i = 0; i < keys.size(); ++i) {
-    const char* key = keys[i].AsKey();
-    const flexbuffers::Reference& value = map[key];
-    attributes.emplace_back(mlir_builder.getNamedAttr(
-        key, mlir_builder.getStringAttr(value.ToString())));
-  }
 }
 
 }  // namespace visualization_client
