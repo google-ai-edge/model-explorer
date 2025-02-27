@@ -279,11 +279,25 @@ void SetInstructionNodeAttributes(const xla::HloInstruction* instruction,
   }
 
   // Attach get-tuple-element index if its define is a GTE and folded.
-  for (const xla::HloInstruction* operand : instruction->operands()) {
-    if (IsGetTupleElement(options, operand)) {
-      builder.AppendNodeAttribute(kGetTupleElementIndex,
-                                  absl::StrCat(operand->tuple_index(), " of ",
-                                               operand->operand(0)->name()));
+  if (options.get_tuple_element_folding) {
+    absl::flat_hash_map<std::string, std::vector<std::string>>
+        tuple_indexes_by_operand;
+    for (const xla::HloInstruction* operand : instruction->operands()) {
+      if (IsGetTupleElement(options, operand)) {
+        tuple_indexes_by_operand[operand->operand(0)->name()].push_back(
+            absl::StrCat(operand->tuple_index()));
+      }
+    }
+    std::string tuple_indexes_string;
+    for (const auto& [operand_name, tuple_indexes] : tuple_indexes_by_operand) {
+      if (!tuple_indexes_string.empty()) {
+        absl::StrAppend(&tuple_indexes_string, ";");
+      }
+      absl::StrAppend(&tuple_indexes_string, absl::StrJoin(tuple_indexes, ","),
+                      " of ", operand_name);
+    }
+    if (!tuple_indexes_string.empty()) {
+      builder.AppendNodeAttribute(kGetTupleElementIndex, tuple_indexes_string);
     }
   }
 
