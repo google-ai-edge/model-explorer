@@ -40,12 +40,14 @@ FIX_FORMAT_FLAG=${1}
   -e .github \
   -e venv \
   -e src/server/package/src/model_explorer/web_app \
+  -e src/custom_element_demos \
   -e src/ui \
   -e "\.md" \
   -e "\.ipynb" \
   -e "\.patch" \
   -e "\.jpg" \
   -e "\.png" \
+  -e "\.ico" \
   -e "\.jar" \
   -e "\.test" \
   -e "\.toml" \
@@ -69,7 +71,7 @@ fi
 # Python formatting
 ############################################################
 
-PYINK_COMMAND="pyink --pyink-use-majority-quotes --pyink-indentation=2 --preview --unstable --line-length 80 
+PYINK_COMMAND="pyink --pyink-use-majority-quotes --pyink-indentation=2 --preview --unstable --line-length 80
       --extend-exclude .downloads --extend-exclude \.pyi --check ./"
 
 echo "Testing python formatting with ${PYINK_COMMAND}"
@@ -77,7 +79,7 @@ ${PYINK_COMMAND}
 PYTHON_FORMAT_RESULT=$?
 
 if [[ ${PYTHON_FORMAT_RESULT} != 0 ]]; then
-  echo "Python formatting issues found." 
+  echo "Python formatting issues found."
   echo "To apply formatting automatically, run: ./format.sh"
 fi
 if [[ ${LICENSE_CHECK_RESULT}  != 0 || \
