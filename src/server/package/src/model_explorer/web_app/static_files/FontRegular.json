@@ -1,6 +1,6 @@
 {
     "pages": [
-        "GoogleSansTextRegular.png"
+        "FontRegular.png"
     ],
     "chars": [
         {
@@ -1335,7 +1335,7 @@
         }
     ],
     "info": {
-        "face": "GoogleSansTextRegular",
+        "face": "FontRegular",
         "size": 50,
         "bold": 0,
         "italic": 0,

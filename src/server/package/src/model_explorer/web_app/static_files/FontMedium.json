@@ -1,6 +1,6 @@
 {
     "pages": [
-        "GoogleSansTextMedium.png"
+        "FontMedium.png"
     ],
     "chars": [
         {
@@ -1335,7 +1335,7 @@
         }
     ],
     "info": {
-        "face": "GoogleSansTextMedium",
+        "face": "FontMedium",
         "size": 50,
         "bold": 0,
         "italic": 0,

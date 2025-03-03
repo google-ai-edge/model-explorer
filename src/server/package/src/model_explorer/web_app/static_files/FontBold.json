@@ -1,6 +1,6 @@
 {
     "pages": [
-        "GoogleSansTextBold.png"
+        "FontBold.png"
     ],
     "chars": [
         {
@@ -1335,7 +1335,7 @@
         }
     ],
     "info": {
-        "face": "GoogleSansTextBold",
+        "face": "FontBold",
         "size": 50,
         "bold": 0,
         "italic": 0,
