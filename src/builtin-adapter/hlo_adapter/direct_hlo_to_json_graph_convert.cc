@@ -53,6 +53,7 @@ constexpr absl::string_view kShapeWithLayout = "shape_with_layout";
 constexpr absl::string_view kOpName = "op_name";
 constexpr absl::string_view kOpType = "op_type";
 constexpr absl::string_view kSourceFile = "source_file";
+constexpr absl::string_view kSourceLine = "source_line";
 constexpr absl::string_view kSourceStack = "source_stack";
 constexpr absl::string_view kOpcode = "opcode";
 constexpr absl::string_view kGetTupleElementIndex = "get_tuple_element_index";
@@ -271,6 +272,10 @@ void SetInstructionNodeAttributes(const xla::HloInstruction* instruction,
   if (!instruction->metadata().source_file().empty()) {
     builder.AppendNodeAttribute(kSourceFile,
                                 instruction->metadata().source_file());
+  }
+  if (instruction->metadata().source_line() != 0) {
+    builder.AppendNodeAttribute(
+        kSourceLine, absl::StrCat(instruction->metadata().source_line()));
   }
   if (instruction->metadata().stack_frame_id() != 0) {
     builder.AppendNodeAttribute(
