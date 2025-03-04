@@ -34,7 +34,7 @@ import {MatIconModule} from '@angular/material/icon';
 import {MatTooltipModule} from '@angular/material/tooltip';
 import {AppService} from './app_service';
 import { ModelLoaderServiceInterface } from '../../common/model_loader_service_interface';
-import type { AttributeDisplayType, EditableAttributeTypes, EditableValueListAttribute } from './common/input_graph';
+import type { AttributeDisplayType, EditableAttributeTypes, EditableGridAttribute, EditableValueListAttribute } from './common/input_graph';
 import type { OpNode } from './common/model_graph';
 
 /** Expandable info text component. */
@@ -118,11 +118,11 @@ export class ExpandableInfoText implements AfterViewInit, OnDestroy, OnChanges {
     return curModel !== undefined;
   }
 
-  splitEditableList(value: string) {
+  splitEditableList(value: string, separator = ',') {
     return value
       .replace(/^\[/iu, '')
       .replace(/\]$/iu, '')
-      .split(',')
+      .split(separator)
       .map((part) => {
         const parsedValue = Number.parseFloat(part);
 
@@ -139,7 +139,7 @@ export class ExpandableInfoText implements AfterViewInit, OnDestroy, OnChanges {
     let updatedValue = target.value;
 
     if (this.editable?.input_type === 'int_list' || this.editable?.input_type === 'grid') {
-      updatedValue = `[${this.splitEditableList(this.text).map(({ value }, index) => {
+      updatedValue = `[${this.splitEditableList(this.text, (this.editable as EditableGridAttribute | undefined)?.separator).map(({ value }, index) => {
         if (index.toString() === target.dataset['index']) {
           return target.value;
         }
