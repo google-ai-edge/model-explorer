@@ -47,13 +47,16 @@ import {
   KeyValue,
   KeyValueList,
   KeyValuePairs,
+  NodeAttributeValueType,
   NodeDataProviderRunInfo,
+  NodeIdsNodeAttributeValue,
   OutgoingEdge,
   SearchMatchAttr,
   SearchMatchInputMetadata,
   SearchMatchOutputMetadata,
   SearchMatchType,
   SearchResults,
+  SpecialNodeAttributeValue,
 } from './common/types';
 import {
   getNamespaceLabel,
@@ -101,6 +104,7 @@ interface InfoItem {
   bgColor?: string;
   textColor?: string;
   loading?: boolean;
+  specialValue?: SpecialNodeAttributeValue;
 }
 
 interface OutputItem {
@@ -154,6 +158,8 @@ export class InfoPanel {
   @Input({required: true}) paneId!: string;
   @ViewChildren('inputValueContent')
   inputValueContents = new QueryList<ElementRef<HTMLElement>>();
+
+  readonly NodeAttributeValueType = NodeAttributeValueType;
 
   private curModelGraph?: ModelGraph;
   private curSelectedNode?: ModelNode;
@@ -769,12 +775,17 @@ export class InfoPanel {
         if (key.startsWith('__')) {
           continue;
         }
+        const value = attrs[key];
+        const strValue = typeof value === 'string' ? value : '';
+        const specialValue: SpecialNodeAttributeValue | undefined =
+          typeof value === 'string' ? undefined : value;
         attrSection.items.push({
           section: attrSection,
           label: key,
-          value: attrs[key],
+          value: strValue,
           canShowOnNode: true,
           showOnNode: this.curShowOnOpNodeAttrIds.has(key),
+          specialValue,
         });
       }
       if (attrSection.items.length > 0) {
@@ -1009,10 +1020,13 @@ export class InfoPanel {
     // Add tensor values to metadata if existed.
     const attrs = sourceOpNode.attrs || {};
     if (attrs[TENSOR_VALUES_KEY]) {
-      metadataList.push({
-        key: this.inputMetadataValuesKey,
-        value: attrs[TENSOR_VALUES_KEY],
-      });
+      const value = attrs[TENSOR_VALUES_KEY];
+      if (typeof value === 'string') {
+        metadataList.push({
+          key: this.inputMetadataValuesKey,
+          value,
+        });
+      }
     }
     return metadataList;
   }

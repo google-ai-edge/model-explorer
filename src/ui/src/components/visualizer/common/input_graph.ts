@@ -23,6 +23,7 @@ import {
   IncomingEdge,
   KeyValueList,
   MetadataItem,
+  NodeAttributeList,
 } from './types';
 
 /** A collection of graphs. This is the input to the visualizer. */
@@ -136,7 +137,7 @@ export declare interface GraphNode {
   subgraphIds?: string[];
 
   /** The attributes of the node.  */
-  attrs?: KeyValueList;
+  attrs?: NodeAttributeList;
 
   /** A list of incoming edges. */
   incomingEdges?: IncomingEdge[];

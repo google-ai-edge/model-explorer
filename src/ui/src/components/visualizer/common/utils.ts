@@ -39,6 +39,7 @@ import {
   FieldLabel,
   KeyValueList,
   KeyValuePairs,
+  NodeAttributeValueType,
   NodeDataProviderResultProcessedData,
   NodeDataProviderRunData,
   NodeDataProviderValueInfo,
@@ -401,24 +402,26 @@ export function getOpNodeAttrsKeyValuePairsForAttrsTable(
   for (const attrId of Object.keys(attrs)) {
     const key = attrId;
     const value = attrs[attrId];
-    const matchTargets = [`${key}:${value}`, `${key}=${value}`];
-    if (
-      filterRegex.trim() === '' ||
-      matchTargets.some((matchTarget) => regex.test(matchTarget))
-    ) {
-      // Remove new line chars and spaces.
-      let processedValue = value;
-      if (key === TENSOR_VALUES_KEY) {
-        // For __value attribute, remove all white space chars.
-        processedValue = value.replace(/\s/gm, '');
-      } else {
-        // For other attributes, only remove newline chars.
-        processedValue = value.replace(/(\r\n|\n|\r)/gm, ' ');
+    if (typeof value === 'string') {
+      const matchTargets = [`${key}:${value}`, `${key}=${value}`];
+      if (
+        filterRegex.trim() === '' ||
+        matchTargets.some((matchTarget) => regex.test(matchTarget))
+      ) {
+        // Remove new line chars and spaces.
+        let processedValue = value;
+        if (key === TENSOR_VALUES_KEY) {
+          // For __value attribute, remove all white space chars.
+          processedValue = value.replace(/\s/gm, '');
+        } else {
+          // For other attributes, only remove newline chars.
+          processedValue = value.replace(/(\r\n|\n|\r)/gm, ' ');
+        }
+        keyValuePairs.push({
+          key,
+          value: processedValue,
+        });
       }
-      keyValuePairs.push({
-        key,
-        value: processedValue,
-      });
     }
   }
   return keyValuePairs;
@@ -784,7 +787,19 @@ export function getAttributesFromNode(
 ): KeyValuePairs {
   let attrs: KeyValuePairs = {};
   if (isOpNode(node)) {
-    attrs = {...(node.attrs || {})};
+    for (const [key, value] of Object.entries(node.attrs || {})) {
+      if (typeof value === 'string') {
+        attrs[key] = value;
+      } else {
+        switch (value.type) {
+          case NodeAttributeValueType.NODE_IDS:
+            attrs[key] = value.nodeIds.join(',');
+            break;
+          default:
+            break;
+        }
+      }
+    }
     // Add id to attribute.
     attrs['id'] = node.id;
   } else if (isGroupNode(node)) {

@@ -31,6 +31,39 @@ export declare interface KeyValue {
 /** A type for a list of key-value pairs. */
 export type KeyValueList = KeyValue[];
 
+/** A list of node attributes. */
+export type NodeAttributeList = NodeAttribute[];
+
+/** Node attributes as a record. */
+export type NodeAttributePairs = Record<string, NodeAttributeValue>;
+
+/** A type for a single node attribute. */
+export declare interface NodeAttribute {
+  key: string;
+  value: NodeAttributeValue;
+}
+
+/** A single node attribute value. */
+export type NodeAttributeValue = string | SpecialNodeAttributeValue;
+
+/** non-string node attribute value. */
+export type SpecialNodeAttributeValue = NodeIdsNodeAttributeValue;
+
+/** Node attribute value types. */
+export enum NodeAttributeValueType {
+  NODE_IDS = 'node_ids',
+}
+
+/**
+ * A "node ids" node attribute value.
+ *
+ * Clicking on a node id will jump to the corresponding node in the graph.
+ */
+export declare interface NodeIdsNodeAttributeValue {
+  type: NodeAttributeValueType.NODE_IDS;
+  nodeIds: string[];
+}
+
 /** An item in input/output metadata. */
 export interface MetadataItem {
   id: string;

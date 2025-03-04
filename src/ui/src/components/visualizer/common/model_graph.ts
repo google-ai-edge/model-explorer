@@ -22,6 +22,7 @@ import {
   GroupNodeAttributes,
   IncomingEdge,
   KeyValuePairs,
+  NodeAttributePairs,
   OutgoingEdge,
   Point,
 } from './types';
@@ -198,7 +199,7 @@ export declare interface OpNode extends ModelNodeBase {
   outgoingEdges?: OutgoingEdge[];
 
   /** The attributes of the node. */
-  attrs?: KeyValuePairs;
+  attrs?: NodeAttributePairs;
 
   /**
    * Metadata for inputs, indexed by input ids. Each input can have multiple

@@ -34,11 +34,30 @@ limitations under the License.
               <tr [class.search-match]="isSearchMatchedAttrId(item.label)">
                 <td class="key"><hoverable-label [label]="item.label"></hoverable-label></td>
                 <td class="value">
-                  <expandable-info-text
-                      [text]="item.value" [type]="item.label"
-                      [bgColor]="item.bgColor || 'transparent'"
-                      [textColor]="item.textColor || 'black'">
-                  </expandable-info-text>
+                  @if (item.specialValue) {
+                    @switch (item.specialValue.type) {
+                      @case (NodeAttributeValueType.NODE_IDS) {
+                        @for (nodeId of item.specialValue.nodeIds; track nodeId) {
+                          <div class="node-id-attribute"
+                              (click)="handleLocateNode(nodeId, $event)">
+                            {{nodeId}}
+                            <div class="locator-icon-container"
+                                [matTooltip]="locatorTooltip"
+                                matTooltipClass="multiline-tooltip-left"
+                                matTooltipPosition="right">
+                              <mat-icon class="locator-icon">my_location</mat-icon>
+                            </div>
+                          </div>
+                        }
+                      }
+                    }
+                  } @else {
+                    <expandable-info-text
+                        [text]="item.value" [type]="item.label"
+                        [bgColor]="item.bgColor || 'transparent'"
+                        [textColor]="item.textColor || 'black'">
+                    </expandable-info-text>
+                  }
                 </td>
               </tr>
             }
