@@ -568,7 +568,10 @@ export class InfoPanel {
   }
 
   get showNodeDataProviderSummary(): boolean {
-    if (!this.curModelGraph) {
+    if (
+      !this.curModelGraph ||
+      this.appService.config()?.hideNodeDataInInfoPanel
+    ) {
       return false;
     }
 
