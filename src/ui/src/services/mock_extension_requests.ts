@@ -17,7 +17,7 @@ function processAttribute(key: string, value: string): Attribute {
       value,
       editable: {
         input_type: 'grid',
-        visual_separator: 'x',
+        separator: 'x',
         min_value: 0,
         max_value: 10,
         step: 1
