@@ -83,7 +83,7 @@ cc_library(
         "@org_tensorflow//tensorflow/compiler/mlir/lite:tensorflow_lite",
         "//formats:schema_structs",
         "@org_tensorflow//tensorflow/compiler/mlir/lite/stablehlo:legalize_tf_xla_call_module_to_stablehlo_pass",
-        "@org_tensorflow//tensorflow/compiler/mlir/lite/stablehlo:rename_entrypoint_to_main",
+        "@org_tensorflow//tensorflow/compiler/mlir/stablehlo:rename_entrypoint_to_main",
         "@org_tensorflow//tensorflow/compiler/mlir/tensorflow",
         "@org_tensorflow//tensorflow/compiler/mlir/tensorflow:mlir_import_options",
         "@org_tensorflow//tensorflow/compiler/mlir/tensorflow:translate_lib",
