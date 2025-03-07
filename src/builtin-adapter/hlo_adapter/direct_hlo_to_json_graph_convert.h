@@ -36,6 +36,10 @@ struct HloAdapterOption {
   //   "ROOT of fusion.0" -> "Parameter 0 of fusion.1, tuple element 1 of
   //   fusion.1".
   bool get_tuple_element_folding = true;
+  // If a parameter node has input to async-collective-start and output to
+  // async-collective-done, mark it as implementation details and hide
+  // on visualization.
+  bool hide_async_collective_fusion_parameter = true;
 };
 
 // Gets the instruction id.
