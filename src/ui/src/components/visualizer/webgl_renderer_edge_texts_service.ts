@@ -23,7 +23,7 @@ import {AppService} from './app_service';
 import {DEFAULT_EDGE_LABEL_FONT_SIZE} from './common/consts';
 import {ModelEdge} from './common/model_graph';
 import {FontWeight} from './common/types';
-import {isOpNode} from './common/utils';
+import {getNodeAttrStringValue, isOpNode} from './common/utils';
 import {ThreejsService} from './threejs_service';
 import {WebglRenderer} from './webgl_renderer';
 import {WebglRendererThreejsService} from './webgl_renderer_threejs_service';
@@ -50,10 +50,22 @@ export class WebglRendererEdgeTextsService {
       webglRenderer.webglRendererThreejsService;
   }
 
-  renderEdgeTexts() {
+  renderEdgeTexts(data?: {
+    outputMetadataKey?: string;
+    inputMetadataKey?: string;
+    sourceNodeAttrKey?: string;
+    targetNodeAttrKey?: string;
+  }) {
     const labels = this.genLabelsOnEdges(
       this.webglRenderer.edgesToRender,
       this.EDGE_TEXT_COLOR,
+      0,
+      95,
+      undefined,
+      data?.outputMetadataKey,
+      data?.inputMetadataKey,
+      data?.sourceNodeAttrKey,
+      data?.targetNodeAttrKey,
     );
     this.edgeTexts.generateMesh(labels);
     this.webglRendererThreejsService.addToScene(this.edgeTexts.mesh);
@@ -65,6 +77,10 @@ export class WebglRendererEdgeTextsService {
     extraOffsetToEdge = 0,
     y = 95,
     fontSize?: number,
+    outputMetadataKey?: string,
+    inputMetadataKey?: string,
+    sourceNodeAttrKey?: string,
+    targetNodeAttrKey?: string,
   ): LabelData[] {
     const edgeLabelFontSize =
       fontSize ??
@@ -83,14 +99,14 @@ export class WebglRendererEdgeTextsService {
         continue;
       }
 
-      // Find the tensor shape.
+      // Find the edge label.
       let edgeLabel = '?';
       if (edge.label != null) {
         edgeLabel = edge.label;
         if (edgeLabel === '') {
           continue;
         }
-      } else {
+      } else if (outputMetadataKey != null) {
         const outputsMetadata = fromNode.outputsMetadata || {};
         for (const outputId of Object.keys(outputsMetadata)) {
           const outgoingEdge = (fromNode.outgoingEdges || []).find(
@@ -99,7 +115,7 @@ export class WebglRendererEdgeTextsService {
               curEdge.targetNodeId === edge.toNodeId,
           );
           if (outgoingEdge != null) {
-            edgeLabel = outputsMetadata[outputId]['shape'] || '?';
+            edgeLabel = outputsMetadata[outputId][outputMetadataKey] || '?';
             edgeLabel = edgeLabel
               .split('')
               .map((char) => {
@@ -118,6 +134,23 @@ export class WebglRendererEdgeTextsService {
             break;
           }
         }
+      } else if (inputMetadataKey != null) {
+        const inputsMetadata = toNode.inputsMetadata || {};
+        for (const inputId of Object.keys(inputsMetadata)) {
+          const incomingEdge = (toNode.incomingEdges || []).find(
+            (curEdge) =>
+              curEdge.sourceNodeId === edge.fromNodeId &&
+              curEdge.targetNodeInputId === inputId,
+          );
+          if (incomingEdge != null) {
+            edgeLabel = inputsMetadata[inputId][inputMetadataKey] || '?';
+            break;
+          }
+        }
+      } else if (sourceNodeAttrKey != null) {
+        edgeLabel = getNodeAttrStringValue(fromNode, sourceNodeAttrKey) || '?';
+      } else if (targetNodeAttrKey != null) {
+        edgeLabel = getNodeAttrStringValue(toNode, targetNodeAttrKey) || '?';
       }
 
       const curvePoints = edge.curvePoints || [];

@@ -55,6 +55,8 @@ import {
   SearchMatch,
   SearchMatchType,
   SearchNodeType,
+  ShowOnEdgeItemData,
+  ShowOnEdgeItemType,
   ShowOnNodeItemData,
   ShowOnNodeItemType,
 } from './types';
@@ -1124,4 +1126,64 @@ export function genSortedValueInfos(
   return Object.values(bgColorToValueInfo).sort((a, b) =>
     a.bgColor.localeCompare(b.bgColor),
   );
+}
+
+/** Gets the input/output metadata keys for the given show on edge item. */
+export function getShowOnEdgeInputOutputMetadataKeys(
+  curShowOnEdgeItem?: ShowOnEdgeItemData,
+): {
+  inputMetadataKey?: string;
+  outputMetadataKey?: string;
+  sourceNodeAttrKey?: string;
+  targetNodeAttrKey?: string;
+} {
+  let outputMetadataKey: string | undefined = undefined;
+  let inputMetadataKey: string | undefined = undefined;
+  let sourceNodeAttrKey: string | undefined = undefined;
+  let targetNodeAttrKey: string | undefined = undefined;
+  switch (curShowOnEdgeItem?.type) {
+    case ShowOnEdgeItemType.TENSOR_SHAPE:
+      outputMetadataKey = 'shape';
+      break;
+    case ShowOnEdgeItemType.OUTPUT_METADATA:
+      outputMetadataKey = curShowOnEdgeItem.filterText ?? '';
+      break;
+    case ShowOnEdgeItemType.INPUT_METADATA:
+      inputMetadataKey = curShowOnEdgeItem.filterText ?? '';
+      break;
+    case ShowOnEdgeItemType.SOURCE_NODE_ATTR:
+      sourceNodeAttrKey = curShowOnEdgeItem.filterText ?? '';
+      break;
+    case ShowOnEdgeItemType.TARGET_NODE_ATTR:
+      targetNodeAttrKey = curShowOnEdgeItem.filterText ?? '';
+      break;
+    default:
+      break;
+  }
+  return {
+    outputMetadataKey,
+    inputMetadataKey,
+    sourceNodeAttrKey,
+    targetNodeAttrKey,
+  };
+}
+
+/** Gets the string value for the given node attribute. */
+export function getNodeAttrStringValue(node: OpNode, key: string): string {
+  const attrValue = (node.attrs ?? {})[key];
+  if (attrValue == null) {
+    return '';
+  } else {
+    if (typeof attrValue === 'string') {
+      return attrValue;
+    } else {
+      switch (attrValue.type) {
+        case NodeAttributeValueType.NODE_IDS:
+          return attrValue.nodeIds.join(', ');
+        default:
+          break;
+      }
+    }
+  }
+  return '';
 }

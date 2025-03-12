@@ -35,7 +35,7 @@ import {Bubble} from '../bubble/bubble';
 import {BubbleClick} from '../bubble/bubble_click';
 import {AppService} from './app_service';
 import {
-  LOCAL_STORAGE_KEY_SHOW_ON_EDGE_ITEM_TYPES,
+  LOCAL_STORAGE_KEY_SHOW_ON_EDGE_ITEM,
   LOCAL_STORAGE_KEY_SHOW_ON_NODE_ITEM_TYPES,
   NODE_DATA_PROVIDER_SHOW_ON_NODE_TYPE_PREFIX,
 } from './common/consts';
@@ -71,7 +71,12 @@ const ALL_SHOW_ON_NODE_ITEM_TYPES: ShowOnNodeItemType[] = [
 ];
 
 const ALL_SHOW_ON_EDGE_ITEM_TYPES: ShowOnEdgeItemType[] = [
+  ShowOnEdgeItemType.OFF,
   ShowOnEdgeItemType.TENSOR_SHAPE,
+  ShowOnEdgeItemType.SOURCE_NODE_ATTR,
+  ShowOnEdgeItemType.TARGET_NODE_ATTR,
+  ShowOnEdgeItemType.OUTPUT_METADATA,
+  ShowOnEdgeItemType.INPUT_METADATA,
 ];
 
 /** The view-on-node and its popup in the toolbar. */
@@ -106,10 +111,7 @@ export class ViewOnNode {
   });
   private savedNodeDataProviderRunNames: string[] = [];
 
-  private savedShowOnEdgeItemTypes?: Record<
-    string,
-    Record<string, ShowOnEdgeItemData>
-  >;
+  private savedShowOnEdgeItems?: Record<string, ShowOnEdgeItemData>;
 
   readonly helpPopupSize: OverlaySizeConfig = {
     minWidth: 0,
@@ -119,12 +121,17 @@ export class ViewOnNode {
   readonly viewPopupSize: OverlaySizeConfig = {
     minWidth: 280,
     minHeight: 0,
+    maxHeight: 800,
   };
 
   showOnNodeItems: ShowOnNodeItem[] = [];
   showOnEdgeItems: ShowOnEdgeItem[] = [];
   curOpAttrsFilterText = '';
   curGroupAttrsFilterText = '';
+  curSourceNodeAttrKeyText = '';
+  curTargetNodeAttrKeyText = '';
+  curOutputMetadataKeyText = '';
+  curInputMetadataKeyText = '';
   opened = false;
 
   constructor(
@@ -187,20 +194,35 @@ export class ViewOnNode {
     // Handle changes on show on edge items.
     effect(() => {
       const pane = this.appService.getPaneById(this.paneId);
-      const curShowOnEdgeItemTypes = pane?.showOnEdgeItemTypes || {};
+      const curShowOnEdgeItems = pane?.showOnEdgeItems || {};
 
-      if (curShowOnEdgeItemTypes === this.savedShowOnEdgeItemTypes) {
+      if (curShowOnEdgeItems === this.savedShowOnEdgeItems) {
         return;
       }
-      this.savedShowOnEdgeItemTypes = curShowOnEdgeItemTypes;
+      this.savedShowOnEdgeItems = curShowOnEdgeItems;
+
+      const curShowOnEdgeItem = curShowOnEdgeItems[this.rendererId];
+      this.curInputMetadataKeyText = curShowOnEdgeItem?.inputMetadataKey ?? '';
+      this.curOutputMetadataKeyText =
+        curShowOnEdgeItem?.outputMetadataKey ?? '';
+      this.curSourceNodeAttrKeyText =
+        curShowOnEdgeItem?.sourceNodeAttrKey ?? '';
+      this.curTargetNodeAttrKeyText =
+        curShowOnEdgeItem?.targetNodeAttrKey ?? '';
 
       const items: ShowOnEdgeItem[] = [];
       for (const type of ALL_SHOW_ON_EDGE_ITEM_TYPES) {
         const item: ShowOnEdgeItem = {
           type,
-          selected: (curShowOnEdgeItemTypes[this.rendererId] || {})[type]
-            ?.selected,
+          selected: type === curShowOnEdgeItems[this.rendererId]?.type,
         };
+        // Select "off" by default if the saved types are empty.
+        if (
+          type === ShowOnEdgeItemType.OFF &&
+          curShowOnEdgeItems[this.rendererId] == null
+        ) {
+          item.selected = true;
+        }
         items.push(item);
       }
 
@@ -222,8 +244,17 @@ export class ViewOnNode {
     this.saveShowOnNodeItemsToLocalStorage();
   }
 
-  handleToggleShowOnEdge(item: ShowOnEdgeItem) {
-    this.appService.toggleShowOnEdge(this.paneId, this.rendererId, item.type);
+  handleSetShowOnEdge(checked: boolean, item: ShowOnEdgeItem) {
+    this.appService.setShowOnEdge(
+      this.paneId,
+      this.rendererId,
+      item.type,
+      this.getEdgeItemMetadataKeyText(item),
+      this.curOutputMetadataKeyText,
+      this.curInputMetadataKeyText,
+      this.curSourceNodeAttrKeyText,
+      this.curTargetNodeAttrKeyText,
+    );
 
     // Save to local storage.
     this.saveShowOnEdgeItemsToLocalStorage();
@@ -239,6 +270,22 @@ export class ViewOnNode {
 
     // Save to local storage.
     this.saveShowOnNodeItemsToLocalStorage();
+  }
+
+  handleEdgeItemFilterChanged(item: ShowOnEdgeItem) {
+    this.appService.setShowOnEdge(
+      this.paneId,
+      this.rendererId,
+      item.type,
+      this.getEdgeItemMetadataKeyText(item),
+      this.curOutputMetadataKeyText,
+      this.curInputMetadataKeyText,
+      this.curSourceNodeAttrKeyText,
+      this.curTargetNodeAttrKeyText,
+    );
+
+    // Save to local storage.
+    this.saveShowOnEdgeItemsToLocalStorage();
   }
 
   getAttrsFilterText(item: ShowOnNodeItem): string {
@@ -265,11 +312,67 @@ export class ViewOnNode {
     }
   }
 
+  getEdgeItemMetadataKeyText(item: ShowOnEdgeItem): string {
+    switch (item.type) {
+      case ShowOnEdgeItemType.OUTPUT_METADATA:
+        return this.curOutputMetadataKeyText;
+      case ShowOnEdgeItemType.INPUT_METADATA:
+        return this.curInputMetadataKeyText;
+      case ShowOnEdgeItemType.SOURCE_NODE_ATTR:
+        return this.curSourceNodeAttrKeyText;
+      case ShowOnEdgeItemType.TARGET_NODE_ATTR:
+        return this.curTargetNodeAttrKeyText;
+      default:
+        return '';
+    }
+  }
+
+  setEdgeItemMetadataKeyText(item: ShowOnEdgeItem, text: string) {
+    switch (item.type) {
+      case ShowOnEdgeItemType.OUTPUT_METADATA:
+        this.curOutputMetadataKeyText = text;
+        break;
+      case ShowOnEdgeItemType.INPUT_METADATA:
+        this.curInputMetadataKeyText = text;
+        break;
+      case ShowOnEdgeItemType.SOURCE_NODE_ATTR:
+        this.curSourceNodeAttrKeyText = text;
+        break;
+      case ShowOnEdgeItemType.TARGET_NODE_ATTR:
+        this.curTargetNodeAttrKeyText = text;
+        break;
+      default:
+        break;
+    }
+  }
+
   getIsAttrs(item: ShowOnNodeItem): boolean {
     return (
       item.type === ShowOnNodeItemType.OP_ATTRS ||
       item.type === ShowOnNodeItemType.LAYER_NODE_ATTRS
     );
+  }
+
+  getEdgeItemHaveFilter(item: ShowOnEdgeItem): boolean {
+    return (
+      item.type === ShowOnEdgeItemType.OUTPUT_METADATA ||
+      item.type === ShowOnEdgeItemType.INPUT_METADATA ||
+      item.type === ShowOnEdgeItemType.SOURCE_NODE_ATTR ||
+      item.type === ShowOnEdgeItemType.TARGET_NODE_ATTR
+    );
+  }
+
+  getEdgeItemPlaceholder(item: ShowOnEdgeItem): string {
+    switch (item.type) {
+      case ShowOnEdgeItemType.OUTPUT_METADATA:
+      case ShowOnEdgeItemType.INPUT_METADATA:
+        return 'Metadata key';
+      case ShowOnEdgeItemType.SOURCE_NODE_ATTR:
+      case ShowOnEdgeItemType.TARGET_NODE_ATTR:
+        return 'Attribute key';
+      default:
+        return '';
+    }
   }
 
   private saveShowOnNodeItemsToLocalStorage() {
@@ -294,13 +397,13 @@ export class ViewOnNode {
 
   private saveShowOnEdgeItemsToLocalStorage() {
     if (!this.inPopup && !this.appService.testMode) {
-      const showOnEdgeItems = this.appService.getShowOnEdgeItemTypes(
+      const showOnEdgeItem = this.appService.getShowOnEdgeItem(
         this.paneId,
         this.rendererId,
       );
       this.localStorageService.setItem(
-        LOCAL_STORAGE_KEY_SHOW_ON_EDGE_ITEM_TYPES,
-        JSON.stringify(showOnEdgeItems),
+        LOCAL_STORAGE_KEY_SHOW_ON_EDGE_ITEM,
+        JSON.stringify(showOnEdgeItem),
       );
     }
   }

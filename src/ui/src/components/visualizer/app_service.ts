@@ -21,7 +21,8 @@ import {Subject} from 'rxjs';
 
 import {
   DEFAULT_GROUP_NODE_CHILDREN_COUNT_THRESHOLD,
-  LOCAL_STORAGE_KEY_SHOW_ON_EDGE_ITEM_TYPES,
+  LOCAL_STORAGE_KEY_SHOW_ON_EDGE_ITEM,
+  LOCAL_STORAGE_KEY_SHOW_ON_EDGE_ITEM_TYPES_V2,
   LOCAL_STORAGE_KEY_SHOW_ON_NODE_ITEM_TYPES,
 } from './common/consts';
 import {Graph, GraphCollection, GraphWithLevel} from './common/input_graph';
@@ -40,6 +41,8 @@ import {
   SearchResults,
   SelectedNodeInfo,
   ShowOnEdgeItemData,
+  ShowOnEdgeItemOldData,
+  ShowOnEdgeItemType,
   ShowOnNodeItemData,
   SnapshotData,
 } from './common/types';
@@ -315,8 +318,11 @@ export class AppService {
         widthFraction: 0.5,
         flattenLayers,
         showOnNodeItemTypes: {[paneId]: this.getSavedShowOnNodeItemTypes()},
-        showOnEdgeItemTypes: {[paneId]: this.getSavedShowOnEdgeItemTypes()},
       };
+      const savedShowOnEdgeItem = this.getSavedShowOnEdgeItem();
+      if (savedShowOnEdgeItem) {
+        newPane.showOnEdgeItems = {[paneId]: savedShowOnEdgeItem};
+      }
       if (openToLeft) {
         panes.unshift(newPane);
       } else {
@@ -750,35 +756,34 @@ export class AppService {
     });
   }
 
-  toggleShowOnEdge(
+  setShowOnEdge(
     paneId: string,
     rendererId: string,
     type: string,
-    valueToSet?: boolean,
+    filterText?: string,
+    outputMetadataKey?: string,
+    inputMetadataKey?: string,
+    sourceNodeAttrKey?: string,
+    targetNodeAttrKey?: string,
   ) {
     this.panes.update((panes) => {
       const pane = this.getPaneById(paneId);
       if (!pane) {
         return panes;
       }
-      if (!pane.showOnEdgeItemTypes) {
-        pane.showOnEdgeItemTypes = {};
+      if (!pane.showOnEdgeItems) {
+        pane.showOnEdgeItems = {};
       }
-      if (pane.showOnEdgeItemTypes[rendererId] == null) {
-        pane.showOnEdgeItemTypes[rendererId] = {};
-      }
-      if (pane.showOnEdgeItemTypes[rendererId][type] == null) {
-        pane.showOnEdgeItemTypes[rendererId][type] = {selected: false};
-      }
-      const curRendererShowOnEdgeItemTypes =
-        pane.showOnEdgeItemTypes[rendererId][type].selected;
-      pane.showOnEdgeItemTypes[rendererId] = {
-        ...pane.showOnEdgeItemTypes[rendererId],
+      pane.showOnEdgeItems[rendererId] = {
+        type,
+        filterText,
+        outputMetadataKey,
+        inputMetadataKey,
+        sourceNodeAttrKey,
+        targetNodeAttrKey,
       };
-      pane.showOnEdgeItemTypes[rendererId][type].selected =
-        valueToSet == null ? !curRendererShowOnEdgeItemTypes : valueToSet;
-      pane.showOnEdgeItemTypes = {
-        ...pane.showOnEdgeItemTypes,
+      pane.showOnEdgeItems = {
+        ...pane.showOnEdgeItems,
       };
       return [...panes];
     });
@@ -833,27 +838,6 @@ export class AppService {
     });
   }
 
-  setShowOnEdge(
-    paneId: string,
-    rendererId: string,
-    types: Record<string, ShowOnEdgeItemData>,
-  ) {
-    this.panes.update((panes) => {
-      const pane = this.getPaneById(paneId);
-      if (!pane) {
-        return panes;
-      }
-      if (!pane.showOnEdgeItemTypes) {
-        pane.showOnEdgeItemTypes = {};
-      }
-      pane.showOnEdgeItemTypes = {
-        ...pane.showOnEdgeItemTypes,
-      };
-      pane.showOnEdgeItemTypes[rendererId] = types;
-      return [...panes];
-    });
-  }
-
   deleteShowOnNodeItemType(types: string[]) {
     this.panes.update((panes) => {
       for (const pane of panes) {
@@ -900,32 +884,51 @@ export class AppService {
     return curTypes;
   }
 
-  getSavedShowOnEdgeItemTypes(): Record<string, ShowOnEdgeItemData> {
-    let curTypes: Record<string, ShowOnEdgeItemData> = {};
+  getSavedShowOnEdgeItem(): ShowOnEdgeItemData | undefined {
+    let curItem: ShowOnEdgeItemData | undefined = undefined;
     if (!this.testMode) {
       const data = this.localStorageService.getItem(
-        LOCAL_STORAGE_KEY_SHOW_ON_EDGE_ITEM_TYPES,
+        LOCAL_STORAGE_KEY_SHOW_ON_EDGE_ITEM,
       );
       if (data) {
-        curTypes = JSON.parse(data) as Record<string, ShowOnEdgeItemData>;
+        curItem = JSON.parse(data) as ShowOnEdgeItemData;
+      }
+      // Try to load the old version of the data.
+      else {
+        const oldData = this.localStorageService.getItem(
+          LOCAL_STORAGE_KEY_SHOW_ON_EDGE_ITEM_TYPES_V2,
+        );
+        if (oldData) {
+          const oldItems = JSON.parse(oldData) as Record<
+            string,
+            ShowOnEdgeItemOldData
+          >;
+          if (oldItems[ShowOnEdgeItemType.TENSOR_SHAPE]?.selected) {
+            curItem = {
+              type: ShowOnEdgeItemType.TENSOR_SHAPE,
+            };
+          }
+        }
       }
     }
-    return curTypes;
+    return curItem;
   }
 
-  getShowOnEdgeItemTypes(
+  getShowOnEdgeItem(
     paneId: string,
     rendererId: string,
-  ): Record<string, ShowOnEdgeItemData> {
+  ): ShowOnEdgeItemData | undefined {
     const pane = this.getPaneById(paneId);
     if (!pane) {
-      return {};
+      return undefined;
     }
     // Make sure to return a copy of the data so that caller's won't accidentally
     // mutate it.
-    return JSON.parse(
-      JSON.stringify((pane.showOnEdgeItemTypes || {})[rendererId] || {}),
-    ) as Record<string, ShowOnEdgeItemData>;
+    const curShowOnEdgeItem = (pane.showOnEdgeItems || {})[rendererId];
+    if (!curShowOnEdgeItem) {
+      return undefined;
+    }
+    return JSON.parse(JSON.stringify(curShowOnEdgeItem)) as ShowOnEdgeItemData;
   }
 
   getGraphByPaneId(paneId: string): Graph {
@@ -1051,7 +1054,12 @@ export class AppService {
     // Load saved show on node item types.
     const pane = this.panes()[0];
     pane.showOnNodeItemTypes = {[pane.id]: this.getSavedShowOnNodeItemTypes()};
-    pane.showOnEdgeItemTypes = {[pane.id]: this.getSavedShowOnEdgeItemTypes()};
+    const savedShowOnEdgeItem = this.getSavedShowOnEdgeItem();
+    if (savedShowOnEdgeItem) {
+      pane.showOnEdgeItems = {[pane.id]: savedShowOnEdgeItem};
+    } else {
+      pane.showOnEdgeItems = {};
+    }
   }
 
   private handleGraphProcessed(modelGraph: ModelGraph, paneId: string) {

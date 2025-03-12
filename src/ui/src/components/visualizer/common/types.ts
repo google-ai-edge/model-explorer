@@ -236,7 +236,7 @@ export interface SnapshotData {
   deepestExpandedGroupNodeIds?: string[];
   selectedNodeId?: string;
   showOnNodeItemTypes?: Record<string, ShowOnNodeItemData>;
-  showOnEdgeItemTypes?: Record<string, ShowOnEdgeItemData>;
+  showOnEdgeItem?: ShowOnEdgeItemData;
   flattenLayers?: boolean;
 }
 
@@ -484,8 +484,8 @@ export interface Pane {
   // Renderer id -> <item type shown on node -> data>
   showOnNodeItemTypes?: Record<string, Record<string, ShowOnNodeItemData>>;
 
-  // Renderer id -> <item type shown on edge -> data>
-  showOnEdgeItemTypes?: Record<string, Record<string, ShowOnEdgeItemData>>;
+  // Renderer id -> data
+  showOnEdgeItems?: Record<string, ShowOnEdgeItemData>;
 
   modelGraph?: ModelGraph;
 }
@@ -602,7 +602,12 @@ export enum ShowOnNodeItemType {
 
 /** Item types to be shown on edge. */
 export enum ShowOnEdgeItemType {
+  OFF = 'Off',
   TENSOR_SHAPE = 'Tensor shape',
+  OUTPUT_METADATA = 'Output metadata',
+  INPUT_METADATA = 'Input metadata',
+  SOURCE_NODE_ATTR = 'Source node attribute',
+  TARGET_NODE_ATTR = 'Target node attribute',
 }
 
 /** Weight of the font. */
@@ -641,6 +646,16 @@ export declare interface ShowOnNodeItemData {
 
 /** Data for show on edge item. */
 export declare interface ShowOnEdgeItemData {
+  type: string;
+  filterText?: string;
+  outputMetadataKey?: string;
+  inputMetadataKey?: string;
+  sourceNodeAttrKey?: string;
+  targetNodeAttrKey?: string;
+}
+
+/** Old data for show on edge item. */
+export declare interface ShowOnEdgeItemOldData {
   selected: boolean;
 }
 

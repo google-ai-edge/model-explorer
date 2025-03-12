@@ -74,7 +74,6 @@ import {
   RendererInfo,
   SelectedNodeInfo,
   ShowOnEdgeItemData,
-  ShowOnEdgeItemType,
   ShowOnNodeItemData,
   WebglColor,
 } from './common/types';
@@ -83,6 +82,7 @@ import {
   getDeepestExpandedGroupNodeIds,
   getHighQualityPixelRatio,
   getNodeStyleValue,
+  getShowOnEdgeInputOutputMetadataKeys,
   hasNonEmptyQueries,
   IS_MAC,
   isGroupNode,
@@ -330,7 +330,7 @@ export class WebglRenderer implements OnInit, OnDestroy {
   curSubgraphIdsForMenu: string[] = [];
 
   curShowOnNodeItemTypes: Record<string, ShowOnNodeItemData> = {};
-  curShowOnEdgeItemTypes: Record<string, ShowOnEdgeItemData> = {};
+  curShowOnEdgeItem?: ShowOnEdgeItemData;
   nodesToRender: Array<{node: ModelNode; index: number}> = [];
   nodesToRenderMap: Record<string, {node: ModelNode; index: number}> = {};
   edgesToRender: Array<{edge: ModelEdge; index: number}> = [];
@@ -714,17 +714,17 @@ export class WebglRenderer implements OnInit, OnDestroy {
       if (!pane) {
         return;
       }
-      const showOnEdgeItemTypes = this.appService.getShowOnEdgeItemTypes(
+      const showOnEdgeItem = this.appService.getShowOnEdgeItem(
         this.paneId,
         this.rendererId,
       );
       if (
-        JSON.stringify(showOnEdgeItemTypes) ===
-        JSON.stringify(this.curShowOnEdgeItemTypes)
+        JSON.stringify(showOnEdgeItem) ===
+        JSON.stringify(this.curShowOnEdgeItem)
       ) {
         return;
       }
-      this.curShowOnEdgeItemTypes = showOnEdgeItemTypes;
+      this.curShowOnEdgeItem = showOnEdgeItem;
       this.renderGraph();
       this.webglRendererIoHighlightService.updateIncomingAndOutgoingHighlights();
       this.webglRendererIdenticalLayerService.updateIdenticalLayerIndicators();
@@ -819,8 +819,7 @@ export class WebglRenderer implements OnInit, OnDestroy {
     if (!this.inPopup) {
       this.curShowOnNodeItemTypes =
         this.appService.getSavedShowOnNodeItemTypes();
-      this.curShowOnEdgeItemTypes =
-        this.appService.getSavedShowOnEdgeItemTypes();
+      this.curShowOnEdgeItem = this.appService.getSavedShowOnEdgeItem();
     }
 
     this.webglRendererThreejsService.setupZoomAndPan(
@@ -1991,11 +1990,22 @@ export class WebglRenderer implements OnInit, OnDestroy {
 
     this.renderEdges();
     this.renderTexts();
+
+    const keys = getShowOnEdgeInputOutputMetadataKeys(this.curShowOnEdgeItem);
     if (
-      this.curShowOnEdgeItemTypes[ShowOnEdgeItemType.TENSOR_SHAPE]?.selected
+      keys.outputMetadataKey != null ||
+      keys.inputMetadataKey != null ||
+      keys.sourceNodeAttrKey != null ||
+      keys.targetNodeAttrKey != null
     ) {
-      this.webglRendererEdgeTextsService.renderEdgeTexts();
+      this.webglRendererEdgeTextsService.renderEdgeTexts({
+        outputMetadataKey: keys.outputMetadataKey,
+        inputMetadataKey: keys.inputMetadataKey,
+        sourceNodeAttrKey: keys.sourceNodeAttrKey,
+        targetNodeAttrKey: keys.targetNodeAttrKey,
+      });
     }
+
     this.webglRendererAttrsTableService.renderAttrsTable();
     this.renderNodes();
     this.webglRendererNdpService.renderNodeDataProviderDistributionBars();

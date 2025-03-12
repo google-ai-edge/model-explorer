@@ -141,7 +141,9 @@ export class WebglRendererSnapshotService {
       selectedNodeId: this.webglRenderer.selectedNodeId,
       deepestExpandedGroupNodeIds,
       showOnNodeItemTypes: {...this.webglRenderer.curShowOnNodeItemTypes},
-      showOnEdgeItemTypes: {...this.webglRenderer.curShowOnEdgeItemTypes},
+      showOnEdgeItem: this.webglRenderer.curShowOnEdgeItem
+        ? {...this.webglRenderer.curShowOnEdgeItem}
+        : undefined,
       flattenLayers,
     };
 
@@ -168,14 +170,19 @@ export class WebglRendererSnapshotService {
         this.webglRenderer.curShowOnNodeItemTypes,
       );
     }
-    if (snapshot.showOnEdgeItemTypes) {
-      this.webglRenderer.curShowOnEdgeItemTypes = {
-        ...snapshot.showOnEdgeItemTypes,
+    if (snapshot.showOnEdgeItem) {
+      this.webglRenderer.curShowOnEdgeItem = {
+        ...snapshot.showOnEdgeItem,
       };
       this.webglRenderer.appService.setShowOnEdge(
         this.webglRenderer.paneId,
         this.webglRenderer.rendererId,
-        this.webglRenderer.curShowOnEdgeItemTypes,
+        this.webglRenderer.curShowOnEdgeItem.type,
+        this.webglRenderer.curShowOnEdgeItem.filterText,
+        this.webglRenderer.curShowOnEdgeItem.outputMetadataKey,
+        this.webglRenderer.curShowOnEdgeItem.inputMetadataKey,
+        this.webglRenderer.curShowOnEdgeItem.sourceNodeAttrKey,
+        this.webglRenderer.curShowOnEdgeItem.targetNodeAttrKey,
       );
     }
 

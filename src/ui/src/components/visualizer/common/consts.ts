@@ -81,7 +81,14 @@ export const LOCAL_STORAGE_KEY_SHOW_ON_NODE_ITEM_TYPES =
   'model_explorer_show_on_node_item_types_v2';
 
 /** The key to store the show on edge item types in local storage. */
-export const LOCAL_STORAGE_KEY_SHOW_ON_EDGE_ITEM_TYPES =
+export const LOCAL_STORAGE_KEY_SHOW_ON_EDGE_ITEM =
+  'model_explorer_show_on_edge_item_v3';
+
+/**
+ * The key to store the show on edge item types in local storage
+ * (old version).
+ */
+export const LOCAL_STORAGE_KEY_SHOW_ON_EDGE_ITEM_TYPES_V2 =
   'model_explorer_show_on_edge_item_types_v2';
 
 /** The prefix for node data provider show on node type. */
