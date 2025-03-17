@@ -513,6 +513,17 @@ export class InfoPanel {
     }
   }
 
+  getAttributeTrackingId(item: InfoItem) {
+    let refreshTrigger = '';
+
+    if (item.editable) {
+      // HACK: Added a random number to force re-renders if the attribute is editable.
+      refreshTrigger = Math.random().toString(16).replace('0.', '');
+    }
+
+    return `${this.curSelectedNodeId ?? ''}-${item.section.label}-${item.id ?? ''}-${item.label}-${item.value}-${refreshTrigger}`;
+  }
+
   getOutputToggleVisible(item: OutputItem): boolean {
     return this.splitPaneService.getOutputVisible(
       item.sourceOpNode.id,

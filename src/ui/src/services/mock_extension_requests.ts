@@ -33,8 +33,6 @@ function processAttribute(key: string, value: string): Attribute {
       value,
       editable: {
         input_type: 'int_list',
-        min_size: 1,
-        max_size: arr.length,
         min_value: 0,
         max_value: 128,
         step: 32

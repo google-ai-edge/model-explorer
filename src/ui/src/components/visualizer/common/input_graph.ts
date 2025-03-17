@@ -167,8 +167,6 @@ export declare interface GraphNode {
 /** An attirbute representing a list of integers */
 export interface EditableIntAttribute {
   input_type: 'int_list';
-  min_size: number;
-  max_size: number;
   min_value: number;
   max_value: number;
   step: number;

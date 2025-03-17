@@ -30,7 +30,7 @@ limitations under the License.
         </div>
         <div class="items-container">
           <table class="metadata-table info-attrs">
-            @for (item of section.items; track item.id || item.label) {
+            @for (item of section.items; track getAttributeTrackingId(item)) {
               <tr [class.search-match]="isSearchMatchedAttrId(item.label)">
                 <td class="key"><hoverable-label [label]="item.label"></hoverable-label></td>
                 <td class="value">
