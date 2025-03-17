@@ -240,6 +240,10 @@ export class ExpandableInfoText implements AfterViewInit, OnDestroy, OnChanges {
     return `${parsedValue * 100}%`;
   }
 
+  get maxIntValue() {
+    return Number.MAX_SAFE_INTEGER;
+  }
+
   get hasOverflow(): boolean {
     this.updateHasOverflow();
     return this.hasOverflowInternal;

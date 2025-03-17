@@ -89,7 +89,7 @@ limitations under the License.
                     [attr.data-index]="$index"
                     [step]="$any(editable)?.step ?? 1"
                     [min]="$any(editable)?.min_value ?? 0"
-                    [max]="$any(editable)?.max_value ?? 100"
+                    [max]="$any(editable)?.max_value ?? maxIntValue"
                     (change)="handleTextChange($event)"
                   />
                 }
@@ -103,7 +103,7 @@ limitations under the License.
                     [attr.data-index]="$index"
                     [step]="$any(editable)?.step ?? 1"
                     [min]="$any(editable)?.min_value ?? 0"
-                    [max]="$any(editable)?.max_value ?? 100"
+                    [max]="$any(editable)?.max_value ?? maxIntValue"
                     (change)="handleTextChange($event)"
                   />
                   <span class="text-separator">&nbsp;{{$any(editable)?.separator ?? 'x'}}&nbsp;</span>
@@ -144,7 +144,7 @@ limitations under the License.
               [attr.data-index]="$index"
               [step]="$any(editable)?.step ?? 1"
               [min]="$any(editable)?.min_value ?? 0"
-              [max]="$any(editable)?.max_value ?? 100"
+              [max]="$any(editable)?.max_value ?? maxIntValue"
               (change)="handleTextChange($event)"
             />
           }
@@ -158,7 +158,7 @@ limitations under the License.
               [attr.data-index]="$index"
               [step]="$any(editable)?.step ?? 1"
               [min]="$any(editable)?.min_value ?? 0"
-              [max]="$any(editable)?.max_value ?? 100"
+              [max]="$any(editable)?.max_value ?? maxIntValue"
               (change)="handleTextChange($event)"
             />
             <span class="text-separator">&nbsp;{{$any(editable)?.separator ?? 'x'}}&nbsp;</span>
