@@ -22,10 +22,11 @@ import * as three from 'three';
 
 import {WEBGL_ELEMENT_Y_FACTOR} from './common/consts';
 import {GroupNode, ModelEdge, ModelNode, OpNode} from './common/model_graph';
-import {FontWeight, Point, ShowOnEdgeItemType} from './common/types';
+import {FontWeight, Point} from './common/types';
 import {
   findCommonNamespace,
   generateCurvePoints,
+  getShowOnEdgeInputOutputMetadataKeys,
   isGroupNode,
   isOpNode,
 } from './common/utils';
@@ -156,15 +157,31 @@ export class WebglRendererIoHighlightService {
       );
 
       // Edge texts.
+      const {
+        outputMetadataKey,
+        inputMetadataKey,
+        sourceNodeAttrKey,
+        targetNodeAttrKey,
+      } = getShowOnEdgeInputOutputMetadataKeys(
+        this.webglRenderer.curShowOnEdgeItem,
+      );
       if (
-        this.webglRenderer.curShowOnEdgeItemTypes[
-          ShowOnEdgeItemType.TENSOR_SHAPE
-        ]?.selected
+        outputMetadataKey != null ||
+        inputMetadataKey != null ||
+        sourceNodeAttrKey != null ||
+        targetNodeAttrKey != null
       ) {
         const labels =
           this.webglRenderer.webglRendererEdgeTextsService.genLabelsOnEdges(
             edges,
             this.EDGE_TEXT_COLOR_INCOMING,
+            0,
+            95,
+            undefined,
+            outputMetadataKey,
+            inputMetadataKey,
+            sourceNodeAttrKey,
+            targetNodeAttrKey,
           );
         this.incomingHighlightedEdgeTexts.generateMesh(
           labels,
@@ -222,15 +239,31 @@ export class WebglRendererIoHighlightService {
       );
 
       // Edge texts.
+      const {
+        outputMetadataKey,
+        inputMetadataKey,
+        sourceNodeAttrKey,
+        targetNodeAttrKey,
+      } = getShowOnEdgeInputOutputMetadataKeys(
+        this.webglRenderer.curShowOnEdgeItem,
+      );
       if (
-        this.webglRenderer.curShowOnEdgeItemTypes[
-          ShowOnEdgeItemType.TENSOR_SHAPE
-        ]?.selected
+        outputMetadataKey != null ||
+        inputMetadataKey != null ||
+        sourceNodeAttrKey != null ||
+        targetNodeAttrKey != null
       ) {
         const labels =
           this.webglRenderer.webglRendererEdgeTextsService.genLabelsOnEdges(
             edges,
             this.EDGE_TEXT_COLOR_OUTGOING,
+            undefined,
+            95,
+            undefined,
+            outputMetadataKey,
+            inputMetadataKey,
+            sourceNodeAttrKey,
+            targetNodeAttrKey,
           );
         this.outgoingHighlightedEdgeTexts.generateMesh(
           labels,

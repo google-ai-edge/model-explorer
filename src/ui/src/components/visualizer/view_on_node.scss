@@ -88,7 +88,12 @@
     color: #555;
     user-select: none;
 
-    input {
+    input[type='checkbox'] {
+      cursor: pointer;
+    }
+
+    input[type='radio'] {
+      margin-bottom: 4px;
       cursor: pointer;
     }
   }
@@ -101,6 +106,14 @@
 
     &:focus-within .icon-container.ok {
       visibility: visible;
+    }
+
+    &.on-edge {
+      margin-right: 20px;
+
+      .icon-container.ok {
+        right: 6px;
+      }
     }
 
     input {
@@ -164,6 +177,8 @@
   }
 }
 
-::ng-deep .cdk-overlay-container:has(.model-explorer-view-popup) .cdk-overlay-backdrop {
+::ng-deep
+  .cdk-overlay-container:has(.model-explorer-view-popup)
+  .cdk-overlay-backdrop {
   pointer-events: none;
 }

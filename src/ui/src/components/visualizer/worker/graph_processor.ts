@@ -33,6 +33,8 @@ import {
 import {
   KeyValuePairs,
   MetadataItem,
+  NodeAttributePairs,
+  NodeAttributeValue,
   NodeDataProviderRunData,
   ShowOnNodeItemData,
 } from '../common/types';
@@ -149,14 +151,18 @@ export class GraphProcessor {
           const attrValue = graphNode.attrs?.find(
             (attr) => attr.key === attrKey,
           )?.value;
-          if (attrValue && attrValue.match(attrValueRegex)) {
+          if (
+            attrValue &&
+            typeof attrValue === 'string' &&
+            attrValue.match(attrValueRegex)
+          ) {
             opNode.hideInLayout = true;
             break;
           }
         }
       }
       if (graphNode.attrs) {
-        const attrs: KeyValuePairs = {};
+        const attrs: NodeAttributePairs = {};
         const editableAttrs: KeyAttributePairs = {};
         const attrDisplayTypes: KeyDisplayTypePairs = {};
         for (const attr of graphNode.attrs) {
@@ -776,21 +782,28 @@ export class GraphProcessor {
     }
   }
 
-  private processAttrValue(key: string, value: string): string {
-    // Process const value that in `dense<...>` format. This is for backward
-    // compatibility.
-    if (value.startsWith('dense<')) {
-      const matches = value.match(CONST_VALUE_REGEX);
-      if (matches != null && matches.length > 1) {
-        const strTensorValue = matches[1];
-        return formatTensorValues(strTensorValue);
+  private processAttrValue(
+    key: string,
+    value: NodeAttributeValue,
+  ): NodeAttributeValue {
+    if (typeof value === 'string') {
+      // Process const value that in `dense<...>` format. This is for backward
+      // compatibility.
+      if (value.startsWith('dense<')) {
+        const matches = value.match(CONST_VALUE_REGEX);
+        if (matches != null && matches.length > 1) {
+          const strTensorValue = matches[1];
+          return formatTensorValues(strTensorValue);
+        }
       }
+      // Process tensor values.
+      else if (key === TENSOR_VALUES_KEY) {
+        return formatTensorValues(value);
+      }
+      return value.replaceAll('"', '') || '<empty>';
+    } else {
+      return value;
     }
-    // Process tensor values.
-    else if (key === TENSOR_VALUES_KEY) {
-      return formatTensorValues(value);
-    }
-    return value.replaceAll('"', '') || '<empty>';
   }
 
   private processMetadataList(metadataItems: MetadataItem[]) {

@@ -127,6 +127,13 @@ export declare interface VisualizerConfig {
   hideInfoPanel?: boolean;
 
   /**
+   * Whether to hide the node data in the info panel.
+   * Node data can still be seen on the node overlays.
+   * This only shows/hides the node data in the info panel.
+   */
+  hideNodeDataInInfoPanel?: boolean;
+
+  /**
    * Whether to hide the legends.
    */
   hideLegends?: boolean;

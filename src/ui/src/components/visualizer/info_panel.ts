@@ -47,13 +47,18 @@ import {
   KeyValue,
   KeyValueList,
   KeyValuePairs,
+  NodeAttributeValueType,
   NodeDataProviderRunInfo,
+  NodeIdsNodeAttributeValue,
   OutgoingEdge,
   SearchMatchAttr,
   SearchMatchInputMetadata,
   SearchMatchOutputMetadata,
   SearchMatchType,
   SearchResults,
+  SpecialNodeAttributeValue,
+  type AttributeDisplayType,
+  type EditableAttributeTypes,
 } from './common/types';
 import {
   getNamespaceLabel,
@@ -69,7 +74,6 @@ import {NodeDataProviderExtensionService} from './node_data_provider_extension_s
 import {NodeDataProviderSummaryPanel} from './node_data_provider_summary_panel';
 import {Paginator} from './paginator';
 import {SplitPaneService} from './split_pane_service';
-import type { AttributeDisplayType, EditableAttributeTypes } from './common/input_graph.js';
 
 interface InfoSection {
   label: SectionLabel;
@@ -102,6 +106,7 @@ interface InfoItem {
   bgColor?: string;
   textColor?: string;
   loading?: boolean;
+  specialValue?: SpecialNodeAttributeValue;
   editable?: EditableAttributeTypes;
   displayType?: AttributeDisplayType;
 }
@@ -157,6 +162,8 @@ export class InfoPanel {
   @Input({required: true}) paneId!: string;
   @ViewChildren('inputValueContent')
   inputValueContents = new QueryList<ElementRef<HTMLElement>>();
+
+  readonly NodeAttributeValueType = NodeAttributeValueType;
 
   private curModelGraph?: ModelGraph;
   private curSelectedNode?: ModelNode;
@@ -582,7 +589,10 @@ export class InfoPanel {
   }
 
   get showNodeDataProviderSummary(): boolean {
-    if (!this.curModelGraph) {
+    if (
+      !this.curModelGraph ||
+      this.appService.config()?.hideNodeDataInInfoPanel
+    ) {
       return false;
     }
 
@@ -784,12 +794,17 @@ export class InfoPanel {
         if (key.startsWith('__')) {
           continue;
         }
+        const value = attrs[key];
+        const strValue = typeof value === 'string' ? value : '';
+        const specialValue: SpecialNodeAttributeValue | undefined =
+          typeof value === 'string' ? undefined : value;
         attrSection.items.push({
           section: attrSection,
           label: key,
-          value: attrs[key],
+          value: strValue,
           canShowOnNode: true,
           showOnNode: this.curShowOnOpNodeAttrIds.has(key),
+          specialValue,
           editable: opNode.editableAttrs?.[key],
           displayType: opNode.attrDisplayTypes?.[key],
         });
@@ -1026,10 +1041,13 @@ export class InfoPanel {
     // Add tensor values to metadata if existed.
     const attrs = sourceOpNode.attrs || {};
     if (attrs[TENSOR_VALUES_KEY]) {
-      metadataList.push({
-        key: this.inputMetadataValuesKey,
-        value: attrs[TENSOR_VALUES_KEY],
-      });
+      const value = attrs[TENSOR_VALUES_KEY];
+      if (typeof value === 'string') {
+        metadataList.push({
+          key: this.inputMetadataValuesKey,
+          value,
+        });
+      }
     }
     return metadataList;
   }

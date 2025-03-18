@@ -31,6 +31,68 @@ export declare interface KeyValue {
 /** A type for a list of key-value pairs. */
 export type KeyValueList = KeyValue[];
 
+/** A list of node attributes. */
+export type NodeAttributeList = NodeAttribute[];
+
+/** Node attributes as a record. */
+export type NodeAttributePairs = Record<string, NodeAttributeValue>;
+
+/** A type for a single node attribute. */
+export declare interface NodeAttribute {
+  key: string;
+  value: NodeAttributeValue;
+  editable?: EditableAttributeTypes;
+  display_type?: AttributeDisplayType;
+}
+
+
+/** An attirbute representing a list of integers */
+export interface EditableIntAttribute {
+  input_type: 'int_list';
+  min_value: number;
+  max_value: number;
+  step: number;
+}
+
+/** An attribute representing a list of fixed values */
+export interface EditableValueListAttribute {
+  input_type: 'value_list';
+  options: string[];
+}
+
+export interface EditableGridAttribute {
+  input_type: 'grid';
+  separator?: string;
+  min_value: number;
+  max_value: number;
+  step: number;
+}
+
+export type EditableAttributeTypes = EditableIntAttribute | EditableValueListAttribute | EditableGridAttribute;
+
+export type AttributeDisplayType = 'memory';
+
+/** A single node attribute value. */
+export type NodeAttributeValue = string | SpecialNodeAttributeValue;
+
+/** non-string node attribute value. */
+export type SpecialNodeAttributeValue = NodeIdsNodeAttributeValue;
+
+/** Node attribute value types. */
+export enum NodeAttributeValueType {
+  NODE_IDS = 'node_ids',
+}
+
+/**
+ * A "node ids" node attribute value.
+ *
+ * Clicking on a node id will jump to the corresponding node in the graph.
+ */
+export declare interface NodeIdsNodeAttributeValue {
+  type: NodeAttributeValueType.NODE_IDS;
+  nodeIds: string[];
+}
+
 /** An item in input/output metadata. */
 export interface MetadataItem {
   id: string;
@@ -203,7 +265,7 @@ export interface SnapshotData {
   deepestExpandedGroupNodeIds?: string[];
   selectedNodeId?: string;
   showOnNodeItemTypes?: Record<string, ShowOnNodeItemData>;
-  showOnEdgeItemTypes?: Record<string, ShowOnEdgeItemData>;
+  showOnEdgeItem?: ShowOnEdgeItemData;
   flattenLayers?: boolean;
 }
 
@@ -451,8 +513,8 @@ export interface Pane {
   // Renderer id -> <item type shown on node -> data>
   showOnNodeItemTypes?: Record<string, Record<string, ShowOnNodeItemData>>;
 
-  // Renderer id -> <item type shown on edge -> data>
-  showOnEdgeItemTypes?: Record<string, Record<string, ShowOnEdgeItemData>>;
+  // Renderer id -> data
+  showOnEdgeItems?: Record<string, ShowOnEdgeItemData>;
 
   modelGraph?: ModelGraph;
 }
@@ -569,7 +631,12 @@ export enum ShowOnNodeItemType {
 
 /** Item types to be shown on edge. */
 export enum ShowOnEdgeItemType {
+  OFF = 'Off',
   TENSOR_SHAPE = 'Tensor shape',
+  OUTPUT_METADATA = 'Output metadata',
+  INPUT_METADATA = 'Input metadata',
+  SOURCE_NODE_ATTR = 'Source node attribute',
+  TARGET_NODE_ATTR = 'Target node attribute',
 }
 
 /** Weight of the font. */
@@ -608,6 +675,16 @@ export declare interface ShowOnNodeItemData {
 
 /** Data for show on edge item. */
 export declare interface ShowOnEdgeItemData {
+  type: string;
+  filterText?: string;
+  outputMetadataKey?: string;
+  inputMetadataKey?: string;
+  sourceNodeAttrKey?: string;
+  targetNodeAttrKey?: string;
+}
+
+/** Old data for show on edge item. */
+export declare interface ShowOnEdgeItemOldData {
   selected: boolean;
 }
 

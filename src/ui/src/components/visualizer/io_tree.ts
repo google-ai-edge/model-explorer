@@ -252,7 +252,11 @@ export class IoTree implements OnChanges {
 
     if (isOpNode(modelNode)) {
       const attrs = modelNode.attrs || {};
-      return attrs[TENSOR_VALUES_KEY] || '<empty>';
+      const value = attrs[TENSOR_VALUES_KEY];
+      if (value && typeof value === 'string') {
+        return value;
+      }
+      return '<empty>';
     }
 
     return '';
