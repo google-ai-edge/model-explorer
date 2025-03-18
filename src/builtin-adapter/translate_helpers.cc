@@ -26,6 +26,7 @@
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
+#include "absl/strings/str_format.h"
 #include "absl/strings/str_split.h"
 #include "absl/strings/string_view.h"
 #include "flatbuffers/flexbuffers.h"
@@ -241,9 +242,6 @@ absl::Status StablehloMaybeAppendSubgraphs(Operation& operation) {
 // Returns the GraphInputs node.
 absl::Status AddGraphInputsNode(mlir::func::FuncOp& fop, Counter& index_counter,
                                 Subgraph& subgraph) {
-  GraphNodeBuilder builder;
-  builder.SetNodeId(kGraphInputs);
-  builder.SetNodeLabel(kGraphInputs);
   llvm::SmallVector<llvm::StringRef, 2> input_names;
   auto dict_attr =
       fop->getAttrOfType<mlir::DictionaryAttr>("tf.entry_function");
@@ -265,6 +263,12 @@ absl::Status AddGraphInputsNode(mlir::func::FuncOp& fop, Counter& index_counter,
   // Iterates over block arguments of this function op and adds tensor types and
   // shapes. If there are names of model inputs, we also add them to metadata.
   for (const auto& it : llvm::enumerate(fop.getArgumentTypes())) {
+    GraphNodeBuilder builder;
+    std::string input_name =
+        absl::StrFormat("input_%d", index_counter.getValue());
+    builder.SetNodeName(absl::StrFormat("%s/%s", kGraphInputs, input_name));
+    builder.SetNodeId(input_name);
+    builder.SetNodeLabel(input_name);
     builder.AppendAttrToMetadata(EdgeType::kOutput, it.index(), kTensorIndex,
                                  absl::StrCat(index_counter.increment()));
     if (it.index() < input_names.size()) {
@@ -273,8 +277,8 @@ absl::Status AddGraphInputsNode(mlir::func::FuncOp& fop, Counter& index_counter,
     }
     builder.AppendAttrToMetadata(EdgeType::kOutput, it.index(), kTensorShape,
                                  GetTypeString(it.value()));
+    subgraph.nodes.push_back(std::move(builder).Build());
   }
-  subgraph.nodes.push_back(std::move(builder).Build());
   return absl::OkStatus();
 }
 
@@ -399,7 +403,7 @@ absl::Status PopulateInputEdgeInfo(
   } else {
     auto block_arg = mlir::dyn_cast_or_null<mlir::BlockArgument>(val);
     if (block_arg != nullptr) {
-      source_node_id = kGraphInputs.str();
+      source_node_id = absl::StrFormat("input_%d", block_arg.getArgNumber());
       source_node_output_idx_str = absl::StrCat(block_arg.getArgNumber());
     } else {
       return absl::InvalidArgumentError(absl::StrCat(
