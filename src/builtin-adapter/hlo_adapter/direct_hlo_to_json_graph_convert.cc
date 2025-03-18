@@ -17,6 +17,7 @@
 
 #include <sys/types.h>
 
+#include <cstdint>
 #include <deque>
 #include <string>
 #include <utility>
@@ -27,6 +28,7 @@
 #include "absl/functional/any_invocable.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
+#include "absl/strings/match.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_join.h"
@@ -53,18 +55,65 @@ constexpr absl::string_view kShapeWithLayout = "shape_with_layout";
 constexpr absl::string_view kOpName = "op_name";
 constexpr absl::string_view kOpType = "op_type";
 constexpr absl::string_view kSourceFile = "source_file";
+constexpr absl::string_view kSourceLine = "source_line";
 constexpr absl::string_view kSourceStack = "source_stack";
 constexpr absl::string_view kOpcode = "opcode";
 constexpr absl::string_view kGetTupleElementIndex = "get_tuple_element_index";
 constexpr absl::string_view kUsers = "users";
 constexpr absl::string_view kOperands = "operands";
 constexpr absl::string_view kLiteral = "literal";
+constexpr absl::string_view kHide = "hide_node";
+constexpr absl::string_view kAcfComputationName = "async_collective_fusion";
+constexpr absl::string_view kAcsInstructionName = "AsyncCollectiveStart";
+constexpr absl::string_view kAcdInstructionName = "AsyncCollectiveDone";
 
 constexpr int kMaxUsersToRender = 16;
 
 // OutputEdges is a map from source instruction id to a list of its users.
 using OutputEdges =
     absl::flat_hash_map<std::string, std::vector<const xla::HloInstruction*>>;
+
+// TODO(b/402148725) Move utility functions to a separate file.
+// Detect if an instruction is an AsyncCollectiveFusion parameter that is
+// implementation details.
+bool IsAcfPrameter(const xla::HloInstruction* instruction) {
+  // Parameter is fused
+  if (instruction->opcode() != xla::HloOpcode::kParameter ||
+      !instruction->IsFused())
+    return false;
+
+  // Parameter piped through and is only consumed by 1 user
+  // Parameter 0 consumed by both root and all-gather will always persist.
+  if (instruction->user_count() != 1) return false;
+
+  const xla::HloComputation* parent_computation = instruction->parent();
+  int64_t parameter_number = instruction->parameter_number();
+  xla::HloInstruction* fusion_instruction =
+      parent_computation->FusionInstruction();
+  const xla::HloInstruction* parameterOperand =
+      fusion_instruction->operand(parameter_number);
+  // Operand is get-tuple-element
+  if (parameterOperand->opcode() != xla::HloOpcode::kGetTupleElement) {
+    return false;
+  }
+
+  const xla::HloInstruction* gteOperand = parameterOperand->operand(0);
+  if (gteOperand->opcode() != xla::HloOpcode::kFusion) {
+    return false;
+  }
+  auto src_instruction =
+      gteOperand->fused_instructions_computation()->root_instruction();
+  // (1) Parameter is fused into AsyncCollectiveFusion, operand is gte from
+  // AsyncCollectiveStart custom call and user is the root node of ACF
+  // (2) Parameter is mapped from Params in AsyncCollectiveFusion - operand is
+  // gte from ACF, and user is AsyncCollectiveDone custom call
+  return (absl::StartsWith(parent_computation->name(), kAcfComputationName) &&
+          src_instruction->IsCustomCall(kAcsInstructionName) &&
+          instruction->users()[0] == parent_computation->root_instruction()) ||
+         (instruction->users()[0]->IsCustomCall(kAcdInstructionName) &&
+          absl::StartsWith(gteOperand->fused_instructions_computation()->name(),
+                           kAcfComputationName));
+}
 
 // Recursively include all instructions in the nested computations.
 void RecursiveIncludeNestedComputations(
@@ -272,6 +321,10 @@ void SetInstructionNodeAttributes(const xla::HloInstruction* instruction,
     builder.AppendNodeAttribute(kSourceFile,
                                 instruction->metadata().source_file());
   }
+  if (instruction->metadata().source_line() != 0) {
+    builder.AppendNodeAttribute(
+        kSourceLine, absl::StrCat(instruction->metadata().source_line()));
+  }
   if (instruction->metadata().stack_frame_id() != 0) {
     builder.AppendNodeAttribute(
         kSourceStack,
@@ -279,11 +332,25 @@ void SetInstructionNodeAttributes(const xla::HloInstruction* instruction,
   }
 
   // Attach get-tuple-element index if its define is a GTE and folded.
-  for (const xla::HloInstruction* operand : instruction->operands()) {
-    if (IsGetTupleElement(options, operand)) {
-      builder.AppendNodeAttribute(kGetTupleElementIndex,
-                                  absl::StrCat(operand->tuple_index(), " of ",
-                                               operand->operand(0)->name()));
+  if (options.get_tuple_element_folding) {
+    absl::flat_hash_map<std::string, std::vector<std::string>>
+        tuple_indexes_by_operand;
+    for (const xla::HloInstruction* operand : instruction->operands()) {
+      if (IsGetTupleElement(options, operand)) {
+        tuple_indexes_by_operand[operand->operand(0)->name()].push_back(
+            absl::StrCat(operand->tuple_index()));
+      }
+    }
+    std::string tuple_indexes_string;
+    for (const auto& [operand_name, tuple_indexes] : tuple_indexes_by_operand) {
+      if (!tuple_indexes_string.empty()) {
+        absl::StrAppend(&tuple_indexes_string, ";");
+      }
+      absl::StrAppend(&tuple_indexes_string, absl::StrJoin(tuple_indexes, ","),
+                      " of ", operand_name);
+    }
+    if (!tuple_indexes_string.empty()) {
+      builder.AppendNodeAttribute(kGetTupleElementIndex, tuple_indexes_string);
     }
   }
 
@@ -291,6 +358,12 @@ void SetInstructionNodeAttributes(const xla::HloInstruction* instruction,
   if (instruction->IsConstant() &&
       xla::Cast<xla::HloConstantInstruction>(instruction)->HasLiteral()) {
     builder.AppendNodeAttribute(kLiteral, instruction->literal().ToString());
+  }
+
+  if (options.hide_async_collective_fusion_parameter) {
+    if (IsAcfPrameter(instruction)) {
+      builder.AppendNodeAttribute(kHide, "true");
+    }
   }
 }
 

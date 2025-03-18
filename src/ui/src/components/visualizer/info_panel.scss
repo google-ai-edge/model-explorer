@@ -125,6 +125,11 @@
         margin-right: 0;
       }
     }
+
+    .node-id-attribute {
+      display: flex;
+      cursor: pointer;
+    }
   }
 
   .section:not(:first-child) {

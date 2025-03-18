@@ -16,15 +16,17 @@
  * ==============================================================================
  */
 
-import type { EditableAttributeTypes, AttributeDisplayType } from './input_graph';
 import {
   GraphNodeConfig,
   GraphNodeStyle,
   GroupNodeAttributes,
   IncomingEdge,
   KeyValuePairs,
+  NodeAttributePairs,
   OutgoingEdge,
   Point,
+  type AttributeDisplayType,
+  type EditableAttributeTypes,
 } from './types';
 
 /**
@@ -199,7 +201,7 @@ export declare interface OpNode extends ModelNodeBase {
   outgoingEdges?: OutgoingEdge[];
 
   /** The attributes of the node. */
-  attrs?: KeyValuePairs;
+  attrs?: NodeAttributePairs;
 
   /** The attributes which are editable */
   editableAttrs?: KeyAttributePairs;

@@ -1,8 +1,16 @@
-import type { Attribute, GraphCollection } from '../components/visualizer/common/input_graph.js';
+import type { GraphCollection } from '../components/visualizer/common/input_graph.js';
+import type { NodeAttribute, NodeAttributeValue } from '../custom_element/index.js';
 
 export const isMockEnabled = localStorage.getItem('mock-api') === 'true';
 
-function processAttribute(key: string, value: string): Attribute {
+function processAttribute(key: string, value: NodeAttributeValue): NodeAttribute {
+  if (typeof value !== 'string') {
+    return {
+      key,
+      value
+    };
+  }
+
   if (key.includes('memory')) {
     return {
       key,

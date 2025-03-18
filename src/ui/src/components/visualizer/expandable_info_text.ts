@@ -34,8 +34,8 @@ import {MatIconModule} from '@angular/material/icon';
 import {MatTooltipModule} from '@angular/material/tooltip';
 import {AppService} from './app_service';
 import { ModelLoaderServiceInterface } from '../../common/model_loader_service_interface';
-import type { AttributeDisplayType, EditableAttributeTypes, EditableGridAttribute, EditableIntAttribute, EditableValueListAttribute } from './common/input_graph';
 import type { OpNode } from './common/model_graph';
+import type { AttributeDisplayType, EditableAttributeTypes, EditableValueListAttribute } from './common/types.js';
 
 /** Expandable info text component. */
 @Component({
@@ -169,7 +169,8 @@ export class ExpandableInfoText implements AfterViewInit, OnDestroy, OnChanges {
 
         if (!overrides[modelGraph.collectionLabel][nodeId]) {
           overrides[modelGraph.collectionLabel][nodeId] = {
-            named_location: namedLocation ?? nodeId,
+            // TODO: test if this breaks
+            named_location: (namedLocation as string) ?? nodeId,
             attributes: []
           };
         }

@@ -40,12 +40,14 @@ FIX_FORMAT_FLAG=${1}
   -e .github \
   -e venv \
   -e src/server/package/src/model_explorer/web_app \
+  -e src/custom_element_demos \
   -e src/ui \
   -e "\.md" \
   -e "\.ipynb" \
   -e "\.patch" \
   -e "\.jpg" \
   -e "\.png" \
+  -e "\.ico" \
   -e "\.jar" \
   -e "\.test" \
   -e "\.toml" \

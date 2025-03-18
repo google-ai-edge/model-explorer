@@ -23,7 +23,7 @@ import {
   GroupNodeAttributes,
   IncomingEdge,
   MetadataItem,
-  type KeyValue,
+  NodeAttributeList,
   type NodeDataProviderData,
 } from './types';
 
@@ -142,7 +142,7 @@ export declare interface GraphNode {
   subgraphIds?: string[];
 
   /** The attributes of the node.  */
-  attrs?: EditableAttributeList;
+  attrs?: NodeAttributeList;
 
   /** A list of incoming edges. */
   incomingEdges?: IncomingEdge[];
@@ -163,36 +163,3 @@ export declare interface GraphNode {
   /** Custom configs for the node. */
   config?: GraphNodeConfig;
 }
-
-/** An attirbute representing a list of integers */
-export interface EditableIntAttribute {
-  input_type: 'int_list';
-  min_value: number;
-  max_value: number;
-  step: number;
-}
-
-/** An attribute representing a list of fixed values */
-export interface EditableValueListAttribute {
-  input_type: 'value_list';
-  options: string[];
-}
-
-export interface EditableGridAttribute {
-  input_type: 'grid';
-  separator?: string;
-  min_value: number;
-  max_value: number;
-  step: number;
-}
-
-export type EditableAttributeTypes = EditableIntAttribute | EditableValueListAttribute | EditableGridAttribute;
-
-export type AttributeDisplayType = 'memory';
-
-export interface Attribute extends KeyValue {
-  editable?: EditableAttributeTypes;
-  display_type?: AttributeDisplayType;
-}
-
-export type EditableAttributeList = Attribute[];
