@@ -394,9 +394,8 @@ void PopulateOutputsMetadata(
     GraphNodeBuilder& builder,
     const std::vector<const xla::HloInstruction*>& output_nodes) {
   for (int i = 0; i < output_nodes.size(); ++i) {
-    builder.AppendAttrToMetadata(
-        EdgeType::kOutput, i, kShapeWithLayout,
-        xla::ShapeUtil::HumanStringWithLayout(output_nodes[i]->shape()));
+    builder.AppendAttrToMetadata(EdgeType::kOutput, i, kShapeWithLayout,
+                                 builder.GetNodeAttribute(kShapeWithLayout));
   }
 }
 

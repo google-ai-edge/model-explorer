@@ -65,6 +65,9 @@ class GraphNodeBuilder {
   // Appends the attribute key and value to `node_attrs` in GraphNode.
   void AppendNodeAttribute(absl::string_view key, absl::string_view value);
 
+  // Get the attribute value for the given key.
+  absl::string_view GetNodeAttribute(absl::string_view key);
+
   // Appends the attribute to the input or output metadata list. If the metadata
   // already exists, we append the attribute to that metadata. If it doesn't
   // exist, we create a new metadata and add it to the list, then append the
