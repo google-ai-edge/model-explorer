@@ -70,8 +70,8 @@ export class GraphEdit {
   }
 
   private poolForStatusUpdate(modelItem: ModelItem, modelPath: string, updateCallback: (progress: number, total: number, elapsedTime: string, stdout?: string) => void | Promise<void>, doneCallback: (status: 'done' | 'timeout', elapsedTime: string) => void | Promise<void>, errorCallback: (error: string, elapsedTime: string) => void | Promise<void>) {
-    const POOL_TIME_MS = 5 * 1000;
-    const TIMEOUT_MS = 1 * 60 * 60 * 1000;
+    const POOL_TIME_MS = 1 * 1000; // 1 second
+    const TIMEOUT_MS = 1 * 60 * 60 * 1000; // 1 hour
 
     type DurationFormat = (duration: number) => string;
     let intervalFormatter: DurationFormat = (duration) => duration.toString();
