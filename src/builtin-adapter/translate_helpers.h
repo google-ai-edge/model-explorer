@@ -33,31 +33,6 @@ absl::StatusOr<Subgraph> FuncOpToSubgraph(const VisualizeConfig& config,
 absl::StatusOr<Graph> MlirToGraph(const VisualizeConfig& config,
                                   mlir::Operation* module);
 
-// TODO b/407541318 - Remove functions below.
-// Converts a tf dialect function op to a subgraph.
-absl::StatusOr<Subgraph> TfFunctionToSubgraph(const VisualizeConfig& config,
-                                              mlir::func::FuncOp& fop);
-
-// Converts a tfl dialect function op to a subgraph.
-absl::StatusOr<Subgraph> TfliteFunctionToSubgraph(const VisualizeConfig& config,
-                                                  mlir::func::FuncOp& fop);
-
-// Converts a stablehlo dialect function op to a subgraph.
-absl::StatusOr<Subgraph> StablehloFunctionToSubgraph(
-    const VisualizeConfig& config, mlir::func::FuncOp& fop);
-
-// Converts a tf dialect MLIR module to a JSON graph.
-absl::StatusOr<Graph> TfMlirToGraph(const VisualizeConfig& config,
-                                    mlir::Operation* module);
-
-// Converts a tfl dialect MLIR module to a JSON graph.
-absl::StatusOr<Graph> TfliteMlirToGraph(const VisualizeConfig& config,
-                                        mlir::Operation* module);
-
-// Converts a JAX-converted tf & stablehlo MLIR module to a JSON graph.
-absl::StatusOr<Graph> JaxConvertedMlirToGraph(const VisualizeConfig& config,
-                                              mlir::Operation* module);
-
 }  // namespace visualization_client
 }  // namespace tooling
 

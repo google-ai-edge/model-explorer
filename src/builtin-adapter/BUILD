@@ -57,7 +57,6 @@ cc_library(
     deps = [
         ":status_macros",
         ":translate_helpers",
-        ":translations",
         ":visualize_config",
         "@com_google_absl//absl/log",
         "@com_google_absl//absl/status",
