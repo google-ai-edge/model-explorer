@@ -116,6 +116,7 @@ using SignatureMap = absl::flat_hash_map<int, SignatureNameMap>;
 using Tensors = std::vector<std::unique_ptr<TensorT>>;
 using OperatorCodes = std::vector<std::unique_ptr<OperatorCodeT>>;
 using Buffers = std::vector<std::unique_ptr<tflite::BufferT>>;
+using SignatureDefs = std::vector<std::unique_ptr<tflite::SignatureDefT>>;
 // Maps from op name to op metadata.
 using OpdefsMap = absl::flat_hash_map<std::string, OpMetadata>;
 
@@ -888,10 +889,24 @@ absl::Status AddSubgraph(
   return absl::OkStatus();
 }
 
-std::string GetSubgraphName(int subgraph_index, const SubGraphT& subgraph_t) {
+std::string GetSubgraphName(int subgraph_index, const SubGraphT& subgraph_t,
+                            const SignatureDefs& signature_defs) {
   if (!subgraph_t.name.empty()) {
     return subgraph_t.name;
   }
+
+  // If the subgraph name is empty, use the signature key if it exists.
+  // TODO(yijieyang): We should add this signature key to graph level info
+  // regardless.
+  for (const auto& signature_def : signature_defs) {
+    if (signature_def->subgraph_index == subgraph_index) {
+      if (!signature_def->signature_key.empty()) {
+        return signature_def->signature_key;
+      }
+      break;
+    }
+  }
+
   return (subgraph_index == 0) ? "main"
                                : absl::StrCat("subgraph_", subgraph_index);
 }
@@ -964,7 +979,8 @@ absl::StatusOr<std::string> ConvertFlatbufferDirectlyToJson(
     for (const auto& tensormap : signature_def->outputs) {
       signature_name_map.emplace(tensormap->tensor_index, tensormap->name);
     }
-    signature_map.emplace(signature_def->subgraph_index, signature_name_map);
+    signature_map.emplace(signature_def->subgraph_index,
+                          std::move(signature_name_map));
   }
 
   std::vector<std::string> func_names;
@@ -977,7 +993,8 @@ absl::StatusOr<std::string> ConvertFlatbufferDirectlyToJson(
 
   for (int i = 0; i < model->subgraphs.size(); ++i) {
     const auto& subgraph = model->subgraphs[i];
-    const std::string subgraph_name = GetSubgraphName(i, *subgraph);
+    const std::string subgraph_name =
+        GetSubgraphName(i, *subgraph, model->signature_defs);
     auto signature_name_it = signature_map.find(i);
     if (signature_name_it != signature_map.end()) {
       RETURN_IF_ERROR(AddSubgraph(
