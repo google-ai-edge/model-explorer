@@ -25,6 +25,15 @@
 namespace tooling {
 namespace visualization_client {
 
+// Converts an MLIR function op to a subgraph.
+absl::StatusOr<Subgraph> FuncOpToSubgraph(const VisualizeConfig& config,
+                                          mlir::func::FuncOp& fop);
+
+// Converts a diact-agnostic MLIR module to a JSON graph.
+absl::StatusOr<Graph> MlirToGraph(const VisualizeConfig& config,
+                                  mlir::Operation* module);
+
+// TODO b/407541318 - Remove functions below.
 // Converts a tf dialect function op to a subgraph.
 absl::StatusOr<Subgraph> TfFunctionToSubgraph(const VisualizeConfig& config,
                                               mlir::func::FuncOp& fop);

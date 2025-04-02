@@ -25,7 +25,9 @@
 #include "absl/log/check.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
+#include "absl/strings/match.h"
 #include "absl/strings/str_cat.h"
+#include "absl/strings/str_format.h"
 #include "absl/strings/str_split.h"
 #include "absl/strings/string_view.h"
 #include "flatbuffers/flexbuffers.h"
@@ -66,17 +68,18 @@ using ::mlir::func::FuncOp;
 using ::mlir::TFL::ConstBytesAttr;
 using ::tooling::visualization_client::OpMetadata;
 
+using OpToNodeIdMap = absl::flat_hash_map<Operation*, std::string>;
+using OpdefsMap = absl::flat_hash_map<std::string, OpMetadata>;
+
 inline constexpr llvm::StringLiteral kEmptyString("");
 inline constexpr llvm::StringLiteral kConfigProto("config_proto");
-inline constexpr llvm::StringLiteral kGraphInputs("GraphInputs");
-inline constexpr llvm::StringLiteral kGraphOutputs("GraphOutputs");
+inline constexpr llvm::StringLiteral kGraphInputs("Inputs");
+inline constexpr llvm::StringLiteral kGraphOutputs("Outputs");
 inline constexpr llvm::StringLiteral kTensorName("tensor_name");
 inline constexpr llvm::StringLiteral kTensorIndex("tensor_index");
 inline constexpr llvm::StringLiteral kTensorShape("tensor_shape");
 inline constexpr llvm::StringLiteral kTensorTag("__tensor_tag");
 inline constexpr llvm::StringLiteral kValue("__value");
-
-using OpdefsMap = absl::flat_hash_map<std::string, OpMetadata>;
 
 class Counter {
  public:
@@ -85,6 +88,23 @@ class Counter {
 
  private:
   int count_ = 0;
+};
+
+// The context maintained during the graph building process.
+struct GraphBuildContext {
+  GraphBuildContext(const OpdefsMap& op_defs, const OpToNodeIdMap& seen_ops,
+                    Counter node_counter, Counter tensor_counter)
+      : op_defs(op_defs),
+        seen_ops(seen_ops),
+        node_counter(node_counter),
+        tensor_counter(tensor_counter) {}
+
+  GraphBuildContext() = default;
+
+  OpdefsMap op_defs;
+  OpToNodeIdMap seen_ops;
+  Counter node_counter;
+  Counter tensor_counter;
 };
 
 // Skip serializing attributes that match the given name. This is a hard-code to
@@ -97,6 +117,30 @@ inline std::string GetTypeString(const mlir::Type& t) {
   llvm::raw_string_ostream ost(result);
   t.print(ost);
   return result;
+}
+
+inline bool IsTfliteDialect(Operation& operation) {
+  return llvm::isa<mlir::TFL::TensorFlowLiteDialect>(operation.getDialect());
+}
+
+inline bool IsTfDialect(Operation& operation) {
+  return llvm::isa<mlir::TF::TensorFlowDialect>(operation.getDialect());
+}
+
+inline bool IsStablehloDialect(Operation& operation) {
+  return llvm::isa<mlir::stablehlo::StablehloDialect>(operation.getDialect());
+}
+
+// Sets the contract for generating the node id for a block argument.
+// If `parent_node_id` is empty, it means the block argument is in the graph
+// level. Otherwise, it means the block argument is in a nested region, we add
+// the parent node id as a prefix to distinguish it from the graph level block
+// argument.
+std::string GetArgNodeId(int arg_index, absl::string_view parent_node_id) {
+  if (parent_node_id.empty()) {
+    return absl::StrFormat("arg%d", arg_index);
+  }
+  return absl::StrFormat("pid%s_arg%d", parent_node_id, arg_index);
 }
 
 void AddCustomOptions(const ConstBytesAttr& const_bytes_attr,
@@ -126,7 +170,8 @@ void AddCustomOptions(const ConstBytesAttr& const_bytes_attr,
   }
 }
 
-void AppendNodeAttrs(const int const_element_count_limit, Operation& operation,
+// Appends node attributes to the graph node builder.
+void AppendNodeAttrs(const VisualizeConfig& config, Operation& operation,
                      GraphNodeBuilder& builder) {
   std::string value;
   llvm::raw_string_ostream sstream(value);
@@ -152,7 +197,7 @@ void AppendNodeAttrs(const int const_element_count_limit, Operation& operation,
       // Skips adding the const bytes attribute to the graph.
       continue;
     }
-    PrintAttribute(attr_val, const_element_count_limit, sstream);
+    PrintAttribute(attr_val, config.const_element_count_limit, sstream);
     if (name == "value") {
       // Special handles `value` attribute to represent the tensor data.
       builder.AppendNodeAttribute(kValue, value);
@@ -200,12 +245,12 @@ absl::Status TfliteMaybeAppendSubgraphs(Operation& operation,
     return absl::OkStatus();
   }
 
-  if (auto while_op = llvm::dyn_cast_or_null<mlir::TFL::WhileOp>(operation)) {
+  if (auto while_op = llvm::dyn_cast<mlir::TFL::WhileOp>(operation)) {
     // TODO(b/311011560): Current only tfl.while op is supported. Support more
     // ops that have nested regions.
     for (auto& region : while_op->getRegions()) {
       for (auto& nested_op : region.getOps()) {
-        if (auto call = llvm::dyn_cast_or_null<mlir::func::CallOp>(nested_op)) {
+        if (auto call = llvm::dyn_cast<mlir::func::CallOp>(nested_op)) {
           builder.AppendSubgraphId(call.getCallee());
           break;
         }
@@ -237,13 +282,14 @@ absl::Status StablehloMaybeAppendSubgraphs(Operation& operation) {
   return absl::UnimplementedError(err_msg);
 }
 
-// Adds a GraphInputs node to the subgraph, and adds input names if they exist.
-// Returns the GraphInputs node.
-absl::Status AddGraphInputsNode(mlir::func::FuncOp& fop, Counter& index_counter,
-                                Subgraph& subgraph) {
-  GraphNodeBuilder builder;
-  builder.SetNodeId(kGraphInputs);
-  builder.SetNodeLabel(kGraphInputs);
+// Adds the block arguments of a function op to the subgraph.
+// Each block argument is represented as a node under the namespace of
+// `GraphInputs`.
+void AddGraphInputs(mlir::func::FuncOp& fop, GraphBuildContext& context,
+                    Subgraph& subgraph) {
+  Counter& tensor_counter = context.tensor_counter;
+
+  // Gets the input names from the `tf.entry_function` attribute.
   llvm::SmallVector<llvm::StringRef, 2> input_names;
   auto dict_attr =
       fop->getAttrOfType<mlir::DictionaryAttr>("tf.entry_function");
@@ -265,17 +311,24 @@ absl::Status AddGraphInputsNode(mlir::func::FuncOp& fop, Counter& index_counter,
   // Iterates over block arguments of this function op and adds tensor types and
   // shapes. If there are names of model inputs, we also add them to metadata.
   for (const auto& it : llvm::enumerate(fop.getArgumentTypes())) {
-    builder.AppendAttrToMetadata(EdgeType::kOutput, it.index(), kTensorIndex,
-                                 absl::StrCat(index_counter.increment()));
+    GraphNodeBuilder builder;
+    const std::string node_id = GetArgNodeId(it.index(), /*parent_node_id=*/"");
+    const std::string node_label = absl::StrFormat("input_%d", it.index());
+    builder.SetNodeInfo(/*node_id_str=*/node_id, /*node_label=*/node_label,
+                        /*node_name=*/kGraphInputs);
+    // Since each block argument is represented as a node, we only need to add
+    // to the first output metadata.
+    builder.AppendAttrToMetadata(EdgeType::kOutput, /*metadata_id=*/0,
+                                 kTensorIndex,
+                                 absl::StrCat(tensor_counter.increment()));
     if (it.index() < input_names.size()) {
-      builder.AppendAttrToMetadata(EdgeType::kOutput, it.index(), kTensorName,
-                                   input_names[it.index()]);
+      builder.AppendAttrToMetadata(EdgeType::kOutput, /*metadata_id=*/0,
+                                   kTensorName, input_names[it.index()]);
     }
-    builder.AppendAttrToMetadata(EdgeType::kOutput, it.index(), kTensorShape,
-                                 GetTypeString(it.value()));
+    builder.AppendAttrToMetadata(EdgeType::kOutput, /*metadata_id=*/0,
+                                 kTensorShape, GetTypeString(it.value()));
+    subgraph.nodes.push_back(std::move(builder).Build());
   }
-  subgraph.nodes.push_back(std::move(builder).Build());
-  return absl::OkStatus();
 }
 
 // Gets the node name (the hierarchical information of the node) from a tf
@@ -379,47 +432,56 @@ llvm::SmallVector<llvm::StringRef, 2> GetTfliteTensorNames(
 }
 
 // Populates the input edge information for a given graph node.
-absl::Status PopulateInputEdgeInfo(
-    const mlir::Value& val,
-    const absl::flat_hash_map<Operation*, std::string>& seen_ops,
-    int input_index, absl::string_view node_id, Counter& tensor_idx_counter,
-    GraphNodeBuilder& builder) {
+absl::Status PopulateInputEdgeInfo(const mlir::Value& val, int input_index,
+                                   GraphBuildContext& context,
+                                   GraphNodeBuilder& builder) {
+  const OpToNodeIdMap& seen_ops = context.seen_ops;
   // In general, there are two types of edges:
   // 1. An edge that comes from a source node
   // 2. An edge that comes from model inputs (or block arguments)
   // For the case one, we look up the source node to populate the edge
   // information. If it's the latter case, we populate the edge with block
-  // arguments data (arg info also stored in dummy node `GraphInputs`).
-  std::string source_node_id = "", source_node_output_idx_str = "";
+  // arguments data.
+  std::string source_node_id_str, source_node_output_idx_str;
   Operation* source_node = val.getDefiningOp();
   if (source_node != nullptr) {
-    source_node_id = seen_ops.find(source_node)->second;
+    source_node_id_str = seen_ops.find(source_node)->second;
     source_node_output_idx_str =
         absl::StrCat(llvm::dyn_cast<mlir::OpResult>(val).getResultNumber());
   } else {
     auto block_arg = mlir::dyn_cast_or_null<mlir::BlockArgument>(val);
     if (block_arg != nullptr) {
-      source_node_id = kGraphInputs.str();
-      source_node_output_idx_str = absl::StrCat(block_arg.getArgNumber());
+      Operation* parent_op = block_arg.getOwner()->getParentOp();
+      std::string parent_node_id;
+      if (seen_ops.contains(parent_op)) {
+        parent_node_id = seen_ops.find(parent_op)->second;
+      }
+      source_node_id_str =
+          GetArgNodeId(block_arg.getArgNumber(), parent_node_id);
+      // Since each block argument is represented as a node, we can hardcode the
+      // output index to be 0.
+      source_node_output_idx_str = "0";
     } else {
       return absl::InvalidArgumentError(absl::StrCat(
-          "Value at index ", input_index, " of node ", node_id,
+          "Value at index ", input_index, " of node ", builder.GetNodeId(),
           " is neither a block argument nor output edge of a node."));
     }
   }
-  builder.AppendEdgeInfo(source_node_id, source_node_output_idx_str,
+  builder.AppendEdgeInfo(source_node_id_str, source_node_output_idx_str,
                          absl::StrCat(input_index));
   return absl::OkStatus();
 }
 
 // Adds tensor tags to the graph node.
-// If the op name is not found in the opdefs map, we will return an error.
-// Likely it means the opdefs map is not up to date, and we need to update it.
-absl::Status AddTensorTags(absl::string_view op_label, const OpdefsMap& op_defs,
-                           Operation& op, GraphNodeBuilder& builder) {
+// If the op name is not found in the op_defs map, we will return an error.
+// Likely it means the op_defs map is not up to date, and we need to update it.
+void AddTensorTags(const OpdefsMap& op_defs, Operation& op,
+                   GraphNodeBuilder& builder) {
+  const std::string op_label = builder.GetNodeLabel();
   if (!op_defs.contains(op_label)) {
-    return absl::InvalidArgumentError(
-        absl::StrCat("No op def found for op: ", op_label));
+    // Some ops are not in the op_defs map, we will skip adding tensor tags for
+    // them.
+    return;
   }
   const OpMetadata& op_metadata = op_defs.at(op_label);
   if (op_metadata.arguments.size() <= op.getNumOperands()) {
@@ -434,6 +496,244 @@ absl::Status AddTensorTags(absl::string_view op_label, const OpdefsMap& op_defs,
                                    op_metadata.results[i]);
     }
   }
+}
+
+// Adds the basic node information to the graph node, including node id, label,
+// and name.
+void AddNodeInfo(Operation& operation, GraphBuildContext& context,
+                 GraphNodeBuilder& builder) {
+  Counter& node_counter = context.node_counter;
+  const std::string node_id_str = absl::StrCat(node_counter.increment());
+  // A terminator operation is the function return value, or GraphOutputs.
+  if (operation.hasTrait<mlir::OpTrait::IsTerminator>()) {
+    builder.SetNodeInfo(/*node_id_str=*/node_id_str,
+                        /*node_label=*/kGraphOutputs,
+                        /*node_name=*/kGraphOutputs);
+    return;
+  }
+  // Node label is the op name without the dialect prefix.
+  absl::string_view node_label = operation.getName().stripDialect();
+
+  // Node name is retrieved from the operation, and is varied by the dialect.
+  std::string node_name;
+  if (IsTfDialect(operation)) {
+    node_name = GetTfNodeName(operation);
+    builder.SetNodeInfo(node_id_str, node_label, node_name);
+    return;
+  }
+  if (IsTfliteDialect(operation)) {
+    node_name = GenerateTfliteNodeName(node_label, operation);
+    builder.SetNodeInfo(node_id_str, node_label, node_name);
+    return;
+  }
+  // For any other dialects, We apply the parsing logic as stablehlo ops by
+  // default. New dialects should add their own parsing logic above.
+  // `node_name` will be added within `AddJaxNodeNameAndAttribute` along with
+  // the `jax_op_attr` attribute.
+  AddJaxNodeNameAndAttribute(operation, builder);
+
+  // We keep the op dialect prefix in the node label.
+  builder.SetNodeId(node_id_str);
+  node_label = operation.getName().getStringRef();
+  builder.SetNodeLabel(node_label);
+}
+
+// Iterates through all operand values of an operation and adds the incoming
+// edges to the graph node.
+absl::Status AddIncomingEdges(Operation& operation, GraphBuildContext& context,
+                              GraphNodeBuilder& builder) {
+  for (int input_index = 0, e = operation.getNumOperands(); input_index < e;
+       ++input_index) {
+    mlir::Value val = operation.getOperand(input_index);
+    // We make the assumption that functions bodies are single block.
+    if (val.isUsedOutsideOfBlock(operation.getBlock())) continue;
+    RETURN_IF_ERROR(PopulateInputEdgeInfo(val, input_index, context, builder));
+  }
+  return absl::OkStatus();
+}
+
+// Iterates through all result values of an operation and adds the output
+// metadata to the graph node.
+void AddOutputsMetadata(Operation& operation, GraphBuildContext& context,
+                        GraphNodeBuilder& builder) {
+  Counter& tensor_counter = context.tensor_counter;
+  llvm::SmallVector<llvm::StringRef, 2> tensor_names;
+  if (IsTfliteDialect(operation)) {
+    tensor_names = GetTfliteTensorNames(operation);
+  }
+  for (int output_index = 0, e = operation.getNumResults(); output_index < e;
+       ++output_index) {
+    builder.AppendAttrToMetadata(EdgeType::kOutput, output_index, kTensorIndex,
+                                 absl::StrCat(tensor_counter.increment()));
+    mlir::Value val = operation.getResult(output_index);
+    builder.AppendAttrToMetadata(EdgeType::kOutput, output_index, kTensorShape,
+                                 GetTypeString(val.getType()));
+    if (output_index < tensor_names.size()) {
+      builder.AppendAttrToMetadata(EdgeType::kOutput, output_index, kTensorName,
+                                   tensor_names[output_index]);
+    }
+  }
+}
+
+// Adds a node of a nested region to the graph.
+// The root_name is used to create the corresponding namespace for the node.
+absl::Status AddNestedRegionNode(const VisualizeConfig& config,
+                                 absl::string_view root_name,
+                                 Operation& operation,
+                                 GraphBuildContext& context,
+                                 Subgraph& subgraph) {
+  GraphNodeBuilder builder;
+  OpToNodeIdMap& seen_ops = context.seen_ops;
+  AddNodeInfo(operation, context, builder);
+  // Updates the node's namespace if the node name doesn't contain "/" to put it
+  // under the corresponding region.
+  if (!absl::StrContains(builder.GetNodeName(), '/')) {
+    builder.SetNodeName(root_name);
+  }
+  seen_ops.insert({&operation, builder.GetNodeId()});
+  AppendNodeAttrs(config, operation, builder);
+  RETURN_IF_ERROR(AddIncomingEdges(operation, context, builder));
+  AddOutputsMetadata(operation, context, builder);
+  subgraph.nodes.push_back(std::move(builder).Build());
+  return absl::OkStatus();
+}
+
+// Adds the nested region of a stablehlo control flow op to the graph.
+absl::Status MaybeAddStablehloNestedRegion(const VisualizeConfig& config,
+                                           Operation& operation,
+                                           GraphBuildContext& context,
+                                           GraphNodeBuilder& cur_node,
+                                           Subgraph& subgraph) {
+  if (operation.getNumRegions() == 0) {
+    return absl::OkStatus();
+  }
+
+  Counter& tensor_counter = context.tensor_counter;
+
+  // For op that has nested region, we look up its namespace,
+  // - if exists, we apply direct
+  // - if not, we create arbitrary name, eg. (stablehlo.while_12)
+  //   - Parenthesis means it’s generated, not found in original mlir
+  //   - Concat the node_label with node_id to form the uuid
+  const std::string base_namespace =
+      cur_node.GetNodeName().empty()
+          ? absl::StrFormat("(%s_%s)", cur_node.GetNodeLabel(),
+                            cur_node.GetNodeId())
+          : cur_node.GetNodeName();
+  // Since this node has nested regions, we pin it to the top of the group.
+  cur_node.SetNodeName(base_namespace);
+  cur_node.SetPinToGroupTop(true);
+
+  // Adds the input nodes of the nested region.
+  for (int input_index = 0, e = operation.getNumOperands(); input_index < e;
+       ++input_index) {
+    GraphNodeBuilder builder;
+    const std::string node_label = absl::StrFormat("input_%d", input_index);
+    const std::string node_id = GetArgNodeId(input_index, cur_node.GetNodeId());
+    const std::string node_name =
+        absl::StrFormat("%s/%s", base_namespace, kGraphInputs);
+    builder.SetNodeInfo(/*node_id_str=*/node_id, /*node_label=*/node_label,
+                        /*node_name=*/node_name);
+    // Since each input is represented as a node, we can hardcode the output
+    // index to be 0.
+    builder.AppendAttrToMetadata(EdgeType::kOutput, /*metadata_id=*/0,
+                                 kTensorIndex,
+                                 absl::StrCat(tensor_counter.increment()));
+    builder.AppendAttrToMetadata(
+        EdgeType::kOutput, /*metadata_id=*/0, kTensorShape,
+        GetTypeString(operation.getOperand(input_index).getType()));
+    subgraph.nodes.push_back(std::move(builder).Build());
+  }
+
+  // Processes all ops within the region.
+  auto process_region = [&](absl::string_view region_name,
+                            mlir::Region& region) -> absl::Status {
+    const std::string root_name =
+        absl::StrCat(base_namespace, "/", region_name);
+    for (auto& op : region.getOps()) {
+      RETURN_IF_ERROR(
+          AddNestedRegionNode(config, root_name, op, context, subgraph));
+    }
+    return absl::OkStatus();
+  };
+
+  std::string region_name;
+  // Aligns with the definition in stablehlo/dialect/StablehloOps.td. Ops with
+  // "regions" should be added here.
+  if (auto while_op = llvm::dyn_cast<mlir::stablehlo::WhileOp>(operation)) {
+    RETURN_IF_ERROR(process_region("cond", while_op.getCond()));
+    RETURN_IF_ERROR(process_region("body", while_op.getBody()));
+  } else if (auto if_op = llvm::dyn_cast<mlir::stablehlo::IfOp>(operation)) {
+    RETURN_IF_ERROR(process_region("true_branch", if_op.getTrueBranch()));
+    RETURN_IF_ERROR(process_region("false_branch", if_op.getFalseBranch()));
+  } else if (auto all_reduce_op =
+                 llvm::dyn_cast<mlir::stablehlo::AllReduceOp>(operation)) {
+    RETURN_IF_ERROR(
+        process_region("computation", all_reduce_op.getComputation()));
+  } else if (auto reduce_scatter_op =
+                 llvm::dyn_cast<mlir::stablehlo::ReduceScatterOp>(operation)) {
+    RETURN_IF_ERROR(
+        process_region("computation", reduce_scatter_op.getComputation()));
+  } else if (auto reduce_op =
+                 llvm::dyn_cast<mlir::stablehlo::ReduceOp>(operation)) {
+    RETURN_IF_ERROR(process_region("body", reduce_op.getBody()));
+  } else if (auto map_op = llvm::dyn_cast<mlir::stablehlo::MapOp>(operation)) {
+    RETURN_IF_ERROR(process_region("computation", map_op.getComputation()));
+  } else if (auto scatter_op =
+                 llvm::dyn_cast<mlir::stablehlo::ScatterOp>(operation)) {
+    RETURN_IF_ERROR(process_region("update_computation",
+                                   scatter_op.getUpdateComputation()));
+  } else if (auto select_and_scatter_op =
+                 llvm::dyn_cast<mlir::stablehlo::SelectAndScatterOp>(
+                     operation)) {
+    RETURN_IF_ERROR(
+        process_region("select", select_and_scatter_op.getSelect()));
+    RETURN_IF_ERROR(
+        process_region("scatter", select_and_scatter_op.getScatter()));
+  } else if (auto sort_op =
+                 llvm::dyn_cast<mlir::stablehlo::SortOp>(operation)) {
+    RETURN_IF_ERROR(process_region("comparator", sort_op.getComparator()));
+  } else if (auto reduce_window_op =
+                 llvm::dyn_cast<mlir::stablehlo::ReduceWindowOp>(operation)) {
+    RETURN_IF_ERROR(process_region("body", reduce_window_op.getBody()));
+  } else {
+    std::string region_name;
+    for (int i = 0, e = operation.getNumRegions(); i < e; ++i) {
+      // Assigns arbitrary region name for ops that are not listed above. Use
+      // parenthesis to indicate it's generated.
+      region_name = absl::StrCat("(region_", i, ")");
+      RETURN_IF_ERROR(process_region(region_name, operation.getRegion(i)));
+    }
+  }
+  return absl::OkStatus();
+}
+
+// Adds a node to the graph.
+// This is the core logic for converting an MLIR operation to a graph node.
+absl::Status AddNode(const VisualizeConfig& config, Operation& operation,
+                     GraphBuildContext& context, Subgraph& subgraph) {
+  GraphNodeBuilder builder;
+  const OpdefsMap& op_defs = context.op_defs;
+  OpToNodeIdMap& seen_ops = context.seen_ops;
+  // Sets the node_id, node_label, and node_name according to the dialect.
+  AddNodeInfo(operation, context, builder);
+  seen_ops.insert({&operation, builder.GetNodeId()});
+  AppendNodeAttrs(config, operation, builder);
+  RETURN_IF_ERROR(AddIncomingEdges(operation, context, builder));
+  llvm::SmallVector<llvm::StringRef, 2> tensor_names;
+  if (IsTfliteDialect(operation)) {
+    absl::Status append_subgraph_status =
+        TfliteMaybeAppendSubgraphs(operation, builder);
+    if (!append_subgraph_status.ok()) {
+      llvm::errs() << append_subgraph_status.message() << "\n";
+    }
+    AddTensorTags(op_defs, operation, builder);
+  } else if (IsStablehloDialect(operation)) {
+    RETURN_IF_ERROR(MaybeAddStablehloNestedRegion(config, operation, context,
+                                                  builder, subgraph));
+  }
+  AddOutputsMetadata(operation, context, builder);
+  subgraph.nodes.push_back(std::move(builder).Build());
   return absl::OkStatus();
 }
 
@@ -442,9 +742,10 @@ absl::Status AddTensorTags(absl::string_view op_label, const OpdefsMap& op_defs,
 absl::StatusOr<Subgraph> TfFunctionToSubgraph(const VisualizeConfig& config,
                                               FuncOp& fop) {
   Subgraph subgraph(fop.getSymName().str());
-  absl::flat_hash_map<Operation*, std::string> seen_ops;
-  Counter tensor_idx_counter;
-  RETURN_IF_ERROR(AddGraphInputsNode(fop, tensor_idx_counter, subgraph));
+  GraphBuildContext context;
+  OpToNodeIdMap& seen_ops = context.seen_ops;
+  Counter& tensor_idx_counter = context.tensor_counter;
+  AddGraphInputs(fop, context, subgraph);
 
   // Iterate in order across the `Operation`s in the first block of this
   // function (we assume there is only one block within each function). Since we
@@ -466,16 +767,16 @@ absl::StatusOr<Subgraph> TfFunctionToSubgraph(const VisualizeConfig& config,
     llvm::StringRef node_name = GetTfNodeName(operation);
     GraphNodeBuilder builder;
     builder.SetNodeInfo(node_id, node_label, node_name);
-    AppendNodeAttrs(config.const_element_count_limit, operation, builder);
-    for (int input_index = 0; input_index < operation.getNumOperands();
+    AppendNodeAttrs(config, operation, builder);
+    for (int input_index = 0, e = operation.getNumOperands(); input_index < e;
          ++input_index) {
       mlir::Value val = operation.getOperand(input_index);
-      RETURN_IF_ERROR(PopulateInputEdgeInfo(val, seen_ops, input_index, node_id,
-                                            tensor_idx_counter, builder));
+      RETURN_IF_ERROR(
+          PopulateInputEdgeInfo(val, input_index, context, builder));
     }
     // TODO: b/319035310 - Graph output names are not stored in TF converted
     // JSON graph.
-    for (int output_index = 0; output_index < operation.getNumResults();
+    for (int output_index = 0, e = operation.getNumResults(); output_index < e;
          ++output_index) {
       builder.AppendAttrToMetadata(
           EdgeType::kOutput, output_index, kTensorIndex,
@@ -492,11 +793,13 @@ absl::StatusOr<Subgraph> TfFunctionToSubgraph(const VisualizeConfig& config,
 absl::StatusOr<Subgraph> TfliteFunctionToSubgraph(const VisualizeConfig& config,
                                                   FuncOp& fop) {
   Subgraph subgraph(fop.getSymName().str());
-  absl::flat_hash_map<Operation*, std::string> seen_ops;
-  Counter tensor_idx_counter;
-  OpdefsMap op_defs = LoadTfliteOpdefs();
+  GraphBuildContext context;
+  OpToNodeIdMap& seen_ops = context.seen_ops;
+  Counter& tensor_idx_counter = context.tensor_counter;
+  context.op_defs = LoadTfliteOpdefs();
+  OpdefsMap& op_defs = context.op_defs;
 
-  RETURN_IF_ERROR(AddGraphInputsNode(fop, tensor_idx_counter, subgraph));
+  AddGraphInputs(fop, context, subgraph);
 
   // Iterate in order across the `Operation`s in the first block of this
   // function (we assume there is only one block within each function). Since we
@@ -518,13 +821,13 @@ absl::StatusOr<Subgraph> TfliteFunctionToSubgraph(const VisualizeConfig& config,
     std::string node_name = GenerateTfliteNodeName(node_label, operation);
     GraphNodeBuilder builder;
     builder.SetNodeInfo(node_id, node_label, node_name);
-    AppendNodeAttrs(config.const_element_count_limit, operation, builder);
+    AppendNodeAttrs(config, operation, builder);
     absl::Status append_subgraph_status =
         TfliteMaybeAppendSubgraphs(operation, builder);
     if (!append_subgraph_status.ok()) {
       llvm::errs() << append_subgraph_status.message() << "\n";
     }
-    for (int input_index = 0; input_index < operation.getNumOperands();
+    for (int input_index = 0, e = operation.getNumOperands(); input_index < e;
          ++input_index) {
       mlir::Value val = operation.getOperand(input_index);
       // We make the (tflite) assumption that
@@ -537,12 +840,12 @@ absl::StatusOr<Subgraph> TfliteFunctionToSubgraph(const VisualizeConfig& config,
       // experience.
       if (val.isUsedOutsideOfBlock(&block)) continue;
 
-      RETURN_IF_ERROR(PopulateInputEdgeInfo(val, seen_ops, input_index, node_id,
-                                            tensor_idx_counter, builder));
+      RETURN_IF_ERROR(
+          PopulateInputEdgeInfo(val, input_index, context, builder));
     }
     llvm::SmallVector<llvm::StringRef, 2> tensor_names =
         GetTfliteTensorNames(operation);
-    for (int output_index = 0; output_index < operation.getNumResults();
+    for (int output_index = 0, e = operation.getNumResults(); output_index < e;
          ++output_index) {
       builder.AppendAttrToMetadata(
           EdgeType::kOutput, output_index, kTensorIndex,
@@ -559,11 +862,7 @@ absl::StatusOr<Subgraph> TfliteFunctionToSubgraph(const VisualizeConfig& config,
     }
     // GraphOutputs node is an auxiliary node and doesn't have tensor tags.
     if (node_label != kGraphOutputs) {
-      absl::Status status =
-          AddTensorTags(node_label, op_defs, operation, builder);
-      if (!status.ok()) {
-        llvm::errs() << status.message() << "\n";
-      }
+      AddTensorTags(op_defs, operation, builder);
     }
     subgraph.nodes.push_back(std::move(builder).Build());
   }
@@ -573,9 +872,10 @@ absl::StatusOr<Subgraph> TfliteFunctionToSubgraph(const VisualizeConfig& config,
 absl::StatusOr<Subgraph> StablehloFunctionToSubgraph(
     const VisualizeConfig& config, FuncOp& fop) {
   Subgraph subgraph(fop.getSymName().str());
-  absl::flat_hash_map<Operation*, std::string> seen_ops;
-  Counter tensor_idx_counter;
-  RETURN_IF_ERROR(AddGraphInputsNode(fop, tensor_idx_counter, subgraph));
+  GraphBuildContext context;
+  OpToNodeIdMap& seen_ops = context.seen_ops;
+  Counter& tensor_idx_counter = context.tensor_counter;
+  AddGraphInputs(fop, context, subgraph);
 
   // Iterate in order across the `Operation`s in the first block of this
   // function (we assume there is only one block within each function). Since we
@@ -600,25 +900,25 @@ absl::StatusOr<Subgraph> StablehloFunctionToSubgraph(
     builder.SetNodeId(node_id);
     builder.SetNodeLabel(node_label);
     AddJaxNodeNameAndAttribute(operation, builder);
-    AppendNodeAttrs(config.const_element_count_limit, operation, builder);
+    AppendNodeAttrs(config, operation, builder);
     absl::Status append_subgraph_status =
         StablehloMaybeAppendSubgraphs(operation);
     if (!append_subgraph_status.ok()) {
       llvm::errs() << append_subgraph_status.message() << "\n";
     }
-    for (int input_index = 0; input_index < operation.getNumOperands();
+    for (int input_index = 0, e = operation.getNumOperands(); input_index < e;
          ++input_index) {
       mlir::Value val = operation.getOperand(input_index);
       // Similar to tflite, we assume stablehlo function bodies are single block
       // and that the only operations with nested regions are control flow ops.
       // We ignore serializing the nested regions of these ops.
       if (val.isUsedOutsideOfBlock(&block)) continue;
-      RETURN_IF_ERROR(PopulateInputEdgeInfo(val, seen_ops, input_index, node_id,
-                                            tensor_idx_counter, builder));
+      RETURN_IF_ERROR(
+          PopulateInputEdgeInfo(val, input_index, context, builder));
     }
     // TODO: b/319035310 - Graph output names are not stored in JAX converted
     // JSON graph.
-    for (int output_index = 0; output_index < operation.getNumResults();
+    for (int output_index = 0, e = operation.getNumResults(); output_index < e;
          ++output_index) {
       builder.AppendAttrToMetadata(
           EdgeType::kOutput, output_index, kTensorIndex,
@@ -729,6 +1029,50 @@ absl::StatusOr<Graph> JaxConvertedMlirToGraph(const VisualizeConfig& config,
     return absl::InternalError("Module walk interrupted.");
   }
   return result;
+}
+
+absl::StatusOr<Subgraph> FuncOpToSubgraph(const VisualizeConfig& config,
+                                          FuncOp& fop) {
+  Subgraph subgraph(fop.getSymName().str());
+  GraphBuildContext context;
+  AddGraphInputs(fop, context, subgraph);
+  mlir::Block& block = fop.getBody().front();
+  Operation* first_op = &block.front();
+  if (IsTfliteDialect(*first_op)) {
+    context.op_defs = LoadTfliteOpdefs();
+  }
+  for (Operation& operation : block) {
+    RETURN_IF_ERROR(AddNode(config, operation, context, subgraph));
+  }
+  return subgraph;
+}
+
+absl::StatusOr<Graph> MlirToGraph(const VisualizeConfig& config,
+                                  Operation* module) {
+  if (!llvm::isa<mlir::ModuleOp>(module)) {
+    return absl::InvalidArgumentError("Given module is not valid.");
+  }
+  Graph graph;
+  std::string log_msg;
+  auto walk_result = module->walk([&](FuncOp fop) -> mlir::WalkResult {
+    llvm::StringRef func_name = fop.getSymName();
+    // Avoids serializing "NoOp" function to JSON graph.
+    if (func_name == "NoOp") {
+      return mlir::WalkResult::skip();
+    }
+    absl::StatusOr<Subgraph> subgraph = FuncOpToSubgraph(config, fop);
+    if (!subgraph.ok()) {
+      log_msg = subgraph.status().message();
+      return mlir::WalkResult::interrupt();
+    }
+    graph.subgraphs.push_back(*std::move(subgraph));
+    return mlir::WalkResult::advance();
+  });
+
+  if (walk_result.wasInterrupted()) {
+    return absl::InternalError(log_msg);
+  }
+  return graph;
 }
 
 }  // namespace visualization_client

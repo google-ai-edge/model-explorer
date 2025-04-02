@@ -31,6 +31,31 @@
 namespace tooling {
 namespace visualization_client {
 
+static mlir::LogicalResult MlirToJsonTranslateImpl(
+    const VisualizeConfig& config, mlir::Operation* op,
+    llvm::raw_ostream& output) {
+  absl::StatusOr<Graph> result = MlirToGraph(config, op);
+  if (!result.ok()) {
+    return mlir::LogicalResult::failure();
+  }
+
+  GraphCollection collection;
+  collection.graphs.push_back(std::move(*result));
+  llvm::json::Value json_result(collection.Json());
+  output << llvm::formatv("{0:2}", json_result);
+  return mlir::LogicalResult::success();
+}
+
+// NOLINTNEXTLINE
+static mlir::LogicalResult MlirToJsonTranslate(mlir::Operation* op,
+                                               llvm::raw_ostream& output) {
+  // When translating MLIR dump file to json graph, we assume users need all
+  // element data. Users need to manage the desired element data in dump file.
+  return MlirToJsonTranslateImpl(
+      VisualizeConfig(/*const_element_count_limit=*/-1), op, output);
+}
+
+// TODO b/407541318 - Remove the following functions.
 static mlir::LogicalResult TfMlirToJsonTranslateImpl(
     const VisualizeConfig& config, mlir::Operation* op,
     llvm::raw_ostream& output) {
