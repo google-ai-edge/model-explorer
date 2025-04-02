@@ -239,10 +239,10 @@ void AddJaxNodeNameAndAttribute(Operation& operation,
   }
 }
 
-void TfliteMaybeAppendSubgraphs(Operation& operation,
-                                GraphNodeBuilder& builder) {
+absl::Status TfliteMaybeAppendSubgraphs(Operation& operation,
+                                        GraphNodeBuilder& builder) {
   if (operation.getNumRegions() == 0) {
-    return;
+    return absl::OkStatus();
   }
 
   if (auto while_op = llvm::dyn_cast<mlir::TFL::WhileOp>(operation)) {
@@ -256,10 +256,30 @@ void TfliteMaybeAppendSubgraphs(Operation& operation,
         }
       }
     }
+  } else {
+    std::string err_msg = absl::StrCat(
+        "This operation's nested regions are currently not implemented and "
+        "won't be serialized to JSON graph yet: ",
+        operation.getName().getStringRef().str());
+    return absl::UnimplementedError(err_msg);
   }
-  llvm::errs() << absl::StrCat(
-      "Operation: ", operation.getName().getStringRef().str(),
-      " has unsupported nested regions.");
+
+  return absl::OkStatus();
+}
+
+absl::Status StablehloMaybeAppendSubgraphs(Operation& operation) {
+  if (operation.getNumRegions() == 0) {
+    return absl::OkStatus();
+  }
+
+  // TODO(b/309554379): Explore Stablehlo ops that have nested regions. Some ops
+  // don't have subgraph and directly include ops within their sub-regions. We
+  // need to figure out how to handle those cases.
+  std::string err_msg = absl::StrCat(
+      "This operation's nested regions are currently not implemented and "
+      "won't be serialized to JSON graph yet: ",
+      operation.getName().getStringRef().str());
+  return absl::UnimplementedError(err_msg);
 }
 
 // Adds the block arguments of a function op to the subgraph.
@@ -702,7 +722,11 @@ absl::Status AddNode(const VisualizeConfig& config, Operation& operation,
   RETURN_IF_ERROR(AddIncomingEdges(operation, context, builder));
   llvm::SmallVector<llvm::StringRef, 2> tensor_names;
   if (IsTfliteDialect(operation)) {
-    TfliteMaybeAppendSubgraphs(operation, builder);
+    absl::Status append_subgraph_status =
+        TfliteMaybeAppendSubgraphs(operation, builder);
+    if (!append_subgraph_status.ok()) {
+      llvm::errs() << append_subgraph_status.message() << "\n";
+    }
     AddTensorTags(op_defs, operation, builder);
   } else if (IsStablehloDialect(operation)) {
     RETURN_IF_ERROR(MaybeAddStablehloNestedRegion(config, operation, context,
@@ -714,6 +738,298 @@ absl::Status AddNode(const VisualizeConfig& config, Operation& operation,
 }
 
 }  // namespace
+
+absl::StatusOr<Subgraph> TfFunctionToSubgraph(const VisualizeConfig& config,
+                                              FuncOp& fop) {
+  Subgraph subgraph(fop.getSymName().str());
+  GraphBuildContext context;
+  OpToNodeIdMap& seen_ops = context.seen_ops;
+  Counter& tensor_idx_counter = context.tensor_counter;
+  AddGraphInputs(fop, context, subgraph);
+
+  // Iterate in order across the `Operation`s in the first block of this
+  // function (we assume there is only one block within each function). Since we
+  // are checking incoming edges for each node, the forward order would
+  // guarantee each Operand is processed before processing the Operation itself.
+  mlir::Block& block = fop.getBody().front();
+  for (Operation& operation : block) {
+    std::string node_id, node_label;
+    // A terminator operation is the function return value, or GraphOutputs.
+    bool is_terminator = operation.hasTrait<mlir::OpTrait::IsTerminator>();
+    if (!is_terminator) {
+      node_id = absl::StrCat(seen_ops.size());
+      node_label = operation.getName().stripDialect();
+    } else {
+      node_id = kGraphOutputs.str();
+      node_label = kGraphOutputs.str();
+    }
+    seen_ops.insert({&operation, node_id});
+    llvm::StringRef node_name = GetTfNodeName(operation);
+    GraphNodeBuilder builder;
+    builder.SetNodeInfo(node_id, node_label, node_name);
+    AppendNodeAttrs(config, operation, builder);
+    for (int input_index = 0, e = operation.getNumOperands(); input_index < e;
+         ++input_index) {
+      mlir::Value val = operation.getOperand(input_index);
+      RETURN_IF_ERROR(
+          PopulateInputEdgeInfo(val, input_index, context, builder));
+    }
+    // TODO: b/319035310 - Graph output names are not stored in TF converted
+    // JSON graph.
+    for (int output_index = 0, e = operation.getNumResults(); output_index < e;
+         ++output_index) {
+      builder.AppendAttrToMetadata(
+          EdgeType::kOutput, output_index, kTensorIndex,
+          absl::StrCat(tensor_idx_counter.increment()));
+      mlir::Value val = operation.getResult(output_index);
+      builder.AppendAttrToMetadata(EdgeType::kOutput, output_index,
+                                   kTensorShape, GetTypeString(val.getType()));
+    }
+    subgraph.nodes.push_back(std::move(builder).Build());
+  }
+  return subgraph;
+}
+
+absl::StatusOr<Subgraph> TfliteFunctionToSubgraph(const VisualizeConfig& config,
+                                                  FuncOp& fop) {
+  Subgraph subgraph(fop.getSymName().str());
+  GraphBuildContext context;
+  OpToNodeIdMap& seen_ops = context.seen_ops;
+  Counter& tensor_idx_counter = context.tensor_counter;
+  context.op_defs = LoadTfliteOpdefs();
+  OpdefsMap& op_defs = context.op_defs;
+
+  AddGraphInputs(fop, context, subgraph);
+
+  // Iterate in order across the `Operation`s in the first block of this
+  // function (we assume there is only one block within each function). Since we
+  // are checking incoming edges for each node, the forward order would
+  // guarantee each Operand is processed before processing the Operation itself.
+  mlir::Block& block = fop.getBody().front();
+  for (Operation& operation : block) {
+    std::string node_id, node_label;
+    // A terminator operation is the function return value, or GraphOutputs.
+    bool is_terminator = operation.hasTrait<mlir::OpTrait::IsTerminator>();
+    if (!is_terminator) {
+      node_id = absl::StrCat(seen_ops.size());
+      node_label = operation.getName().stripDialect();
+    } else {
+      node_id = kGraphOutputs.str();
+      node_label = kGraphOutputs.str();
+    }
+    seen_ops.insert({&operation, node_id});
+    std::string node_name = GenerateTfliteNodeName(node_label, operation);
+    GraphNodeBuilder builder;
+    builder.SetNodeInfo(node_id, node_label, node_name);
+    AppendNodeAttrs(config, operation, builder);
+    absl::Status append_subgraph_status =
+        TfliteMaybeAppendSubgraphs(operation, builder);
+    if (!append_subgraph_status.ok()) {
+      llvm::errs() << append_subgraph_status.message() << "\n";
+    }
+    for (int input_index = 0, e = operation.getNumOperands(); input_index < e;
+         ++input_index) {
+      mlir::Value val = operation.getOperand(input_index);
+      // We make the (tflite) assumption that
+      // functions bodies are single block, and that the only
+      // operations with nested regions are control flow ops. We ignore
+      // serializing the nested regions of these ops (they are usually
+      // just a func call and yield anyways).
+      // It is also worth noting that we must represent subgraphs
+      // as being from a single Block for the visualizer to be a sensical
+      // experience.
+      if (val.isUsedOutsideOfBlock(&block)) continue;
+
+      RETURN_IF_ERROR(
+          PopulateInputEdgeInfo(val, input_index, context, builder));
+    }
+    llvm::SmallVector<llvm::StringRef, 2> tensor_names =
+        GetTfliteTensorNames(operation);
+    for (int output_index = 0, e = operation.getNumResults(); output_index < e;
+         ++output_index) {
+      builder.AppendAttrToMetadata(
+          EdgeType::kOutput, output_index, kTensorIndex,
+          absl::StrCat(tensor_idx_counter.increment()));
+      mlir::Value val = operation.getResult(output_index);
+      if (output_index < tensor_names.size()) {
+        builder.AppendAttrToMetadata(EdgeType::kOutput, output_index,
+                                     kTensorName, tensor_names[output_index]);
+      }
+      builder.AppendAttrToMetadata(EdgeType::kOutput, output_index,
+                                   kTensorShape, GetTypeString(val.getType()));
+      // TODO(b/293348398): Tensor indices are not matched to indices in
+      // Flatbuffer. Further investigation is needed.
+    }
+    // GraphOutputs node is an auxiliary node and doesn't have tensor tags.
+    if (node_label != kGraphOutputs) {
+      AddTensorTags(op_defs, operation, builder);
+    }
+    subgraph.nodes.push_back(std::move(builder).Build());
+  }
+  return subgraph;
+}
+
+absl::StatusOr<Subgraph> StablehloFunctionToSubgraph(
+    const VisualizeConfig& config, FuncOp& fop) {
+  Subgraph subgraph(fop.getSymName().str());
+  GraphBuildContext context;
+  OpToNodeIdMap& seen_ops = context.seen_ops;
+  Counter& tensor_idx_counter = context.tensor_counter;
+  AddGraphInputs(fop, context, subgraph);
+
+  // Iterate in order across the `Operation`s in the first block of this
+  // function (we assume there is only one block within each function). Since we
+  // are checking incoming edges for each node, the forward order would
+  // guarantee each Operand is processed before processing the Operation itself.
+  mlir::Block& block = fop.getBody().front();
+  for (Operation& operation : block) {
+    std::string node_id, node_label;
+    // A terminator operation is the function return value, or GraphOutputs.
+    bool is_terminator = operation.hasTrait<mlir::OpTrait::IsTerminator>();
+    if (!is_terminator) {
+      node_id = absl::StrCat(seen_ops.size());
+      // We don't strip the "stablehlo" prefix from the op name to distinguish
+      // it from tf dialect.
+      node_label = operation.getName().getStringRef();
+    } else {
+      node_id = kGraphOutputs.str();
+      node_label = kGraphOutputs.str();
+    }
+    seen_ops.insert({&operation, node_id});
+    GraphNodeBuilder builder;
+    builder.SetNodeId(node_id);
+    builder.SetNodeLabel(node_label);
+    AddJaxNodeNameAndAttribute(operation, builder);
+    AppendNodeAttrs(config, operation, builder);
+    absl::Status append_subgraph_status =
+        StablehloMaybeAppendSubgraphs(operation);
+    if (!append_subgraph_status.ok()) {
+      llvm::errs() << append_subgraph_status.message() << "\n";
+    }
+    for (int input_index = 0, e = operation.getNumOperands(); input_index < e;
+         ++input_index) {
+      mlir::Value val = operation.getOperand(input_index);
+      // Similar to tflite, we assume stablehlo function bodies are single block
+      // and that the only operations with nested regions are control flow ops.
+      // We ignore serializing the nested regions of these ops.
+      if (val.isUsedOutsideOfBlock(&block)) continue;
+      RETURN_IF_ERROR(
+          PopulateInputEdgeInfo(val, input_index, context, builder));
+    }
+    // TODO: b/319035310 - Graph output names are not stored in JAX converted
+    // JSON graph.
+    for (int output_index = 0, e = operation.getNumResults(); output_index < e;
+         ++output_index) {
+      builder.AppendAttrToMetadata(
+          EdgeType::kOutput, output_index, kTensorIndex,
+          absl::StrCat(tensor_idx_counter.increment()));
+      mlir::Value val = operation.getResult(output_index);
+      builder.AppendAttrToMetadata(EdgeType::kOutput, output_index,
+                                   kTensorShape, GetTypeString(val.getType()));
+    }
+    subgraph.nodes.push_back(std::move(builder).Build());
+  }
+  return subgraph;
+}
+
+absl::StatusOr<Graph> TfMlirToGraph(const VisualizeConfig& config,
+                                    Operation* module) {
+  if (!llvm::isa<mlir::ModuleOp>(module)) {
+    return absl::InvalidArgumentError("Given module is not valid.");
+  }
+  Graph result;
+  auto walk_result = module->walk([&](FuncOp fop) -> mlir::WalkResult {
+    llvm::StringRef func_name = fop.getSymName();
+    // Avoids serializing "NoOp" function to JSON graph.
+    if (func_name == "NoOp") {
+      return mlir::WalkResult::skip();
+    }
+    absl::StatusOr<Subgraph> subgraph = TfFunctionToSubgraph(config, fop);
+    if (!subgraph.ok()) {
+      llvm::errs() << subgraph.status().message() << "\n";
+      return mlir::WalkResult::interrupt();
+    }
+    result.subgraphs.push_back(*std::move(subgraph));
+    return mlir::WalkResult::advance();
+  });
+
+  if (walk_result.wasInterrupted()) {
+    return absl::InternalError("Module walk interrupted.");
+  }
+  return result;
+}
+
+absl::StatusOr<Graph> TfliteMlirToGraph(const VisualizeConfig& config,
+                                        Operation* module) {
+  mlir::ModuleOp module_op = llvm::dyn_cast_or_null<mlir::ModuleOp>(module);
+  if (!module_op) {
+    return absl::InvalidArgumentError("Given module is not valid.");
+  }
+  Graph result;
+  auto walk_result = module->walk([&](FuncOp fop) -> mlir::WalkResult {
+    absl::StatusOr<Subgraph> subgraph = TfliteFunctionToSubgraph(config, fop);
+    if (!subgraph.ok()) {
+      llvm::errs() << subgraph.status().message() << "\n";
+      return mlir::WalkResult::interrupt();
+    }
+    result.subgraphs.push_back(*subgraph);
+    return mlir::WalkResult::advance();
+  });
+
+  if (walk_result.wasInterrupted()) {
+    return absl::InternalError("Module walk interrupted.");
+  }
+  return result;
+}
+
+absl::StatusOr<Graph> JaxConvertedMlirToGraph(const VisualizeConfig& config,
+                                              Operation* module) {
+  if (!llvm::isa<mlir::ModuleOp>(module)) {
+    return absl::InvalidArgumentError("Given module is not valid.");
+  }
+  Graph result;
+  auto walk_result = module->walk([&](FuncOp fop) -> mlir::WalkResult {
+    llvm::StringRef func_name = fop.getSymName();
+    // Avoids serializing "NoOp" function to JSON graph.
+    if (func_name == "NoOp") {
+      return mlir::WalkResult::skip();
+    }
+
+    // Since the ops in the each function can either be tf or stablehlo dialect,
+    // we check the first operation in the function to decide which dialect this
+    // function is.
+    mlir::Block& block = fop.getBody().front();
+    mlir::Operation& first_op = block.front();
+    absl::StatusOr<Subgraph> subgraph;
+    if (llvm::isa<mlir::TF::TensorFlowDialect>(first_op.getDialect())) {
+      subgraph = TfFunctionToSubgraph(config, fop);
+      if (!subgraph.ok()) {
+        llvm::errs() << subgraph.status().message() << "\n";
+        return mlir::WalkResult::interrupt();
+      }
+    } else if (llvm::isa<mlir::stablehlo::StablehloDialect>(
+                   first_op.getDialect())) {
+      subgraph = StablehloFunctionToSubgraph(config, fop);
+      if (!subgraph.ok()) {
+        llvm::errs() << subgraph.status().message() << "\n";
+        return mlir::WalkResult::interrupt();
+      }
+    } else {
+      llvm::errs() << "Unknown dialect: "
+                   << first_op.getDialect()->getNamespace()
+                   << " in function: " << func_name
+                   << ", we skip serializing this function.\n";
+      return mlir::WalkResult::skip();
+    }
+    result.subgraphs.push_back(*subgraph);
+    return mlir::WalkResult::advance();
+  });
+
+  if (walk_result.wasInterrupted()) {
+    return absl::InternalError("Module walk interrupted.");
+  }
+  return result;
+}
 
 absl::StatusOr<Subgraph> FuncOpToSubgraph(const VisualizeConfig& config,
                                           FuncOp& fop) {
