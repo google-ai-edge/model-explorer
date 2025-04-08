@@ -144,12 +144,25 @@ class IncomingEdge:
   targetNodeInputId: str = '0'
 
 
+# A "node ids" node attribute value.
+#
+# Clicking on a node id will jump to the corresponding node in the graph.
+@dataclass
+class NodeIdsNodeAttributeValue:
+  type: str = 'node_ids'
+  nodeIds: list[str] = field(default_factory=list)
+
+
+SpecialNodeAttributeValue = NodeIdsNodeAttributeValue
+NodeAttributeValue = Union[str, SpecialNodeAttributeValue]
+
+
 @dataclass
 class KeyValue:
   """A key-value pair"""
 
   key: str
-  value: str
+  value: NodeAttributeValue
 
 
 @dataclass

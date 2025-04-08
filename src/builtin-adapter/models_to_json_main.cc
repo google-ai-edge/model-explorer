@@ -23,8 +23,7 @@
 #include "models_to_json_lib.h"
 #include "visualize_config.h"
 #include "tensorflow/compiler/mlir/lite/tools/command_line_flags.h"
-#include "tensorflow/core/platform/logging.h"
-#include "tsl/platform/env.h"
+#include "xla/tsl/platform/env.h"
 
 constexpr char kInputFileFlag[] = "i";
 constexpr char kOutputFileFlag[] = "o";

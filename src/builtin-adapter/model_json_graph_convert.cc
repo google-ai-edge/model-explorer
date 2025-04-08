@@ -29,7 +29,6 @@
 #include "absl/strings/str_split.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
-#include "llvm/Support/Casting.h"
 #include "llvm/Support/FormatVariadic.h"
 #include "llvm/Support/JSON.h"
 #include "llvm/Support/SMLoc.h"
@@ -61,22 +60,21 @@
 #include "formats/schema_structs.h"
 #include "status_macros.h"
 #include "translate_helpers.h"
-#include "translations.h"
 #include "visualize_config.h"
 #include "tensorflow/compiler/mlir/lite/flatbuffer_import.h"
 #include "tensorflow/compiler/mlir/lite/ir/tfl_ops.h"
 #include "tensorflow/compiler/mlir/lite/stablehlo/transforms/legalize_tf_xla_call_module_to_stablehlo_pass.h"
-#include "tensorflow/compiler/mlir/lite/stablehlo/transforms/rename_entrypoint_to_main.h"
+#include "tensorflow/compiler/mlir/stablehlo/transforms/rename_entrypoint_to_main.h"
 #include "tensorflow/compiler/mlir/tensorflow/ir/tf_dialect.h"
 #include "tensorflow/compiler/mlir/tensorflow/ir/tf_ops.h"
 #include "tensorflow/compiler/mlir/tensorflow/transforms/passes.h"
 #include "tensorflow/compiler/mlir/tensorflow/translate/mlir_import_options.h"
 #include "tensorflow/compiler/mlir/tensorflow/translate/tf_mlir_translate.h"
 #include "xla/mlir_hlo/mhlo/IR/hlo_ops.h"
+#include "xla/tsl/platform/env.h"
 #include "tensorflow/core/protobuf/saved_model.pb.h"
 #include "tensorflow/core/protobuf/saved_object_graph.pb.h"
 #include "tensorflow/core/protobuf/trackable_object_graph.pb.h"
-#include "tsl/platform/env.h"
 
 namespace tooling {
 namespace visualization_client {
@@ -228,9 +226,17 @@ absl::Status ConvertToStablehloModule(mlir::ModuleOp module_op) {
   return absl::OkStatus();
 }
 
-mlir::WalkResult PrintErrorAndInterupt(const absl::Status& status) {
-  llvm::errs() << status.message() << "\n";
-  return mlir::WalkResult::interrupt();
+absl::StatusOr<std::string> ModuleOpToJson(const VisualizeConfig& config,
+                                           mlir::Operation* module_op) {
+  std::string json_output;
+  llvm::raw_string_ostream json_ost(json_output);
+  ASSIGN_OR_RETURN(Graph graph, MlirToGraph(config, module_op));
+  GraphCollection collection;
+  collection.graphs.push_back(std::move(graph));
+  llvm::json::Value json_result(collection.Json());
+  json_ost << llvm::formatv("{0:2}", json_result);
+
+  return json_output;
 }
 
 }  // namespace
@@ -269,32 +275,15 @@ absl::StatusOr<std::string> ConvertSavedModelToJson(
     RETURN_IF_ERROR(RunStandardPipeline(*module_op));
   }
 
-  std::string json_output;
-  llvm::raw_string_ostream json_ost(json_output);
-
   // Converts MLIR module to JSON string.
   if (HasXlaCallModule(*module_op)) {
     // This indicates it's a JAX converted SavedModel. There are stablehlo ops
     // serialized within tf.XlaCallModule op, we want to deserialize it before
     // proceeding.
     RETURN_IF_ERROR(ConvertToStablehloModule(*module_op));
-
-    mlir::LogicalResult result =
-        JaxConvertedMlirToJsonTranslateImpl(config, *module_op, json_ost);
-    if (mlir::failed(result)) {
-      return absl::InternalError(
-          "Failed to convert JAX converted MLIR module to JSON string.");
-    }
-  } else {
-    mlir::LogicalResult result =
-        TfMlirToJsonTranslateImpl(config, *module_op, json_ost);
-    if (mlir::failed(result)) {
-      return absl::InternalError(
-          "Failed to convert TF MLIR module to JSON string.");
-    }
   }
 
-  return json_output;
+  return ModuleOpToJson(config, *module_op);
 }
 
 absl::StatusOr<std::string> ConvertFlatbufferToJson(
@@ -335,16 +324,7 @@ absl::StatusOr<std::string> ConvertFlatbufferToJson(
     return absl::InternalError("Failed to convert Flatbuffer to MLIR module.");
   }
 
-  // Converts tfl dialect MLIR module to JSON string.
-  std::string json_output;
-  llvm::raw_string_ostream json_ost(json_output);
-  mlir::LogicalResult result =
-      TfliteMlirToJsonTranslateImpl(config, *module_op, json_ost);
-  if (mlir::failed(result)) {
-    return absl::InternalError("Failed to convert MLIR module to JSON string.");
-  }
-
-  return json_output;
+  return ModuleOpToJson(config, *module_op);
 }
 
 absl::StatusOr<std::string> ConvertMlirToJson(const VisualizeConfig& config,
@@ -373,50 +353,11 @@ absl::StatusOr<std::string> ConvertMlirToJson(const VisualizeConfig& config,
   if (!module_op) return absl::InternalError("Unable to parse module");
   RETURN_IF_ERROR(DeserializeVhloToStablehlo(*module_op));
 
-  std::string json_output;
-  llvm::raw_string_ostream json_ost(json_output);
-
   if (HasXlaCallModule(*module_op)) {
     RETURN_IF_ERROR(ConvertToStablehloModule(*module_op));
   }
-  Graph graph;
 
-  // Iterates through all functions in the module, each function is converted
-  // into a subgraph in Model Explorer. We use the simple heuristic that the
-  // first op in the function is used to determine the dialect of the function.
-  // Different dialects are handled by different helper functions. Currently
-  // supported dialects are tf, stablehlo and tfl.
-  const auto walk_result =
-      (*module_op)->walk([&](mlir::func::FuncOp fop) -> mlir::WalkResult {
-        mlir::Block& block = fop.getBody().front();
-        mlir::Operation& first_op = block.front();
-        absl::StatusOr<Subgraph> subgraph;
-        if (llvm::isa<mlir::TF::TensorFlowDialect>(first_op.getDialect())) {
-          subgraph = TfFunctionToSubgraph(config, fop);
-        } else if (llvm::isa<mlir::TFL::TensorFlowLiteDialect>(
-                       first_op.getDialect())) {
-          subgraph = TfliteFunctionToSubgraph(config, fop);
-        } else {
-          // Use StableHLO adapter as default for all other dialects. It will do
-          // best effort for "hlo" family of dialects, but no guarantees for the
-          // others.
-          subgraph = StablehloFunctionToSubgraph(config, fop);
-        }
-        if (!subgraph.ok()) {
-          return PrintErrorAndInterupt(subgraph.status());
-        }
-        graph.subgraphs.push_back(*std::move(subgraph));
-        return mlir::WalkResult::advance();
-      });
-  if (walk_result.wasInterrupted()) {
-    return absl::InternalError("Module walk interrupted.");
-  }
-  GraphCollection collection;
-  collection.graphs.push_back(std::move(graph));
-  llvm::json::Value json_result(collection.Json());
-  json_ost << llvm::formatv("{0:2}", json_result);
-
-  return json_output;
+  return ModuleOpToJson(config, *module_op);
 }
 
 }  // namespace visualization_client

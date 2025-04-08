@@ -92,6 +92,15 @@ void GraphNodeBuilder::AppendNodeAttribute(absl::string_view key,
   node_.node_attrs.push_back(Attribute(std::string(key), std::string(value)));
 }
 
+absl::string_view GraphNodeBuilder::GetNodeAttribute(absl::string_view key) {
+  for (const Attribute& attr : node_.node_attrs) {
+    if (attr.key == key) {
+      return attr.value;
+    }
+  }
+  return "";
+}
+
 void GraphNodeBuilder::AppendAttrToMetadata(const EdgeType edge_type,
                                             const int metadata_id,
                                             absl::string_view attr_key,

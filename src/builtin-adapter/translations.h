@@ -31,40 +31,10 @@
 namespace tooling {
 namespace visualization_client {
 
-static mlir::LogicalResult TfMlirToJsonTranslateImpl(
+static mlir::LogicalResult MlirToJsonTranslateImpl(
     const VisualizeConfig& config, mlir::Operation* op,
     llvm::raw_ostream& output) {
-  absl::StatusOr<Graph> result = TfMlirToGraph(config, op);
-  if (!result.ok()) {
-    return mlir::LogicalResult::failure();
-  }
-
-  GraphCollection collection;
-  collection.graphs.push_back(std::move(*result));
-  llvm::json::Value json_result(collection.Json());
-  output << llvm::formatv("{0:2}", json_result);
-  return mlir::LogicalResult::success();
-}
-
-static mlir::LogicalResult TfliteMlirToJsonTranslateImpl(
-    const VisualizeConfig& config, mlir::Operation* op,
-    llvm::raw_ostream& output) {
-  absl::StatusOr<Graph> result = TfliteMlirToGraph(config, op);
-  if (!result.ok()) {
-    return mlir::LogicalResult::failure();
-  }
-
-  GraphCollection collection;
-  collection.graphs.push_back(std::move(*result));
-  llvm::json::Value json_result(collection.Json());
-  output << llvm::formatv("{0:2}", json_result);
-  return mlir::LogicalResult::success();
-}
-
-static mlir::LogicalResult JaxConvertedMlirToJsonTranslateImpl(
-    const VisualizeConfig& config, mlir::Operation* op,
-    llvm::raw_ostream& output) {
-  absl::StatusOr<Graph> result = JaxConvertedMlirToGraph(config, op);
+  absl::StatusOr<Graph> result = MlirToGraph(config, op);
   if (!result.ok()) {
     return mlir::LogicalResult::failure();
   }
@@ -77,29 +47,11 @@ static mlir::LogicalResult JaxConvertedMlirToJsonTranslateImpl(
 }
 
 // NOLINTNEXTLINE
-static mlir::LogicalResult TfMlirToJsonTranslate(mlir::Operation* op,
-                                                 llvm::raw_ostream& output) {
+static mlir::LogicalResult MlirToJsonTranslate(mlir::Operation* op,
+                                               llvm::raw_ostream& output) {
   // When translating MLIR dump file to json graph, we assume users need all
   // element data. Users need to manage the desired element data in dump file.
-  return TfMlirToJsonTranslateImpl(
-      VisualizeConfig(/*const_element_count_limit=*/-1), op, output);
-}
-
-// NOLINTNEXTLINE
-static mlir::LogicalResult TfliteMlirToJsonTranslate(
-    mlir::Operation* op, llvm::raw_ostream& output) {
-  // When translating MLIR dump file to json graph, we assume users need all
-  // element data. Users need to manage the desired element data in dump file.
-  return TfliteMlirToJsonTranslateImpl(
-      VisualizeConfig(/*const_element_count_limit=*/-1), op, output);
-}
-
-// NOLINTNEXTLINE
-static mlir::LogicalResult JaxConvertedMlirToJsonTranslate(
-    mlir::Operation* op, llvm::raw_ostream& output) {
-  // When translating MLIR dump file to json graph, we assume users need all
-  // element data. Users need to manage the desired element data in dump file.
-  return JaxConvertedMlirToJsonTranslateImpl(
+  return MlirToJsonTranslateImpl(
       VisualizeConfig(/*const_element_count_limit=*/-1), op, output);
 }
 
