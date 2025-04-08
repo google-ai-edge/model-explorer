@@ -12,7 +12,7 @@
 
   @if (hasCurModel) {
     <div class="mat-icon-container">
-      <button mat-icon-button matTooltip="Upload processed graphs json to server" (click)="handleClickUploadGraph()" [disabled]="!hasOverrides || isProcessingExecuteRequest">
+      <button mat-icon-button matTooltip="Upload processed graphs json to server" (click)="handleClickUploadGraph()" [disabled]="!hasOverrides || isProcessingExecuteRequest()">
         <mat-icon>upload</mat-icon>
       </button>
     </div>
@@ -24,8 +24,8 @@
         mat-icon-button
         matTooltip="Execute graph"
         (click)="handleClickExecuteGraph()"
-        [disabled]="isProcessingExecuteRequest && !hasOverrides && !graphHasErrors"
-        [ngStyle]="{ display: !isProcessingExecuteRequest ? 'block' : 'none' }"
+        [disabled]="isProcessingExecuteRequest() && !hasOverrides && !graphHasErrors"
+        [ngStyle]="{ display: !isProcessingExecuteRequest() ? 'block' : 'none' }"
       >
         <mat-icon>play_arrow</mat-icon>
       </button>
@@ -33,7 +33,7 @@
         diameter="24"
         [mode]="executionProgress > 0 ? 'determinate' : 'indeterminate'"
         [value]="executionProgress"
-        [ngStyle]="{ display: isProcessingExecuteRequest ? 'block' : 'none' }"
+        [ngStyle]="{ display: isProcessingExecuteRequest() ? 'block' : 'none' }"
       ></mat-progress-spinner>
     </div>
   }

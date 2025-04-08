@@ -49,7 +49,6 @@ import {
   KeyValuePairs,
   NodeAttributeValueType,
   NodeDataProviderRunInfo,
-  NodeIdsNodeAttributeValue,
   OutgoingEdge,
   SearchMatchAttr,
   SearchMatchInputMetadata,
@@ -608,8 +607,20 @@ export class InfoPanel {
     return this.curSelectedNode ? this.curSelectedNode.id : undefined;
   }
 
+  get curSelectedNodeFullLocation(): string | undefined {
+    return this.curSelectedNode ? ((this.curSelectedNode as OpNode)?.attrs?.['full_location'] as string) ?? this.curSelectedNode.id : undefined;
+  }
+
+  get curSelectedNodeNamedLocation(): string | undefined {
+    return this.curSelectedNode ? ((this.curSelectedNode as OpNode)?.attrs?.['named_location'] as string) ?? this.curSelectedNode.id : undefined;
+  }
+
   get curCollectionLabel(): string | undefined {
     return this.curModelGraph?.collectionLabel;
+  }
+
+  get curModelGraphId(): string | undefined {
+    return this.curModelGraph?.id;
   }
 
   get showInputPaginator(): boolean {

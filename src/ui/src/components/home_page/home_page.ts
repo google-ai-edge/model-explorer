@@ -107,7 +107,6 @@ export class HomePage implements AfterViewInit {
   modelGraphVisualizer?: ModelGraphVisualizer;
 
   readonly loadingExtensions;
-  readonly loadedGraphCollections;
   runningVersion = computed(() => this.newVersionService.info().runningVersion);
 
   initialUiState?: VisualizerUiState;
@@ -140,8 +139,6 @@ export class HomePage implements AfterViewInit {
     this.serverDirectorService.init();
 
     this.loadingExtensions = this.extensionService.loading;
-    this.loadedGraphCollections =
-      this.modelLoaderService.loadedGraphCollections;
     this.initialUiState = this.urlService.getUiState();
 
     effect(() => {
@@ -303,6 +300,10 @@ export class HomePage implements AfterViewInit {
 
   handleClickShowThirdPartyLibraries() {
     this.dialog.open(OpenSourceLibsDialog, {});
+  }
+
+  get loadedGraphCollections() {
+    return this.modelLoaderService.loadedGraphCollections;
   }
 
   get showWelcomeCard(): boolean {

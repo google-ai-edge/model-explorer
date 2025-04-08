@@ -129,6 +129,9 @@ export class AppService {
     this.listenToWorker();
     this.init();
   }
+  cleanUp(): void {
+    throw new Error('Method not implemented.');
+  }
 
   addGraphCollections(graphCollections: GraphCollection[]) {
     this.curGraphCollections.update((prevCollections) => {
@@ -1008,14 +1011,15 @@ export class AppService {
 
   reset() {
     this.workerService.worker.postMessage({eventType: WorkerEventType.CLEANUP});
-
-    this.curGraphCollections.set([]);
     this.curToLocateNodeInfo.set(undefined);
     this.curSelectedRenderer.set(undefined);
+    this.curGraphCollections.set([]);
     this.config.set(undefined);
     this.curInitialUiState.set(undefined);
+
     this.panes.set([{id: genUid(), widthFraction: 1}]);
     this.selectedPaneId.set(this.panes()[0].id);
+
     this.remoteNodeDataPaths.set([]);
     this.groupNodeChildrenCountThresholdFromUrl = null;
     this.paneIdToGraph = {};

@@ -50,7 +50,9 @@ export class ExpandableInfoText implements AfterViewInit, OnDestroy, OnChanges {
   @Input() text = '';
   @Input() type = '';
   @Input() collectionLabel = '';
-  @Input() nodeId = '';
+  @Input() graphId = '';
+  @Input() nodeFullLocation = '';
+  @Input() nodeNamedLocation = '';
   @Input() bgColor = 'transparent';
   @Input() textColor = 'inherit';
   @Input() editable?: EditableAttributeTypes = undefined;
@@ -89,11 +91,14 @@ export class ExpandableInfoText implements AfterViewInit, OnDestroy, OnChanges {
     }
 
     this.text = this.modelLoaderService
-      .overrides()[this.collectionLabel ?? '']
-      ?.[this.nodeId]
+      .overrides()
+      ?.[this.collectionLabel]
+      ?.[this.graphId]
+      ?.[this.nodeFullLocation]
       ?.attributes
       ?.find(({ key }) => key === this.type)
-      ?.value ?? this.text;
+      ?.value
+      ?? this.text;
   }
 
   ngOnChanges() {
@@ -158,37 +163,42 @@ export class ExpandableInfoText implements AfterViewInit, OnDestroy, OnChanges {
       }).join(this.editable?.separator ?? 'x')}`;
     }
 
-    const modelGraph = this.appService.getSelectedPane()?.modelGraph;
-    const nodeId = this.appService.getSelectedPane()?.selectedNodeInfo?.nodeId ?? '';
-    const [, namedLocation] = Object.entries((modelGraph?.nodesById?.[nodeId] as OpNode | undefined)?.attrs ?? {}).find(([key]) => key === 'named_location') ?? [];
-
     this.modelLoaderService.overrides.update((overrides) => {
-      if (modelGraph?.collectionLabel && nodeId) {
-        overrides[modelGraph.collectionLabel] = {...overrides[modelGraph.collectionLabel] };
-
-
-        if (!overrides[modelGraph.collectionLabel][nodeId]) {
-          overrides[modelGraph.collectionLabel][nodeId] = {
-            // TODO: test if this breaks
-            named_location: (namedLocation as string) ?? nodeId,
-            attributes: []
-          };
-        }
-
-        const existingOverrides = overrides[modelGraph.collectionLabel][nodeId].attributes.findIndex(({ key }) => key === this.type) ?? -1;
-
-        if (existingOverrides !== -1) {
-          overrides[modelGraph.collectionLabel][nodeId].attributes.splice(existingOverrides, 1);
-        }
-
-        overrides[modelGraph.collectionLabel][nodeId].attributes = [
-          ...(overrides[modelGraph.collectionLabel][nodeId].attributes ?? []),
-          {
-            key: this.type,
-            value: updatedValue
-          }
-        ];
+      if (!this.collectionLabel || !this.graphId || !this.nodeFullLocation) {
+        return overrides;
       }
+
+      overrides[this.collectionLabel] = {...overrides[this.collectionLabel] };
+
+      if (!overrides[this.collectionLabel]) {
+        overrides[this.collectionLabel] = {};
+      }
+
+      if (!overrides[this.collectionLabel][this.graphId]) {
+        overrides[this.collectionLabel][this.graphId] = {}
+      }
+
+      if (!overrides[this.collectionLabel][this.graphId][this.nodeFullLocation]) {
+        overrides[this.collectionLabel][this.graphId][this.nodeFullLocation] = {
+          named_location: this.nodeNamedLocation,
+          full_location: this.nodeFullLocation,
+          attributes: []
+        };
+      }
+
+      const existingOverrides = overrides[this.collectionLabel][this.graphId][this.nodeFullLocation].attributes.findIndex(({ key }) => key === this.type) ?? -1;
+
+      if (existingOverrides !== -1) {
+        overrides[this.collectionLabel][this.graphId][this.nodeFullLocation].attributes.splice(existingOverrides, 1);
+      }
+
+      overrides[this.collectionLabel][this.graphId][this.nodeFullLocation].attributes = [
+        ...(overrides[this.collectionLabel][this.graphId][this.nodeFullLocation].attributes ?? []),
+        {
+          key: this.type,
+          value: updatedValue
+        }
+      ];
 
       return overrides;
     });

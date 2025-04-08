@@ -339,6 +339,6 @@ export class SplitPanesContainer implements AfterViewInit {
     ele.classList.add('show');
     this.hideNoMappedNodeMessageTimeoutId = setTimeout(() => {
       ele.classList.remove('show');
-    }, 3000);
+    }, 3000) as unknown as number;
   }
 }
