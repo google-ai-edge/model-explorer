@@ -7,19 +7,19 @@ on:
   push:
     branches: ["main"]
     paths:
-      - 'src/server/**'
-      - 'src/ui/**'
-      - '.github/workflows/**'
-      - 'ci/**'
-      - 'test/**'
+      - "src/server/**"
+      - "src/ui/**"
+      - ".github/workflows/**"
+      - "ci/**"
+      - "test/**"
   pull_request:
     branches: ["main"]
     paths:
-      - 'src/server/**'
-      - 'src/ui/**'
-      - '.github/workflows/**'
-      - 'ci/**'
-      - 'test/**'
+      - "src/server/**"
+      - "src/ui/**"
+      - ".github/workflows/**"
+      - "ci/**"
+      - "test/**"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref || github.run_id }}

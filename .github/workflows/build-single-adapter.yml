@@ -5,13 +5,13 @@
 # https://yaml-online-parser.appspot.com/
 #
 
-name: PyPI Build Single Platform & Python Version Adapters
+name: PyPI - Build Single Platform & Python Version Adapters
 
 on:
   workflow_dispatch:
     inputs:
       runner:
-        description: 'Hosted Runner'
+        description: "Hosted Runner"
         required: true
         default: Linux_runner_8_core
         type: choice
@@ -21,20 +21,20 @@ on:
           - macos-13
 
       python-version:
-        description: 'Python Version'
+        description: "Python Version"
         required: true
-        default: '3.11'
+        default: "3.11"
         type: choice
         options:
-          - '3.12'
-          - '3.11'
-          - '3.10'
-          - '3.9'
+          - "3.12"
+          - "3.11"
+          - "3.10"
+          - "3.9"
 
       package-version:
-        description: 'Package Version'
+        description: "Package Version"
         required: true
-        default: '0.0.0'
+        default: "0.0.0"
         type: string
 
 jobs:
@@ -42,7 +42,8 @@ jobs:
     runs-on: ${{ github.event.inputs.runner }}
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
       - name: Set up Python ${{ github.event.inputs.python-version }}
         uses: actions/setup-python@v5

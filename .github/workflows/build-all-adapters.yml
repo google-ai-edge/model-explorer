@@ -5,15 +5,15 @@
 # https://yaml-online-parser.appspot.com/
 #
 
-name: PyPI Build Release All Backend Adapters
+name: PyPI - Build Release All Backend Adapters
 
 on:
   workflow_dispatch:
     inputs:
       package-version:
-        description: 'Package Version'
+        description: "Package Version"
         required: true
-        default: '0.0.0'
+        default: "0.0.0"
         type: string
 
 jobs:
@@ -21,11 +21,12 @@ jobs:
     strategy:
       matrix:
         runner: [Linux_runner_8_core, macos-latest, macos-13]
-        python-version: ['3.9', '3.10', '3.11', '3.12']
+        python-version: ["3.9", "3.10", "3.11", "3.12"]
     runs-on: ${{ matrix.runner }}
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5

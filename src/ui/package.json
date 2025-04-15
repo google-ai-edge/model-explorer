@@ -53,5 +53,8 @@
   },
   "resolutions": {
     "@types/d3-selection": "1.4.2"
+  },
+  "volta": {
+    "node": "22.14.0"
   }
 }
