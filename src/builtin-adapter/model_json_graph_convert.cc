@@ -51,6 +51,7 @@
 #include "mlir/Pass/PassManager.h"
 #include "mlir/Support/FileUtilities.h"
 #include "mlir/Support/LogicalResult.h"
+#include "shardy/dialect/sdy/ir/dialect.h"
 #include "stablehlo/dialect/ChloOps.h"
 #include "stablehlo/dialect/StablehloOps.h"
 #include "stablehlo/dialect/VhloOps.h"
@@ -334,12 +335,13 @@ absl::StatusOr<std::string> ConvertMlirToJson(const VisualizeConfig& config,
   // what is commonly produced by different frameworks. So this would parse
   // correctly but then fail in visualization. This should result in a better
   // user experience than failing to parse here.
-  registry.insert<mlir::TFL::TensorFlowLiteDialect, mlir::TF::TensorFlowDialect,
-                  mlir::stablehlo::StablehloDialect, mlir::chlo::ChloDialect,
-                  mlir::mhlo::MhloDialect, mlir::vhlo::VhloDialect,
-                  mlir::func::FuncDialect, mlir::arith::ArithDialect,
-                  mlir::shape::ShapeDialect, mlir::scf::SCFDialect,
-                  mlir::stablehlo::check::CheckDialect>();
+  registry
+      .insert<mlir::TFL::TensorFlowLiteDialect, mlir::TF::TensorFlowDialect,
+              mlir::stablehlo::StablehloDialect, mlir::chlo::ChloDialect,
+              mlir::mhlo::MhloDialect, mlir::vhlo::VhloDialect,
+              mlir::func::FuncDialect, mlir::arith::ArithDialect,
+              mlir::shape::ShapeDialect, mlir::scf::SCFDialect,
+              mlir::stablehlo::check::CheckDialect, mlir::sdy::SdyDialect>();
   mlir::MLIRContext context(registry);
   // Enable parsing of MLIR modules with unregistered dialects. This is safe as
   // Model Explorer does not execute operations, only visualizes them.
