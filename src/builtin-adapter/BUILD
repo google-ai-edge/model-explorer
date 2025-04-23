@@ -23,6 +23,7 @@ cc_library(
         "@llvm-project//mlir:FuncDialect",
         "@llvm-project//mlir:IR",
         "@llvm-project//mlir:Support",
+        "@shardy//shardy/dialect/sdy/ir:dialect",
         "@stablehlo//:stablehlo_ops",
         "@org_tensorflow//tensorflow/compiler/mlir/lite:tensorflow_lite",
         "//formats:schema_structs",
