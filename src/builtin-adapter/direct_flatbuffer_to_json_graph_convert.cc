@@ -68,7 +68,7 @@
 #include "tensorflow/compiler/mlir/lite/utils/const_tensor_utils.h"
 #include "tensorflow/compiler/mlir/tensorflow/ir/tf_dialect.h"
 #include "tensorflow/compiler/mlir/tensorflow/ir/tf_types.h"
-#include "xla/tsl/platform/env.h"
+#include "tsl/platform/env.h"
 #include "tensorflow/core/framework/tensor.pb.h"
 
 namespace tooling {

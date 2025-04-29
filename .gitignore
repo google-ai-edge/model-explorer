@@ -166,4 +166,6 @@ cython_debug/
 
 # Bazel
 /bazel-*
+bazel-*
+gen/
 MODULE.bazel.lock

@@ -20,11 +20,11 @@ USAGE="$(basename $0) <package-version>
 
 Builds a pip package for the Model Explorer backend adapter.
 
-<package-version> should be a string of the form "x.x.x" or "xxxx.nightly", eg. "1.2.0", "123.nightly".
+<package-version> should be a string of the form "x.x.x", eg. "1.2.0".
 "
 
 # Define a regex pattern for the format x.x.x
-PATTERN="^(([0-9]+\.[0-9]+\.[0-9]+)|([0-9]+\.nightly))$"
+PATTERN="^[0-9]+\.[0-9]+\.[0-9]+$"
 
 if [[ -z "${1}" ]]; then
   echo "${USAGE}"

@@ -20,7 +20,7 @@ jobs:
       - name: version tag
         id: version-tag
         run: |
-          tag="$(date +"%Y%m%d%H%M%S").nightly"
+          tag="0.0.$(date +"%Y%m%d%H%M%S")"
           echo "tag=$tag" >> $GITHUB_OUTPUT
       - name: Set up Python 3.11
         uses: actions/setup-python@v5
