@@ -48,6 +48,7 @@
 #include "mlir/IR/Value.h"
 #include "mlir/IR/Visitors.h"
 #include "mlir/Support/LLVM.h"
+#include "shardy/dialect/sdy/ir/dialect.h"
 #include "stablehlo/dialect/StablehloOps.h"
 #include "formats/schema_structs.h"
 #include "graphnode_builder.h"
@@ -129,6 +130,10 @@ inline bool IsTfDialect(Operation& operation) {
 
 inline bool IsStablehloDialect(Operation& operation) {
   return llvm::isa<mlir::stablehlo::StablehloDialect>(operation.getDialect());
+}
+
+inline bool IsShardyDialect(Operation& operation) {
+  return llvm::isa<mlir::sdy::SdyDialect>(operation.getDialect());
 }
 
 // Sets the contract for generating the node id for a block argument.
@@ -368,6 +373,13 @@ std::string GenerateTfliteNodeName(llvm::StringRef node_label,
   return TfliteNodeNamespaceHeuristic(node_label, candidate_names);
 }
 
+// Generates the node name (the hierarchical information of the node) from a sdy
+// dialect operation.
+void GenerateShardyNodeName(Operation& operation, GraphNodeBuilder& builder) {
+  // Use the default JAX logic for setting hierarchical node name information.
+  AddJaxNodeNameAndAttribute(operation, builder);
+}
+
 // Gets a list of output tensor name(s) of an TFLite operation. Returns empty
 // list if there are errors or the operation has no output tensors.
 llvm::SmallVector<llvm::StringRef, 2> GetTfliteTensorNames(
@@ -504,6 +516,13 @@ void AddNodeInfo(Operation& operation, GraphBuildContext& context,
   if (IsTfliteDialect(operation)) {
     node_name = GenerateTfliteNodeName(node_label, operation);
     builder.SetNodeInfo(node_id_str, node_label, node_name);
+    return;
+  }
+  if (IsShardyDialect(operation)) {
+    // TODO(b/412727996): Pretty print shardings on SDY ops.
+    GenerateShardyNodeName(operation, builder);
+    builder.SetNodeId(node_id_str);
+    builder.SetNodeLabel(operation.getName().getStringRef());
     return;
   }
   // For any other dialects, We apply the parsing logic as stablehlo ops by

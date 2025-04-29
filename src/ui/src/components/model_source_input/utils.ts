@@ -39,7 +39,7 @@ export function getAdapterCandidates(
   // Has file extension.
   //
   // Get the matching adapter by the file extension.
-  if (parts.length > 1) {
+  if (parts.length > 1 && !modelPath.endsWith('/')) {
     const fileExt = parts[parts.length - 1];
     return adapterExtensionService.getExtensionsByFileExt(fileExt);
   }
