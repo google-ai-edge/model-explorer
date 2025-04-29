@@ -19,7 +19,6 @@
 #include <cstdint>
 #include <cstring>
 #include <memory>
-#include <optional>
 #include <string>
 #include <utility>
 #include <vector>
@@ -101,24 +100,123 @@ struct EdgeInfo {
   std::string target_node_input_id = "";
 };
 
+using EdgeMap = absl::flat_hash_map<int, EdgeInfo>;
+using SignatureNameMap = absl::flat_hash_map<int, std::string>;
+using SignatureMap = absl::flat_hash_map<int, SignatureNameMap>;
+using Tensors = std::vector<std::unique_ptr<TensorT>>;
+using OperatorCodes = std::vector<std::unique_ptr<OperatorCodeT>>;
+using Buffers = std::vector<std::unique_ptr<tflite::BufferT>>;
+using SignatureDefs = std::vector<std::unique_ptr<tflite::SignatureDefT>>;
+using OpdefsMap = absl::flat_hash_map<std::string, OpMetadata>;
+
 enum NodeType {
   kInputNode,
   kOutputNode,
   kConstNode,
 };
 
-// A map from tensor index to EdgeInfo.
-using EdgeMap = absl::flat_hash_map<int, EdgeInfo>;
-// Maps from the tensor index to input/output signature name.
-using SignatureNameMap = absl::flat_hash_map<int, std::string>;
-// Maps from the subgraph index to its SignatureNameMap.
-using SignatureMap = absl::flat_hash_map<int, SignatureNameMap>;
-using Tensors = std::vector<std::unique_ptr<TensorT>>;
-using OperatorCodes = std::vector<std::unique_ptr<OperatorCodeT>>;
-using Buffers = std::vector<std::unique_ptr<tflite::BufferT>>;
-using SignatureDefs = std::vector<std::unique_ptr<tflite::SignatureDefT>>;
-// Maps from op name to op metadata.
-using OpdefsMap = absl::flat_hash_map<std::string, OpMetadata>;
+// A struct to hold the context for building a subgraph.
+struct SubgraphBuildContext {
+  SubgraphBuildContext(const SubGraphT& subgraph_t,
+                       const SignatureNameMap& signature_name_map,
+                       Subgraph& subgraph)
+      : subgraph_t(subgraph_t),
+        signature_name_map(signature_name_map),
+        subgraph(subgraph) {
+    // Reserves the node ids for original nodes stored in Flatbuffer.
+    node_ids.reserve(subgraph_t.operators.size());
+    for (int i = 0; i < subgraph_t.operators.size(); ++i) {
+      node_ids.push_back(absl::StrCat(i));
+    }
+  }
+
+  // The subgraph data from the flatbuffer model.
+  const SubGraphT& subgraph_t;
+  // Map from the tensor index to input/output signature name.
+  const SignatureNameMap& signature_name_map;
+
+  // -- Mutable state while building the subgraph. --
+  // Map from tensor index to EdgeInfo.
+  EdgeMap edge_map;
+  // The node ids for the subgraph.
+  std::vector<std::string> node_ids;
+  // The Model Explorer subgraph to be built.
+  Subgraph& subgraph;
+};
+
+// A helper class to hold the TFLite model data and convert it to Model Explorer
+// JSON graph.
+class FlatbufferToJsonConverter {
+ public:
+  FlatbufferToJsonConverter(
+      const VisualizeConfig& config,
+      std::unique_ptr<FlatBufferModelAbslError> model_ptr);
+
+  // Disables copy/move for this class.
+  FlatbufferToJsonConverter(const FlatbufferToJsonConverter&) = delete;
+  FlatbufferToJsonConverter& operator=(const FlatbufferToJsonConverter&) =
+      delete;
+
+  // Converts the Flatbuffer model content to JSON string.
+  absl::StatusOr<std::string> Convert();
+
+ private:
+  // Gets the buffer data of the given tensor.
+  absl::StatusOr<std::vector<uint8_t>> GetBuffer(const TensorT& tensor,
+                                                 SubgraphBuildContext& context);
+
+  // Adds the constant value to the node attribute.
+  absl::Status AddConstantToNodeAttr(const TensorT& tensor,
+                                     SubgraphBuildContext& context,
+                                     GraphNodeBuilder& builder);
+
+  // Adds an auxiliary node (GraphInputs, GraphOutputs or const node) to the
+  // subgraph.
+  absl::Status AddAuxiliaryNode(NodeType node_type,
+                                const std::vector<int>& tensor_indices,
+                                SubgraphBuildContext& context);
+
+  // Converts subgraph index to attributes for certain ops (e.g. If, While).
+  absl::Status SubgraphIdxToAttributes(
+      const tflite::OperatorT& op, SubgraphBuildContext& context,
+      llvm::SmallVectorImpl<mlir::NamedAttribute>& attributes);
+
+  // Adds the options of the given op to the node attribute. Logic is referred
+  // from `ConvertOp` in tensorflow/compiler/mlir/lite/flatbuffer_import.cc.
+  absl::Status AddOptionsToNodeAttribute(const OperatorT& op,
+                                         SubgraphBuildContext& context,
+                                         GraphNodeBuilder& builder);
+
+  // Optionally adds tensor tags from tflite op defs to the node metadata.
+  absl::Status AddTensorTags(const OperatorT& op, SubgraphBuildContext& context,
+                             GraphNodeBuilder& builder);
+
+  // Adds a node to the Model Explorer subgraph.
+  absl::Status AddNode(int node_index, SubgraphBuildContext& context);
+
+  // Adds a subgraph to the Model Explorer graph.
+  absl::Status AddSubgraph(int subgraph_index, Graph& graph);
+
+  // -- Initialized in constructor --
+  // Config for visualization.
+  const VisualizeConfig& config_;
+  // Map from op name to op metadata.
+  const OpdefsMap op_defs_;
+  // Pointer to the flatbuffer model.
+  std::unique_ptr<FlatBufferModelAbslError> model_ptr_;
+  // MLIR context and builder for creating MLIR attributes.
+  mlir::MLIRContext mlir_context_;  // Owns the mlir context.
+  mlir::Builder mlir_builder_;
+
+  // Parsed model from the flatbuffer.
+  std::unique_ptr<ModelT> model_;
+  // List of op names.
+  std::vector<std::string> op_names_;
+  // List of function names.
+  std::vector<std::string> func_names_;
+  // Map from subgraph index to signature name map.
+  SignatureMap signature_map_;
+};
 
 std::string EdgeInfoDebugString(const EdgeInfo& edge_info) {
   return absl::StrCat("sourceNodeId: ", edge_info.source_node_id,
@@ -126,6 +224,7 @@ std::string EdgeInfoDebugString(const EdgeInfo& edge_info) {
                       ", targetNodeInputId: ", edge_info.target_node_input_id);
 }
 
+// Returns the lowercase op name string from the given op code.
 std::string GetOpNameFromOpCode(const OperatorCodeT& op_code) {
   BuiltinOperator builtin_code = tflite::GetBuiltinCode(&op_code);
   return absl::AsciiStrToLower(tflite::EnumNameBuiltinOperator(builtin_code));
@@ -169,6 +268,7 @@ bool EdgeInfoIncomplete(const EdgeInfo& edge_info) {
          edge_info.target_node_input_id.empty();
 }
 
+// Appends the incoming edge to the graph node builder.
 void AppendIncomingEdge(const EdgeInfo& edge_info, GraphNodeBuilder& builder) {
   builder.AppendEdgeInfo(edge_info.source_node_id,
                          edge_info.source_node_output_id,
@@ -193,7 +293,8 @@ std::string StringifyTensorShape(const TensorT& tensor) {
 // Obtains the node namespace based on the node label and related tensor names.
 std::string GenerateNodeName(absl::string_view node_label,
                              const std::vector<int>& tensor_indices,
-                             const Tensors& tensors) {
+                             SubgraphBuildContext& context) {
+  const Tensors& tensors = context.subgraph_t.tensors;
   if (tensor_indices.empty()) return "";
   std::vector<std::string> candidate_names;
   for (const int index : tensor_indices) {
@@ -209,30 +310,6 @@ std::string GenerateNodeName(absl::string_view node_label,
     }
   }
   return TfliteNodeNamespaceHeuristic(node_label, candidate_names);
-}
-
-void AppendMetadata(
-    const EdgeType edge_type, const int metadata_id, const int tensor_index,
-    const Tensors& tensors,
-    const std::optional<const SignatureNameMap>& signature_name_map,
-    GraphNodeBuilder& builder) {
-  // Appends tensor index.
-  builder.AppendAttrToMetadata(edge_type, metadata_id, kTensorIndex,
-                               absl::StrCat(tensor_index));
-  // Appends tensor name.
-  builder.AppendAttrToMetadata(edge_type, metadata_id, kTensorName,
-                               tensors[tensor_index]->name);
-  // Appends tensor shape.
-  builder.AppendAttrToMetadata(edge_type, metadata_id, kTensorShape,
-                               StringifyTensorShape(*tensors[tensor_index]));
-  // Appends tensor signature name.
-  if (signature_name_map.has_value()) {
-    auto name_it = signature_name_map->find(tensor_index);
-    if (name_it != signature_name_map->end()) {
-      builder.AppendAttrToMetadata(edge_type, metadata_id, kSignatureName,
-                                   name_it->second);
-    }
-  }
 }
 
 // Converts the buffer data to an ElementsAttr. Logic is referred from
@@ -291,340 +368,29 @@ absl::StatusOr<mlir::ElementsAttr> ConvertBufferToAttr(
   return value;
 }
 
-absl::StatusOr<std::vector<uint8_t>> GetBuffer(
-    const TensorT& tensor, const Buffers& buffers,
-    const std::unique_ptr<FlatBufferModelAbslError>& model_ptr) {
-  const uint64_t buffer_offset = buffers[tensor.buffer]->offset;
-  const uint64_t buffer_size = buffers[tensor.buffer]->size;
-  // Check if constant tensor is stored outside of the flatbuffers.
-  if (tflite::IsValidBufferOffset(buffer_offset)) {
-    if (!buffers[tensor.buffer]->data.empty()) {
-      return absl::InvalidArgumentError(
-          "Buffer data and offset cannot be set at the same time.");
-    }
-    const uint8_t* file_begin_ptr =
-        reinterpret_cast<const uint8_t*>(model_ptr->allocation()->base());
-    if (buffer_offset + buffer_size > model_ptr->allocation()->bytes()) {
-      return absl::InvalidArgumentError(
-          absl::StrCat("Constant buffer of tensor \"", tensor.name,
-                       "\" specified an out of range offset."));
-    }
-    return std::vector<uint8_t>(file_begin_ptr + buffer_offset,
-                                file_begin_ptr + buffer_offset + buffer_size);
+// Appends the metadata to the graph node builder.
+void AppendMetadata(EdgeType edge_type, int metadata_id, int tensor_index,
+                    SubgraphBuildContext& context, GraphNodeBuilder& builder) {
+  const Tensors& tensors = context.subgraph_t.tensors;
+  const SignatureNameMap& signature_name_map = context.signature_name_map;
+  // Appends tensor index.
+  builder.AppendAttrToMetadata(edge_type, metadata_id, kTensorIndex,
+                               absl::StrCat(tensor_index));
+  // Appends tensor name.
+  builder.AppendAttrToMetadata(edge_type, metadata_id, kTensorName,
+                               tensors[tensor_index]->name);
+  // Appends tensor shape.
+  builder.AppendAttrToMetadata(edge_type, metadata_id, kTensorShape,
+                               StringifyTensorShape(*tensors[tensor_index]));
+  // Appends tensor signature name.
+  auto name_it = signature_name_map.find(tensor_index);
+  if (name_it != signature_name_map.end()) {
+    builder.AppendAttrToMetadata(edge_type, metadata_id, kSignatureName,
+                                 name_it->second);
   }
-  return buffers[tensor.buffer]->data;
 }
 
-absl::Status AddConstantToNodeAttr(
-    const TensorT& tensor, const Buffers& buffers,
-    const int const_element_count_limit,
-    const std::unique_ptr<FlatBufferModelAbslError>& model_ptr,
-    mlir::Builder mlir_builder, GraphNodeBuilder& builder) {
-  ASSIGN_OR_RETURN(std::vector<uint8_t> buffer,
-                   GetBuffer(tensor, buffers, model_ptr));
-  if (buffer.empty()) {
-    return absl::InvalidArgumentError(
-        absl::StrCat("Buffer data for tensor \"", tensor.name, "\" is empty."));
-  }
-  ASSIGN_OR_RETURN(mlir::ElementsAttr elem_attr,
-                   ConvertBufferToAttr(tensor, buffer, mlir_builder));
-  std::string value;
-  llvm::raw_string_ostream sstream(value);
-  PrintAttribute(elem_attr, const_element_count_limit, sstream);
-  builder.AppendNodeAttribute(/*key=*/kValue, /*value=*/value);
-  return absl::OkStatus();
-}
-
-// Creates and adds a GraphInputs, GraphOutputs or const node into Subgraph.
-absl::Status AddAuxiliaryNode(
-    const NodeType node_type, const std::vector<int>& tensor_indices,
-    const Tensors& tensors, const Buffers& buffers,
-    const std::optional<const SignatureNameMap>& signature_name_map,
-    const std::unique_ptr<FlatBufferModelAbslError>& model_ptr,
-    const int const_element_count_limit, std::vector<std::string>& node_ids,
-    EdgeMap& edge_map, mlir::Builder mlir_builder, Subgraph& subgraph) {
-  // Skips adding auxiliary node if `tensor_indices` is empty.
-  // This is to avoid adding GraphInputs/GraphOutputs node when there is no
-  // input/output tensor.
-  if (tensor_indices.empty()) {
-    return absl::OkStatus();
-  }
-  EdgeType edge_type;
-  std::string node_label, node_name;
-  const std::string node_id_str = absl::StrCat(node_ids.size());
-  switch (node_type) {
-    case NodeType::kInputNode: {
-      edge_type = EdgeType::kOutput;
-      node_label = kGraphInputs;
-      node_name = kGraphInputs;
-      break;
-    }
-    case NodeType::kOutputNode: {
-      edge_type = EdgeType::kInput;
-      node_label = kGraphOutputs;
-      node_name = kGraphOutputs;
-      break;
-    }
-    case NodeType::kConstNode: {
-      edge_type = EdgeType::kOutput;
-      node_label = kPseudoConst;
-      node_name = GenerateNodeName(node_label, tensor_indices, tensors);
-      break;
-    }
-    default: {
-      return absl::InvalidArgumentError("Invalid node type.");
-    }
-  }
-  node_ids.push_back(node_id_str);
-  GraphNodeBuilder builder;
-  builder.SetNodeInfo(node_id_str, node_label, node_name);
-
-  if (node_type == NodeType::kConstNode) {
-    const TensorT& tensor = *tensors[tensor_indices[0]];
-    absl::Status status =
-        AddConstantToNodeAttr(tensor, buffers, const_element_count_limit,
-                              model_ptr, mlir_builder, builder);
-    // Logs the error and continues to add the node to the graph.
-    if (!status.ok()) {
-      LOG(ERROR) << status.message();
-    }
-  }
-
-  for (int i = 0; i < tensor_indices.size(); ++i) {
-    const int tensor_index = tensor_indices[i];
-
-    // Skips the optional inputs which are indicated by -1.
-    if (tensor_index < 0) {
-      continue;
-    }
-
-    if (edge_type == EdgeType::kInput) {
-      PopulateEdgeInfo(tensor_index, {.target_node_input_id = absl::StrCat(i)},
-                       edge_map);
-      if (EdgeInfoIncomplete(edge_map.at(tensor_index))) {
-        // Adds the const node to subgraph and populates the rest of the
-        // tensor's edge info to edge_map. Since kConstNode links to
-        // EdgeType::kOutput, it always goes to else branch and should never run
-        // into infinite loop.
-        RETURN_IF_ERROR(AddAuxiliaryNode(
-            NodeType::kConstNode, std::vector<int>{tensor_index}, tensors,
-            buffers, signature_name_map, model_ptr, const_element_count_limit,
-            node_ids, edge_map, mlir_builder, subgraph));
-      }
-      AppendIncomingEdge(edge_map.at(tensor_index), builder);
-    } else {
-      AppendMetadata(EdgeType::kOutput, i, tensor_index, tensors,
-                     signature_name_map, builder);
-
-      PopulateEdgeInfo(tensor_index,
-                       {.source_node_id = node_id_str,
-                        .source_node_output_id = absl::StrCat(i)},
-                       edge_map);
-    }
-  }
-  subgraph.nodes.push_back(std::move(builder).Build());
-  return absl::OkStatus();
-}
-
-absl::Status SubgraphIdxToAttributes(
-    const tflite::OperatorT& op, const std::vector<std::string>& func_names,
-    mlir::Builder mlir_builder,
-    llvm::SmallVectorImpl<mlir::NamedAttribute>& attributes) {
-  if (auto* opts = op.builtin_options.AsCallOnceOptions()) {
-    const uint32_t init_idx = opts->init_subgraph_index;
-    if (init_idx >= func_names.size()) {
-      return absl::InvalidArgumentError(
-          absl::StrCat("subgraph with index not found: ", init_idx));
-    }
-    const auto init_attr = mlir_builder.getStringAttr(func_names[init_idx]);
-    attributes.emplace_back(
-        mlir_builder.getNamedAttr("session_init_function", init_attr));
-  } else if (auto* opts = op.builtin_options.AsIfOptions()) {
-    const uint32_t then_idx = opts->then_subgraph_index;
-    if (then_idx >= func_names.size()) {
-      return absl::InvalidArgumentError(
-          absl::StrCat("subgraph with index not found: ", then_idx));
-    }
-    const auto then_attr = mlir::SymbolRefAttr::get(mlir_builder.getContext(),
-                                                    func_names[then_idx]);
-    const uint32_t else_idx = opts->else_subgraph_index;
-    if (else_idx >= func_names.size()) {
-      return absl::InvalidArgumentError(
-          absl::StrCat("subgraph with index not found: ", else_idx));
-    }
-    const auto else_attr = mlir::SymbolRefAttr::get(mlir_builder.getContext(),
-                                                    func_names[else_idx]);
-    attributes.emplace_back(
-        mlir_builder.getNamedAttr("then_branch", then_attr));
-    attributes.emplace_back(
-        mlir_builder.getNamedAttr("else_branch", else_attr));
-    attributes.emplace_back(mlir_builder.getNamedAttr(
-        "is_stateless", mlir_builder.getBoolAttr(false)));
-  } else if (auto* opts = op.builtin_options.AsWhileOptions()) {
-    const uint32_t cond_idx = opts->cond_subgraph_index;
-    if (cond_idx >= func_names.size()) {
-      return absl::InvalidArgumentError(
-          absl::StrCat("subgraph with index not found: ", cond_idx));
-    }
-    const auto cond_attr = mlir::SymbolRefAttr::get(mlir_builder.getContext(),
-                                                    func_names[cond_idx]);
-    const uint32_t body_idx = opts->body_subgraph_index;
-    if (body_idx >= func_names.size()) {
-      return absl::InvalidArgumentError(
-          absl::StrCat("subgraph with index not found: ", body_idx));
-    }
-    const auto body_attr = mlir::SymbolRefAttr::get(mlir_builder.getContext(),
-                                                    func_names[body_idx]);
-    attributes.emplace_back(mlir_builder.getNamedAttr("cond", cond_attr));
-    attributes.emplace_back(mlir_builder.getNamedAttr("body", body_attr));
-  } else if (auto* opts = op.builtin_options_2.AsStablehloReduceOptions()) {
-    const int32_t body_idx = opts->body_subgraph_index;
-    if (body_idx >= func_names.size()) {
-      return absl::InvalidArgumentError(
-          absl::StrCat("subgraph with index not found: ", body_idx));
-    }
-    const auto body_attr = mlir::SymbolRefAttr::get(mlir_builder.getContext(),
-                                                    func_names[body_idx]);
-    attributes.emplace_back(mlir_builder.getNamedAttr("body", body_attr));
-  } else if (auto* opts =
-                 op.builtin_options_2.AsStablehloReduceWindowOptions()) {
-    const int32_t body_idx = opts->body_subgraph_index;
-    if (body_idx >= func_names.size()) {
-      return absl::InvalidArgumentError(
-          absl::StrCat("subgraph with index not found: ", body_idx));
-    }
-    const auto body_attr = mlir::SymbolRefAttr::get(mlir_builder.getContext(),
-                                                    func_names[body_idx]);
-    attributes.emplace_back(mlir_builder.getNamedAttr("body", body_attr));
-  } else if (auto* opts = op.builtin_options_2.AsStablehloSortOptions()) {
-    const int32_t comparator_idx = opts->comparator_subgraph_index;
-    if (comparator_idx >= func_names.size()) {
-      return absl::InvalidArgumentError(
-          absl::StrCat("subgraph with index not found: ", comparator_idx));
-    }
-    const auto comparator_attr = mlir::SymbolRefAttr::get(
-        mlir_builder.getContext(), func_names[comparator_idx]);
-    attributes.emplace_back(
-        mlir_builder.getNamedAttr("comparator", comparator_attr));
-  } else if (auto* opts = op.builtin_options_2.AsStablehloWhileOptions()) {
-    const int32_t body_idx = opts->body_subgraph_index;
-    const int32_t cond_idx = opts->cond_subgraph_index;
-    if (body_idx >= func_names.size()) {
-      return absl::InvalidArgumentError(
-          absl::StrCat("subgraph with index not found: ", body_idx));
-    }
-    if (cond_idx >= func_names.size()) {
-      return absl::InvalidArgumentError(
-          absl::StrCat("subgraph with index not found: ", cond_idx));
-    }
-    const auto body_attr = mlir::SymbolRefAttr::get(mlir_builder.getContext(),
-                                                    func_names[body_idx]);
-    const auto cond_attr = mlir::SymbolRefAttr::get(mlir_builder.getContext(),
-                                                    func_names[cond_idx]);
-    attributes.emplace_back(mlir_builder.getNamedAttr("body", body_attr));
-    attributes.emplace_back(mlir_builder.getNamedAttr("cond", cond_attr));
-  } else if (auto* opts = op.builtin_options_2.AsStablehloScatterOptions()) {
-    const uint32_t subgraph_idx = opts->update_computation_subgraph_index;
-
-    if (subgraph_idx >= func_names.size()) {
-      return absl::InvalidArgumentError(
-          absl::StrCat("subgraph with index not found: ", subgraph_idx));
-    }
-    mlir::FlatSymbolRefAttr subgraph_attr = mlir::SymbolRefAttr::get(
-        mlir_builder.getContext(), func_names[subgraph_idx]);
-    attributes.emplace_back(mlir_builder.getNamedAttr(
-        "update_computation_func_name", subgraph_attr));
-  }
-  return absl::OkStatus();
-}
-
-// Adds builtin and custom options to node attribute. Logic is referred from
-// `ConvertOp` in tensorflow/compiler/mlir/lite/flatbuffer_import.cc.
-absl::Status AddOptionsToNodeAttribute(
-    const OperatorT& op, const OperatorCodes& op_codes,
-    const std::vector<std::string>& func_names,
-    const std::unique_ptr<FlatBufferModelAbslError>& model_ptr,
-    mlir::Builder mlir_builder, GraphNodeBuilder& builder) {
-  llvm::SmallVector<mlir::NamedAttribute, 2> attrs;
-  const OperatorCodeT& op_code = *op_codes.at(op.opcode_index);
-  const BuiltinOperator builtin_code = tflite::GetBuiltinCode(&op_code);
-  if (builtin_code == tflite::BuiltinOperator_CUSTOM) {
-    // Overwrites the node label with the custom op code.
-    absl::string_view custom_code = op_code.custom_code;
-    builder.SetNodeLabel(custom_code);
-    if (op.custom_options_format != tflite::CustomOptionsFormat_FLEXBUFFERS) {
-      return absl::InvalidArgumentError(absl::StrCat(
-          "Unsupported custom options format: ",
-          tflite::EnumNameCustomOptionsFormat(op.custom_options_format)));
-    }
-    std::vector<uint8_t> custom_options;
-    if (tflite::IsValidBufferOffset(op.large_custom_options_offset)) {
-      custom_options.resize(op.large_custom_options_size);
-      memcpy(custom_options.data(),
-             reinterpret_cast<const uint8_t*>(model_ptr->allocation()->base()) +
-                 op.large_custom_options_offset,
-             op.large_custom_options_size);
-    } else {
-      custom_options = op.custom_options;
-    }
-    CustomOptionsToAttributes(custom_options, mlir_builder, attrs);
-  } else {
-    mlir::BuiltinOptionsToAttributes(op.builtin_options, mlir_builder, attrs);
-    mlir::BuiltinOptions2ToAttributes(op.builtin_options_2, mlir_builder,
-                                      attrs);
-  }
-  absl::Status status =
-      SubgraphIdxToAttributes(op, func_names, mlir_builder, attrs);
-  if (!status.ok()) {
-    LOG(ERROR) << status.message();
-  }
-  std::string value;
-  llvm::raw_string_ostream sstream(value);
-  for (const mlir::NamedAttribute& attr : attrs) {
-    const mlir::Attribute& attr_val = attr.getValue();
-
-    // FlatSymbolRefAttr represents the reference to a function call in several
-    // tf ops (eg. tf.PartitionedCall, tf.While, tf.If etc). In another word,
-    // its value refers to the child subgraph of this parent node.
-    if (const auto flat_symbol_attr =
-            llvm::dyn_cast_or_null<::mlir::FlatSymbolRefAttr>(attr_val);
-        flat_symbol_attr != nullptr) {
-      llvm::StringRef subgraph_id = flat_symbol_attr.getValue();
-      builder.AppendSubgraphId(subgraph_id);
-    }
-
-    // Sets the limit to -1 since BuiltinOptions don't involve constant weights.
-    PrintAttribute(attr_val, /*size_limit=*/-1, sstream);
-    builder.AppendNodeAttribute(attr.getName().str(), value);
-    value.clear();
-  }
-  return absl::OkStatus();
-}
-
-// Optionally adds tensor tag info to the node metadata.
-absl::Status AddTensorTags(const OperatorT& op, absl::string_view op_label,
-                           const OpdefsMap& op_defs,
-                           GraphNodeBuilder& builder) {
-  if (!op_defs.contains(op_label)) {
-    return absl::InvalidArgumentError(
-        absl::StrCat("No op def found for op: ", op_label));
-  }
-  const OpMetadata& op_metadata = op_defs.at(op_label);
-  if (op_metadata.arguments.size() <= op.inputs.size()) {
-    for (int i = 0; i < op_metadata.arguments.size(); ++i) {
-      builder.AppendAttrToMetadata(EdgeType::kInput, i, kTensorTag,
-                                   op_metadata.arguments[i]);
-    }
-  }
-  if (op_metadata.results.size() <= op.outputs.size()) {
-    for (int i = 0; i < op_metadata.results.size(); ++i) {
-      builder.AppendAttrToMetadata(EdgeType::kOutput, i, kTensorTag,
-                                   op_metadata.results[i]);
-    }
-  }
-  return absl::OkStatus();
-}
-
+// Adds quantization parameters to the graph node builder.
 void AddQuantizationParameters(const std::unique_ptr<TensorT>& tensor,
                                const EdgeType edge_type, const int rel_idx,
                                GraphNodeBuilder& builder) {
@@ -650,82 +416,12 @@ void AddQuantizationParameters(const std::unique_ptr<TensorT>& tensor,
   builder.AppendAttrToMetadata(edge_type, rel_idx, kQuantization, quant_str);
 }
 
-// Adds a node to Subgraph.
-absl::Status AddNode(
-    const int node_index, const OperatorT& op, const OperatorCodes& op_codes,
-    const std::vector<std::string>& op_names, const Tensors& tensors,
-    const Buffers& buffers, const std::vector<std::string>& func_names,
-    const std::optional<const SignatureNameMap>& signature_name_map,
-    const OpdefsMap& op_defs,
-    const std::unique_ptr<FlatBufferModelAbslError>& model_ptr,
-    const int const_element_count_limit, std::vector<std::string>& node_ids,
-    EdgeMap& edge_map, mlir::Builder mlir_builder, Subgraph& subgraph) {
-  if (op.opcode_index >= op_names.size()) {
-    return absl::InvalidArgumentError(
-        absl::StrCat("Opcode index ", op.opcode_index,
-                     " matches no op name for node ", node_index));
-  }
-  const std::string node_id_str = node_ids[node_index];
-  absl::string_view node_label = op_names[op.opcode_index];
-  const std::string node_name =
-      GenerateNodeName(node_label, op.outputs, tensors);
-  GraphNodeBuilder builder;
-  builder.SetNodeInfo(node_id_str, node_label, node_name);
-  // Logs the error and continues to add the node to the graph.
-  absl::Status status = AddOptionsToNodeAttribute(
-      op, op_codes, func_names, model_ptr, mlir_builder, builder);
-  if (!status.ok()) {
-    LOG(ERROR) << status.message();
-  }
-
-  for (int i = 0; i < op.inputs.size(); ++i) {
-    const int tensor_index = op.inputs[i];
-
-    // Skips the optional inputs which are indicated by -1.
-    if (tensor_index < 0) {
-      continue;
-    }
-    PopulateEdgeInfo(tensor_index, {.target_node_input_id = absl::StrCat(i)},
-                     edge_map);
-    // Since nodes are stored in execution order, EdgeInfo is incomplete only
-    // when the input tensor is constant and not an output of a node. Thus we
-    // create an auxiliary constant node to align with graph structure.
-    if (EdgeInfoIncomplete(edge_map.at(tensor_index))) {
-      RETURN_IF_ERROR(AddAuxiliaryNode(
-          NodeType::kConstNode, std::vector<int>{tensor_index}, tensors,
-          buffers, signature_name_map, model_ptr, const_element_count_limit,
-          node_ids, edge_map, mlir_builder, subgraph));
-    }
-    AppendIncomingEdge(edge_map.at(tensor_index), builder);
-    AddQuantizationParameters(tensors[tensor_index], EdgeType::kInput, i,
-                              builder);
-  }
-
-  for (int i = 0; i < op.outputs.size(); ++i) {
-    const int tensor_index = op.outputs[i];
-    AppendMetadata(EdgeType::kOutput, i, tensor_index, tensors,
-                   signature_name_map, builder);
-    PopulateEdgeInfo(tensor_index,
-                     {.source_node_id = node_id_str,
-                      .source_node_output_id = absl::StrCat(i)},
-                     edge_map);
-
-    AddQuantizationParameters(tensors[tensor_index], EdgeType::kOutput, i,
-                              builder);
-  }
-
-  status = AddTensorTags(op, node_label, op_defs, builder);
-  if (!status.ok()) {
-    LOG(ERROR) << status.message();
-  }
-
-  subgraph.nodes.push_back(std::move(builder).Build());
-  return absl::OkStatus();
-}
-
+// Validates whether the subgraph is complete with all nodes and edges.
 void ValidateSubgraph(absl::string_view subgraph_name,
-                      const std::vector<std::string>& node_ids,
-                      const EdgeMap& edge_map) {
+                      SubgraphBuildContext& context) {
+  const std::vector<std::string>& node_ids = context.node_ids;
+  const EdgeMap& edge_map = context.edge_map;
+
   absl::flat_hash_set<std::string> node_ids_set(node_ids.begin(),
                                                 node_ids.end());
   if (node_ids_set.size() != node_ids.size()) {
@@ -748,6 +444,8 @@ void ValidateSubgraph(absl::string_view subgraph_name,
   }
 }
 
+// Returns true if the node name is in the root space, i.e. it doesn't contain
+// any slashes.
 bool IsInRootSpace(absl::string_view node_name) {
   // If the node name doesn't contain '/', it's in the root namespace.
   return !absl::StrContains(node_name, '/');
@@ -841,54 +539,9 @@ void PostProcessSubgraph(Subgraph& subgraph) {
   }
 }
 
-// Adds a subgraph to Graph.
-absl::Status AddSubgraph(
-    const VisualizeConfig& config, absl::string_view subgraph_name,
-    const SubGraphT& subgraph_t, const std::vector<std::string>& op_names,
-    const std::optional<const SignatureNameMap>& signature_name_map,
-    const std::vector<std::string>& func_names, const OpdefsMap& op_defs,
-    const std::unique_ptr<ModelT>& model,
-    const std::unique_ptr<FlatBufferModelAbslError>& model_ptr,
-    mlir::Builder mlir_builder, Graph& graph) {
-  // Creates a Model Explorer subgraph.
-  Subgraph subgraph((std::string(subgraph_name)));
-  EdgeMap edge_map;
-  std::vector<std::string> node_ids;
-  const Buffers& buffers = model->buffers;
-  const OperatorCodes& op_codes = model->operator_codes;
-  // Reserves the node ids for original nodes stored in Flatbuffer.
-  node_ids.reserve(subgraph_t.operators.size());
-  for (int i = 0; i < subgraph_t.operators.size(); ++i) {
-    node_ids.push_back(absl::StrCat(i));
-  }
-
-  // Adds GraphInputs node to the subgraph.
-  RETURN_IF_ERROR(AddAuxiliaryNode(
-      NodeType::kInputNode, subgraph_t.inputs, subgraph_t.tensors, buffers,
-      signature_name_map, model_ptr, config.const_element_count_limit, node_ids,
-      edge_map, mlir_builder, subgraph));
-
-  for (int i = 0; i < subgraph_t.operators.size(); ++i) {
-    auto& op = subgraph_t.operators[i];
-    const Tensors& tensors = subgraph_t.tensors;
-    RETURN_IF_ERROR(AddNode(i, *op, op_codes, op_names, tensors, buffers,
-                            func_names, signature_name_map, op_defs, model_ptr,
-                            config.const_element_count_limit, node_ids,
-                            edge_map, mlir_builder, subgraph));
-  }
-
-  // Adds GraphOutputs node to the subgraph.
-  RETURN_IF_ERROR(AddAuxiliaryNode(
-      NodeType::kOutputNode, subgraph_t.outputs, subgraph_t.tensors, buffers,
-      signature_name_map, model_ptr, config.const_element_count_limit, node_ids,
-      edge_map, mlir_builder, subgraph));
-
-  ValidateSubgraph(subgraph_name, node_ids, edge_map);
-  PostProcessSubgraph(subgraph);
-  graph.subgraphs.push_back(std::move(subgraph));
-  return absl::OkStatus();
-}
-
+// Returns the subgraph name for the given subgraph index.
+// If the subgraph name is empty, use the signature key if it exists. If the
+// signature key is also empty, use the default name.
 std::string GetSubgraphName(int subgraph_index, const SubGraphT& subgraph_t,
                             const SignatureDefs& signature_defs) {
   if (!subgraph_t.name.empty()) {
@@ -909,6 +562,477 @@ std::string GetSubgraphName(int subgraph_index, const SubGraphT& subgraph_t,
 
   return (subgraph_index == 0) ? "main"
                                : absl::StrCat("subgraph_", subgraph_index);
+}
+
+absl::StatusOr<std::vector<uint8_t>> FlatbufferToJsonConverter::GetBuffer(
+    const TensorT& tensor, SubgraphBuildContext& context) {
+  const uint64_t buffer_offset = model_->buffers[tensor.buffer]->offset;
+  const uint64_t buffer_size = model_->buffers[tensor.buffer]->size;
+  // Check if constant tensor is stored outside of the flatbuffers.
+  if (tflite::IsValidBufferOffset(buffer_offset)) {
+    if (!model_->buffers[tensor.buffer]->data.empty()) {
+      return absl::InvalidArgumentError(
+          "Buffer data and offset cannot be set at the same time.");
+    }
+    const uint8_t* file_begin_ptr =
+        reinterpret_cast<const uint8_t*>(model_ptr_->allocation()->base());
+    if (buffer_offset + buffer_size > model_ptr_->allocation()->bytes()) {
+      return absl::InvalidArgumentError(
+          absl::StrCat("Constant buffer of tensor \"", tensor.name,
+                       "\" specified an out of range offset."));
+    }
+    return std::vector<uint8_t>(file_begin_ptr + buffer_offset,
+                                file_begin_ptr + buffer_offset + buffer_size);
+  }
+  return model_->buffers[tensor.buffer]->data;
+}
+
+absl::Status FlatbufferToJsonConverter::AddConstantToNodeAttr(
+    const TensorT& tensor, SubgraphBuildContext& context,
+    GraphNodeBuilder& builder) {
+  ASSIGN_OR_RETURN(std::vector<uint8_t> buffer, GetBuffer(tensor, context));
+  if (buffer.empty()) {
+    return absl::InvalidArgumentError(
+        absl::StrCat("Buffer data for tensor \"", tensor.name, "\" is empty."));
+  }
+  ASSIGN_OR_RETURN(mlir::ElementsAttr elem_attr,
+                   ConvertBufferToAttr(tensor, buffer, mlir_builder_));
+  std::string value;
+  llvm::raw_string_ostream sstream(value);
+  PrintAttribute(elem_attr, config_.const_element_count_limit, sstream);
+  builder.AppendNodeAttribute(/*key=*/kValue, /*value=*/value);
+  return absl::OkStatus();
+}
+
+absl::Status FlatbufferToJsonConverter::AddAuxiliaryNode(
+    NodeType node_type, const std::vector<int>& tensor_indices,
+    SubgraphBuildContext& context) {
+  // Skips adding auxiliary node if `tensor_indices` is empty.
+  // This is to avoid adding GraphInputs/GraphOutputs node when there is no
+  // input/output tensor.
+  if (tensor_indices.empty()) {
+    return absl::OkStatus();
+  }
+  const Tensors& tensors = context.subgraph_t.tensors;
+  EdgeMap& edge_map = context.edge_map;
+
+  EdgeType edge_type;
+  std::string node_label, node_name;
+  std::vector<std::string>& node_ids = context.node_ids;
+  const std::string node_id_str = absl::StrCat(node_ids.size());
+  switch (node_type) {
+    case NodeType::kInputNode: {
+      edge_type = EdgeType::kOutput;
+      node_label = kGraphInputs;
+      node_name = kGraphInputs;
+      break;
+    }
+    case NodeType::kOutputNode: {
+      edge_type = EdgeType::kInput;
+      node_label = kGraphOutputs;
+      node_name = kGraphOutputs;
+      break;
+    }
+    case NodeType::kConstNode: {
+      edge_type = EdgeType::kOutput;
+      node_label = kPseudoConst;
+      node_name = GenerateNodeName(node_label, tensor_indices, context);
+      break;
+    }
+    default: {
+      return absl::InvalidArgumentError("Invalid node type.");
+    }
+  }
+  node_ids.push_back(node_id_str);
+  GraphNodeBuilder builder;
+  builder.SetNodeInfo(node_id_str, node_label, node_name);
+
+  if (node_type == NodeType::kConstNode) {
+    const TensorT& tensor = *tensors[tensor_indices[0]];
+    absl::Status status = AddConstantToNodeAttr(tensor, context, builder);
+    // Logs the error and continues to add the node to the graph.
+    if (!status.ok()) {
+      LOG(ERROR) << status.message();
+    }
+  }
+
+  for (int i = 0; i < tensor_indices.size(); ++i) {
+    const int tensor_index = tensor_indices[i];
+
+    // Skips the optional inputs which are indicated by -1.
+    if (tensor_index < 0) {
+      continue;
+    }
+
+    if (edge_type == EdgeType::kInput) {
+      PopulateEdgeInfo(tensor_index, {.target_node_input_id = absl::StrCat(i)},
+                       edge_map);
+      if (EdgeInfoIncomplete(edge_map.at(tensor_index))) {
+        // Adds the const node to subgraph and populates the rest of the
+        // tensor's edge info to edge_map. Since kConstNode links to
+        // EdgeType::kOutput, it always goes to else branch and should never run
+        // into infinite loop.
+        RETURN_IF_ERROR(AddAuxiliaryNode(
+            NodeType::kConstNode, std::vector<int>{tensor_index}, context));
+      }
+      AppendIncomingEdge(edge_map.at(tensor_index), builder);
+    } else {
+      AppendMetadata(EdgeType::kOutput, i, tensor_index, context, builder);
+
+      PopulateEdgeInfo(tensor_index,
+                       {.source_node_id = node_id_str,
+                        .source_node_output_id = absl::StrCat(i)},
+                       edge_map);
+    }
+  }
+  context.subgraph.nodes.push_back(std::move(builder).Build());
+  return absl::OkStatus();
+}
+
+absl::Status FlatbufferToJsonConverter::SubgraphIdxToAttributes(
+    const tflite::OperatorT& op, SubgraphBuildContext& context,
+    llvm::SmallVectorImpl<mlir::NamedAttribute>& attributes) {
+  if (auto* opts = op.builtin_options.AsCallOnceOptions()) {
+    const uint32_t init_idx = opts->init_subgraph_index;
+    if (init_idx >= func_names_.size()) {
+      return absl::InvalidArgumentError(
+          absl::StrCat("subgraph with index not found: ", init_idx));
+    }
+    const auto init_attr = mlir_builder_.getStringAttr(func_names_[init_idx]);
+    attributes.emplace_back(
+        mlir_builder_.getNamedAttr("session_init_function", init_attr));
+  } else if (auto* opts = op.builtin_options.AsIfOptions()) {
+    const uint32_t then_idx = opts->then_subgraph_index;
+    if (then_idx >= func_names_.size()) {
+      return absl::InvalidArgumentError(
+          absl::StrCat("subgraph with index not found: ", then_idx));
+    }
+    const auto then_attr = mlir::SymbolRefAttr::get(mlir_builder_.getContext(),
+                                                    func_names_[then_idx]);
+    const uint32_t else_idx = opts->else_subgraph_index;
+    if (else_idx >= func_names_.size()) {
+      return absl::InvalidArgumentError(
+          absl::StrCat("subgraph with index not found: ", else_idx));
+    }
+    const auto else_attr = mlir::SymbolRefAttr::get(mlir_builder_.getContext(),
+                                                    func_names_[else_idx]);
+    attributes.emplace_back(
+        mlir_builder_.getNamedAttr("then_branch", then_attr));
+    attributes.emplace_back(
+        mlir_builder_.getNamedAttr("else_branch", else_attr));
+    attributes.emplace_back(mlir_builder_.getNamedAttr(
+        "is_stateless", mlir_builder_.getBoolAttr(false)));
+  } else if (auto* opts = op.builtin_options.AsWhileOptions()) {
+    const uint32_t cond_idx = opts->cond_subgraph_index;
+    if (cond_idx >= func_names_.size()) {
+      return absl::InvalidArgumentError(
+          absl::StrCat("subgraph with index not found: ", cond_idx));
+    }
+    const auto cond_attr = mlir::SymbolRefAttr::get(mlir_builder_.getContext(),
+                                                    func_names_[cond_idx]);
+    const uint32_t body_idx = opts->body_subgraph_index;
+    if (body_idx >= func_names_.size()) {
+      return absl::InvalidArgumentError(
+          absl::StrCat("subgraph with index not found: ", body_idx));
+    }
+    const auto body_attr = mlir::SymbolRefAttr::get(mlir_builder_.getContext(),
+                                                    func_names_[body_idx]);
+    attributes.emplace_back(mlir_builder_.getNamedAttr("cond", cond_attr));
+    attributes.emplace_back(mlir_builder_.getNamedAttr("body", body_attr));
+  } else if (auto* opts = op.builtin_options_2.AsStablehloReduceOptions()) {
+    const int32_t body_idx = opts->body_subgraph_index;
+    if (body_idx >= func_names_.size()) {
+      return absl::InvalidArgumentError(
+          absl::StrCat("subgraph with index not found: ", body_idx));
+    }
+    const auto body_attr = mlir::SymbolRefAttr::get(mlir_builder_.getContext(),
+                                                    func_names_[body_idx]);
+    attributes.emplace_back(mlir_builder_.getNamedAttr("body", body_attr));
+  } else if (auto* opts =
+                 op.builtin_options_2.AsStablehloReduceWindowOptions()) {
+    const int32_t body_idx = opts->body_subgraph_index;
+    if (body_idx >= func_names_.size()) {
+      return absl::InvalidArgumentError(
+          absl::StrCat("subgraph with index not found: ", body_idx));
+    }
+    const auto body_attr = mlir::SymbolRefAttr::get(mlir_builder_.getContext(),
+                                                    func_names_[body_idx]);
+    attributes.emplace_back(mlir_builder_.getNamedAttr("body", body_attr));
+  } else if (auto* opts = op.builtin_options_2.AsStablehloSortOptions()) {
+    const int32_t comparator_idx = opts->comparator_subgraph_index;
+    if (comparator_idx >= func_names_.size()) {
+      return absl::InvalidArgumentError(
+          absl::StrCat("subgraph with index not found: ", comparator_idx));
+    }
+    const auto comparator_attr = mlir::SymbolRefAttr::get(
+        mlir_builder_.getContext(), func_names_[comparator_idx]);
+    attributes.emplace_back(
+        mlir_builder_.getNamedAttr("comparator", comparator_attr));
+  } else if (auto* opts = op.builtin_options_2.AsStablehloWhileOptions()) {
+    const int32_t body_idx = opts->body_subgraph_index;
+    const int32_t cond_idx = opts->cond_subgraph_index;
+    if (body_idx >= func_names_.size()) {
+      return absl::InvalidArgumentError(
+          absl::StrCat("subgraph with index not found: ", body_idx));
+    }
+    if (cond_idx >= func_names_.size()) {
+      return absl::InvalidArgumentError(
+          absl::StrCat("subgraph with index not found: ", cond_idx));
+    }
+    const auto body_attr = mlir::SymbolRefAttr::get(mlir_builder_.getContext(),
+                                                    func_names_[body_idx]);
+    const auto cond_attr = mlir::SymbolRefAttr::get(mlir_builder_.getContext(),
+                                                    func_names_[cond_idx]);
+    attributes.emplace_back(mlir_builder_.getNamedAttr("body", body_attr));
+    attributes.emplace_back(mlir_builder_.getNamedAttr("cond", cond_attr));
+  } else if (auto* opts = op.builtin_options_2.AsStablehloScatterOptions()) {
+    const uint32_t subgraph_idx = opts->update_computation_subgraph_index;
+
+    if (subgraph_idx >= func_names_.size()) {
+      return absl::InvalidArgumentError(
+          absl::StrCat("subgraph with index not found: ", subgraph_idx));
+    }
+    mlir::FlatSymbolRefAttr subgraph_attr = mlir::SymbolRefAttr::get(
+        mlir_builder_.getContext(), func_names_[subgraph_idx]);
+    attributes.emplace_back(mlir_builder_.getNamedAttr(
+        "update_computation_func_name", subgraph_attr));
+  }
+  return absl::OkStatus();
+}
+
+absl::Status FlatbufferToJsonConverter::AddOptionsToNodeAttribute(
+    const OperatorT& op, SubgraphBuildContext& context,
+    GraphNodeBuilder& builder) {
+  llvm::SmallVector<mlir::NamedAttribute, 2> attrs;
+  const OperatorCodeT& op_code = *model_->operator_codes.at(op.opcode_index);
+  const BuiltinOperator builtin_code = tflite::GetBuiltinCode(&op_code);
+  if (builtin_code == tflite::BuiltinOperator_CUSTOM) {
+    // Overwrites the node label with the custom op code.
+    absl::string_view custom_code = op_code.custom_code;
+    builder.SetNodeLabel(custom_code);
+    if (op.custom_options_format != tflite::CustomOptionsFormat_FLEXBUFFERS) {
+      return absl::InvalidArgumentError(absl::StrCat(
+          "Unsupported custom options format: ",
+          tflite::EnumNameCustomOptionsFormat(op.custom_options_format)));
+    }
+    std::vector<uint8_t> custom_options;
+    if (tflite::IsValidBufferOffset(op.large_custom_options_offset)) {
+      custom_options.resize(op.large_custom_options_size);
+      memcpy(
+          custom_options.data(),
+          reinterpret_cast<const uint8_t*>(model_ptr_->allocation()->base()) +
+              op.large_custom_options_offset,
+          op.large_custom_options_size);
+    } else {
+      custom_options = op.custom_options;
+    }
+    CustomOptionsToAttributes(custom_options, mlir_builder_, attrs);
+  } else {
+    mlir::BuiltinOptionsToAttributes(op.builtin_options, mlir_builder_, attrs);
+    mlir::BuiltinOptions2ToAttributes(op.builtin_options_2, mlir_builder_,
+                                      attrs);
+  }
+  absl::Status status = SubgraphIdxToAttributes(op, context, attrs);
+  if (!status.ok()) {
+    LOG(ERROR) << status.message();
+  }
+  std::string value;
+  llvm::raw_string_ostream sstream(value);
+  for (const mlir::NamedAttribute& attr : attrs) {
+    const mlir::Attribute& attr_val = attr.getValue();
+
+    // FlatSymbolRefAttr represents the reference to a function call in several
+    // tf ops (eg. tf.PartitionedCall, tf.While, tf.If etc). In another word,
+    // its value refers to the child subgraph of this parent node.
+    if (const auto flat_symbol_attr =
+            llvm::dyn_cast_or_null<::mlir::FlatSymbolRefAttr>(attr_val);
+        flat_symbol_attr != nullptr) {
+      llvm::StringRef subgraph_id = flat_symbol_attr.getValue();
+      builder.AppendSubgraphId(subgraph_id);
+    }
+
+    // Sets the limit to -1 since BuiltinOptions don't involve constant weights.
+    PrintAttribute(attr_val, /*size_limit=*/-1, sstream);
+    builder.AppendNodeAttribute(attr.getName().str(), value);
+    value.clear();
+  }
+  return absl::OkStatus();
+}
+
+absl::Status FlatbufferToJsonConverter::AddTensorTags(
+    const OperatorT& op, SubgraphBuildContext& context,
+    GraphNodeBuilder& builder) {
+  const std::string op_label = builder.GetNodeLabel();
+  if (!op_defs_.contains(op_label)) {
+    return absl::InvalidArgumentError(
+        absl::StrCat("No op def found for op: ", op_label));
+  }
+  const OpMetadata& op_metadata = op_defs_.at(op_label);
+  if (op_metadata.arguments.size() <= op.inputs.size()) {
+    for (int i = 0; i < op_metadata.arguments.size(); ++i) {
+      builder.AppendAttrToMetadata(EdgeType::kInput, i, kTensorTag,
+                                   op_metadata.arguments[i]);
+    }
+  }
+  if (op_metadata.results.size() <= op.outputs.size()) {
+    for (int i = 0; i < op_metadata.results.size(); ++i) {
+      builder.AppendAttrToMetadata(EdgeType::kOutput, i, kTensorTag,
+                                   op_metadata.results[i]);
+    }
+  }
+  return absl::OkStatus();
+}
+
+absl::Status FlatbufferToJsonConverter::AddNode(const int node_index,
+                                                SubgraphBuildContext& context) {
+  const OperatorT& op = *context.subgraph_t.operators[node_index];
+  std::vector<std::string>& node_ids = context.node_ids;
+  EdgeMap& edge_map = context.edge_map;
+  const Tensors& tensors = context.subgraph_t.tensors;
+
+  if (op.opcode_index >= op_names_.size()) {
+    return absl::InvalidArgumentError(
+        absl::StrCat("Opcode index ", op.opcode_index,
+                     " matches no op name for node ", node_index));
+  }
+  const std::string node_id_str = node_ids[node_index];
+  absl::string_view node_label = op_names_[op.opcode_index];
+  const std::string node_name =
+      GenerateNodeName(node_label, op.outputs, context);
+  GraphNodeBuilder builder;
+  builder.SetNodeInfo(node_id_str, node_label, node_name);
+  // Logs the error and continues to add the node to the graph.
+  absl::Status status = AddOptionsToNodeAttribute(op, context, builder);
+  if (!status.ok()) {
+    LOG(ERROR) << status.message();
+  }
+
+  for (int i = 0; i < op.inputs.size(); ++i) {
+    const int tensor_index = op.inputs[i];
+
+    // Skips the optional inputs which are indicated by -1.
+    if (tensor_index < 0) {
+      continue;
+    }
+    PopulateEdgeInfo(tensor_index, {.target_node_input_id = absl::StrCat(i)},
+                     edge_map);
+    // Since nodes are stored in execution order, EdgeInfo is incomplete only
+    // when the input tensor is constant and not an output of a node. Thus we
+    // create an auxiliary constant node to align with graph structure.
+    if (EdgeInfoIncomplete(edge_map.at(tensor_index))) {
+      RETURN_IF_ERROR(AddAuxiliaryNode(
+          NodeType::kConstNode, std::vector<int>{tensor_index}, context));
+    }
+    AppendIncomingEdge(edge_map.at(tensor_index), builder);
+    AddQuantizationParameters(tensors[tensor_index], EdgeType::kInput, i,
+                              builder);
+  }
+
+  for (int i = 0; i < op.outputs.size(); ++i) {
+    const int tensor_index = op.outputs[i];
+    AppendMetadata(EdgeType::kOutput, i, tensor_index, context, builder);
+    PopulateEdgeInfo(tensor_index,
+                     {.source_node_id = node_id_str,
+                      .source_node_output_id = absl::StrCat(i)},
+                     edge_map);
+
+    AddQuantizationParameters(tensors[tensor_index], EdgeType::kOutput, i,
+                              builder);
+  }
+
+  status = AddTensorTags(op, context, builder);
+  if (!status.ok()) {
+    LOG(ERROR) << status.message();
+  }
+
+  context.subgraph.nodes.push_back(std::move(builder).Build());
+  return absl::OkStatus();
+}
+
+absl::Status FlatbufferToJsonConverter::AddSubgraph(const int subgraph_index,
+                                                    Graph& graph) {
+  // Gets the required subgraph and signature data from the model.
+  const SubGraphT& subgraph_t = *model_->subgraphs[subgraph_index];
+  const std::string subgraph_name =
+      GetSubgraphName(subgraph_index, subgraph_t, model_->signature_defs);
+  SignatureNameMap signature_name_map;
+  if (signature_map_.contains(subgraph_index)) {
+    signature_name_map = signature_map_.at(subgraph_index);
+  }
+
+  // Creates a Model Explorer subgraph and its context.
+  Subgraph subgraph(subgraph_name);
+  SubgraphBuildContext context(subgraph_t, signature_name_map, subgraph);
+
+  // Adds GraphInputs node to the subgraph.
+  RETURN_IF_ERROR(
+      AddAuxiliaryNode(NodeType::kInputNode, subgraph_t.inputs, context));
+
+  for (int i = 0; i < subgraph_t.operators.size(); ++i) {
+    RETURN_IF_ERROR(AddNode(i, context));
+  }
+
+  // Adds GraphOutputs node to the subgraph.
+  RETURN_IF_ERROR(
+      AddAuxiliaryNode(NodeType::kOutputNode, subgraph_t.outputs, context));
+
+  ValidateSubgraph(subgraph_name, context);
+  PostProcessSubgraph(subgraph);
+  graph.subgraphs.push_back(std::move(subgraph));
+  return absl::OkStatus();
+}
+
+FlatbufferToJsonConverter::FlatbufferToJsonConverter(
+    const VisualizeConfig& config,
+    std::unique_ptr<FlatBufferModelAbslError> model_ptr)
+    : config_(config),
+      op_defs_(LoadTfliteOpdefs()),
+      model_ptr_(std::move(model_ptr)),
+      mlir_context_(mlir::MLIRContext()),
+      mlir_builder_(&mlir_context_) {
+  model_ = std::unique_ptr<ModelT>(model_ptr_->GetModel()->UnPack());
+  op_names_ = GetOpNames(model_->operator_codes);
+
+  // Registers mlir dialects.
+  mlir::DialectRegistry registry;
+  registry.insert<mlir::TFL::TensorFlowLiteDialect, mlir::TF::TensorFlowDialect,
+                  mlir::stablehlo::StablehloDialect, mlir::vhlo::VhloDialect>();
+  mlir::func::registerAllExtensions(registry);
+  mlir_context_.appendDialectRegistry(registry);
+  mlir_context_.loadDialect<
+      mlir::TFL::TensorFlowLiteDialect, mlir::TF::TensorFlowDialect,
+      mlir::stablehlo::StablehloDialect, mlir::vhlo::VhloDialect>();
+
+  // Initializes function names.
+  func_names_.reserve(model_->subgraphs.size());
+  for (const auto& subgraph : model_->subgraphs) {
+    func_names_.push_back(subgraph->name);
+  }
+
+  // Initializes signature map.
+  for (const auto& signature_def : model_->signature_defs) {
+    SignatureNameMap signature_name_map;
+    for (const auto& tensormap : signature_def->inputs) {
+      signature_name_map.emplace(tensormap->tensor_index, tensormap->name);
+    }
+    for (const auto& tensormap : signature_def->outputs) {
+      signature_name_map.emplace(tensormap->tensor_index, tensormap->name);
+    }
+    signature_map_.emplace(signature_def->subgraph_index,
+                           std::move(signature_name_map));
+  }
+}
+
+absl::StatusOr<std::string> FlatbufferToJsonConverter::Convert() {
+  Graph graph;
+  for (int index = 0; index < model_->subgraphs.size(); ++index) {
+    RETURN_IF_ERROR(AddSubgraph(index, graph));
+  }
+
+  GraphCollection collection;
+  collection.graphs.push_back(std::move(graph));
+  llvm::json::Value json_result(collection.Json());
+  return llvm::formatv("{0:2}", json_result);
 }
 
 }  // namespace
@@ -955,63 +1079,8 @@ absl::StatusOr<std::string> ConvertFlatbufferDirectlyToJson(
     return absl::InvalidArgumentError("Failed to build model from buffer.");
   }
 
-  mlir::MLIRContext mlir_context;
-  mlir::DialectRegistry registry;
-  registry.insert<mlir::TFL::TensorFlowLiteDialect, mlir::TF::TensorFlowDialect,
-                  mlir::stablehlo::StablehloDialect, mlir::vhlo::VhloDialect>();
-  mlir::func::registerAllExtensions(registry);
-  mlir_context.appendDialectRegistry(registry);
-  mlir_context.loadDialect<
-      mlir::TFL::TensorFlowLiteDialect, mlir::TF::TensorFlowDialect,
-      mlir::stablehlo::StablehloDialect, mlir::vhlo::VhloDialect>();
-  mlir::Builder mlir_builder(&mlir_context);
-
-  Graph graph;
-  std::unique_ptr<ModelT> model(model_ptr->GetModel()->UnPack());
-  const std::vector<std::string> op_names = GetOpNames(model->operator_codes);
-
-  SignatureMap signature_map;
-  for (const auto& signature_def : model->signature_defs) {
-    SignatureNameMap signature_name_map;
-    for (const auto& tensormap : signature_def->inputs) {
-      signature_name_map.emplace(tensormap->tensor_index, tensormap->name);
-    }
-    for (const auto& tensormap : signature_def->outputs) {
-      signature_name_map.emplace(tensormap->tensor_index, tensormap->name);
-    }
-    signature_map.emplace(signature_def->subgraph_index,
-                          std::move(signature_name_map));
-  }
-
-  std::vector<std::string> func_names;
-  func_names.reserve(model->subgraphs.size());
-  for (const auto& subgraph : model->subgraphs) {
-    func_names.push_back(subgraph->name);
-  }
-
-  const OpdefsMap op_defs = LoadTfliteOpdefs();
-
-  for (int i = 0; i < model->subgraphs.size(); ++i) {
-    const auto& subgraph = model->subgraphs[i];
-    const std::string subgraph_name =
-        GetSubgraphName(i, *subgraph, model->signature_defs);
-    auto signature_name_it = signature_map.find(i);
-    if (signature_name_it != signature_map.end()) {
-      RETURN_IF_ERROR(AddSubgraph(
-          config, subgraph_name, *subgraph, op_names, signature_name_it->second,
-          func_names, op_defs, model, model_ptr, mlir_builder, graph));
-    } else {
-      RETURN_IF_ERROR(AddSubgraph(config, subgraph_name, *subgraph, op_names,
-                                  /*signature_name_map=*/std::nullopt,
-                                  func_names, op_defs, model, model_ptr,
-                                  mlir_builder, graph));
-    }
-  }
-
-  GraphCollection collection;
-  collection.graphs.push_back(std::move(graph));
-  llvm::json::Value json_result(collection.Json());
-  return llvm::formatv("{0:2}", json_result);
+  FlatbufferToJsonConverter converter(config, std::move(model_ptr));
+  return converter.Convert();
 }
 
 }  // namespace visualization_client
