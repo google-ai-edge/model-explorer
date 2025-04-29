@@ -21,7 +21,6 @@ import {Injectable, signal} from '@angular/core';
 import {type ExtensionCommand} from '../common/extension_command';
 import {type Extension, type ExtensionSettings} from '../common/types';
 import {INTERNAL_COLAB} from '../common/utils';
-import { interceptExtensionCommand, mockExtensionCommand } from './mock_extension_requests.js';
 
 const EXTERNAL_GET_EXTENSIONS_API_PATH = '/api/v1/get_extensions';
 const EXTERNAL_SEND_CMD_GET_API_PATH = '/api/v1/send_command';
@@ -49,26 +48,22 @@ export class ExtensionService {
     try {
       let resp: Response | undefined = undefined;
 
-      resp = interceptExtensionCommand(cmd);
+      // In internal colab, use GET request.
+      if (this.internalColab) {
+        const url = `${EXTERNAL_SEND_CMD_GET_API_PATH}?json=${JSON.stringify(cmd)}`;
+        resp = await fetch(url);
+      }
+      // In other environments, use POST request.
+      else {
+        const requestData: RequestInit = {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        };
+        requestData.body = JSON.stringify(cmd);
 
-      if (!resp) {
-        // In internal colab, use GET request.
-        if (this.internalColab) {
-          const url = `${EXTERNAL_SEND_CMD_GET_API_PATH}?json=${JSON.stringify(cmd)}`;
-          resp = await fetch(url);
-        }
-        // In other environments, use POST request.
-        else {
-          const requestData: RequestInit = {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-          };
-          requestData.body = JSON.stringify(cmd);
-
-          resp = await fetch(EXTERNAL_SEND_CMD_POST_API_PATH, requestData);
-        }
+        resp = await fetch(EXTERNAL_SEND_CMD_POST_API_PATH, requestData);
       }
 
       if (!resp.ok) {
@@ -80,8 +75,6 @@ export class ExtensionService {
       if (typeof json !== 'object' || json === null) {
         return {otherError: `Failed to parse command response.`};
       }
-
-      json = mockExtensionCommand(cmd.cmdId, json);
 
       return {cmdResp: json as T};
     } catch (e) {

@@ -40,6 +40,8 @@ import type { Graph } from './common/input_graph';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class GraphEdit {
+  @Input({required: true}) appService!: AppService;
+  @Input({required: true}) nodeDataProviderExtensionService!: NodeDataProviderExtensionService;
   isProcessingExecuteRequest = signal(false);
   isProcessingUploadRequest = signal(false);
 
@@ -51,8 +53,6 @@ export class GraphEdit {
     private readonly loggingService: LoggingServiceInterface,
     @Inject('ModelLoaderService')
     private readonly modelLoaderService: ModelLoaderServiceInterface,
-    private readonly nodeDataProviderExtensionService: NodeDataProviderExtensionService,
-    private readonly appService: AppService,
     private readonly urlService: UrlService,
     private readonly dialog: MatDialog,
     private readonly snackBar: MatSnackBar,

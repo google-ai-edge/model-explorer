@@ -1017,7 +1017,12 @@ export class AppService {
     this.config.set(undefined);
     this.curInitialUiState.set(undefined);
 
-    this.panes.set([{id: genUid(), widthFraction: 1}]);
+    const curRunId = this.panes()[0].selectedNodeDataProviderRunId;
+    this.panes.set([{
+      id: genUid(),
+      widthFraction: 1,
+      selectedNodeDataProviderRunId: curRunId,
+    }]);
     this.selectedPaneId.set(this.panes()[0].id);
 
     this.remoteNodeDataPaths.set([]);

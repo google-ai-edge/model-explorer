@@ -149,7 +149,7 @@ export class ModelGraphVisualizer implements OnInit, OnDestroy, OnChanges {
     private readonly snackBar: MatSnackBar,
     private readonly threejsService: ThreejsService,
     private readonly uiStateService: UiStateService,
-    private readonly nodeDataProviderExtensionService: NodeDataProviderExtensionService,
+    readonly nodeDataProviderExtensionService: NodeDataProviderExtensionService,
     private readonly nodeStylerService: NodeStylerService,
     readonly syncNavigationService: SyncNavigationService,
   ) {

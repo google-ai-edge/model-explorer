@@ -24,7 +24,11 @@ limitations under the License.
   } @else {
     <!-- Title bar at the top. -->
     @if (showTitleBar) {
-      <title-bar (titleClicked)="titleClicked.emit()">
+      <title-bar
+        (titleClicked)="titleClicked.emit()"
+        [appService]="appService"
+        [nodeDataProviderExtensionService]="nodeDataProviderExtensionService"
+      >
         <ng-content></ng-content>
       </title-bar>
     }

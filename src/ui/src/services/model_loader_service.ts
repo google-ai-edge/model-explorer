@@ -43,7 +43,6 @@ import {processErrorMessage} from '../components/visualizer/common/utils';
 
 import {ExtensionService} from './extension_service';
 import {SettingsService} from './settings_service';
-import { mockGraphCollectionAttributes } from './mock_extension_requests.js';
 
 const UPLOAD_API_PATH = '/apipost/v1/upload';
 const LOAD_GRAPHS_JSON_API_PATH = '/api/v1/load_graphs_json';
@@ -227,7 +226,7 @@ export class ModelLoaderService implements ModelLoaderServiceInterface {
             }
             // Typical use cases where users pick a json file.
             else {
-              result = (await processUploadedJsonFile(file)).map((graphCollection) => mockGraphCollectionAttributes(graphCollection));
+              result = await processUploadedJsonFile(file);
               modelItem.status.set(ModelItemStatus.DONE);
             }
           } catch (e) {
