@@ -48,7 +48,9 @@
 #include "mlir/IR/Value.h"
 #include "mlir/IR/Visitors.h"
 #include "mlir/Support/LLVM.h"
+#include "shardy/dialect/sdy/ir/constants.h"
 #include "shardy/dialect/sdy/ir/dialect.h"
+#include "shardy/dialect/sdy/ir/utils.h"
 #include "stablehlo/dialect/StablehloOps.h"
 #include "formats/schema_structs.h"
 #include "graphnode_builder.h"
@@ -175,6 +177,23 @@ void AddCustomOptions(const ConstBytesAttr& const_bytes_attr,
   }
 }
 
+// Adds attributes from block arguments to the graph node.
+void AddBlockArgAttrs(const VisualizeConfig& config,
+                      const mlir::BlockArgument& arg,
+                      GraphNodeBuilder& builder) {
+  // TODO(b/412976666): Extract all attributes from block arguments, (currently
+  // only supports "sdy.shardings").
+  std::string value;
+  llvm::raw_string_ostream sstream(value);
+  mlir::sdy::TensorShardingAttr attr = mlir::sdy::getSharding(arg);
+  // Don't append sharding attribute to block argument if it is not sharded.
+  if (attr == mlir::sdy::TensorShardingAttr()) {
+    return;
+  }
+  PrintAttribute(attr, config.const_element_count_limit, sstream);
+  builder.AppendNodeAttribute(mlir::sdy::kShardingAttr, value);
+}
+
 // Appends node attributes to the graph node builder.
 void AppendNodeAttrs(const VisualizeConfig& config, Operation& operation,
                      GraphNodeBuilder& builder) {
@@ -270,8 +289,8 @@ void TfliteMaybeAppendSubgraphs(Operation& operation,
 // Adds the block arguments of a function op to the subgraph.
 // Each block argument is represented as a node under the namespace of
 // `GraphInputs`.
-void AddGraphInputs(mlir::func::FuncOp& fop, GraphBuildContext& context,
-                    Subgraph& subgraph) {
+void AddGraphInputs(const VisualizeConfig& config, mlir::func::FuncOp& fop,
+                    GraphBuildContext& context, Subgraph& subgraph) {
   Counter& tensor_counter = context.tensor_counter;
 
   // Gets the input names from the `tf.entry_function` attribute.
@@ -312,6 +331,7 @@ void AddGraphInputs(mlir::func::FuncOp& fop, GraphBuildContext& context,
     }
     builder.AppendAttrToMetadata(EdgeType::kOutput, /*metadata_id=*/0,
                                  kTensorShape, GetTypeString(it.value()));
+    AddBlockArgAttrs(config, fop.getArgument(it.index()), builder);
     subgraph.nodes.push_back(std::move(builder).Build());
   }
 }
@@ -738,7 +758,7 @@ absl::StatusOr<Subgraph> FuncOpToSubgraph(const VisualizeConfig& config,
                                           FuncOp& fop) {
   Subgraph subgraph(fop.getSymName().str());
   GraphBuildContext context;
-  AddGraphInputs(fop, context, subgraph);
+  AddGraphInputs(config, fop, context, subgraph);
   mlir::Block& block = fop.getBody().front();
   Operation* first_op = &block.front();
   if (IsTfliteDialect(*first_op)) {
