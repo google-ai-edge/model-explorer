@@ -38,7 +38,12 @@ import {Bubble} from '../bubble/bubble';
 
 import {AppService} from './app_service';
 import {type ModelGraph, ModelNode} from './common/model_graph';
-import {SearchMatches, SearchMatchType, SearchResults} from './common/types';
+import {
+  SearchMatch,
+  SearchMatches,
+  SearchMatchType,
+  SearchResults,
+} from './common/types';
 import {getRegexMatchesForNode, isOpNode} from './common/utils';
 import {genIoTreeData, IoTree, TreeNode} from './io_tree';
 import {Paginator} from './paginator';
@@ -48,6 +53,8 @@ interface SearchResultTypeOption {
   label: string;
   selected: boolean;
 }
+
+const TEMP_ESCAPED_SPACE = '___ESCAPED_SPACE___';
 
 /**
  * The search bar where users search nodes/groups by keyword and show results
@@ -237,22 +244,45 @@ export class SearchBar {
         .map((resultType) => resultType.matchType),
     );
     try {
-      const regex = new RegExp(searchText, 'i');
+      // Not using negative lookbehind to increase compatibility.
+      const andParts = searchText
+        .replaceAll('\\ ', TEMP_ESCAPED_SPACE)
+        .split(' ')
+        .filter((part) => part.trim() !== '')
+        .map((part) => part.replaceAll(TEMP_ESCAPED_SPACE, '\\ '));
+      const regexList = andParts.map((part) => new RegExp(part, 'i'));
       for (const node of this.curModelGraph.nodes) {
         if (isOpNode(node) && node.hideInLayout) {
           continue;
         }
 
-        const {matches, matchTypes} = getRegexMatchesForNode(
-          shouldMatchTypes,
-          regex,
-          node,
-          this.curModelGraph,
-        );
-        if (matches.length > 0) {
+        let matched = true;
+        const allMatches: SearchMatch[] = [];
+        const allMatchTypes = new Set<string>();
+        for (const regex of regexList) {
+          const {matches, matchTypes} = getRegexMatchesForNode(
+            shouldMatchTypes,
+            regex,
+            node,
+            this.curModelGraph,
+          );
+          if (matches.length === 0) {
+            matched = false;
+            break;
+          } else {
+            allMatches.push(...matches);
+            for (const matchType of matchTypes) {
+              allMatchTypes.add(matchType);
+            }
+          }
+        }
+        if (matched && allMatches.length > 0) {
           resultNodes.push(node);
-          searchMatchData.push({matches, matchTypes});
-          searchResults.results[node.id] = matches;
+          searchMatchData.push({
+            matches: allMatches,
+            matchTypes: allMatchTypes,
+          });
+          searchResults.results[node.id] = allMatches;
         }
       }
       this.appService.setSearchResults(this.rendererId, searchResults);
