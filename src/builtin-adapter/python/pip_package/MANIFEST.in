@@ -1,1 +1,1 @@
-recursive-include * *.py
+recursive-include ai_edge_model_explorer_adapter *.py

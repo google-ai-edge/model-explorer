@@ -63,8 +63,8 @@ setup(
         'Topic :: Software Development :: Libraries',
         'Topic :: Software Development :: Libraries :: Python Modules',
     ],
-    packages=find_packages(exclude=[]),
-    package_dir={'': '.'},
-    package_data={'': ['*.so', '*.pyd']},
+    packages=['ai_edge_model_explorer_adapter'],
+    package_dir={'ai_edge_model_explorer_adapter': 'ai_edge_model_explorer_adapter'},
+    package_data={'ai_edge_model_explorer_adapter': ['*.so', '*.pyd']},
     install_requires=[],
 )
