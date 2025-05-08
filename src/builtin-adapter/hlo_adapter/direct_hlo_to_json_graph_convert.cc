@@ -413,9 +413,12 @@ void PopulateOutputsMetadata(
 //
 // `node_filter`: decide which instruction to include.
 //
+// `computation_expand`: decide which computation to expand.
+//
 // `output_edges`: record all the edges from the instruction to its users.
 absl::Status HloComputationToGraphImpl(
     const xla::HloComputation& computation, const NodeFilter& node_filter,
+    const ComputationExpand& computation_expand,
     const HloAdapterOption& options,
     absl::flat_hash_set<const xla::HloComputation*>& built_computations,
     std::vector<std::string>& computation_stack,
@@ -451,7 +454,8 @@ absl::Status HloComputationToGraphImpl(
       continue;
     }
 
-    if (instruction->opcode() == xla::HloOpcode::kFusion) {
+    if (instruction->opcode() == xla::HloOpcode::kFusion &&
+        computation_expand(instruction->fused_instructions_computation())) {
       // We do not construct a dedicated node for the variable assigned by
       // fusion op. Instead, we (1) build the fusion computation, (2) connect
       // the operands of the fusion computation to its parameters, and (3)
@@ -461,7 +465,7 @@ absl::Status HloComputationToGraphImpl(
       computation_stack.push_back(std::string(instruction->name()));
       RETURN_IF_ERROR(HloComputationToGraphImpl(
           *(instruction->fused_instructions_computation()), node_filter,
-          options, built_computations, computation_stack,
+          computation_expand, options, built_computations, computation_stack,
           instruction_node_builders, output_edges));
       computation_stack.pop_back();
     } else if (IsGetTupleElement(options, instruction)) {
@@ -475,11 +479,15 @@ absl::Status HloComputationToGraphImpl(
       // Convert subcomputations within the instruction to subgraphs.
       for (const xla::HloComputation* subcomputation :
            instruction->called_computations()) {
+        if (!computation_expand(subcomputation)) {
+          continue;
+        }
         computation_stack.push_back(std::string(subcomputation->name()));
         int prev_node_count = instruction_node_builders.size();
         RETURN_IF_ERROR(HloComputationToGraphImpl(
-            *subcomputation, node_filter, options, built_computations,
-            computation_stack, instruction_node_builders, output_edges));
+            *subcomputation, node_filter, computation_expand, options,
+            built_computations, computation_stack, instruction_node_builders,
+            output_edges));
         int cur_node_count = instruction_node_builders.size();
         computation_stack.pop_back();
 
@@ -523,6 +531,7 @@ std::string GetComputationId(const xla::HloComputation* computation) {
 
 absl::StatusOr<GraphCollection> HloToGraph(
     const xla::HloComputation& computation, const NodeFilter& node_filter,
+    const ComputationExpand& computation_expand,
     const HloAdapterOption& options) {
   Graph graph;
   Subgraph subgraph(std::string(computation.name()));
@@ -534,8 +543,8 @@ absl::StatusOr<GraphCollection> HloToGraph(
   std::vector<GraphNodeBuilder> instruction_node_builders;
 
   RETURN_IF_ERROR(HloComputationToGraphImpl(
-      computation, node_filter, options, built_computations, computation_stack,
-      instruction_node_builders, output_edges));
+      computation, node_filter, computation_expand, options, built_computations,
+      computation_stack, instruction_node_builders, output_edges));
 
   for (GraphNodeBuilder& builder : instruction_node_builders) {
     if (const auto& it = output_edges.find(builder.GetNodeId());

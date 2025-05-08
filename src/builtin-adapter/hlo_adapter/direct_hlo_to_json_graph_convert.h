@@ -52,10 +52,26 @@ std::string GetComputationId(const xla::HloComputation* computation);
 // display or not.
 using NodeFilter = absl::AnyInvocable<bool(const xla::HloInstruction*) const>;
 
+// ComputationExpand is a lambda indicating if an HLO computation need to be
+// expanded or not.
+using ComputationExpand =
+    absl::AnyInvocable<bool(const xla::HloComputation*) const>;
+
 // Converts an HLO computation to a GraphCollection.
 absl::StatusOr<GraphCollection> HloToGraph(
     const xla::HloComputation& computation, const NodeFilter& node_filter,
+    const ComputationExpand& computation_expand,
     const HloAdapterOption& options = HloAdapterOption());
+
+// Converts an HLO computation to a GraphCollection. All computations will be
+// expanded.
+inline absl::StatusOr<GraphCollection> HloToGraph(
+    const xla::HloComputation& computation, const NodeFilter& node_filter,
+    const HloAdapterOption& options = HloAdapterOption()) {
+  return HloToGraph(
+      computation, node_filter,
+      [](const xla::HloComputation* computation) { return true; }, options);
+}
 
 // Converts an HLO computation to a JSON graph.
 // Creates a ME Json representation of the subgraph rooted with the given HLO
