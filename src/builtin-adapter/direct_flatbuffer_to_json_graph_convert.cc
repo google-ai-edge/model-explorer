@@ -92,6 +92,7 @@ constexpr absl::string_view kTensorShape = "tensor_shape";
 constexpr absl::string_view kTensorTag = "__tensor_tag";
 constexpr absl::string_view kValue = "__value";
 constexpr absl::string_view kQuantization = "quantization";
+constexpr absl::string_view kQuantizedDimension = "quantized_dimension";
 constexpr absl::string_view kSignatureName = "signature_name";
 
 struct EdgeInfo {
@@ -414,6 +415,10 @@ void AddQuantizationParameters(const std::unique_ptr<TensorT>& tensor,
   }
   const std::string quant_str = absl::StrJoin(parameters, ",");
   builder.AppendAttrToMetadata(edge_type, rel_idx, kQuantization, quant_str);
+
+  // Adds the quantized dimension.
+  builder.AppendAttrToMetadata(edge_type, rel_idx, kQuantizedDimension,
+                               absl::StrCat(quant->quantized_dimension));
 }
 
 // Validates whether the subgraph is complete with all nodes and edges.
