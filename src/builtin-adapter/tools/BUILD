@@ -11,10 +11,24 @@ cc_library(
     srcs = ["attribute_printer.cc"],
     hdrs = ["attribute_printer.h"],
     deps = [
+        ":shardy_utils",
         "@com_google_absl//absl/log",
         "@llvm-project//llvm:Support",
         "@llvm-project//mlir:IR",
         "@llvm-project//mlir:Support",
+    ],
+)
+
+# Utils for pretty printing Shardy attributes.
+cc_library(
+    name = "shardy_utils",
+    srcs = ["shardy_utils.cc"],
+    hdrs = ["shardy_utils.h"],
+    deps = [
+        "@llvm-project//llvm:Support",
+        "@llvm-project//mlir:IR",
+        "@llvm-project//mlir:Support",
+        "@shardy//shardy/dialect/sdy/ir:dialect",
     ],
 )
 

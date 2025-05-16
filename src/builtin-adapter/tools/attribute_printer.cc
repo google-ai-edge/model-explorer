@@ -32,6 +32,7 @@
 #include "mlir/IR/OperationSupport.h"
 #include "mlir/IR/Types.h"
 #include "mlir/Support/LLVM.h"
+#include "tools/shardy_utils.h"
 
 namespace tooling {
 namespace visualization_client {
@@ -191,6 +192,8 @@ void PrintAttribute(const mlir::Attribute& attr, const int64_t size_limit,
   } else if (const auto& str_attr =
                  llvm::dyn_cast_or_null<mlir::StringAttr>(attr)) {
     PrintString(str_attr.getValue(), os);
+  } else if (IsShardyDialect(attr)) {
+    PrintShardyAttribute(attr, os);
   } else {
     attr.print(os);
   }
