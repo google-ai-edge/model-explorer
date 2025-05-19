@@ -195,7 +195,7 @@ void PrintAttribute(const mlir::Attribute& attr, const int64_t size_limit,
   } else if (IsShardyDialect(attr)) {
     PrintShardyAttribute(attr, os);
   } else {
-    attr.print(os);
+    attr.print(os, /*elideType=*/true);
   }
 }
 
