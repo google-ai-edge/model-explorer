@@ -31,10 +31,12 @@
 #include "absl/strings/str_split.h"
 #include "absl/strings/string_view.h"
 #include "flatbuffers/flexbuffers.h"
+#include "llvm/ADT/DenseSet.h"
 #include "llvm/ADT/STLExtras.h"
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/ADT/StringExtras.h"
 #include "llvm/ADT/StringRef.h"
+#include "llvm/ADT/TypeSwitch.h"
 #include "llvm/Support/Casting.h"
 #include "llvm/Support/raw_ostream.h"
 #include "mlir/Dialect/Func/IR/FuncOps.h"
@@ -58,6 +60,7 @@
 #include "tools/attribute_printer.h"
 #include "tools/load_opdefs.h"
 #include "tools/namespace_heuristics.h"
+#include "tools/shardy_utils.h"
 #include "visualize_config.h"
 #include "tensorflow/compiler/mlir/lite/ir/tfl_ops.h"
 #include "tensorflow/compiler/mlir/tensorflow/ir/tf_dialect.h"
@@ -69,6 +72,7 @@ namespace {
 using ::mlir::Operation;
 using ::mlir::func::FuncOp;
 using ::mlir::TFL::ConstBytesAttr;
+using ::tooling::visualization_client::IsShardyDialect;
 using ::tooling::visualization_client::OpMetadata;
 
 using OpToNodeIdMap = absl::flat_hash_map<Operation*, std::string>;
@@ -96,11 +100,13 @@ class Counter {
 // The context maintained during the graph building process.
 struct GraphBuildContext {
   GraphBuildContext(const OpdefsMap& op_defs, const OpToNodeIdMap& seen_ops,
-                    Counter node_counter, Counter tensor_counter)
+                    Counter node_counter, Counter tensor_counter,
+                    bool has_debug_info = true)
       : op_defs(op_defs),
         seen_ops(seen_ops),
         node_counter(node_counter),
-        tensor_counter(tensor_counter) {}
+        tensor_counter(tensor_counter),
+        has_debug_info(has_debug_info) {}
 
   GraphBuildContext() = default;
 
@@ -108,6 +114,7 @@ struct GraphBuildContext {
   OpToNodeIdMap seen_ops;
   Counter node_counter;
   Counter tensor_counter;
+  bool has_debug_info = true;
 };
 
 // Skip serializing attributes that match the given name. This is a hard-code to
@@ -177,6 +184,32 @@ void AddCustomOptions(const ConstBytesAttr& const_bytes_attr,
   }
 }
 
+void AddReferencedMeshForShardy(
+    mlir::Attribute attr, llvm::SmallDenseSet<mlir::sdy::MeshAttr>& sdy_meshes,
+    Operation& operation) {
+  return llvm::TypeSwitch<mlir::Attribute>(attr)
+      .Case<mlir::sdy::TensorShardingAttr>(
+          [&sdy_meshes,
+           &operation](mlir::sdy::TensorShardingAttr sharding_attr) {
+            mlir::sdy::MeshAttr mesh_attr = sharding_attr.getMesh(&operation);
+            if (!mesh_attr.empty() && !sdy_meshes.contains(mesh_attr)) {
+              sdy_meshes.insert(mesh_attr);
+            }
+          })
+      .Case<mlir::sdy::TensorShardingPerValueAttr>(
+          [&sdy_meshes, &operation](
+              mlir::sdy::TensorShardingPerValueAttr sharding_per_value_attr) {
+            for (const auto& sharding :
+                 sharding_per_value_attr.getShardings()) {
+              mlir::sdy::MeshAttr mesh_attr = sharding.getMesh(&operation);
+              if (!mesh_attr.empty() && !sdy_meshes.contains(mesh_attr)) {
+                sdy_meshes.insert(mesh_attr);
+              }
+            }
+          })
+      .Default([&](mlir::Attribute attr) {});
+}
+
 // Adds attributes from block arguments to the graph node.
 void AddBlockArgAttrs(const VisualizeConfig& config,
                       const mlir::BlockArgument& arg,
@@ -199,6 +232,7 @@ void AppendNodeAttrs(const VisualizeConfig& config, Operation& operation,
                      GraphNodeBuilder& builder) {
   std::string value;
   llvm::raw_string_ostream sstream(value);
+  llvm::SmallDenseSet<mlir::sdy::MeshAttr> sdy_meshes;
   for (const mlir::NamedAttribute& attr : operation.getAttrs()) {
     const llvm::StringRef name = attr.getName();
     const mlir::Attribute attr_val = attr.getValue();
@@ -222,6 +256,9 @@ void AppendNodeAttrs(const VisualizeConfig& config, Operation& operation,
       continue;
     }
     PrintAttribute(attr_val, config.const_element_count_limit, sstream);
+    if (IsShardyDialect(attr_val)) {
+      AddReferencedMeshForShardy(attr_val, sdy_meshes, operation);
+    }
     if (name == "value") {
       // Special handles `value` attribute to represent the tensor data.
       builder.AppendNodeAttribute(kValue, value);
@@ -229,6 +266,15 @@ void AppendNodeAttrs(const VisualizeConfig& config, Operation& operation,
       builder.AppendNodeAttribute(name, value);
     }
     value.clear();
+  }
+  if (!sdy_meshes.empty()) {
+    std::string mesh_attr;
+    llvm::raw_string_ostream attr_sstream(mesh_attr);
+    llvm::interleaveComma(sdy_meshes, attr_sstream,
+                          [&](const mlir::sdy::MeshAttr& mesh) {
+                            mesh.printStripped(attr_sstream);
+                          });
+    builder.AppendNodeAttribute("sdy.meshes", mesh_attr);
   }
 }
 
@@ -539,7 +585,6 @@ void AddNodeInfo(Operation& operation, GraphBuildContext& context,
     return;
   }
   if (IsShardyDialect(operation)) {
-    // TODO(b/412727996): Pretty print shardings on SDY ops.
     GenerateShardyNodeName(operation, builder);
     builder.SetNodeId(node_id_str);
     builder.SetNodeLabel(operation.getName().getStringRef());
@@ -594,6 +639,13 @@ void AddOutputsMetadata(Operation& operation, GraphBuildContext& context,
   }
 }
 
+// Forward declaration of the nested region function.
+absl::Status MaybeAddNestedRegion(const VisualizeConfig& config,
+                                  Operation& operation,
+                                  GraphBuildContext& context,
+                                  GraphNodeBuilder& cur_node,
+                                  Subgraph& subgraph);
+
 // Adds a node of a nested region to the graph.
 // The root_name is used to create the corresponding namespace for the node.
 absl::Status AddNestedRegionNode(const VisualizeConfig& config,
@@ -612,33 +664,51 @@ absl::Status AddNestedRegionNode(const VisualizeConfig& config,
   seen_ops.insert({&operation, builder.GetNodeId()});
   AppendNodeAttrs(config, operation, builder);
   RETURN_IF_ERROR(AddIncomingEdges(operation, context, builder));
+  if (IsShardyDialect(operation)) {
+    // Add multi-layered nested regions for SDY ops if they exist.
+    RETURN_IF_ERROR(
+        MaybeAddNestedRegion(config, operation, context, builder, subgraph));
+  }
   AddOutputsMetadata(operation, context, builder);
   subgraph.nodes.push_back(std::move(builder).Build());
   return absl::OkStatus();
 }
 
-// Adds the nested region of a stablehlo control flow op to the graph.
-absl::Status MaybeAddStablehloNestedRegion(const VisualizeConfig& config,
-                                           Operation& operation,
-                                           GraphBuildContext& context,
-                                           GraphNodeBuilder& cur_node,
-                                           Subgraph& subgraph) {
+// Adds the nested region to the graph.
+absl::Status MaybeAddNestedRegion(const VisualizeConfig& config,
+                                  Operation& operation,
+                                  GraphBuildContext& context,
+                                  GraphNodeBuilder& cur_node,
+                                  Subgraph& subgraph) {
   if (operation.getNumRegions() == 0) {
     return absl::OkStatus();
   }
 
   Counter& tensor_counter = context.tensor_counter;
 
-  // For op that has nested region, we look up its namespace,
-  // - if exists, we apply direct
-  // - if not, we create arbitrary name, eg. (stablehlo.while_12)
-  //   - Parenthesis means it’s generated, not found in original mlir
-  //   - Concat the node_label with node_id to form the uuid
-  const std::string base_namespace =
-      cur_node.GetNodeName().empty()
-          ? absl::StrFormat("(%s_%s)", cur_node.GetNodeLabel(),
-                            cur_node.GetNodeId())
-          : cur_node.GetNodeName();
+  // Ops that have nested regions are created within their own namespace (and
+  // the op is pinned to the top of this group). A uuid for this namespace is
+  // created by concatenating the node label and node id. If the op is already
+  // contained within a parent namespace, the we concatenate the nested region
+  // namespace to its parent.
+
+  std::string base_namespace = "";
+  if (context.has_debug_info) {
+    base_namespace = cur_node.GetNodeName().empty()
+                         ? absl::StrFormat("(%s_%s)", cur_node.GetNodeLabel(),
+                                           cur_node.GetNodeId())
+                         : cur_node.GetNodeName();
+  } else {
+    // Explicitly create new namespaces for nested region ops, when there is no
+    // source location information.
+    const std::string nested_region_namespace = absl::StrFormat(
+        "(%s_%s)", cur_node.GetNodeLabel(), cur_node.GetNodeId());
+    base_namespace = cur_node.GetNodeName().empty()
+                         ? nested_region_namespace
+                         : absl::StrFormat("%s/%s", cur_node.GetNodeName(),
+                                           nested_region_namespace);
+  }
+
   // Since this node has nested regions, we pin it to the top of the group.
   cur_node.SetNodeName(base_namespace);
   cur_node.SetPinToGroupTop(true);
@@ -677,8 +747,8 @@ absl::Status MaybeAddStablehloNestedRegion(const VisualizeConfig& config,
   };
 
   std::string region_name;
-  // Aligns with the definition in stablehlo/dialect/StablehloOps.td. Ops with
-  // "regions" should be added here.
+  // Stablehlo controls flow ops and and Shardy ops with nested regions are
+  // added here.
   if (auto while_op = llvm::dyn_cast<mlir::stablehlo::WhileOp>(operation)) {
     RETURN_IF_ERROR(process_region("cond", while_op.getCond()));
     RETURN_IF_ERROR(process_region("body", while_op.getBody()));
@@ -715,6 +785,12 @@ absl::Status MaybeAddStablehloNestedRegion(const VisualizeConfig& config,
   } else if (auto reduce_window_op =
                  llvm::dyn_cast<mlir::stablehlo::ReduceWindowOp>(operation)) {
     RETURN_IF_ERROR(process_region("body", reduce_window_op.getBody()));
+  } else if (auto manual_computation_op =
+                 llvm::dyn_cast<mlir::sdy::ManualComputationOp>(operation)) {
+    RETURN_IF_ERROR(process_region("body", manual_computation_op.getBody()));
+  } else if (auto named_computation_op =
+                 llvm::dyn_cast<mlir::sdy::NamedComputationOp>(operation)) {
+    RETURN_IF_ERROR(process_region("body", named_computation_op.getBody()));
   } else {
     std::string region_name;
     for (int i = 0, e = operation.getNumRegions(); i < e; ++i) {
@@ -743,9 +819,9 @@ absl::Status AddNode(const VisualizeConfig& config, Operation& operation,
   if (IsTfliteDialect(operation)) {
     TfliteMaybeAppendSubgraphs(operation, builder);
     AddTensorTags(op_defs, operation, builder);
-  } else if (IsStablehloDialect(operation)) {
-    RETURN_IF_ERROR(MaybeAddStablehloNestedRegion(config, operation, context,
-                                                  builder, subgraph));
+  } else if (IsStablehloDialect(operation) || IsShardyDialect(operation)) {
+    RETURN_IF_ERROR(
+        MaybeAddNestedRegion(config, operation, context, builder, subgraph));
   }
   AddOutputsMetadata(operation, context, builder);
   subgraph.nodes.push_back(std::move(builder).Build());
@@ -755,9 +831,10 @@ absl::Status AddNode(const VisualizeConfig& config, Operation& operation,
 }  // namespace
 
 absl::StatusOr<Subgraph> FuncOpToSubgraph(const VisualizeConfig& config,
-                                          FuncOp& fop) {
+                                          FuncOp& fop, bool has_debug_info) {
   Subgraph subgraph(fop.getSymName().str());
   GraphBuildContext context;
+  context.has_debug_info = has_debug_info;
   AddGraphInputs(config, fop, context, subgraph);
   mlir::Block& block = fop.getBody().front();
   Operation* first_op = &block.front();
@@ -770,6 +847,18 @@ absl::StatusOr<Subgraph> FuncOpToSubgraph(const VisualizeConfig& config,
   return subgraph;
 }
 
+bool ModuleHasDebugInfo(Operation* module) {
+  bool no_debug_info = true;
+  // Determine if module has no debug location information by checking the
+  // presence of NameLoc attr on all ops.
+  module->walk([&](Operation* op) -> mlir::WalkResult {
+    no_debug_info = no_debug_info &&
+                    op->getLoc()->findInstanceOf<mlir::NameLoc>() == nullptr;
+    return mlir::WalkResult::advance();
+  });
+  return !no_debug_info;
+}
+
 absl::StatusOr<Graph> MlirToGraph(const VisualizeConfig& config,
                                   Operation* module) {
   if (!llvm::isa<mlir::ModuleOp>(module)) {
@@ -777,13 +866,15 @@ absl::StatusOr<Graph> MlirToGraph(const VisualizeConfig& config,
   }
   Graph graph;
   std::string log_msg;
+  bool has_debug_info = ModuleHasDebugInfo(module);
   auto walk_result = module->walk([&](FuncOp fop) -> mlir::WalkResult {
     llvm::StringRef func_name = fop.getSymName();
     // Avoids serializing "NoOp" function to JSON graph.
     if (func_name == "NoOp") {
       return mlir::WalkResult::skip();
     }
-    absl::StatusOr<Subgraph> subgraph = FuncOpToSubgraph(config, fop);
+    absl::StatusOr<Subgraph> subgraph =
+        FuncOpToSubgraph(config, fop, has_debug_info);
     if (!subgraph.ok()) {
       log_msg = subgraph.status().message();
       return mlir::WalkResult::interrupt();
