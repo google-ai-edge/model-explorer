@@ -96,11 +96,13 @@ class Counter {
 // The context maintained during the graph building process.
 struct GraphBuildContext {
   GraphBuildContext(const OpdefsMap& op_defs, const OpToNodeIdMap& seen_ops,
-                    Counter node_counter, Counter tensor_counter)
+                    Counter node_counter, Counter tensor_counter,
+                    bool has_debug_info)
       : op_defs(op_defs),
         seen_ops(seen_ops),
         node_counter(node_counter),
-        tensor_counter(tensor_counter) {}
+        tensor_counter(tensor_counter),
+        has_debug_info(has_debug_info) {}
 
   GraphBuildContext() = default;
 
@@ -108,6 +110,7 @@ struct GraphBuildContext {
   OpToNodeIdMap seen_ops;
   Counter node_counter;
   Counter tensor_counter;
+  bool has_debug_info;
 };
 
 // Skip serializing attributes that match the given name. This is a hard-code to
@@ -539,7 +542,6 @@ void AddNodeInfo(Operation& operation, GraphBuildContext& context,
     return;
   }
   if (IsShardyDialect(operation)) {
-    // TODO(b/412727996): Pretty print shardings on SDY ops.
     GenerateShardyNodeName(operation, builder);
     builder.SetNodeId(node_id_str);
     builder.SetNodeLabel(operation.getName().getStringRef());
@@ -594,6 +596,13 @@ void AddOutputsMetadata(Operation& operation, GraphBuildContext& context,
   }
 }
 
+// Forward declaration of the nested region function.
+absl::Status MaybeAddNestedRegion(const VisualizeConfig& config,
+                                  Operation& operation,
+                                  GraphBuildContext& context,
+                                  GraphNodeBuilder& cur_node,
+                                  Subgraph& subgraph);
+
 // Adds a node of a nested region to the graph.
 // The root_name is used to create the corresponding namespace for the node.
 absl::Status AddNestedRegionNode(const VisualizeConfig& config,
@@ -612,33 +621,62 @@ absl::Status AddNestedRegionNode(const VisualizeConfig& config,
   seen_ops.insert({&operation, builder.GetNodeId()});
   AppendNodeAttrs(config, operation, builder);
   RETURN_IF_ERROR(AddIncomingEdges(operation, context, builder));
+  if (IsShardyDialect(operation)) {
+    // Add multi-layered nested regions for SDY ops if they exist.
+    RETURN_IF_ERROR(
+        MaybeAddNestedRegion(config, operation, context, builder, subgraph));
+  }
   AddOutputsMetadata(operation, context, builder);
   subgraph.nodes.push_back(std::move(builder).Build());
   return absl::OkStatus();
 }
 
-// Adds the nested region of a stablehlo control flow op to the graph.
-absl::Status MaybeAddStablehloNestedRegion(const VisualizeConfig& config,
-                                           Operation& operation,
-                                           GraphBuildContext& context,
-                                           GraphNodeBuilder& cur_node,
-                                           Subgraph& subgraph) {
+// Adds the nested region to the graph.
+absl::Status MaybeAddNestedRegion(const VisualizeConfig& config,
+                                  Operation& operation,
+                                  GraphBuildContext& context,
+                                  GraphNodeBuilder& cur_node,
+                                  Subgraph& subgraph) {
   if (operation.getNumRegions() == 0) {
     return absl::OkStatus();
   }
 
   Counter& tensor_counter = context.tensor_counter;
 
-  // For op that has nested region, we look up its namespace,
-  // - if exists, we apply direct
-  // - if not, we create arbitrary name, eg. (stablehlo.while_12)
-  //   - Parenthesis means it’s generated, not found in original mlir
-  //   - Concat the node_label with node_id to form the uuid
-  const std::string base_namespace =
-      cur_node.GetNodeName().empty()
-          ? absl::StrFormat("(%s_%s)", cur_node.GetNodeLabel(),
-                            cur_node.GetNodeId())
-          : cur_node.GetNodeName();
+  // Ops with nested regions are grouped within their own namespace, and the op
+  // is pinned to the top of this group. A unique namespace is generated using
+  // the node's label and ID. If the op is already within a parent namespace,
+  // the generated namespace is appended to the parent's namespace.
+  // This generated namespace is also used when no debug info is available.
+  const std::string generated_namespace_part =
+      absl::StrFormat("(%s_%s)", cur_node.GetNodeLabel(), cur_node.GetNodeId());
+
+  std::string base_namespace;
+  if (cur_node.GetNodeName().empty()) {
+    // If the current node doesn't already have a name (e.g., from debug info),
+    // use the generated part as its namespace. This applies whether debug info
+    // is present or not, as there's no existing name to take precedence.
+    base_namespace = generated_namespace_part;
+  } else {
+    // The current node already has a name (likely from parent scope or debug
+    // info).
+    if (context.has_debug_info) {
+      // If debug information is present, it dictates the namespace.
+      // The existing node name is used directly. TODO(b/421175189): Note that
+      // for nested region ops, this may not always group ops as intended if the
+      // debug info doesn't reflect the nested hierarchy
+      base_namespace = cur_node.GetNodeName();
+    } else {
+      // No debug information, but there's an existing node name (parent scope).
+      // This is where the special handling for nested SDY ops applies.
+      // Create a new, deeper namespace by appending the generated part to the
+      // existing node name. This ensures the op is grouped within its own
+      // sub-namespace.
+      base_namespace = absl::StrFormat("%s/%s", cur_node.GetNodeName(),
+                                       generated_namespace_part);
+    }
+  }
+
   // Since this node has nested regions, we pin it to the top of the group.
   cur_node.SetNodeName(base_namespace);
   cur_node.SetPinToGroupTop(true);
@@ -677,8 +715,8 @@ absl::Status MaybeAddStablehloNestedRegion(const VisualizeConfig& config,
   };
 
   std::string region_name;
-  // Aligns with the definition in stablehlo/dialect/StablehloOps.td. Ops with
-  // "regions" should be added here.
+  // Stablehlo controls flow ops and and Shardy ops with nested regions are
+  // added here.
   if (auto while_op = llvm::dyn_cast<mlir::stablehlo::WhileOp>(operation)) {
     RETURN_IF_ERROR(process_region("cond", while_op.getCond()));
     RETURN_IF_ERROR(process_region("body", while_op.getBody()));
@@ -715,6 +753,12 @@ absl::Status MaybeAddStablehloNestedRegion(const VisualizeConfig& config,
   } else if (auto reduce_window_op =
                  llvm::dyn_cast<mlir::stablehlo::ReduceWindowOp>(operation)) {
     RETURN_IF_ERROR(process_region("body", reduce_window_op.getBody()));
+  } else if (auto manual_computation_op =
+                 llvm::dyn_cast<mlir::sdy::ManualComputationOp>(operation)) {
+    RETURN_IF_ERROR(process_region("body", manual_computation_op.getBody()));
+  } else if (auto named_computation_op =
+                 llvm::dyn_cast<mlir::sdy::NamedComputationOp>(operation)) {
+    RETURN_IF_ERROR(process_region("body", named_computation_op.getBody()));
   } else {
     std::string region_name;
     for (int i = 0, e = operation.getNumRegions(); i < e; ++i) {
@@ -743,9 +787,9 @@ absl::Status AddNode(const VisualizeConfig& config, Operation& operation,
   if (IsTfliteDialect(operation)) {
     TfliteMaybeAppendSubgraphs(operation, builder);
     AddTensorTags(op_defs, operation, builder);
-  } else if (IsStablehloDialect(operation)) {
-    RETURN_IF_ERROR(MaybeAddStablehloNestedRegion(config, operation, context,
-                                                  builder, subgraph));
+  } else if (IsStablehloDialect(operation) || IsShardyDialect(operation)) {
+    RETURN_IF_ERROR(
+        MaybeAddNestedRegion(config, operation, context, builder, subgraph));
   }
   AddOutputsMetadata(operation, context, builder);
   subgraph.nodes.push_back(std::move(builder).Build());
@@ -755,9 +799,10 @@ absl::Status AddNode(const VisualizeConfig& config, Operation& operation,
 }  // namespace
 
 absl::StatusOr<Subgraph> FuncOpToSubgraph(const VisualizeConfig& config,
-                                          FuncOp& fop) {
+                                          FuncOp& fop, bool has_debug_info) {
   Subgraph subgraph(fop.getSymName().str());
   GraphBuildContext context;
+  context.has_debug_info = has_debug_info;
   AddGraphInputs(config, fop, context, subgraph);
   mlir::Block& block = fop.getBody().front();
   Operation* first_op = &block.front();
@@ -770,6 +815,20 @@ absl::StatusOr<Subgraph> FuncOpToSubgraph(const VisualizeConfig& config,
   return subgraph;
 }
 
+bool ModuleHasDebugInfo(Operation* module) {
+  bool has_debug_info = false;
+  // Determine if module has debug location information by checking for
+  // the presence of NameLoc attr on any op.
+  module->walk([&](Operation* op) -> mlir::WalkResult {
+    if (op->getLoc()->findInstanceOf<mlir::NameLoc>() != nullptr) {
+      has_debug_info = true;
+      return mlir::WalkResult::interrupt();
+    }
+    return mlir::WalkResult::advance();
+  });
+  return has_debug_info;
+}
+
 absl::StatusOr<Graph> MlirToGraph(const VisualizeConfig& config,
                                   Operation* module) {
   if (!llvm::isa<mlir::ModuleOp>(module)) {
@@ -777,13 +836,15 @@ absl::StatusOr<Graph> MlirToGraph(const VisualizeConfig& config,
   }
   Graph graph;
   std::string log_msg;
+  const bool has_debug_info = ModuleHasDebugInfo(module);
   auto walk_result = module->walk([&](FuncOp fop) -> mlir::WalkResult {
     llvm::StringRef func_name = fop.getSymName();
     // Avoids serializing "NoOp" function to JSON graph.
     if (func_name == "NoOp") {
       return mlir::WalkResult::skip();
     }
-    absl::StatusOr<Subgraph> subgraph = FuncOpToSubgraph(config, fop);
+    absl::StatusOr<Subgraph> subgraph =
+        FuncOpToSubgraph(config, fop, has_debug_info);
     if (!subgraph.ok()) {
       log_msg = subgraph.status().message();
       return mlir::WalkResult::interrupt();
