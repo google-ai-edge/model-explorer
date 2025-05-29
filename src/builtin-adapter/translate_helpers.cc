@@ -31,6 +31,7 @@
 #include "absl/strings/str_split.h"
 #include "absl/strings/string_view.h"
 #include "flatbuffers/flexbuffers.h"
+#include "llvm/ADT/DenseMap.h"
 #include "llvm/ADT/STLExtras.h"
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/ADT/StringExtras.h"
@@ -58,6 +59,7 @@
 #include "tools/attribute_printer.h"
 #include "tools/load_opdefs.h"
 #include "tools/namespace_heuristics.h"
+#include "tools/shardy_utils.h"
 #include "visualize_config.h"
 #include "tensorflow/compiler/mlir/lite/ir/tfl_ops.h"
 #include "tensorflow/compiler/mlir/tensorflow/ir/tf_dialect.h"
@@ -69,7 +71,6 @@ namespace {
 using ::mlir::Operation;
 using ::mlir::func::FuncOp;
 using ::mlir::TFL::ConstBytesAttr;
-using ::tooling::visualization_client::OpMetadata;
 
 using OpToNodeIdMap = absl::flat_hash_map<Operation*, std::string>;
 using OpdefsMap = absl::flat_hash_map<std::string, OpMetadata>;
@@ -202,6 +203,7 @@ void AppendNodeAttrs(const VisualizeConfig& config, Operation& operation,
                      GraphNodeBuilder& builder) {
   std::string value;
   llvm::raw_string_ostream sstream(value);
+  llvm::SmallDenseMap<llvm::StringRef, mlir::sdy::MeshAttr> sdy_meshes;
   for (const mlir::NamedAttribute& attr : operation.getAttrs()) {
     const llvm::StringRef name = attr.getName();
     const mlir::Attribute attr_val = attr.getValue();
@@ -225,6 +227,9 @@ void AppendNodeAttrs(const VisualizeConfig& config, Operation& operation,
       continue;
     }
     PrintAttribute(attr_val, config.const_element_count_limit, sstream);
+    if (tooling::visualization_client::IsShardyDialect(attr_val)) {
+      AddReferencedMesh(attr_val, sdy_meshes, operation);
+    }
     if (name == "value") {
       // Special handles `value` attribute to represent the tensor data.
       builder.AppendNodeAttribute(kValue, value);
@@ -232,6 +237,18 @@ void AppendNodeAttrs(const VisualizeConfig& config, Operation& operation,
       builder.AppendNodeAttribute(name, value);
     }
     value.clear();
+  }
+  if (!sdy_meshes.empty()) {
+    std::string mesh_attr;
+    llvm::raw_string_ostream attr_sstream(mesh_attr);
+    llvm::interleave(
+        sdy_meshes, attr_sstream,
+        [&](const std::pair<llvm::StringRef, mlir::sdy::MeshAttr>& mesh_entry) {
+          attr_sstream << mesh_entry.first << ": ";
+          mesh_entry.second.printStripped(attr_sstream);
+        },
+        "\n");
+    builder.AppendNodeAttribute("sdy.meshes", mesh_attr);
   }
 }
 

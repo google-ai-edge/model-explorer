@@ -16,6 +16,7 @@
 #ifndef TENSORFLOW_COMPILER_MLIR_LITE_EXPERIMENTAL_GOOGLE_TOOLING_TOOLS_SHARDY_UTILS_H_
 #define TENSORFLOW_COMPILER_MLIR_LITE_EXPERIMENTAL_GOOGLE_TOOLING_TOOLS_SHARDY_UTILS_H_
 
+#include "llvm/ADT/DenseMap.h"
 #include "llvm/Support/Casting.h"
 #include "llvm/Support/raw_ostream.h"
 #include "mlir/IR/Attributes.h"
@@ -32,6 +33,13 @@ inline bool IsShardyDialect(mlir::Attribute attr) {
 // Prints Shardy attributes to stream (using simplified pretty printing for
 // select Shardy attributes).
 void PrintShardyAttribute(mlir::Attribute attr, llvm::raw_string_ostream& os);
+
+// Adds referenced meshes from Shardy attributes to the set. This is used to
+// collect all referenced meshes for a given op.
+void AddReferencedMesh(
+    mlir::Attribute attr,
+    llvm::SmallDenseMap<llvm::StringRef, mlir::sdy::MeshAttr>& sdy_meshes,
+    mlir::Operation& operation);
 
 }  // namespace visualization_client
 }  // namespace tooling

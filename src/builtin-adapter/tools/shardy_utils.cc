@@ -16,18 +16,22 @@
 #include "tools/shardy_utils.h"
 
 #include "llvm/ADT/APInt.h"
+#include "llvm/ADT/DenseMap.h"
 #include "llvm/ADT/TypeSwitch.h"
 #include "llvm/Support/raw_ostream.h"
 #include "mlir/IR/Attributes.h"
+#include "mlir/IR/Operation.h"
 #include "mlir/Support/LLVM.h"
 #include "shardy/dialect/sdy/ir/dialect.h"
 #include "shardy/dialect/sdy/ir/utils.h"
 
-using ::mlir::sdy::strippedAttrString;
-
 namespace tooling {
 namespace visualization_client {
 namespace {
+
+using ::mlir::Attribute;
+using ::mlir::Operation;
+using ::mlir::sdy::strippedAttrString;
 
 // Prints a simplified version of manual axes, which is easier for users to
 // parse. For example it displays the default printing of
@@ -91,6 +95,35 @@ void PrintShardyAttribute(mlir::Attribute attr, llvm::raw_string_ostream& os) {
           })
       .Default(
           [&](mlir::Attribute attr) { attr.print(os, /*elideType=*/true); });
+}
+
+void AddReferencedMesh(
+    Attribute attr,
+    llvm::SmallDenseMap<llvm::StringRef, mlir::sdy::MeshAttr>& sdy_meshes,
+    Operation& operation) {
+  return llvm::TypeSwitch<mlir::Attribute>(attr)
+      .Case<mlir::sdy::TensorShardingAttr>(
+          [&sdy_meshes,
+           &operation](mlir::sdy::TensorShardingAttr sharding_attr) {
+            mlir::sdy::MeshAttr mesh_attr = sharding_attr.getMesh(&operation);
+            llvm::StringRef mesh_name = sharding_attr.getMeshName();
+            if (!mesh_attr.empty() && !sdy_meshes.contains(mesh_name)) {
+              sdy_meshes[mesh_name] = mesh_attr;
+            }
+          })
+      .Case<mlir::sdy::TensorShardingPerValueAttr>(
+          [&sdy_meshes, &operation](
+              mlir::sdy::TensorShardingPerValueAttr sharding_per_value_attr) {
+            for (const auto& sharding :
+                 sharding_per_value_attr.getShardings()) {
+              mlir::sdy::MeshAttr mesh_attr = sharding.getMesh(&operation);
+              llvm::StringRef mesh_name = sharding.getMeshName();
+              if (!mesh_attr.empty() && !sdy_meshes.contains(mesh_name)) {
+                sdy_meshes[mesh_name] = mesh_attr;
+              }
+            }
+          })
+      .Default([&](mlir::Attribute attr) {});
 }
 
 }  // namespace visualization_client
