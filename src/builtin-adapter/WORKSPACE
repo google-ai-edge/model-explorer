@@ -28,9 +28,14 @@ http_archive(
     ],
 )
 
-TENSORFLOW_COMMIT = "32f376e44ba50279a98bf131108782f408d0a496"
+# To update TensorFlow to a new revision,
+# a) update TENSORFLOW_COMMIT to the new git commit hash
+# b) get the sha256 hash of the commit by running:
+#    curl -L https://github.com/tensorflow/tensorflow/archive/<commit>.tar.gz | sha256sum
+#    and update TENSORFLOW_SHA256 with the result.
+TENSORFLOW_COMMIT = "78f750ffab7eaeb715cd9b38cf1e08baca67edbf"
 
-TENSORFLOW_SHA256 = "14c2e18223107a312b4a801ddcbdcd6fb9dca1d9ebed59149f2830334c3ec7e2"
+TENSORFLOW_SHA256 = "683dc24cab9fdd0de2be4ba684c37cc9191a58fd0c8610395b57496a21d038ba"
 
 http_archive(
     name = "org_tensorflow",
@@ -94,13 +99,28 @@ pip_parse(
     requirements = "@org_tensorflow//:requirements_lock_" + HERMETIC_PYTHON_VERSION.replace(".", "_") + ".txt",
 )
 
-load("@pypi//:requirements.bzl", "install_deps")
+# Copy the contents of the WORKSPACE file from the tensorflow repo.
+# ==============================================================================
 
-install_deps()
-
+# Initialize the TensorFlow repository and all dependencies.
+#
+# The cascade of load() statements and tf_workspace?() calls works around the
+# restriction that load() statements need to be at the top of .bzl files.
+# E.g. we can not retrieve a new repository with http_archive and then load()
+# a macro from that repository in the same file.
 load("@org_tensorflow//tensorflow:workspace3.bzl", "tf_workspace3")
 
 tf_workspace3()
+
+# Initialize hermetic Python
+load("@local_xla//third_party/py:python_init_rules.bzl", "python_init_rules")
+
+python_init_rules()
+
+load("@pypi//:requirements.bzl", "install_deps")
+
+install_deps()
+# End hermetic Python initialization
 
 load("@org_tensorflow//tensorflow:workspace2.bzl", "tf_workspace2")
 
@@ -115,7 +135,14 @@ load("@org_tensorflow//tensorflow:workspace0.bzl", "tf_workspace0")
 tf_workspace0()
 
 load(
-    "@local_tsl//third_party/gpus/cuda/hermetic:cuda_json_init_repository.bzl",
+    "@local_xla//third_party/py:python_wheel.bzl",
+    "python_wheel_version_suffix_repository",
+)
+
+python_wheel_version_suffix_repository(name = "tf_wheel_version_suffix")
+
+load(
+    "@local_xla//third_party/gpus/cuda/hermetic:cuda_json_init_repository.bzl",
     "cuda_json_init_repository",
 )
 
@@ -127,7 +154,7 @@ load(
     "CUDNN_REDISTRIBUTIONS",
 )
 load(
-    "@local_tsl//third_party/gpus/cuda/hermetic:cuda_redist_init_repositories.bzl",
+    "@local_xla//third_party/gpus/cuda/hermetic:cuda_redist_init_repositories.bzl",
     "cuda_redist_init_repositories",
     "cudnn_redist_init_repository",
 )
@@ -141,21 +168,21 @@ cudnn_redist_init_repository(
 )
 
 load(
-    "@local_tsl//third_party/gpus/cuda/hermetic:cuda_configure.bzl",
+    "@local_xla//third_party/gpus/cuda/hermetic:cuda_configure.bzl",
     "cuda_configure",
 )
 
 cuda_configure(name = "local_config_cuda")
 
 load(
-    "@local_tsl//third_party/nccl/hermetic:nccl_redist_init_repository.bzl",
+    "@local_xla//third_party/nccl/hermetic:nccl_redist_init_repository.bzl",
     "nccl_redist_init_repository",
 )
 
 nccl_redist_init_repository()
 
 load(
-    "@local_tsl//third_party/nccl/hermetic:nccl_configure.bzl",
+    "@local_xla//third_party/nccl/hermetic:nccl_configure.bzl",
     "nccl_configure",
 )
 
