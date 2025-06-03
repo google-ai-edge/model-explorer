@@ -18,7 +18,7 @@
 
 import {EdgeOverlaysData} from './edge_overlays';
 import {SyncNavigationData} from './sync_navigation';
-import {NodeStylerRule, RendererType} from './types';
+import {LegendConfig, NodeStylerRule, RendererType} from './types';
 
 /** Configs for the visualizer. */
 export declare interface VisualizerConfig {
@@ -137,4 +137,27 @@ export declare interface VisualizerConfig {
    * Whether to hide the legends.
    */
   hideLegends?: boolean;
+
+  /**
+   * A list of node info keys (regex) to hide from the "node info" section in
+   * the side panel.
+   */
+  nodeInfoKeysToHide?: string[];
+
+  /**
+   * A list of metadata keys (regex) to hide from the "inputs" section in the
+   * side panel.
+   */
+  inputMetadataKeysToHide?: string[];
+
+  /**
+   * A list of metadata keys (regex) to hide from the "outputs" section in the
+   * side panel.
+   */
+  outputMetadataKeysToHide?: string[];
+
+  /**
+   * Config for the legends panel.
+   */
+  legendConfig?: LegendConfig;
 }

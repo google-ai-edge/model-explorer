@@ -785,3 +785,33 @@ export declare interface SyncNavigationModeChangedEvent {
   // Used when mode is LOAD_MAPPING_FROM_CNS.
   cnsPath?: string;
 }
+
+/** Config for legend panel. */
+export declare interface LegendConfig {
+  /** Whether to hide the "Op node" legend row. */
+  hideOp?: boolean;
+
+  /** Whether to hide the "Layer node" legend row. */
+  hideLayer?: boolean;
+
+  /** Whether to hide the "Artificial layer" legend row. */
+  hideArtificialLayers?: boolean;
+
+  /** Whether to hide the "Selected op" legend row. */
+  hideSelectedOp?: boolean;
+
+  /** Whether to hide the "Selected layer" legend row. */
+  hideSelectedLayer?: boolean;
+
+  /** Whether to hide the "Identical layer" legend row. */
+  hideIdenticalLayers?: boolean;
+
+  /** Whether to hide the "Inputs" legend row. */
+  hideInputs?: boolean;
+
+  /** Whether to hide the "Outputs" legend row. */
+  hideOutputs?: boolean;
+
+  /** Whether to hide the navigation shortcuts legend rows. */
+  hideShortcuts?: boolean;
+}

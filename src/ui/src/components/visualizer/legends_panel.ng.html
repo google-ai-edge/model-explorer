@@ -16,58 +16,76 @@ limitations under the License.
 ==============================================================================
 -->
 
-<div class="container">
+<div class="container" [class.hide]="!showPanel()">
   <table>
     <!-- Basics -->
-    <tr>
-      <td><div class="key op-node-key"></div></td>
-      <td><div class="label">Op</div></td>
-    </tr>
-    <tr>
-      <td><div class="key group-node-key"></div></td>
-      <td><div class="label">Layer</div></td>
-    </tr>
-    <tr *ngIf="hasArtificialLayers">
-      <td><div class="key artificial-layer-key"></div></td>
-      <td><div class="label">Artificial layer to reduce layout load</div></td>
-    </tr>
+    @if (!hideOp) {
+      <tr #item>
+        <td><div class="key op-node-key"></div></td>
+        <td><div class="label">Op</div></td>
+      </tr>
+    }
+    @if (!hideLayer) {
+      <tr #item>
+        <td><div class="key group-node-key"></div></td>
+        <td><div class="label">Layer</div></td>
+      </tr>
+    }
+    @if (!hideArtificialLayers) {
+      <tr *ngIf="hasArtificialLayers" #item>
+        <td><div class="key artificial-layer-key"></div></td>
+        <td><div class="label">Artificial layer to reduce layout load</div></td>
+      </tr>
+    }
     <!-- Selected node -->
-    <tr *ngIf="showSelectedNodeKey">
-      <td>
-        <div class="key selected-node-key" [class.group]="isSelectedNodeGroup">
-        </div>
-      </td>
-      <td>
-        <div class="label">
-          Selected {{isSelectedNodeGroup ? 'layer' : 'op'}}
-        </div>
-      </td>
-    </tr>
+    @if (showSelectedNodeKey && ((isSelectedNodeGroup && !hideSelectedLayer) || (!isSelectedNodeGroup && !hideSelectedOp))) {
+      <tr #item>
+        <td>
+          <div class="key selected-node-key" [class.group]="isSelectedNodeGroup">
+          </div>
+        </td>
+        <td>
+          <div class="label">
+            Selected {{isSelectedNodeGroup ? 'layer' : 'op'}}
+          </div>
+        </td>
+      </tr>
+    }
     <!-- Identical layer for selected group node -->
-    <tr *ngIf="showSelectedNodeKey && isSelectedNodeGroup">
-      <td><div class="key identical-group-key"></div></td>
-      <td><div class="label">Identical layer (if any)</div></td>
-    </tr>
+    @if (!hideIdenticalLayers) {
+      <tr *ngIf="showSelectedNodeKey && isSelectedNodeGroup" #item>
+        <td><div class="key identical-group-key"></div></td>
+        <td><div class="label">Identical layer (if any)</div></td>
+      </tr>
+    }
     <!-- Input/output for selected op node -->
     <ng-container *ngIf="showSelectedNodeKey && !isSelectedNodeGroup">
-      <tr>
-        <td><div class="key input-key"></div></td>
-        <td><div class="label">Inputs (if any)</div></td>
-      </tr>
-      <tr>
-        <td><div class="key output-key"></div></td>
-        <td><div class="label">Outputs (if any)</div></td>
-      </tr>
+      @if (!hideInputs) {
+        <tr #item>
+          <td><div class="key input-key"></div></td>
+          <td><div class="label">Inputs (if any)</div></td>
+        </tr>
+      }
+      @if (!hideOutputs) {
+        <tr #item>
+          <td><div class="key output-key"></div></td>
+          <td><div class="label">Outputs (if any)</div></td>
+        </tr>
+      }
     </ng-container>
-    <tr><td colspan="2"><div class="divider"></div></td></tr>
-    <!-- Navigation shortcuts -->
-    <tr>
-      <td><div class="key shortcut">Zoom</div></td>
-      <td><div class="label shortcut">Ctrl+Scroll</div></td>
-    </tr>
-    <tr>
-      <td><div class="key shortcut">Pan</div></td>
-      <td><div class="label shortcut">Drag or scroll</div></td>
-    </tr>
+    @if (!hideShortcuts) {
+      @if (showDivider()) {
+        <tr><td colspan="2"><div class="divider"></div></td></tr>
+      }
+      <!-- Navigation shortcuts -->
+      <tr>
+        <td><div class="key shortcut">Zoom</div></td>
+        <td><div class="label shortcut">Ctrl+Scroll</div></td>
+      </tr>
+      <tr>
+        <td><div class="key shortcut">Pan</div></td>
+        <td><div class="label shortcut">Drag or scroll</div></td>
+      </tr>
+    }
   </table>
 </div>

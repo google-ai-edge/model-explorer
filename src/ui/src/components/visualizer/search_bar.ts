@@ -265,6 +265,7 @@ export class SearchBar {
             regex,
             node,
             this.curModelGraph,
+            this.appService.config(),
           );
           if (matches.length === 0) {
             matched = false;

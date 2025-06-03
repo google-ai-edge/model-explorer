@@ -2057,7 +2057,14 @@ export class WebglRenderer implements OnInit, OnDestroy {
 
       // Node styler.
       for (const rule of this.curProcessedNodeStylerRules) {
-        if (matchNodeForQueries(node, rule.queries, this.curModelGraph)) {
+        if (
+          matchNodeForQueries(
+            node,
+            rule.queries,
+            this.curModelGraph,
+            this.appService.config(),
+          )
+        ) {
           const nodeStylerBgColor = getNodeStyleValue(
             rule,
             NodeStyleId.NODE_BG_COLOR,
@@ -2373,7 +2380,14 @@ export class WebglRenderer implements OnInit, OnDestroy {
 
       // Node styler.
       for (const rule of this.curProcessedNodeStylerRules) {
-        if (matchNodeForQueries(node, rule.queries, this.curModelGraph)) {
+        if (
+          matchNodeForQueries(
+            node,
+            rule.queries,
+            this.curModelGraph,
+            this.appService.config(),
+          )
+        ) {
           const nodeStylerTextColor = getNodeStyleValue(
             rule,
             NodeStyleId.NODE_TEXT_COLOR,

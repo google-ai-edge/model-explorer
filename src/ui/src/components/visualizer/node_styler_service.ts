@@ -304,7 +304,12 @@ export class NodeStylerService {
             const rule = processedRules[ruleIndex];
             if (
               hasNonEmptyQueries(rules[ruleIndex].queries) &&
-              matchNodeForQueries(node, rule.queries, modelGraph)
+              matchNodeForQueries(
+                node,
+                rule.queries,
+                modelGraph,
+                this.appService.config(),
+              )
             ) {
               if (matchedNodes[ruleIndex] == null) {
                 matchedNodes[ruleIndex] = {};
