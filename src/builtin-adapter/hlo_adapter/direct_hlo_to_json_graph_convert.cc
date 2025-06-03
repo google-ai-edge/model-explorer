@@ -328,7 +328,7 @@ void SetInstructionNodeAttributes(const xla::HloInstruction* instruction,
   if (instruction->metadata().stack_frame_id() != 0) {
     builder.AppendNodeAttribute(
         kSourceStack,
-        tensorflow::profiler::GetSourceInfo(instruction).stack_frame);
+        tensorflow::profiler::GetSourceInfo(*instruction).stack_frame);
   }
 
   // Attach get-tuple-element index if its define is a GTE and folded.
