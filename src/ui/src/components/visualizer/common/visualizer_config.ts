@@ -157,6 +157,11 @@ export declare interface VisualizerConfig {
   outputMetadataKeysToHide?: string[];
 
   /**
+   * If set, rename the "op name" item in the node info to this string.
+   */
+  renameNodeInfoOpNameTo?: string;
+
+  /**
    * Config for the legends panel.
    */
   legendConfig?: LegendConfig;

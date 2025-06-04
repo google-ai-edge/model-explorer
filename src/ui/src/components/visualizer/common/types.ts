@@ -814,4 +814,14 @@ export declare interface LegendConfig {
 
   /** Whether to hide the navigation shortcuts legend rows. */
   hideShortcuts?: boolean;
+
+  /**
+   * If set, rename the "op" label to this string.
+   */
+  renameOpTo?: string;
+
+  /**
+   * If set, rename the "layer" legend row to this string.
+   */
+  renameLayerTo?: string;
 }

@@ -22,13 +22,13 @@ limitations under the License.
     @if (!hideOp) {
       <tr #item>
         <td><div class="key op-node-key"></div></td>
-        <td><div class="label">Op</div></td>
+        <td><div class="label">{{opLabel}}</div></td>
       </tr>
     }
     @if (!hideLayer) {
       <tr #item>
         <td><div class="key group-node-key"></div></td>
-        <td><div class="label">Layer</div></td>
+        <td><div class="label">{{layerLabel}}</div></td>
       </tr>
     }
     @if (!hideArtificialLayers) {
@@ -46,7 +46,7 @@ limitations under the License.
         </td>
         <td>
           <div class="label">
-            Selected {{isSelectedNodeGroup ? 'layer' : 'op'}}
+            {{selectedItemLabel}}
           </div>
         </td>
       </tr>
@@ -55,7 +55,7 @@ limitations under the License.
     @if (!hideIdenticalLayers) {
       <tr *ngIf="showSelectedNodeKey && isSelectedNodeGroup" #item>
         <td><div class="key identical-group-key"></div></td>
-        <td><div class="label">Identical layer (if any)</div></td>
+        <td><div class="label">{{identicalLayerLabel}}</div></td>
       </tr>
     }
     <!-- Input/output for selected op node -->

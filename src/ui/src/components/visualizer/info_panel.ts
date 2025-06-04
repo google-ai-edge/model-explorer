@@ -729,6 +729,7 @@ export class InfoPanel {
     }
 
     const opNode = this.curSelectedNode as OpNode;
+    const config = this.appService.config();
 
     // Section for basic node data.
     const nodeSection: InfoSection = {
@@ -739,7 +740,7 @@ export class InfoPanel {
     this.sections.push(nodeSection);
 
     // Node op.
-    let label = 'op name';
+    let label = config?.renameNodeInfoOpNameTo ?? 'op name';
     nodeSection.items.push({
       section: nodeSection,
       label,
@@ -765,7 +766,6 @@ export class InfoPanel {
     });
 
     // Filter out node info keys specified in the config.
-    const config = this.appService.config();
     const nodeInfoKeysToHide = config?.nodeInfoKeysToHide ?? [];
     nodeSection.items = nodeSection.items.filter(
       (item) =>

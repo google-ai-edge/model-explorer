@@ -82,6 +82,27 @@ export class LegendsPanel {
     });
   }
 
+  get opLabel(): string {
+    return this.appService.config()?.legendConfig?.renameOpTo ?? 'Op';
+  }
+
+  get layerLabel(): string {
+    return this.appService.config()?.legendConfig?.renameLayerTo ?? 'Layer';
+  }
+
+  get selectedItemLabel(): string {
+    const config = this.appService.config();
+    if (this.isSelectedNodeGroup) {
+      return `Selected ${config?.legendConfig?.renameLayerTo ?? 'layer'}`;
+    } else {
+      return `Selected ${config?.legendConfig?.renameOpTo ?? 'op'}`;
+    }
+  }
+
+  get identicalLayerLabel(): string {
+    return `Identical ${this.appService.config()?.legendConfig?.renameLayerTo ?? 'layer'} (if any)`;
+  }
+
   get hideOp(): boolean {
     return this.appService.config()?.legendConfig?.hideOp ?? false;
   }
