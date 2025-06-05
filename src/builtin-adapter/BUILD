@@ -25,6 +25,7 @@ cc_library(
         "@llvm-project//mlir:Support",
         "@shardy//shardy/dialect/sdy/ir:dialect",
         "@stablehlo//:stablehlo_ops",
+        "@org_tensorflow//tensorflow/compiler/mlir/lite:flatbuffer_tflite_operator_lib",  # buildcleaner: keep
         "@org_tensorflow//tensorflow/compiler/mlir/lite:tensorflow_lite",
         "//formats:schema_structs",
         "//tools:attribute_printer",
