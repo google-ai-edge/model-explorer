@@ -54,8 +54,8 @@ using NodeFilter = absl::AnyInvocable<bool(const xla::HloInstruction*) const>;
 
 // ComputationExpand is a lambda indicating if an HLO computation need to be
 // expanded or not.
-using ComputationExpand =
-    absl::AnyInvocable<bool(const xla::HloComputation*) const>;
+using ComputationExpand = absl::AnyInvocable<bool(
+    const xla::HloInstruction*, const xla::HloComputation*) const>;
 
 // Converts an HLO computation to a GraphCollection.
 absl::StatusOr<GraphCollection> HloToGraph(
@@ -70,7 +70,9 @@ inline absl::StatusOr<GraphCollection> HloToGraph(
     const HloAdapterOption& options = HloAdapterOption()) {
   return HloToGraph(
       computation, node_filter,
-      [](const xla::HloComputation* computation) { return true; }, options);
+      [](const xla::HloInstruction* caller_instruction,
+         const xla::HloComputation* computation) { return true; },
+      options);
 }
 
 // Converts an HLO computation to a JSON graph.
