@@ -455,7 +455,8 @@ absl::Status HloComputationToGraphImpl(
     }
 
     if (instruction->opcode() == xla::HloOpcode::kFusion &&
-        computation_expand(instruction->fused_instructions_computation())) {
+        computation_expand(instruction,
+                           instruction->fused_instructions_computation())) {
       // We do not construct a dedicated node for the variable assigned by
       // fusion op. Instead, we (1) build the fusion computation, (2) connect
       // the operands of the fusion computation to its parameters, and (3)
@@ -479,7 +480,7 @@ absl::Status HloComputationToGraphImpl(
       // Convert subcomputations within the instruction to subgraphs.
       for (const xla::HloComputation* subcomputation :
            instruction->called_computations()) {
-        if (!computation_expand(subcomputation)) {
+        if (!computation_expand(instruction, subcomputation)) {
           continue;
         }
         computation_stack.push_back(std::string(subcomputation->name()));
