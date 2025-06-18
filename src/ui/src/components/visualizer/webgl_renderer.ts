@@ -456,7 +456,7 @@ export class WebglRenderer implements OnInit, OnDestroy {
     private readonly webglRendererEdgeOverlaysService: WebglRendererEdgeOverlaysService,
     private readonly webglRendererHighlightNodesService: WebglRendererHighlightNodesService,
     private readonly webglRendererIdenticalLayerService: WebglRendererIdenticalLayerService,
-    private readonly webglRendererIoHighlightService: WebglRendererIoHighlightService,
+    readonly webglRendererIoHighlightService: WebglRendererIoHighlightService,
     private readonly webglRendererIoTracingService: WebglRendererIoTracingService,
     private readonly webglRendererNdpService: WebglRendererNdpService,
     private readonly webglRendererSearchResultsService: WebglRendererSearchResultsService,

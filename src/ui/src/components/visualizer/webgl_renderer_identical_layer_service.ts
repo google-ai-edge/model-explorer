@@ -65,6 +65,8 @@ export class WebglRendererIdenticalLayerService {
     }
     this.clearIdenticalLayerIndicators();
 
+    const ioHighlightService =
+      this.webglRenderer.webglRendererIoHighlightService;
     const selectedNode =
       this.webglRenderer.curModelGraph.nodesById[
         this.webglRenderer.selectedNodeId
@@ -96,16 +98,27 @@ export class WebglRendererIdenticalLayerService {
           this.webglRenderer.getNodeY(node) -
           IDENTICAL_LAYER_INDICATOR_HEIGHT / 2 +
           IDENTICAL_LAYER_INDICATOR_HEIGHT / 4;
+
+        // Move the badge up if there is IO chip on the node.
+        let badgeYOffset = 0;
+        if (
+          isGroupNode(node) &&
+          (ioHighlightService.inputsByHighlightedNode[node.id] != null ||
+            ioHighlightService.outputsByHighlightedNode[node.id] != null)
+        ) {
+          badgeYOffset = -15;
+        }
+
         identicalGroupBgRectangles.push({
           id: node.id,
           index: identicalGroupBgRectangles.length,
           bound: {
             x: badgeX,
-            y: badgeY,
+            y: badgeY + badgeYOffset,
             width: IDENTICAL_LAYER_INDICATOR_WIDTH,
             height: IDENTICAL_LAYER_INDICATOR_HEIGHT,
           },
-          yOffset: 95,
+          yOffset: 95.2,
           isRounded: true,
           borderColor: this.IDENTICAL_GROUPS_INDICATOR_BORDER_COLOR,
           bgColor: this.IDENTICAL_GROUPS_INDICATOR_BG_COLOR,
@@ -122,7 +135,7 @@ export class WebglRendererIdenticalLayerService {
           color: {r: 0, g: 0, b: 0},
           x: badgeX,
           y: 96,
-          z: badgeY,
+          z: badgeY + badgeYOffset,
         });
       }
     }
