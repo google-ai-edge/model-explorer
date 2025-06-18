@@ -821,7 +821,76 @@ export declare interface LegendConfig {
   renameOpTo?: string;
 
   /**
-   * If set, rename the "layer" legend row to this string.
+   * If set, rename the "layer" label to this string.
    */
   renameLayerTo?: string;
+
+  /**
+   * If set, rename the "inputs" label to this string.
+   */
+  renameInputsTo?: string;
+
+  /**
+   * If set, rename the "outputs" label to this string.
+   */
+  renameOutputsTo?: string;
+}
+
+/** Config for "View on node" menu. */
+export declare interface ViewOnNodeConfig {
+  /** Whether to hide the "Op node id" item. */
+  hideOpNodeId?: boolean;
+
+  /** Whether to hide the "Op node attributes" item. */
+  hideOpNodeAttributes?: boolean;
+
+  /** Whether to hide the "Op node inputs" item. */
+  hideOpNodeInputs?: boolean;
+
+  /** Whether to hide the "Op node outputs" item. */
+  hideOpNodeOutputs?: boolean;
+
+  /** Whether to hide the "Layer node children count" item. */
+  hideLayerNodeChildrenCount?: boolean;
+
+  /** Whether to hide the "Layer node descendants count" item. */
+  hideLayerNodeDescendantsCount?: boolean;
+
+  /** Whether to hide the "Layer node attributes" item. */
+  hideLayerNodeAttributes?: boolean;
+
+  /** Whether to hide the "View on edges" section. */
+  hideViewOnEdgesSection?: boolean;
+
+  /**
+   * If set, rename the "Op node id" item to this string.
+   */
+  renameOpNodeIdTo?: string;
+
+  /**
+   * If set, rename the "Op node attributes" item to this string.
+   */
+  renameOpNodeAttributesTo?: string;
+
+  /**
+   * If set, rename the "Op node inputs" item to this string.
+   */
+  renameOpNodeInputsTo?: string;
+
+  /**
+   * If set, rename the "Op node outputs" item to this string.
+   */
+  renameOpNodeOutputsTo?: string;
+}
+
+/** Config for the toolbar. */
+export declare interface ToolbarConfig {
+  /** Whether to hide the "Expand/collapse all layers" button. */
+  hideExpandCollapseAllLayers?: boolean;
+
+  /** Whether to hide the "Flatten all layers" button. */
+  hideFlattenAllLayers?: boolean;
+
+  /** Whether to hide the "Custom edge overlays" button. */
+  hideCustomEdgeOverlays?: boolean;
 }

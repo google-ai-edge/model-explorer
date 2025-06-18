@@ -18,7 +18,13 @@
 
 import {EdgeOverlaysData} from './edge_overlays';
 import {SyncNavigationData} from './sync_navigation';
-import {LegendConfig, NodeStylerRule, RendererType} from './types';
+import {
+  LegendConfig,
+  NodeStylerRule,
+  RendererType,
+  ToolbarConfig,
+  ViewOnNodeConfig,
+} from './types';
 
 /** Configs for the visualizer. */
 export declare interface VisualizerConfig {
@@ -165,4 +171,14 @@ export declare interface VisualizerConfig {
    * Config for the legends panel.
    */
   legendConfig?: LegendConfig;
+
+  /**
+   * Config for the toolbar.
+   */
+  viewOnNodeConfig?: ViewOnNodeConfig;
+
+  /**
+   * Config for the toolbar.
+   */
+  toolbarConfig?: ToolbarConfig;
 }

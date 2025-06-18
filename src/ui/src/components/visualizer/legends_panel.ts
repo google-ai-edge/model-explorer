@@ -90,6 +90,14 @@ export class LegendsPanel {
     return this.appService.config()?.legendConfig?.renameLayerTo ?? 'Layer';
   }
 
+  get inputsLabel(): string {
+    return this.appService.config()?.legendConfig?.renameInputsTo ?? 'Inputs';
+  }
+
+  get outputsLabel(): string {
+    return this.appService.config()?.legendConfig?.renameOutputsTo ?? 'Outputs';
+  }
+
   get selectedItemLabel(): string {
     const config = this.appService.config();
     if (this.isSelectedNodeGroup) {

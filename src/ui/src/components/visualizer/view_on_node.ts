@@ -157,8 +157,28 @@ export class ViewOnNode {
       this.savedShowOnNodeItemTypes = curShowOnNodeItemTypes;
 
       // Node info fields and attrs.
+      const config = this.appService.config();
       const items: ShowOnNodeItem[] = [];
       for (const type of ALL_SHOW_ON_NODE_ITEM_TYPES) {
+        // Hide items if specified in the config.
+        if (
+          (config?.viewOnNodeConfig?.hideOpNodeId &&
+            type === ShowOnNodeItemType.OP_NODE_ID) ||
+          (config?.viewOnNodeConfig?.hideOpNodeAttributes &&
+            type === ShowOnNodeItemType.OP_ATTRS) ||
+          (config?.viewOnNodeConfig?.hideOpNodeInputs &&
+            type === ShowOnNodeItemType.OP_INPUTS) ||
+          (config?.viewOnNodeConfig?.hideOpNodeOutputs &&
+            type === ShowOnNodeItemType.OP_OUTPUTS) ||
+          (config?.viewOnNodeConfig?.hideLayerNodeChildrenCount &&
+            type === ShowOnNodeItemType.LAYER_NODE_CHILDREN_COUNT) ||
+          (config?.viewOnNodeConfig?.hideLayerNodeDescendantsCount &&
+            type === ShowOnNodeItemType.LAYER_NODE_DESCENDANTS_COUNT) ||
+          (config?.viewOnNodeConfig?.hideLayerNodeAttributes &&
+            type === ShowOnNodeItemType.LAYER_NODE_ATTRS)
+        ) {
+          continue;
+        }
         const item: ShowOnNodeItem = {
           type,
           selected: (curShowOnNodeItemTypes[this.rendererId] || {})[type]
@@ -211,19 +231,21 @@ export class ViewOnNode {
         curShowOnEdgeItem?.targetNodeAttrKey ?? '';
 
       const items: ShowOnEdgeItem[] = [];
-      for (const type of ALL_SHOW_ON_EDGE_ITEM_TYPES) {
-        const item: ShowOnEdgeItem = {
-          type,
-          selected: type === curShowOnEdgeItems[this.rendererId]?.type,
-        };
-        // Select "off" by default if the saved types are empty.
-        if (
-          type === ShowOnEdgeItemType.OFF &&
-          curShowOnEdgeItems[this.rendererId] == null
-        ) {
-          item.selected = true;
+      if (!this.appService.config()?.viewOnNodeConfig?.hideViewOnEdgesSection) {
+        for (const type of ALL_SHOW_ON_EDGE_ITEM_TYPES) {
+          const item: ShowOnEdgeItem = {
+            type,
+            selected: type === curShowOnEdgeItems[this.rendererId]?.type,
+          };
+          // Select "off" by default if the saved types are empty.
+          if (
+            type === ShowOnEdgeItemType.OFF &&
+            curShowOnEdgeItems[this.rendererId] == null
+          ) {
+            item.selected = true;
+          }
+          items.push(item);
         }
-        items.push(item);
       }
 
       this.showOnEdgeItems = items;
@@ -286,6 +308,33 @@ export class ViewOnNode {
 
     // Save to local storage.
     this.saveShowOnEdgeItemsToLocalStorage();
+  }
+
+  getShowOnNodeItemLabel(item: ShowOnNodeItem): string {
+    switch (item.type) {
+      case ShowOnNodeItemType.OP_NODE_ID:
+        return (
+          this.appService.config()?.viewOnNodeConfig?.renameOpNodeIdTo ??
+          item.type
+        );
+      case ShowOnNodeItemType.OP_ATTRS:
+        return (
+          this.appService.config()?.viewOnNodeConfig
+            ?.renameOpNodeAttributesTo ?? item.type
+        );
+      case ShowOnNodeItemType.OP_INPUTS:
+        return (
+          this.appService.config()?.viewOnNodeConfig?.renameOpNodeInputsTo ??
+          item.type
+        );
+      case ShowOnNodeItemType.OP_OUTPUTS:
+        return (
+          this.appService.config()?.viewOnNodeConfig?.renameOpNodeOutputsTo ??
+          item.type
+        );
+      default:
+        return item.type;
+    }
   }
 
   getAttrsFilterText(item: ShowOnNodeItem): string {

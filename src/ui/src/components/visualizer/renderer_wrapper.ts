@@ -183,11 +183,18 @@ export class RendererWrapper {
   }
 
   get showExpandCollapseAllLayers(): boolean {
-    return !this.inPopup;
+    return (
+      !this.inPopup &&
+      this.appService.config()?.toolbarConfig?.hideExpandCollapseAllLayers !==
+        true
+    );
   }
 
   get showFlattenLayers(): boolean {
-    return !this.inPopup;
+    return (
+      !this.inPopup &&
+      this.appService.config()?.toolbarConfig?.hideFlattenAllLayers !== true
+    );
   }
 
   get showDownloadPng(): boolean {
@@ -203,7 +210,10 @@ export class RendererWrapper {
   }
 
   get showEdgeOverlaysDropdown(): boolean {
-    return !this.inPopup;
+    return (
+      !this.inPopup &&
+      this.appService.config()?.toolbarConfig?.hideCustomEdgeOverlays !== true
+    );
   }
 
   get disableExpandCollapseAllButton(): boolean {

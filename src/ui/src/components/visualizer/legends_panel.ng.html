@@ -63,13 +63,13 @@ limitations under the License.
       @if (!hideInputs) {
         <tr #item>
           <td><div class="key input-key"></div></td>
-          <td><div class="label">Inputs (if any)</div></td>
+          <td><div class="label">{{inputsLabel}} (if any)</div></td>
         </tr>
       }
       @if (!hideOutputs) {
         <tr #item>
           <td><div class="key output-key"></div></td>
-          <td><div class="label">Outputs (if any)</div></td>
+          <td><div class="label">{{outputsLabel}} (if any)</div></td>
         </tr>
       }
     </ng-container>

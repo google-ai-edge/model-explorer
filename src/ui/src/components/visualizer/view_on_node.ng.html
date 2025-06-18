@@ -47,7 +47,7 @@ limitations under the License.
     @for (item of showOnNodeItems; track item.type) {
       <div class="show-on-node-item" (click)="handleToggleShowOnNode(item)">
         <input type="checkbox" [checked]="item.selected"/>
-        {{item.type}}
+        {{getShowOnNodeItemLabel(item)}}
       </div>
       @if (getIsAttrs(item)) {
         <div class="show-on-node-filter">
@@ -70,30 +70,32 @@ limitations under the License.
       }
     }
 
-    <div class="label">
-      <div>View on edges</div>
-    </div>
-    @for (item of showOnEdgeItems; track item.type) {
-      <label class="show-on-node-item">
-        <input type="radio" name="show-on-edge" [checked]="item.selected"
-            #input
-            (change)="handleSetShowOnEdge(input.checked, item)"/>
-        {{item.type}}
-      </label>
-      @if (getEdgeItemHaveFilter(item)) {
-        <div class="show-on-node-filter on-edge">
-          <input class="input-attrs-filter"
-            [placeholder]="getEdgeItemPlaceholder(item)"
-            [disabled]="!item.selected"
-            [value]="getEdgeItemMetadataKeyText(item)"
-            (keydown.enter)="input.blur()"
-            (input)="setEdgeItemMetadataKeyText(item, input.value)"
-            (change)="handleEdgeItemFilterChanged(item)"
-            #input>
-          <div class="icon-container ok" (click)="input.blur()">
-            <mat-icon>done</mat-icon>
+    @if (showOnEdgeItems.length > 0) {
+      <div class="label">
+        <div>View on edges</div>
+      </div>
+      @for (item of showOnEdgeItems; track item.type) {
+        <label class="show-on-node-item">
+          <input type="radio" name="show-on-edge" [checked]="item.selected"
+              #input
+              (change)="handleSetShowOnEdge(input.checked, item)"/>
+          {{item.type}}
+        </label>
+        @if (getEdgeItemHaveFilter(item)) {
+          <div class="show-on-node-filter on-edge">
+            <input class="input-attrs-filter"
+              [placeholder]="getEdgeItemPlaceholder(item)"
+              [disabled]="!item.selected"
+              [value]="getEdgeItemMetadataKeyText(item)"
+              (keydown.enter)="input.blur()"
+              (input)="setEdgeItemMetadataKeyText(item, input.value)"
+              (change)="handleEdgeItemFilterChanged(item)"
+              #input>
+            <div class="icon-container ok" (click)="input.blur()">
+              <mat-icon>done</mat-icon>
+            </div>
           </div>
-        </div>
+        }
       }
     }
   </div>
