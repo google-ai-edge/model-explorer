@@ -1,9 +1,10 @@
 {
   "name": "ai-edge-model-explorer-visualizer",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "A WebGL based high performance graph visualizer, brought to you by AI Edge Model Explorer.",
-  "main": "dist/main.js",
+  "main": "dist/main_browser.js",
   "browser": "dist/main_browser.js",
+  "unpkg": "dist/main_browser.js",
   "types": "src/custom_element/index.d.ts",
   "author": "Google Inc.",
   "license": "Apache-2.0",
