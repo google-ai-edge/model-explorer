@@ -16,10 +16,22 @@
 #ifndef TENSORFLOW_COMPILER_MLIR_LITE_EXPERIMENTAL_GOOGLE_TOOLING_TOOLS_SHARDY_UTILS_H_
 #define TENSORFLOW_COMPILER_MLIR_LITE_EXPERIMENTAL_GOOGLE_TOOLING_TOOLS_SHARDY_UTILS_H_
 
+#include <cstddef>
+#include <cstdint>
+#include <string>
+#include <utility>
+#include <vector>
+
+#include "absl/container/flat_hash_map.h"
+#include "absl/status/statusor.h"
 #include "llvm/ADT/DenseMap.h"
+#include "llvm/ADT/SmallVector.h"
+#include "llvm/ADT/StringRef.h"
 #include "llvm/Support/Casting.h"
 #include "llvm/Support/raw_ostream.h"
 #include "mlir/IR/Attributes.h"
+#include "mlir/IR/Operation.h"
+#include "mlir/IR/Value.h"
 #include "shardy/dialect/sdy/ir/dialect.h"
 
 namespace tooling {
@@ -40,6 +52,42 @@ void AddReferencedMesh(
     mlir::Attribute attr,
     llvm::SmallDenseMap<llvm::StringRef, mlir::sdy::MeshAttr>& sdy_meshes,
     mlir::Operation& operation);
+
+// Returns true if the operation has Shardy propagation edges, and adds them
+// to the `edges` vector.
+bool HasShardyPropagationEdges(
+    mlir::Operation& operation,
+    llvm::SmallVector<mlir::sdy::PropagationEdgesAttr>& edges);
+
+absl::StatusOr<std::string> ResolveShardyOpFromEdgeValueRef(
+    mlir::Operation* op, mlir::sdy::EdgeValueRefAttr edge_value_ref,
+    const absl::flat_hash_map<mlir::Operation*, std::string>& op_to_id,
+    const llvm::SmallDenseMap<mlir::Value, std::string>& input_nodes);
+
+class Color {
+ public:
+  Color() = default;
+  Color(uint8_t r, uint8_t g, uint8_t b) : r_(r), g_(g), b_(b) {}
+  explicit Color(uint32_t rgb)
+      : r_(rgb >> 16 & 0xFF), g_(rgb >> 8 & 0xFF), b_(rgb & 0xFF) {}
+
+  std::string toHexString() const;
+  Color jitter() const;
+
+ private:
+  uint8_t r_, g_, b_;
+};
+
+class ColorMapper {
+ public:
+  ColorMapper() = default;
+  absl::StatusOr<std::string> getColor(mlir::sdy::AxisRefAttr axis);
+
+ private:
+  llvm::DenseMap<mlir::sdy::AxisRefAttr, Color> sub_axis_color_map_;
+  llvm::DenseMap<llvm::StringRef, Color> axis_color_map_;
+  size_t next_color_index_ = 0;
+};
 
 }  // namespace visualization_client
 }  // namespace tooling
