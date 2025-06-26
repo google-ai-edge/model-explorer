@@ -74,21 +74,34 @@ export class SplitPane implements OnInit {
     // Load edge overlays stored in config.
     const config = this.appService.config();
     const panes = this.appService.panes();
-    if (
-      panes.length > 0 &&
-      panes[0].id === this.pane.id &&
-      config?.edgeOverlaysDataListLeftPane
-    ) {
+    const isLeftPane = panes.length > 0 && panes[0].id === this.pane.id;
+    const isRightPane = panes.length > 1 && panes[1].id === this.pane.id;
+    if (isLeftPane && config?.edgeOverlaysDataListLeftPane) {
       for (const data of config.edgeOverlaysDataListLeftPane) {
         this.edgeOverlaysService.addEdgeOverlayData(data);
       }
-    } else if (
-      panes.length > 1 &&
-      panes[1].id === this.pane.id &&
-      config?.edgeOverlaysDataListRightPane
-    ) {
+    } else if (isRightPane && config?.edgeOverlaysDataListRightPane) {
       for (const data of config.edgeOverlaysDataListRightPane) {
         this.edgeOverlaysService.addEdgeOverlayData(data);
+      }
+    }
+
+    // Load edge overlays stored in graph.
+    const graphCollections = this.appService.curGraphCollections();
+    for (const graphCollection of graphCollections) {
+      for (const graph of graphCollection.graphs) {
+        if (isLeftPane && graph.tasksData?.edgeOverlaysDataListLeftPane) {
+          for (const data of graph.tasksData.edgeOverlaysDataListLeftPane) {
+            this.edgeOverlaysService.addEdgeOverlayData(data);
+          }
+        } else if (
+          isRightPane &&
+          graph.tasksData?.edgeOverlaysDataListRightPane
+        ) {
+          for (const data of graph.tasksData.edgeOverlaysDataListRightPane) {
+            this.edgeOverlaysService.addEdgeOverlayData(data);
+          }
+        }
       }
     }
   }
