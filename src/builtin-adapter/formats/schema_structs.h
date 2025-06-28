@@ -101,17 +101,75 @@ struct GraphNode {
   static const char kConfig[];
 };
 
+struct Edge {
+  std::string source_node_id;
+  std::string target_node_id;
+  std::optional<std::string> label;
+
+  llvm::json::Object Json();
+
+ private:
+  static const char kSourceNodeId[];
+  static const char kTargetNodeId[];
+  static const char kLabel[];
+};
+
+struct EdgeOverlay {
+  std::string name;
+  std::vector<Edge> edges;
+  std::string edge_color;
+  std::optional<float> edge_width;
+  std::optional<float> edge_label_font_size;
+
+  llvm::json::Object Json();
+
+ private:
+  static const char kName[];
+  static const char kEdges[];
+  static const char kEdgeColor[];
+  static const char kEdgeWidth[];
+  static const char kEdgeLabelFontSize[];
+};
+
+struct EdgeOverlaysData {
+  std::string type = "edge_overlays";
+  std::string name;
+  std::vector<EdgeOverlay> overlays;
+
+  llvm::json::Object Json();
+
+ private:
+  static const char kType[];
+  static const char kName[];
+  static const char kOverlays[];
+};
+
+struct TasksData {
+  std::optional<std::vector<EdgeOverlaysData>>
+      edge_overlays_data_list_left_pane;
+  std::optional<std::vector<EdgeOverlaysData>>
+      edge_overlays_data_list_right_pane;
+
+  llvm::json::Object Json();
+
+ private:
+  static const char kEdgeOverlaysDataListLeftPane[];
+  static const char kEdgeOverlaysDataListRightPane[];
+};
+
 struct Subgraph {
   explicit Subgraph(std::string subgraph_id)
       : subgraph_id(std::move(subgraph_id)) {}
   std::string subgraph_id;
   std::vector<GraphNode> nodes;
+  std::optional<TasksData> tasks_data;
 
   llvm::json::Object Json();
 
  private:
   static const char kSubgraphId[];
   static const char kNodes[];
+  static const char kTasksData[];
 };
 
 struct Graph {
