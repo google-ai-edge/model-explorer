@@ -31,6 +31,7 @@
 #include "absl/strings/str_split.h"
 #include "absl/strings/string_view.h"
 #include "flatbuffers/flexbuffers.h"
+#include "llvm/ADT/ArrayRef.h"
 #include "llvm/ADT/DenseMap.h"
 #include "llvm/ADT/STLExtras.h"
 #include "llvm/ADT/SmallVector.h"
@@ -73,6 +74,7 @@ using ::mlir::func::FuncOp;
 using ::mlir::TFL::ConstBytesAttr;
 
 using OpToNodeIdMap = absl::flat_hash_map<Operation*, std::string>;
+using InputValueToNodeIdMap = llvm::SmallDenseMap<mlir::Value, std::string>;
 using OpdefsMap = absl::flat_hash_map<std::string, OpMetadata>;
 
 inline constexpr llvm::StringLiteral kEmptyString("");
@@ -97,10 +99,11 @@ class Counter {
 // The context maintained during the graph building process.
 struct GraphBuildContext {
   GraphBuildContext(const OpdefsMap& op_defs, const OpToNodeIdMap& seen_ops,
-                    Counter node_counter, Counter tensor_counter,
-                    bool has_debug_info)
+                    const InputValueToNodeIdMap& inputs, Counter node_counter,
+                    Counter tensor_counter, bool has_debug_info)
       : op_defs(op_defs),
         seen_ops(seen_ops),
+        inputs(inputs),
         node_counter(node_counter),
         tensor_counter(tensor_counter),
         has_debug_info(has_debug_info) {}
@@ -109,6 +112,7 @@ struct GraphBuildContext {
 
   OpdefsMap op_defs;
   OpToNodeIdMap seen_ops;
+  InputValueToNodeIdMap inputs;
   Counter node_counter;
   Counter tensor_counter;
   bool has_debug_info;
@@ -337,6 +341,7 @@ void AddGraphInputs(const VisualizeConfig& config, mlir::func::FuncOp& fop,
   for (const auto& it : llvm::enumerate(fop.getArgumentTypes())) {
     GraphNodeBuilder builder;
     const std::string node_id = GetArgNodeId(it.index(), /*parent_node_id=*/"");
+    context.inputs[fop.getArgument(it.index())] = node_id;
     const std::string node_label = absl::StrFormat("input_%d", it.index());
     builder.SetNodeInfo(/*node_id_str=*/node_id, /*node_label=*/node_label,
                         /*node_name=*/kGraphInputs);
@@ -816,7 +821,9 @@ absl::Status AddNode(const VisualizeConfig& config, Operation& operation,
 }  // namespace
 
 absl::StatusOr<Subgraph> FuncOpToSubgraph(const VisualizeConfig& config,
-                                          FuncOp& fop, bool has_debug_info) {
+                                          FuncOp& fop, bool has_debug_info,
+                                          OpToNodeIdMap& seen_ops,
+                                          InputValueToNodeIdMap& input_nodes) {
   Subgraph subgraph(fop.getSymName().str());
   GraphBuildContext context;
   context.has_debug_info = has_debug_info;
@@ -829,6 +836,8 @@ absl::StatusOr<Subgraph> FuncOpToSubgraph(const VisualizeConfig& config,
   for (Operation& operation : block) {
     RETURN_IF_ERROR(AddNode(config, operation, context, subgraph));
   }
+  seen_ops = context.seen_ops;
+  input_nodes = context.inputs;
   return subgraph;
 }
 
@@ -846,6 +855,68 @@ bool ModuleHasDebugInfo(Operation* module) {
   return has_debug_info;
 }
 
+absl::StatusOr<EdgeOverlaysData> ExtractShardyPropagationEdges(
+    Operation* module, OpToNodeIdMap& op_to_id,
+    InputValueToNodeIdMap& input_nodes) {
+  llvm::DenseMap<mlir::sdy::AxisRefAttr, std::vector<Edge>> axis_to_edges;
+  module->walk([&](Operation* op) -> mlir::WalkResult {
+    llvm::SmallVector<mlir::sdy::PropagationEdgesAttr> all_edges;
+    if (!HasShardyPropagationEdges(*op, all_edges)) {
+      return mlir::WalkResult::advance();
+    }
+    for (const mlir::sdy::PropagationEdgesAttr& edges : all_edges) {
+      for (const mlir::sdy::PropagationOneStepAttr& propagation_step : edges) {
+        int64_t step_index = propagation_step.getStepIndex();
+        for (const mlir::sdy::AxisToPropagationDetailsAttr& axis_to_details :
+             propagation_step.getAxisEntries()) {
+          mlir::sdy::AxisRefAttr axis = axis_to_details.getAxisName();
+          mlir::sdy::EdgeValueRefAttr source = axis_to_details.getSource();
+          for (const mlir::sdy::EdgeValueRefAttr& target :
+               axis_to_details.getTargets()) {
+            absl::StatusOr<std::string> source_op_id =
+                ResolveShardyOpFromEdgeValueRef(op, source, op_to_id,
+                                                input_nodes);
+            absl::StatusOr<std::string> target_op_id =
+                ResolveShardyOpFromEdgeValueRef(op, target, op_to_id,
+                                                input_nodes);
+
+            if (!source_op_id.ok() || !target_op_id.ok()) {
+              continue;
+            }
+
+            Edge edge;
+            edge.source_node_id = source_op_id.value();
+            edge.target_node_id = target_op_id.value();
+            edge.label = absl::StrFormat("%d: %s", step_index, axis.toString());
+            axis_to_edges[axis].push_back(edge);
+          }
+        }
+      }
+    }
+    return mlir::WalkResult::advance();
+  });
+
+  // TODO(varcho): update color mapper to map from a pair <MeshAttr, AxisRef> to
+  // color instead of just AxisRef since axis names can be the same across
+  // different meshes.
+  ColorMapper color_mapper;
+  EdgeOverlaysData layer;
+  for (const auto& [axis, edges] : axis_to_edges) {
+    EdgeOverlay overlay;
+    absl::StatusOr<std::string> color = color_mapper.getColor(axis);
+    if (!color.ok()) {
+      return color.status();
+    }
+    overlay.edge_color = color.value();
+    overlay.edge_width = 3.0;
+    overlay.edge_label_font_size = 7.0;
+    overlay.name = axis.toString();
+    overlay.edges = edges;
+    layer.overlays.push_back(overlay);
+  }
+  return layer;
+}
+
 absl::StatusOr<Graph> MlirToGraph(const VisualizeConfig& config,
                                   Operation* module) {
   if (!llvm::isa<mlir::ModuleOp>(module)) {
@@ -860,12 +931,32 @@ absl::StatusOr<Graph> MlirToGraph(const VisualizeConfig& config,
     if (func_name == "NoOp") {
       return mlir::WalkResult::skip();
     }
+
+    OpToNodeIdMap seen_ops;
+    InputValueToNodeIdMap input_nodes;
     absl::StatusOr<Subgraph> subgraph =
-        FuncOpToSubgraph(config, fop, has_debug_info);
+        FuncOpToSubgraph(config, fop, has_debug_info, seen_ops, input_nodes);
+
     if (!subgraph.ok()) {
       log_msg = subgraph.status().message();
       return mlir::WalkResult::interrupt();
     }
+
+    // Extract shardy propagation edges as an edge overlay if present and add
+    // to the task data to auto-load in the UI.
+    absl::StatusOr<EdgeOverlaysData> propagation_edges =
+        ExtractShardyPropagationEdges(module, seen_ops, input_nodes);
+    if (propagation_edges.ok() && !propagation_edges->overlays.empty()) {
+      // Set the name of the edge overlay to match the subgraph from which it
+      // was extracted, and move it to the subgraph's task data.
+      propagation_edges->name = subgraph->subgraph_id;
+      TasksData edge_overlays_data;
+      edge_overlays_data.edge_overlays_data_list_left_pane.emplace();
+      edge_overlays_data.edge_overlays_data_list_left_pane->push_back(
+          *std::move(propagation_edges));
+      subgraph->tasks_data = std::move(edge_overlays_data);
+    }
+
     graph.subgraphs.push_back(*std::move(subgraph));
     return mlir::WalkResult::advance();
   });

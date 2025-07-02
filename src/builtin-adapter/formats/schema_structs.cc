@@ -82,6 +82,87 @@ const char GraphNode::kInputsMetadata[] = "inputsMetadata";
 const char GraphNode::kOutputsMetadata[] = "outputsMetadata";
 const char GraphNode::kConfig[] = "config";
 
+const char Edge::kSourceNodeId[] = "sourceNodeId";
+const char Edge::kTargetNodeId[] = "targetNodeId";
+const char Edge::kLabel[] = "label";
+llvm::json::Object Edge::Json() {
+  llvm::json::Object json_edge;
+  json_edge[kSourceNodeId] = source_node_id;
+  json_edge[kTargetNodeId] = target_node_id;
+  if (label.has_value()) {
+    json_edge[kLabel] = label.value();
+  }
+  return json_edge;
+}
+
+const char EdgeOverlay::kName[] = "name";
+const char EdgeOverlay::kEdges[] = "edges";
+const char EdgeOverlay::kEdgeColor[] = "edgeColor";
+const char EdgeOverlay::kEdgeWidth[] = "edgeWidth";
+const char EdgeOverlay::kEdgeLabelFontSize[] = "edgeLabelFontSize";
+llvm::json::Object EdgeOverlay::Json() {
+  llvm::json::Object json_overlay;
+  json_overlay[kName] = name;
+  json_overlay[kEdges] = llvm::json::Array();
+  llvm::json::Array* json_edges = json_overlay[kEdges].getAsArray();
+  for (Edge& edge : edges) {
+    json_edges->push_back(edge.Json());
+  }
+  json_overlay[kEdgeColor] = edge_color;
+  if (edge_width.has_value()) {
+    json_overlay[kEdgeWidth] = edge_width.value();
+  }
+  if (edge_label_font_size.has_value()) {
+    json_overlay[kEdgeLabelFontSize] = edge_label_font_size.value();
+  }
+  return json_overlay;
+}
+
+const char EdgeOverlaysData::kType[] = "type";
+const char EdgeOverlaysData::kName[] = "name";
+const char EdgeOverlaysData::kOverlays[] = "overlays";
+llvm::json::Object EdgeOverlaysData::Json() {
+  llvm::json::Object json_edge_overlay;
+  json_edge_overlay[kType] = type;
+  json_edge_overlay[kName] = name;
+  json_edge_overlay[kOverlays] = llvm::json::Array();
+  llvm::json::Array* json_overlays = json_edge_overlay[kOverlays].getAsArray();
+  for (EdgeOverlay& overlay : overlays) {
+    json_overlays->push_back(overlay.Json());
+  }
+  return json_edge_overlay;
+}
+
+const char TasksData::kEdgeOverlaysDataListLeftPane[] =
+    "edgeOverlaysDataListLeftPane";
+const char TasksData::kEdgeOverlaysDataListRightPane[] =
+    "edgeOverlaysDataListRightPane";
+llvm::json::Object TasksData::Json() {
+  llvm::json::Object json_tasks_data;
+  if (edge_overlays_data_list_left_pane.has_value()) {
+    json_tasks_data[kEdgeOverlaysDataListLeftPane] = llvm::json::Array();
+    llvm::json::Array* json_edge_overlays_data_list_left_pane =
+        json_tasks_data[kEdgeOverlaysDataListLeftPane].getAsArray();
+    for (EdgeOverlaysData& edge_overlays_data :
+         edge_overlays_data_list_left_pane.value()) {
+      json_edge_overlays_data_list_left_pane->push_back(
+          edge_overlays_data.Json());
+    }
+  }
+
+  if (edge_overlays_data_list_right_pane.has_value()) {
+    json_tasks_data[kEdgeOverlaysDataListRightPane] = llvm::json::Array();
+    llvm::json::Array* json_edge_overlays_data_list_right_pane =
+        json_tasks_data[kEdgeOverlaysDataListRightPane].getAsArray();
+    for (EdgeOverlaysData& edge_overlays_data :
+         edge_overlays_data_list_right_pane.value()) {
+      json_edge_overlays_data_list_right_pane->push_back(
+          edge_overlays_data.Json());
+    }
+  }
+  return json_tasks_data;
+}
+
 llvm::json::Object GraphNode::Json() {
   llvm::json::Object json_node;
   json_node[kNodeId] = node_id;
@@ -124,6 +205,7 @@ llvm::json::Object GraphNode::Json() {
 
 const char Subgraph::kSubgraphId[] = "id";
 const char Subgraph::kNodes[] = "nodes";
+const char Subgraph::kTasksData[] = "tasksData";
 
 llvm::json::Object Subgraph::Json() {
   llvm::json::Object json_subgraph;
@@ -132,6 +214,9 @@ llvm::json::Object Subgraph::Json() {
   llvm::json::Array* json_nodes = json_subgraph[kNodes].getAsArray();
   for (GraphNode& node : nodes) {
     json_nodes->push_back(node.Json());
+  }
+  if (tasks_data.has_value()) {
+    json_subgraph[kTasksData] = tasks_data->Json();
   }
   return json_subgraph;
 }
