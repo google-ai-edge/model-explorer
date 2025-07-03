@@ -256,7 +256,18 @@ void AppendNodeAttrs(const VisualizeConfig& config, Operation& operation,
 // JAX op attributes if there exists.
 void AddJaxNodeNameAndAttribute(Operation& operation,
                                 GraphNodeBuilder& builder) {
-  auto name_loc = operation.getLoc()->findInstanceOf<mlir::NameLoc>();
+  mlir::Location loc = operation.getLoc();
+
+  // If the location is invalid or if it's an UnknownLoc, there's no name to
+  // find, we exit early.
+  if (llvm::isa<mlir::UnknownLoc>(loc)) {
+    builder.SetNodeName(/*node_name=*/kEmptyString);
+    return;
+  }
+
+  // Now that we know 'loc' is valid, find the NameLoc. If it doesn't exist,
+  // we exit early.
+  auto name_loc = loc->findInstanceOf<mlir::NameLoc>();
   if (name_loc == nullptr) {
     builder.SetNodeName(/*node_name=*/kEmptyString);
     return;
@@ -359,22 +370,30 @@ void AddGraphInputs(const VisualizeConfig& config, mlir::func::FuncOp& fop,
 // Gets the node name (the hierarchical information of the node) from a tf
 // dialect operation.
 llvm::StringRef GetTfNodeName(Operation& operation) {
-  // Initializes `node_name` as an empty string literal.
-  llvm::StringRef node_name = kEmptyString;
-  auto fusedLoc = operation.getLoc()->findInstanceOf<mlir::FusedLoc>();
+  mlir::Location loc = operation.getLoc();
+  // TF op stores the node name in a FusedLoc.
+  auto fused_loc = loc->findInstanceOf<mlir::FusedLoc>();
+  if (fused_loc == nullptr) {
+    return kEmptyString;
+  }
+
+  const llvm::ArrayRef<mlir::Location> locations = fused_loc.getLocations();
+  if (locations.empty()) {
+    return kEmptyString;
+  }
+
+  // The last location in the FusedLoc is the node name.
+  auto name_loc = llvm::dyn_cast<mlir::NameLoc>(locations.back());
+  if (name_loc == nullptr) {
+    return kEmptyString;
+  }
 
   // TF always generates FusedLoc for debug info, and the last element would
   // either look like "node_name@function_name" or simply "node_name"
   // when the op is in main graph where the function_name would be empty.
-  if (fusedLoc == nullptr) {
-    return node_name;
-  }
-  llvm::StringRef loc_info =
-      llvm::dyn_cast<mlir::NameLoc>(fusedLoc.getLocations().back()).getName();
+  llvm::StringRef loc_info = name_loc.getName();
   auto end_pos = loc_info.find('@');
-  node_name = loc_info.substr(0, end_pos);
-
-  return node_name;
+  return loc_info.substr(0, end_pos);
 }
 
 // Generates the node name (the hierarchical information of the node) from a tfl
