@@ -697,7 +697,23 @@ absl::Status FlatbufferToJsonConverter::AddAuxiliaryNode(
 absl::Status FlatbufferToJsonConverter::SubgraphIdxToAttributes(
     const tflite::OperatorT& op, SubgraphBuildContext& context,
     llvm::SmallVectorImpl<mlir::NamedAttribute>& attributes) {
+  // Helper lambda to validate a subgraph index and add it as a SymbolRef
+  // attribute. This handles the common case for control flow and other ops.
+  auto add_symbol_ref_attr = [&](int32_t index,
+                                 llvm::StringRef attr_name) -> absl::Status {
+    if (index < 0 || index >= func_names_.size()) {
+      return absl::InvalidArgumentError(
+          absl::StrCat("subgraph with index not found: ", index));
+    }
+    const auto attr = mlir::SymbolRefAttr::get(mlir_builder_.getContext(),
+                                               func_names_[index]);
+    attributes.emplace_back(mlir_builder_.getNamedAttr(attr_name, attr));
+    return absl::OkStatus();
+  };
+
   if (auto* opts = op.builtin_options.AsCallOnceOptions()) {
+    // Special handling for CallOnceOptions as it uses a StringAttr instead of
+    // SymbolRefAttr.
     const uint32_t init_idx = opts->init_subgraph_index;
     if (init_idx >= func_names_.size()) {
       return absl::InvalidArgumentError(
@@ -707,101 +723,34 @@ absl::Status FlatbufferToJsonConverter::SubgraphIdxToAttributes(
     attributes.emplace_back(
         mlir_builder_.getNamedAttr("session_init_function", init_attr));
   } else if (auto* opts = op.builtin_options.AsIfOptions()) {
-    const uint32_t then_idx = opts->then_subgraph_index;
-    if (then_idx >= func_names_.size()) {
-      return absl::InvalidArgumentError(
-          absl::StrCat("subgraph with index not found: ", then_idx));
-    }
-    const auto then_attr = mlir::SymbolRefAttr::get(mlir_builder_.getContext(),
-                                                    func_names_[then_idx]);
-    const uint32_t else_idx = opts->else_subgraph_index;
-    if (else_idx >= func_names_.size()) {
-      return absl::InvalidArgumentError(
-          absl::StrCat("subgraph with index not found: ", else_idx));
-    }
-    const auto else_attr = mlir::SymbolRefAttr::get(mlir_builder_.getContext(),
-                                                    func_names_[else_idx]);
-    attributes.emplace_back(
-        mlir_builder_.getNamedAttr("then_branch", then_attr));
-    attributes.emplace_back(
-        mlir_builder_.getNamedAttr("else_branch", else_attr));
+    RETURN_IF_ERROR(
+        add_symbol_ref_attr(opts->then_subgraph_index, "then_branch"));
+    RETURN_IF_ERROR(
+        add_symbol_ref_attr(opts->else_subgraph_index, "else_branch"));
     attributes.emplace_back(mlir_builder_.getNamedAttr(
         "is_stateless", mlir_builder_.getBoolAttr(false)));
   } else if (auto* opts = op.builtin_options.AsWhileOptions()) {
-    const uint32_t cond_idx = opts->cond_subgraph_index;
-    if (cond_idx >= func_names_.size()) {
-      return absl::InvalidArgumentError(
-          absl::StrCat("subgraph with index not found: ", cond_idx));
-    }
-    const auto cond_attr = mlir::SymbolRefAttr::get(mlir_builder_.getContext(),
-                                                    func_names_[cond_idx]);
-    const uint32_t body_idx = opts->body_subgraph_index;
-    if (body_idx >= func_names_.size()) {
-      return absl::InvalidArgumentError(
-          absl::StrCat("subgraph with index not found: ", body_idx));
-    }
-    const auto body_attr = mlir::SymbolRefAttr::get(mlir_builder_.getContext(),
-                                                    func_names_[body_idx]);
-    attributes.emplace_back(mlir_builder_.getNamedAttr("cond", cond_attr));
-    attributes.emplace_back(mlir_builder_.getNamedAttr("body", body_attr));
+    RETURN_IF_ERROR(add_symbol_ref_attr(opts->cond_subgraph_index, "cond"));
+    RETURN_IF_ERROR(add_symbol_ref_attr(opts->body_subgraph_index, "body"));
   } else if (auto* opts = op.builtin_options_2.AsStablehloReduceOptions()) {
-    const int32_t body_idx = opts->body_subgraph_index;
-    if (body_idx >= func_names_.size()) {
-      return absl::InvalidArgumentError(
-          absl::StrCat("subgraph with index not found: ", body_idx));
-    }
-    const auto body_attr = mlir::SymbolRefAttr::get(mlir_builder_.getContext(),
-                                                    func_names_[body_idx]);
-    attributes.emplace_back(mlir_builder_.getNamedAttr("body", body_attr));
+    RETURN_IF_ERROR(add_symbol_ref_attr(opts->body_subgraph_index, "body"));
   } else if (auto* opts =
                  op.builtin_options_2.AsStablehloReduceWindowOptions()) {
-    const int32_t body_idx = opts->body_subgraph_index;
-    if (body_idx >= func_names_.size()) {
-      return absl::InvalidArgumentError(
-          absl::StrCat("subgraph with index not found: ", body_idx));
-    }
-    const auto body_attr = mlir::SymbolRefAttr::get(mlir_builder_.getContext(),
-                                                    func_names_[body_idx]);
-    attributes.emplace_back(mlir_builder_.getNamedAttr("body", body_attr));
+    RETURN_IF_ERROR(add_symbol_ref_attr(opts->body_subgraph_index, "body"));
   } else if (auto* opts = op.builtin_options_2.AsStablehloSortOptions()) {
-    const int32_t comparator_idx = opts->comparator_subgraph_index;
-    if (comparator_idx >= func_names_.size()) {
-      return absl::InvalidArgumentError(
-          absl::StrCat("subgraph with index not found: ", comparator_idx));
-    }
-    const auto comparator_attr = mlir::SymbolRefAttr::get(
-        mlir_builder_.getContext(), func_names_[comparator_idx]);
-    attributes.emplace_back(
-        mlir_builder_.getNamedAttr("comparator", comparator_attr));
+    RETURN_IF_ERROR(
+        add_symbol_ref_attr(opts->comparator_subgraph_index, "comparator"));
   } else if (auto* opts = op.builtin_options_2.AsStablehloWhileOptions()) {
-    const int32_t body_idx = opts->body_subgraph_index;
-    const int32_t cond_idx = opts->cond_subgraph_index;
-    if (body_idx >= func_names_.size()) {
-      return absl::InvalidArgumentError(
-          absl::StrCat("subgraph with index not found: ", body_idx));
-    }
-    if (cond_idx >= func_names_.size()) {
-      return absl::InvalidArgumentError(
-          absl::StrCat("subgraph with index not found: ", cond_idx));
-    }
-    const auto body_attr = mlir::SymbolRefAttr::get(mlir_builder_.getContext(),
-                                                    func_names_[body_idx]);
-    const auto cond_attr = mlir::SymbolRefAttr::get(mlir_builder_.getContext(),
-                                                    func_names_[cond_idx]);
-    attributes.emplace_back(mlir_builder_.getNamedAttr("body", body_attr));
-    attributes.emplace_back(mlir_builder_.getNamedAttr("cond", cond_attr));
+    RETURN_IF_ERROR(add_symbol_ref_attr(opts->cond_subgraph_index, "cond"));
+    RETURN_IF_ERROR(add_symbol_ref_attr(opts->body_subgraph_index, "body"));
   } else if (auto* opts = op.builtin_options_2.AsStablehloScatterOptions()) {
-    const uint32_t subgraph_idx = opts->update_computation_subgraph_index;
-
-    if (subgraph_idx >= func_names_.size()) {
-      return absl::InvalidArgumentError(
-          absl::StrCat("subgraph with index not found: ", subgraph_idx));
-    }
-    mlir::FlatSymbolRefAttr subgraph_attr = mlir::SymbolRefAttr::get(
-        mlir_builder_.getContext(), func_names_[subgraph_idx]);
-    attributes.emplace_back(mlir_builder_.getNamedAttr(
-        "update_computation_func_name", subgraph_attr));
+    RETURN_IF_ERROR(add_symbol_ref_attr(opts->update_computation_subgraph_index,
+                                        "update_computation_func_name"));
+  } else if (auto* opts = op.builtin_options_2.AsStableHLOCompositeOptions()) {
+    RETURN_IF_ERROR(add_symbol_ref_attr(opts->decomposition_subgraph_index,
+                                        "decomposition"));
   }
+
   return absl::OkStatus();
 }
 
