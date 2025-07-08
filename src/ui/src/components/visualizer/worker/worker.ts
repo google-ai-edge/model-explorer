@@ -21,7 +21,11 @@
 import {Graph} from '../common/input_graph';
 import {GroupNode, ModelGraph} from '../common/model_graph';
 import {NodeDataProviderRunData, ShowOnNodeItemData} from '../common/types';
-import {getDeepestExpandedGroupNodeIds, isGroupNode} from '../common/utils';
+import {
+  getDeepestExpandedGroupNodeIds,
+  isGroupNode,
+  isOpNode,
+} from '../common/utils';
 import {VisualizerConfig} from '../common/visualizer_config';
 import {
   ExpandOrCollapseGroupNodeResponse,
@@ -194,6 +198,19 @@ self.addEventListener('message', (event: Event) => {
     }
     case WorkerEventType.CLEANUP: {
       MODEL_GRAPHS_CACHE = {};
+      break;
+    }
+    case WorkerEventType.UPDATE_MODEL_GRAPH_CACHE_WITH_NODE_ATTRIBUTES: {
+      const cachedModelGraph = getCachedModelGraph(
+        workerEvent.modelGraphId,
+        workerEvent.paneId,
+      );
+      if (cachedModelGraph) {
+        const node = cachedModelGraph.nodesById[workerEvent.nodeId];
+        if (node && isOpNode(node)) {
+          node.attrs = {...node.attrs, ...workerEvent.attrs};
+        }
+      }
       break;
     }
     default:

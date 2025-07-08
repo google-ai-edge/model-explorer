@@ -19,6 +19,7 @@
 import {Graph} from './input_graph';
 import {ModelGraph} from './model_graph';
 import {
+  NodeAttributePairs,
   NodeDataProviderRunData,
   NodeStylerRule,
   Point,
@@ -41,6 +42,7 @@ export enum WorkerEventType {
   PREPARE_POPUP_REQ,
   PREPARE_POPUP_RESP,
   CLEANUP,
+  UPDATE_MODEL_GRAPH_CACHE_WITH_NODE_ATTRIBUTES,
 }
 
 /** The base of all worker events. */
@@ -220,6 +222,19 @@ export declare interface CleanupRequest extends WorkerEventBase {
   eventType: WorkerEventType.CLEANUP;
 }
 
+/**
+ * The request for updating the model graph cache with the given
+ * node attributes.
+ */
+export declare interface UpdateModelGraphCacheWithNodeAttributesRequest
+  extends WorkerEventBase {
+  eventType: WorkerEventType.UPDATE_MODEL_GRAPH_CACHE_WITH_NODE_ATTRIBUTES;
+  modelGraphId: string;
+  nodeId: string;
+  attrs: NodeAttributePairs;
+  paneId: string;
+}
+
 /** Union of all worker events. */
 export type WorkerEvent =
   | ProcessGraphRequest
@@ -233,4 +248,5 @@ export type WorkerEvent =
   | UpdateProcessingProgressRequest
   | PreparePopupRequest
   | PreparePopupResponse
-  | CleanupRequest;
+  | CleanupRequest
+  | UpdateModelGraphCacheWithNodeAttributesRequest;
