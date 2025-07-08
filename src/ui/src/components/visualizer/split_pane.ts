@@ -24,6 +24,8 @@ import {
   Component,
   Input,
   OnInit,
+  Signal,
+  computed,
 } from '@angular/core';
 import {AppService} from './app_service';
 import type {Pane} from './common/types';
@@ -63,6 +65,17 @@ import {SubgraphSelectionService} from './subgraph_selection_service';
 })
 export class SplitPane implements OnInit {
   @Input({required: true}) pane!: Pane;
+
+  readonly hasSelectedNode: Signal<boolean> = computed(() => {
+    const selectedNode = this.appService.selectedNode();
+    if (!selectedNode || selectedNode.nodeId === '') {
+      return false;
+    }
+    if (selectedNode.paneId !== this.pane.id) {
+      return false;
+    }
+    return true;
+  });
 
   constructor(
     private readonly appService: AppService,
@@ -114,7 +127,11 @@ export class SplitPane implements OnInit {
     return this.appService.testMode;
   }
 
-  get showInfoPanel(): boolean {
-    return !this.appService.config()?.hideInfoPanel;
+  get hideInfoPanel(): boolean {
+    return this.appService.config()?.hideInfoPanel === true;
+  }
+
+  get showSidePanelOnNodeSelection(): boolean {
+    return this.appService.config()?.showSidePanelOnNodeSelection === true;
   }
 }

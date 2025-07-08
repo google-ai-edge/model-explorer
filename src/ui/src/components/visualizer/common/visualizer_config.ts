@@ -168,6 +168,11 @@ export declare interface VisualizerConfig {
   renameNodeInfoOpNameTo?: string;
 
   /**
+   * If set, show the side panel only when a node is selected.
+   */
+  showSidePanelOnNodeSelection?: boolean;
+
+  /**
    * Config for the legends panel.
    */
   legendConfig?: LegendConfig;

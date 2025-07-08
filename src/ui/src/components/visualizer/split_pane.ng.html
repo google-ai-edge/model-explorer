@@ -24,8 +24,10 @@ limitations under the License.
       [paneId]="pane.id"
       [rendererId]="pane.id">
   </graph-panel>
-  @if (showInfoPanel) {
-    <info-panel [paneId]="pane.id">
+  @if (!hideInfoPanel) {
+    <info-panel [paneId]="pane.id"
+        [class.hide]="showSidePanelOnNodeSelection && !hasSelectedNode()"
+        [class.float]="showSidePanelOnNodeSelection">
     </info-panel>
   }
 </div>

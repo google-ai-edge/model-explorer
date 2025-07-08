@@ -52,6 +52,7 @@ import {
   SETTING_KEEP_LAYERS_WITH_A_SINGLE_CHILD,
   SETTING_MAX_CONST_ELEMENT_COUNT_LIMIT,
   SETTING_SHOW_OP_NODE_OUT_OF_LAYER_EDGES_WITHOUT_SELECTING,
+  SETTING_SHOW_SIDE_PANEL_ON_NODE_SELECTION,
   SettingKey,
   SettingsService,
 } from '../../services/settings_service';
@@ -363,6 +364,9 @@ export class HomePage implements AfterViewInit {
       ),
       hideEmptyNodeDataEntries: this.settingsService.getBooleanValue(
         SETTING_HIDE_EMPTY_NODE_DATA_ENTRIES,
+      ),
+      showSidePanelOnNodeSelection: this.settingsService.getBooleanValue(
+        SETTING_SHOW_SIDE_PANEL_ON_NODE_SELECTION,
       ),
     };
   }

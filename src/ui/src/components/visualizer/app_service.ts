@@ -505,6 +505,7 @@ export class AppService {
         modelGraph.id,
         modelGraph.collectionLabel,
         modelGraph.nodesById[nodeId],
+        paneId,
       );
     }
   }
@@ -948,6 +949,7 @@ export class AppService {
     graphId: string,
     collectionLabel: string,
     node?: ModelNode,
+    paneId?: string,
   ) {
     const curSelectedNode = this.selectedNode();
     if (
@@ -960,6 +962,7 @@ export class AppService {
         graphId,
         collectionLabel,
         node,
+        paneId,
       });
     }
   }

@@ -267,6 +267,7 @@ export declare interface NodeInfo {
   graphId: string;
   collectionLabel: string;
   node?: ModelNode;
+  paneId?: string;
 }
 
 /** Supported aggregated stats. */

@@ -460,6 +460,9 @@ export class WebglEdges {
       if (edgeIds.length > 0) {
         for (const edgeId of edgeIds) {
           const arrowHead = this.savedArrowHeads[edgeId];
+          if (!arrowHead) {
+            continue;
+          }
           const index = arrowHead.index;
           yOffsetsAttr.setX(index, yOffset);
           this.lastYOffsetsUpdateArrowHeads.push(arrowHead);

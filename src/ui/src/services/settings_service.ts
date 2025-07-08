@@ -37,6 +37,7 @@ export enum SettingKey {
   SHOW_OP_NODE_OUT_OF_LAYER_EDGES_WITHOUT_SELECTING = 'show_op_node_out_of_layer_edges_without_selecting',
   HIGHLIGHT_LAYER_NODE_INPUTS_OUTPUTS = 'highlight_layer_node_inputs_outputs',
   HIDE_EMPTY_NODE_DATA_ENTRIES = 'hide_empty_node_data_entries',
+  SHOW_SIDE_PANEL_ON_NODE_SELECTION = 'show_side_panel_on_node_selection',
 }
 
 /** Setting types. */
@@ -182,6 +183,14 @@ export const SETTING_HIDE_EMPTY_NODE_DATA_ENTRIES: Setting = {
     '(on node overlay and in side panel) with empty values.',
 };
 
+/** Setting for showing side panel on node selection. */
+export const SETTING_SHOW_SIDE_PANEL_ON_NODE_SELECTION: Setting = {
+  label: 'Show side panel only when a node is selected',
+  key: SettingKey.SHOW_SIDE_PANEL_ON_NODE_SELECTION,
+  type: SettingType.BOOLEAN,
+  defaultValue: false,
+};
+
 const SETTINGS_LOCAL_STORAGE_KEY = 'model_explorer_settings';
 
 /** All settings. */
@@ -197,6 +206,7 @@ export const ALL_SETTINGS = [
   SETTING_SHOW_OP_NODE_OUT_OF_LAYER_EDGES_WITHOUT_SELECTING,
   SETTING_HIGHLIGHT_LAYER_NODE_INPUTS_OUTPUTS,
   SETTING_HIDE_EMPTY_NODE_DATA_ENTRIES,
+  SETTING_SHOW_SIDE_PANEL_ON_NODE_SELECTION,
 ];
 
 /**
