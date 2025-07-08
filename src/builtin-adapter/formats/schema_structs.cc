@@ -17,7 +17,6 @@
 
 #include <optional>
 #include <string>
-#include <utility>
 #include <vector>
 
 #include "llvm/Support/JSON.h"
@@ -27,18 +26,16 @@ namespace visualization_client {
 
 namespace {
 
+// Converts a vector of objects to a json array.
+// The objects in the vector must have a Json() method that returns a
+// type convertible to llvm::json::Value.
 template <typename T>
-void AddDataListToJson(const char* key,
-                       const std::optional<std::vector<T>>& data_list,
-                       llvm::json::Object& json_object) {
-  if (!data_list.has_value()) {
-    return;
-  }
+llvm::json::Array ToJsonArray(const std::vector<T>& data_list) {
   llvm::json::Array json_array;
-  for (const T& data : data_list.value()) {
+  for (const T& data : data_list) {
     json_array.push_back(data.Json());
   }
-  json_object[key] = std::move(json_array);
+  return json_array;
 }
 
 }  // namespace
@@ -59,11 +56,7 @@ const char Metadata::kAttrs[] = "attrs";
 llvm::json::Object Metadata::Json() const {
   llvm::json::Object json_metadata;
   json_metadata[kId] = id;
-  json_metadata[kAttrs] = llvm::json::Array();
-  llvm::json::Array* json_attrs = json_metadata[kAttrs].getAsArray();
-  for (const Attribute& attr : attrs) {
-    json_attrs->push_back(attr.Json());
-  }
+  json_metadata[kAttrs] = ToJsonArray(attrs);
   return json_metadata;
 }
 
@@ -77,11 +70,7 @@ llvm::json::Object GraphEdge::Json() const {
   json_edge[kSourceNodeId] = source_node_id;
   json_edge[kSourceNodeOutputId] = source_node_output_id;
   json_edge[kTargetNodeInputId] = target_node_input_id;
-  json_edge[kEdgeMetadata] = llvm::json::Array();
-  llvm::json::Array* json_attrs = json_edge[kEdgeMetadata].getAsArray();
-  for (const Attribute& attr : edge_metadata) {
-    json_attrs->push_back(attr.Json());
-  }
+  json_edge[kEdgeMetadata] = ToJsonArray(edge_metadata);
   return json_edge;
 }
 
@@ -124,11 +113,7 @@ const char EdgeOverlay::kEdgeLabelFontSize[] = "edgeLabelFontSize";
 llvm::json::Object EdgeOverlay::Json() const {
   llvm::json::Object json_overlay;
   json_overlay[kName] = name;
-  json_overlay[kEdges] = llvm::json::Array();
-  llvm::json::Array* json_edges = json_overlay[kEdges].getAsArray();
-  for (const Edge& edge : edges) {
-    json_edges->push_back(edge.Json());
-  }
+  json_overlay[kEdges] = ToJsonArray(edges);
   json_overlay[kEdgeColor] = edge_color;
   if (edge_width.has_value()) {
     json_overlay[kEdgeWidth] = edge_width.value();
@@ -146,11 +131,7 @@ llvm::json::Object EdgeOverlaysData::Json() const {
   llvm::json::Object json_edge_overlay;
   json_edge_overlay[kType] = type;
   json_edge_overlay[kName] = name;
-  json_edge_overlay[kOverlays] = llvm::json::Array();
-  llvm::json::Array* json_overlays = json_edge_overlay[kOverlays].getAsArray();
-  for (const EdgeOverlay& overlay : overlays) {
-    json_overlays->push_back(overlay.Json());
-  }
+  json_edge_overlay[kOverlays] = ToJsonArray(overlays);
   return json_edge_overlay;
 }
 
@@ -160,12 +141,14 @@ const char TasksData::kEdgeOverlaysDataListRightPane[] =
     "edgeOverlaysDataListRightPane";
 llvm::json::Object TasksData::Json() const {
   llvm::json::Object json_tasks_data;
-  AddDataListToJson<EdgeOverlaysData>(kEdgeOverlaysDataListLeftPane,
-                                      edge_overlays_data_list_left_pane,
-                                      json_tasks_data);
-  AddDataListToJson<EdgeOverlaysData>(kEdgeOverlaysDataListRightPane,
-                                      edge_overlays_data_list_right_pane,
-                                      json_tasks_data);
+  if (edge_overlays_data_list_left_pane.has_value()) {
+    json_tasks_data[kEdgeOverlaysDataListLeftPane] =
+        ToJsonArray(edge_overlays_data_list_left_pane.value());
+  }
+  if (edge_overlays_data_list_right_pane.has_value()) {
+    json_tasks_data[kEdgeOverlaysDataListRightPane] =
+        ToJsonArray(edge_overlays_data_list_right_pane.value());
+  }
   return json_tasks_data;
 }
 
@@ -175,32 +158,10 @@ llvm::json::Object GraphNode::Json() const {
   json_node[kNodeLabel] = node_label;
   json_node[kNodeName] = node_name;
   json_node[kSubgraphIds] = subgraph_ids;
-
-  json_node[kNodeAttrs] = llvm::json::Array();
-  llvm::json::Array* json_attrs = json_node[kNodeAttrs].getAsArray();
-  for (const Attribute& attr : node_attrs) {
-    json_attrs->push_back(attr.Json());
-  }
-
-  json_node[kIncomingEdges] = llvm::json::Array();
-  llvm::json::Array* json_edges = json_node[kIncomingEdges].getAsArray();
-  for (const GraphEdge& edge : incoming_edges) {
-    json_edges->push_back(edge.Json());
-  }
-
-  json_node[kInputsMetadata] = llvm::json::Array();
-  llvm::json::Array* json_inputs_metadata =
-      json_node[kInputsMetadata].getAsArray();
-  for (const Metadata& metadata : inputs_metadata) {
-    json_inputs_metadata->push_back(metadata.Json());
-  }
-
-  json_node[kOutputsMetadata] = llvm::json::Array();
-  llvm::json::Array* json_outputs_metadata =
-      json_node[kOutputsMetadata].getAsArray();
-  for (const Metadata& metadata : outputs_metadata) {
-    json_outputs_metadata->push_back(metadata.Json());
-  }
+  json_node[kNodeAttrs] = ToJsonArray(node_attrs);
+  json_node[kIncomingEdges] = ToJsonArray(incoming_edges);
+  json_node[kInputsMetadata] = ToJsonArray(inputs_metadata);
+  json_node[kOutputsMetadata] = ToJsonArray(outputs_metadata);
 
   if (config.has_value()) {  // Only add config if it exists
     json_node[kConfig] = config->Json();
@@ -216,11 +177,7 @@ const char Subgraph::kTasksData[] = "tasksData";
 llvm::json::Object Subgraph::Json() const {
   llvm::json::Object json_subgraph;
   json_subgraph[kSubgraphId] = subgraph_id;
-  json_subgraph[kNodes] = llvm::json::Array();
-  llvm::json::Array* json_nodes = json_subgraph[kNodes].getAsArray();
-  for (const GraphNode& node : nodes) {
-    json_nodes->push_back(node.Json());
-  }
+  json_subgraph[kNodes] = ToJsonArray(nodes);
   if (tasks_data.has_value()) {
     json_subgraph[kTasksData] = tasks_data->Json();
   }
@@ -233,23 +190,13 @@ const char Graph::kSubgraphs[] = "subgraphs";
 llvm::json::Object Graph::Json() const {
   llvm::json::Object json_graph;
   json_graph[kLabel] = label;
-  json_graph[kSubgraphs] = llvm::json::Array();
-  llvm::json::Array* json_subgraphs = json_graph[kSubgraphs].getAsArray();
-  for (const Subgraph& subgraph : subgraphs) {
-    json_subgraphs->push_back(subgraph.Json());
-  }
+  json_graph[kSubgraphs] = ToJsonArray(subgraphs);
   return json_graph;
 }
 
 const char GraphCollection::kGraphs[] = "graphs";
 
-llvm::json::Array GraphCollection::Json() const {
-  llvm::json::Array json_graphs;
-  for (const Graph& graph : graphs) {
-    json_graphs.push_back(graph.Json());
-  }
-  return json_graphs;
-}
+llvm::json::Array GraphCollection::Json() const { return ToJsonArray(graphs); }
 
 }  // namespace visualization_client
 }  // namespace tooling
