@@ -77,6 +77,25 @@ void PrettyPrint(mlir::sdy::TensorShardingPerValueAttr attr,
   os << "\n]";
 }
 
+void PrettyPrint(mlir::sdy::PropagationEdgesAttr attr, llvm::raw_ostream& os) {
+  for (mlir::sdy::PropagationOneStepAttr edge : attr) {
+    os << "{ step-" << edge.getStepIndex() << " = [\n";
+    ::llvm::ArrayRef<mlir::sdy::AxisToPropagationDetailsAttr> axis_entries =
+        edge.getAxisEntries();
+    for (mlir::sdy::AxisToPropagationDetailsAttr axis_entry : axis_entries) {
+      os << '\t' << strippedAttrString(axis_entry, /*strip_menemonic=*/true);
+      if (&axis_entry != &axis_entries.back()) {
+        os << ",";
+      }
+      os << "\n";
+    }
+    os << "]}";
+    if (&edge != &attr.back()) {
+      os << ",\n";
+    }
+  }
+}
+
 }  // namespace
 
 void PrintShardyAttribute(mlir::Attribute attr, llvm::raw_string_ostream& os) {
@@ -92,6 +111,10 @@ void PrintShardyAttribute(mlir::Attribute attr, llvm::raw_string_ostream& os) {
       .Case<mlir::sdy::ManualAxesAttr>(
           [&os](mlir::sdy::ManualAxesAttr manual_axes_attr) {
             PrettyPrint(manual_axes_attr, os);
+          })
+      .Case<mlir::sdy::PropagationEdgesAttr>(
+          [&os](mlir::sdy::PropagationEdgesAttr propagation_edges_attr) {
+            PrettyPrint(propagation_edges_attr, os);
           })
       .Default(
           [&](mlir::Attribute attr) { attr.print(os, /*elideType=*/true); });
