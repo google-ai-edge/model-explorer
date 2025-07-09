@@ -92,9 +92,28 @@ const char GraphNode::kInputsMetadata[] = "inputsMetadata";
 const char GraphNode::kOutputsMetadata[] = "outputsMetadata";
 const char GraphNode::kConfig[] = "config";
 
+llvm::json::Object GraphNode::Json() const {
+  llvm::json::Object json_node;
+  json_node[kNodeId] = node_id;
+  json_node[kNodeLabel] = node_label;
+  json_node[kNodeName] = node_name;
+  json_node[kSubgraphIds] = subgraph_ids;
+  json_node[kNodeAttrs] = ToJsonArray(node_attrs);
+  json_node[kIncomingEdges] = ToJsonArray(incoming_edges);
+  json_node[kInputsMetadata] = ToJsonArray(inputs_metadata);
+  json_node[kOutputsMetadata] = ToJsonArray(outputs_metadata);
+
+  if (config.has_value()) {  // Only add config if it exists
+    json_node[kConfig] = config->Json();
+  }
+
+  return json_node;
+}
+
 const char Edge::kSourceNodeId[] = "sourceNodeId";
 const char Edge::kTargetNodeId[] = "targetNodeId";
 const char Edge::kLabel[] = "label";
+
 llvm::json::Object Edge::Json() const {
   llvm::json::Object json_edge;
   json_edge[kSourceNodeId] = source_node_id;
@@ -110,6 +129,7 @@ const char EdgeOverlay::kEdges[] = "edges";
 const char EdgeOverlay::kEdgeColor[] = "edgeColor";
 const char EdgeOverlay::kEdgeWidth[] = "edgeWidth";
 const char EdgeOverlay::kEdgeLabelFontSize[] = "edgeLabelFontSize";
+
 llvm::json::Object EdgeOverlay::Json() const {
   llvm::json::Object json_overlay;
   json_overlay[kName] = name;
@@ -127,18 +147,20 @@ llvm::json::Object EdgeOverlay::Json() const {
 const char EdgeOverlaysData::kType[] = "type";
 const char EdgeOverlaysData::kName[] = "name";
 const char EdgeOverlaysData::kOverlays[] = "overlays";
+
 llvm::json::Object EdgeOverlaysData::Json() const {
-  llvm::json::Object json_edge_overlay;
-  json_edge_overlay[kType] = type;
-  json_edge_overlay[kName] = name;
-  json_edge_overlay[kOverlays] = ToJsonArray(overlays);
-  return json_edge_overlay;
+  llvm::json::Object json_edge_overlays_data;
+  json_edge_overlays_data[kType] = type;
+  json_edge_overlays_data[kName] = name;
+  json_edge_overlays_data[kOverlays] = ToJsonArray(overlays);
+  return json_edge_overlays_data;
 }
 
 const char TasksData::kEdgeOverlaysDataListLeftPane[] =
     "edgeOverlaysDataListLeftPane";
 const char TasksData::kEdgeOverlaysDataListRightPane[] =
     "edgeOverlaysDataListRightPane";
+
 llvm::json::Object TasksData::Json() const {
   llvm::json::Object json_tasks_data;
   if (edge_overlays_data_list_left_pane.has_value()) {
@@ -150,24 +172,6 @@ llvm::json::Object TasksData::Json() const {
         ToJsonArray(edge_overlays_data_list_right_pane.value());
   }
   return json_tasks_data;
-}
-
-llvm::json::Object GraphNode::Json() const {
-  llvm::json::Object json_node;
-  json_node[kNodeId] = node_id;
-  json_node[kNodeLabel] = node_label;
-  json_node[kNodeName] = node_name;
-  json_node[kSubgraphIds] = subgraph_ids;
-  json_node[kNodeAttrs] = ToJsonArray(node_attrs);
-  json_node[kIncomingEdges] = ToJsonArray(incoming_edges);
-  json_node[kInputsMetadata] = ToJsonArray(inputs_metadata);
-  json_node[kOutputsMetadata] = ToJsonArray(outputs_metadata);
-
-  if (config.has_value()) {  // Only add config if it exists
-    json_node[kConfig] = config->Json();
-  }
-
-  return json_node;
 }
 
 const char Subgraph::kSubgraphId[] = "id";
