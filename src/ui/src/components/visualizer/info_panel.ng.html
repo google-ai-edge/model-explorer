@@ -26,7 +26,7 @@ limitations under the License.
               (click)="handleToggleSection(section.label, sectionEle)">
             <mat-icon>{{getSectionToggleIcon(section.label)}}</mat-icon>
           </button>
-          {{section.label}}
+          {{getSectionDisplayLabel(section.label)}}
         </div>
         <div class="items-container">
           <table class="metadata-table info-attrs">
@@ -75,7 +75,7 @@ limitations under the License.
           (click)="handleToggleSection(SectionLabel.NODE_DATA_PROVIDERS, ndpSectionEle)">
         <mat-icon>{{getSectionToggleIcon(SectionLabel.NODE_DATA_PROVIDERS)}}</mat-icon>
       </button>
-      Node data providers
+      {{nodeDataProviderPanelTitle}}
     </div>
     <node-data-provider-summary-panel
         [paneId]="paneId"

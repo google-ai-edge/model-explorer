@@ -409,7 +409,7 @@ export class InfoPanel {
     this.animateSidePanelWidth(targetWidth);
   }
 
-  handleToggleSection(sectionName: string, sectionEle?: HTMLElement) {
+  handleToggleSection(sectionName: SectionLabel, sectionEle?: HTMLElement) {
     if (!sectionEle) return;
 
     const collapsed = this.isSectionCollapsed(sectionName);
@@ -440,11 +440,11 @@ export class InfoPanel {
     });
   }
 
-  isSectionCollapsed(sectionName: string): boolean {
+  isSectionCollapsed(sectionName: SectionLabel): boolean {
     return this.infoPanelService.collapsedSectionNames.has(sectionName);
   }
 
-  getSectionToggleIcon(sectionName: string): string {
+  getSectionToggleIcon(sectionName: SectionLabel): string {
     return this.isSectionCollapsed(sectionName)
       ? 'chevron_right'
       : 'expand_more';
@@ -565,6 +565,13 @@ export class InfoPanel {
     return (connectedNodesMetadataItem?.connectedNodes || []).length > 0;
   }
 
+  getSectionDisplayLabel(sectionLabel: SectionLabel): string {
+    if (sectionLabel === SectionLabel.NODE_DATA_PROVIDERS) {
+      return this.nodeDataProviderPanelTitle;
+    }
+    return sectionLabel;
+  }
+
   trackByItemIdOrLabel(index: number, item: InfoItem): string {
     return item.id || item.label;
   }
@@ -634,6 +641,13 @@ export class InfoPanel {
 
   get hideToggleIconName(): string {
     return this.hide ? 'chevron_left' : 'chevron_right';
+  }
+
+  get nodeDataProviderPanelTitle(): string {
+    return (
+      this.appService.config()?.renameNodeDataProviderPanelTitleTo ??
+      SectionLabel.NODE_DATA_PROVIDERS
+    );
   }
 
   private handleNodeSelected(nodeId: string) {

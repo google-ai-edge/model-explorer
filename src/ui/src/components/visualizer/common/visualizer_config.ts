@@ -173,6 +173,11 @@ export declare interface VisualizerConfig {
   showSidePanelOnNodeSelection?: boolean;
 
   /**
+   * If set, rename the node data provider panel title to this string.
+   */
+  renameNodeDataProviderPanelTitleTo?: string;
+
+  /**
    * Config for the legends panel.
    */
   legendConfig?: LegendConfig;
