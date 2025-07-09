@@ -341,9 +341,9 @@ export class GraphLayout {
     // See available configs here:
     // https://github.com/dagrejs/dagre/wiki#configuring-the-layout.
     dagreGraph.setGraph({
-      nodesep: 20,
-      ranksep: 50,
-      edgesep: 20,
+      nodesep: this.modelGraph.layoutConfigs?.nodeSep ?? 20,
+      ranksep: this.modelGraph.layoutConfigs?.rankSep ?? 50,
+      edgesep: this.modelGraph.layoutConfigs?.edgeSep ?? 20,
       marginx: LAYOUT_MARGIN_X,
       marginy: LAYOUT_MARGIN_TOP,
     });

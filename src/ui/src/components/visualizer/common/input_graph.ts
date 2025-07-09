@@ -84,6 +84,13 @@ export declare interface Graph {
    */
   groupNodeAttributes?: GroupNodeAttributes;
 
+  // The data for various tasks that provide extra data to be visualized, such
+  // as node data, edge overlay, etc.
+  tasksData?: TasksData;
+
+  // Layout-related options.
+  layoutConfigs?: LayoutConfigs;
+
   //////////////////////////////////////////////////////////////////////////////
   // The following fields are set by model explorer. Users don't need to set
   // them.
@@ -93,10 +100,6 @@ export declare interface Graph {
 
   // The ids of its parent graphs.
   parentGraphIds?: string[];
-
-  // The data for various tasks that provide extra data to be visualized, such
-  // as node data, edge overlay, etc.
-  tasksData?: TasksData;
 }
 
 /** A graph with its level, used in the graph selector. */
@@ -174,4 +177,32 @@ export declare interface TasksData {
 
   /** List of data for edge overlays that will be applied to the right pane. */
   edgeOverlaysDataListRightPane?: EdgeOverlaysData[];
+}
+
+/** Layout-related configs. */
+export declare interface LayoutConfigs {
+  /**
+   * Number of pixels that separate nodes horizontally in the layout.
+   *
+   * Default is 20.
+   */
+  nodeSep?: number;
+
+  /**
+   * Number of pixels between each rank in the layout.
+   *
+   * A rank is a vertical layer that layout algorithm assigns nodes to, forming
+   * a hierarchical structure to optimize graph layout and minimize edge
+   * crossings.
+   *
+   * Default is 50.
+   */
+  rankSep?: number;
+
+  /**
+   * Number of pixels that separate edges horizontally in the layout.
+   *
+   * Default is 20.
+   */
+  edgeSep?: number;
 }

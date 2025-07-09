@@ -16,6 +16,7 @@
  * ==============================================================================
  */
 
+import {LayoutConfigs} from './input_graph';
 import {
   GraphNodeConfig,
   GraphNodeStyle,
@@ -85,6 +86,9 @@ export declare interface ModelGraph {
    * NS children nodes (fromNodeId -> targetNodeIds).
    */
   layoutGraphEdges: Record<string, Record<string, Record<string, boolean>>>;
+
+  /** Layout-related configs. */
+  layoutConfigs?: LayoutConfigs;
 }
 
 /** Node tyoes in a model graph. */

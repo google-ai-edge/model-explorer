@@ -63,11 +63,23 @@ limitations under the License.
     } @else if (type === 'quantization') {
       <div class="monospace-content">{{formatQuantization}}</div>
     } @else {
-      <div class="text-content">{{text}}</div>
+      @if (urlInfo) {
+        <a [href]="urlInfo.url" target="_blank">
+          <div class="text-content">{{urlInfo.anchorText}}</div>
+        </a>
+      } @else {
+        <div class="text-content">{{text}}</div>
+      }
     }
   </div>
   <div class="one-line-text" #oneLineText>
-    {{text}}
+    @if (urlInfo) {
+      <a [href]="urlInfo.url" target="_blank" (click)="$event.stopPropagation()">
+        {{urlInfo.anchorText}}
+      </a>
+    } @else {
+      {{text}}
+    }
   </div>
   <div class="icon-container toggle" (click)="handleToggleExpand($event)">
     <mat-icon>{{iconName}}</mat-icon>
