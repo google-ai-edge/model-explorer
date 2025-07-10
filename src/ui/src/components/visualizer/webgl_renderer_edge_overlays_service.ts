@@ -94,6 +94,9 @@ export class WebglRendererEdgeOverlaysService {
     for (let i = 0; i < this.curOverlays.length; i++) {
       const subgraph = this.curOverlays[i];
       for (const {sourceNodeId, targetNodeId, label} of subgraph.edges) {
+        if (!this.shouldShowEdge(subgraph, sourceNodeId, targetNodeId)) {
+          continue;
+        }
         this.addToEdgePairs(sourceNodeId, targetNodeId, totalEdgePairs);
       }
     }
@@ -108,6 +111,10 @@ export class WebglRendererEdgeOverlaysService {
         edgeWidth / DEFAULT_EDGE_WIDTH,
       );
       for (const {sourceNodeId, targetNodeId, label} of subgraph.edges) {
+        if (!this.shouldShowEdge(subgraph, sourceNodeId, targetNodeId)) {
+          continue;
+        }
+
         const sourceNode = this.webglRenderer.curModelGraph.nodesById[
           sourceNodeId
         ] as OpNode;
@@ -209,6 +216,10 @@ export class WebglRendererEdgeOverlaysService {
     };
     for (const subgraph of this.curOverlays) {
       for (const {sourceNodeId, targetNodeId} of subgraph.edges) {
+        if (!this.shouldShowEdge(subgraph, sourceNodeId, targetNodeId)) {
+          continue;
+        }
+
         addNsParentId(sourceNodeId);
         addNsParentId(targetNodeId);
       }
@@ -233,5 +244,28 @@ export class WebglRendererEdgeOverlaysService {
     return nodeId1.localeCompare(nodeId2) < 0
       ? `${nodeId1}___${nodeId2}`
       : `${nodeId2}___${nodeId1}`;
+  }
+
+  /**
+   * Checks if the edge should be shown based on the edge overlay settings and
+   * the currently selected node.
+   *
+   * An edge should be shown if:
+   * - The edge overlay setting is not set to show edges connected to the
+   *   selected node only.
+   * - The source or target node of the edge is the selected node when the
+   *   "show edges connected to the selected node only" is set.
+   */
+  private shouldShowEdge(
+    edgeOverlay: EdgeOverlay,
+    sourceNodeId: string,
+    targetNodeId: string,
+  ): boolean {
+    const selectedNodeId = this.webglRenderer.selectedNodeId;
+    return (
+      edgeOverlay.showEdgesConnectedToSelectedNodeOnly !== true ||
+      sourceNodeId === selectedNodeId ||
+      targetNodeId === selectedNodeId
+    );
   }
 }

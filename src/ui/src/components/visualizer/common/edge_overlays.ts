@@ -50,6 +50,14 @@ export declare interface EdgeOverlay {
 
   /** The font size of the edge labels. Default to 7.5. */
   edgeLabelFontSize?: number;
+
+  /**
+   * If set to `true`, only edges that are directly connected to the currently
+   * selected node (i.e., edges that either start from or end at the selected
+   * node) will be displayed for this overlay. All other edges within this
+   * overlay will be hidden.
+   */
+  showEdgesConnectedToSelectedNodeOnly?: boolean;
 }
 
 /** An edge in the overlay. */
