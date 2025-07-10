@@ -16,6 +16,7 @@
 #include "tools/namespace_heuristics.h"
 
 #include <algorithm>
+#include <cstddef>
 #include <limits>
 #include <string>
 #include <vector>
@@ -29,112 +30,129 @@ namespace tooling {
 namespace visualization_client {
 namespace {
 
-// Gets the edit distance between two strings with the optimized memory usage.
-int EditDistance(absl::string_view shorter_str, absl::string_view longer_str) {
-  // Ensure that 'shorter_str' is indeed the shorter of the two strings
-  // This helps optimize space usage in the DP table
-  const int short_len = shorter_str.size();
-  const int long_len = longer_str.size();
-  if (short_len > long_len) {
-    return EditDistance(longer_str, shorter_str);
+// Calculates the Levenshtein edit distance between two strings with an optional
+// threshold for early exit. Returns -1 if the distance exceeds the threshold.
+int EditDistance(absl::string_view str1, absl::string_view str2,
+                 const int threshold = std::numeric_limits<int>::max()) {
+  absl::string_view shorter_str = (str1.length() < str2.length()) ? str1 : str2;
+  absl::string_view longer_str = (str1.length() < str2.length()) ? str2 : str1;
+  const int short_len = shorter_str.length();
+  const int long_len = longer_str.length();
+
+  std::vector<int> prev_row(short_len + 1);
+  std::vector<int> curr_row(short_len + 1);
+
+  // Initialize the first row with values from 0 to short_len.
+  for (int j = 0; j <= short_len; ++j) {
+    prev_row[j] = j;
   }
 
-  // 'prev_diag' stores the value from the previous diagonal in the DP table.
-  int prev_diag;
+  for (int i = 1; i <= long_len; ++i) {
+    curr_row[0] = i;  // Represents deletion of all characters in the prefix.
+    int min_in_row = i;
 
-  // 'curr_row' represents the current row in the DP table. Initialize it with
-  // increasing values from 0 to 'short_len', representing the edit distance
-  // when the longer string is empty.
-  std::vector<int> curr_row(short_len + 1, 0);
-  for (int j = 0; j <= short_len; j++) {
-    curr_row[j] = j;
-  }
+    for (int j = 1; j <= short_len; ++j) {
+      // If characters are the same, cost is 0, otherwise 1.
+      const int cost = (longer_str[i - 1] == shorter_str[j - 1]) ? 0 : 1;
+      // The edit distance is the minimum of:
+      // Deletion: prev_row[j] + 1
+      // Insertion: curr_row[j-1] + 1
+      // Substitution: prev_row[j-1] + cost
+      curr_row[j] = std::min(
+          {prev_row[j] + 1, curr_row[j - 1] + 1, prev_row[j - 1] + cost});
+      min_in_row = std::min(min_in_row, curr_row[j]);
+    }
 
-  for (int i = 1; i <= long_len; i++) {
-    prev_diag = curr_row[0];
-    // The first element in each row represents the edit distance when the
-    // shorter string is empty.
-    curr_row[0] = i;
-    for (int j = 1; j <= short_len; j++) {
-      int temp = curr_row[j];
-      // If the characters match, the edit distance is the same as the value on
-      // the previous diagonal.
-      if (longer_str[i - 1] == shorter_str[j - 1]) {
-        curr_row[j] = prev_diag;
-      } else {
-        // If the characters don't match, the edit distance is 1 plus the
-        // minimum of:
-        // 1. Insertion: 'curr_row[j]' (current cell)
-        // 2. Deletion: 'prev_diag' (top-left diagonal)
-        // 3. Substitution: 'curr_row[j - 1]' (left cell)
-        curr_row[j] = 1 + std::min({curr_row[j - 1], prev_diag, curr_row[j]});
-      }
-      prev_diag = temp;
+    // Swaps rows for the next iteration.
+    prev_row.swap(curr_row);
+
+    // Early exits if the minimum distance in the current row already exceeds
+    // the threshold.
+    if (min_in_row > threshold) {
+      return -1;
     }
   }
-  // The final edit distance is stored in the last element of 'curr_row'.
-  return curr_row[short_len];
+
+  return prev_row[short_len];
 }
 
-// Preprocesses the candidate name by obtaining the last chunk of the substring
-// separated by '/', removing the non-alphabetic characters and converting to
-// lower case.
+// Preprocesses a candidate name for matching. It extracts the final path
+// component (after the last '/'), removes non-alphabetic characters, and
+// converts the result to lowercase.
 std::string PreprocessCandidateName(absl::string_view name) {
-  const int start_pos = name.find_last_of('/');
-  std::string last_substr;
-  if (start_pos != std::string::npos) {
-    last_substr = name.substr(start_pos + 1, name.size());
-  } else {
-    last_substr = name;
+  // Finds the start of the last path component.
+  const size_t last_slash_pos = name.find_last_of('/');
+  if (last_slash_pos != absl::string_view::npos) {
+    name.remove_prefix(last_slash_pos + 1);
   }
-  // Removes the non-alphabetic characters and converts to lower case.
-  last_substr.erase(
-      std::remove_if(last_substr.begin(), last_substr.end(),
-                     [](unsigned char c) { return !absl::ascii_isalpha(c); }),
-      last_substr.end());
-  last_substr = absl::AsciiStrToLower(last_substr);
-  return last_substr;
+
+  std::string result;
+  result.reserve(name.length());
+
+  // Builds the result string by appending only desired characters.
+  for (const char c : name) {
+    if (absl::ascii_isalpha(c)) {
+      result += absl::ascii_tolower(c);
+    }
+  }
+  return result;
 }
 
 }  // namespace
 
 std::string TfliteNodeNamespaceHeuristic(
-    absl::string_view node_label,
-    absl::Span<const std::string> candidate_names) {
-  if (candidate_names.empty()) return "";
+    absl::string_view op_name, absl::Span<const std::string> candidate_names) {
+  if (candidate_names.empty()) {
+    return "";
+  }
   if (candidate_names.size() == 1) {
-    return candidate_names[0];
+    return candidate_names.front();
   }
 
-  // Removes any underscores in `node_label`.
-  const std::string node_label_substr =
-      absl::StrReplaceAll(node_label, {{"_", ""}});
+  const std::string processed_op_name =
+      absl::StrReplaceAll(op_name, {{"_", ""}});
 
-  // Default the name to the first candidate name.
-  std::string result_name = candidate_names[0];
+  std::string best_match = candidate_names.front();
   int min_distance = std::numeric_limits<int>::max();
-  // Sets the max distance threshold to be three times the length of the node
-  // label substring. If the distance is larger than the threshold, it's
-  // considered as irrelevant.
-  const int max_distance_threshold = 3 * node_label_substr.length();
-  // Iterates backwards is critical in finding a better match.
-  for (auto name_it = std::rbegin(candidate_names);
-       name_it != std::rend(candidate_names); ++name_it) {
-    const std::string last_substr = PreprocessCandidateName(*name_it);
-    // Skips the empty string to avoid false matching.
-    if (last_substr.empty()) {
+
+  // A threshold to prune the search space. If the edit distance is
+  // significantly larger than the op name length, the candidate is likely
+  // irrelevant. The multiplier is a heuristic.
+  constexpr int kDistanceThresholdMultiplier = 3;
+  const int max_distance_threshold =
+      kDistanceThresholdMultiplier * processed_op_name.length();
+
+  // Iterates backwards, as later names in the candidate list might be more
+  // relevant in some contexts (eg. more specific tensor names).
+  for (auto it = candidate_names.rbegin(); it != candidate_names.rend(); ++it) {
+    absl::string_view name = *it;
+    const std::string processed_candidate = PreprocessCandidateName(name);
+
+    if (processed_candidate.empty()) {
       continue;
     }
-    int cur_distance = EditDistance(node_label_substr, last_substr);
-    if (cur_distance > max_distance_threshold) {
+
+    // This allows for aggressive early termination.
+    const int current_threshold =
+        std::min(min_distance, max_distance_threshold);
+
+    if (current_threshold == 0) break;
+
+    const int cur_distance =
+        EditDistance(processed_op_name, processed_candidate, current_threshold);
+
+    // If EditDistance returned -1, it means the threshold was exceeded, so
+    // this candidate is not better than our current best. We can skip it.
+    if (cur_distance == -1) {
       continue;
     }
+
     if (cur_distance < min_distance) {
       min_distance = cur_distance;
-      result_name = *name_it;
+      best_match = std::string(name);
     }
   }
-  return result_name;
+  return best_match;
 }
 
 }  // namespace visualization_client
