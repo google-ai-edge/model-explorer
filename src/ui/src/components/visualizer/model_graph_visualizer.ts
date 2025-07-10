@@ -41,12 +41,14 @@ import {BenchmarkRunner} from './benchmark_runner';
 import {Graph, GraphCollection} from './common/input_graph';
 import {ModelGraph, OpNode} from './common/model_graph';
 import {
+  CommandType,
   ModelGraphProcessedEvent,
   NodeAttributePairs,
   NodeDataProviderData,
   NodeDataProviderGraphData,
   NodeInfo,
   SyncNavigationModeChangedEvent,
+  ViewOnEdgeMode,
 } from './common/types';
 import {genUid, inInputElement, isOpNode} from './common/utils';
 import {type VisualizerConfig} from './common/visualizer_config';
@@ -599,6 +601,68 @@ export class ModelGraphVisualizer implements OnInit, OnDestroy, OnChanges {
       nodeId,
       attrs,
       paneId: this.appService.panes()[paneIndex].id,
+    });
+  }
+
+  /**
+   * Expands all layers for the graph in the given pane.
+   *
+   * @param paneIndex the index of the pane to expand all layers in.
+   */
+  expandAllLayers(paneIndex = 0) {
+    this.appService.expandOrCollapseAllGraphLayersClicked.next({
+      expandOrCollapse: true,
+      rendererId: this.appService.getPaneIdByIndex(paneIndex),
+    });
+  }
+
+  /**
+   * Collapses all layers for the graph in the given pane.
+   *
+   * @param paneIndex the index of the pane to collapse all layers in.
+   */
+  collapseAllLayers(paneIndex = 0) {
+    this.appService.expandOrCollapseAllGraphLayersClicked.next({
+      expandOrCollapse: false,
+      rendererId: this.appService.getPaneIdByIndex(paneIndex),
+    });
+  }
+
+  /**
+   * Collapses the info panel in the given pane.
+   *
+   * @param paneIndex the index of the pane to collapse the info panel in.
+   */
+  collapseInfoPanel(paneIndex = 0) {
+    this.appService.command.next({
+      type: CommandType.COLLAPSE_INFO_PANEL,
+      paneIndex,
+    });
+  }
+
+  /**
+   * Shows the info panel in the given pane.
+   *
+   * @param paneIndex the index of the pane to show the info panel in.
+   */
+  showInfoPanel(paneIndex = 0) {
+    this.appService.command.next({
+      type: CommandType.SHOW_INFO_PANEL,
+      paneIndex,
+    });
+  }
+
+  /**
+   * Sets the view on edge mode in the given pane.
+   *
+   * @param mode the view on edge mode to set.
+   * @param paneIndex the index of the pane to set the view on edge mode in.
+   */
+  setViewOnEdge(mode: ViewOnEdgeMode, paneIndex = 0) {
+    this.appService.command.next({
+      type: CommandType.SET_VIEW_ON_EDGE,
+      mode,
+      paneIndex,
     });
   }
 

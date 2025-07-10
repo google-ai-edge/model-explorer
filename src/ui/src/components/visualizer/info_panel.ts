@@ -22,6 +22,7 @@ import {
   ChangeDetectionStrategy,
   ChangeDetectorRef,
   Component,
+  DestroyRef,
   effect,
   ElementRef,
   HostBinding,
@@ -29,6 +30,7 @@ import {
   QueryList,
   ViewChildren,
 } from '@angular/core';
+import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
 import {MatButtonModule} from '@angular/material/button';
 import {MatIconModule} from '@angular/material/icon';
 import {MatProgressSpinnerModule} from '@angular/material/progress-spinner';
@@ -43,6 +45,7 @@ import {AppService} from './app_service';
 import {TENSOR_TAG_METADATA_KEY, TENSOR_VALUES_KEY} from './common/consts';
 import {GroupNode, ModelGraph, ModelNode, OpNode} from './common/model_graph';
 import {
+  CommandType,
   IncomingEdge,
   KeyValue,
   KeyValueList,
@@ -235,6 +238,7 @@ export class InfoPanel {
 
   constructor(
     private readonly appService: AppService,
+    private readonly destroyRef: DestroyRef,
     private readonly nodeDataProviderExtensionService: NodeDataProviderExtensionService,
     private readonly changeDetectorRef: ChangeDetectorRef,
     private readonly infoPanelService: InfoPanelService,
@@ -283,6 +287,30 @@ export class InfoPanel {
         this.updateInputValueContentsExpandable();
       });
     });
+
+    // React to commands.
+    this.appService.command
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((command) => {
+        // Ignore commands not for this pane.
+        if (
+          command.paneIndex !== this.appService.getPaneIndexById(this.paneId)
+        ) {
+          return;
+        }
+
+        // Handle commands.
+        switch (command.type) {
+          case CommandType.COLLAPSE_INFO_PANEL:
+            this.setHideInfoPanel(true);
+            break;
+          case CommandType.SHOW_INFO_PANEL:
+            this.setHideInfoPanel(false);
+            break;
+          default:
+            break;
+        }
+      });
   }
 
   isSearchMatchedAttrId(attrId: string): boolean {
@@ -407,6 +435,17 @@ export class InfoPanel {
       targetWidth = this.savedWidth;
     }
     this.animateSidePanelWidth(targetWidth);
+  }
+
+  setHideInfoPanel(hide: boolean) {
+    this.hide = hide;
+    let targetWidth = 0;
+    if (this.hide) {
+      this.savedWidth = this.width;
+    } else {
+      targetWidth = this.savedWidth;
+    }
+    this.animateSidePanelWidth(targetWidth, 0);
   }
 
   handleToggleSection(sectionName: SectionLabel, sectionEle?: HTMLElement) {
@@ -1237,14 +1276,15 @@ export class InfoPanel {
     this.changeDetectorRef.markForCheck();
   }
 
-  private animateSidePanelWidth(targetWidth: number) {
+  private animateSidePanelWidth(
+    targetWidth: number,
+    duration = SIDE_PANEL_WIDTH_ANIMATION_DURATION,
+  ) {
     const startTs = Date.now();
     const startWidth = this.width;
     const animate = () => {
       const elapsed = Date.now() - startTs;
-      let t = this.appService.testMode
-        ? 1
-        : Math.min(1, elapsed / SIDE_PANEL_WIDTH_ANIMATION_DURATION);
+      let t = this.appService.testMode ? 1 : Math.min(1, elapsed / duration);
       // ease out sine.
       t = Math.sin((t * Math.PI) / 2);
       const curWidth = startWidth + (targetWidth - startWidth) * t;

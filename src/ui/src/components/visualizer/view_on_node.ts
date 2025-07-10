@@ -23,11 +23,13 @@ import {
   ChangeDetectorRef,
   Component,
   computed,
+  DestroyRef,
   effect,
   Input,
   Signal,
   ViewChild,
 } from '@angular/core';
+import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
 import {MatIconModule} from '@angular/material/icon';
 import {MatTooltipModule} from '@angular/material/tooltip';
 
@@ -40,10 +42,13 @@ import {
   NODE_DATA_PROVIDER_SHOW_ON_NODE_TYPE_PREFIX,
 } from './common/consts';
 import {
+  CommandType,
+  SetViewOnEdgeCommand,
   ShowOnEdgeItemData,
   ShowOnEdgeItemType,
   ShowOnNodeItemData,
   ShowOnNodeItemType,
+  ViewOnEdgeMode,
 } from './common/types';
 import {getRunName} from './common/utils';
 import {LocalStorageService} from './local_storage_service';
@@ -137,6 +142,7 @@ export class ViewOnNode {
   constructor(
     private readonly appService: AppService,
     private readonly changeDetectorRef: ChangeDetectorRef,
+    private readonly destroyRef: DestroyRef,
     private readonly localStorageService: LocalStorageService,
     private readonly nodeDataProviderExtensionService: NodeDataProviderExtensionService,
   ) {
@@ -251,6 +257,27 @@ export class ViewOnNode {
       this.showOnEdgeItems = items;
       this.changeDetectorRef.markForCheck();
     });
+
+    // React to commands.
+    this.appService.command
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((command) => {
+        // Ignore commands not for this pane.
+        if (
+          command.paneIndex !== this.appService.getPaneIndexById(this.paneId)
+        ) {
+          return;
+        }
+
+        // Handle commands.
+        switch (command.type) {
+          case CommandType.SET_VIEW_ON_EDGE:
+            this.handleSetViewOnEdgeCommand(command);
+            break;
+          default:
+            break;
+        }
+      });
   }
 
   handleClickOnViewOnNode(event: MouseEvent) {
@@ -454,6 +481,34 @@ export class ViewOnNode {
         LOCAL_STORAGE_KEY_SHOW_ON_EDGE_ITEM,
         JSON.stringify(showOnEdgeItem),
       );
+    }
+  }
+
+  private handleSetViewOnEdgeCommand(command: SetViewOnEdgeCommand) {
+    // Unselect all items first.
+    for (const item of this.showOnEdgeItems) {
+      item.selected = false;
+    }
+
+    // Select the item corresponding to the given mode.
+    let item: ShowOnEdgeItem | undefined = undefined;
+    switch (command.mode) {
+      case ViewOnEdgeMode.OFF:
+        item = this.showOnEdgeItems.find(
+          (item) => item.type === ShowOnEdgeItemType.OFF,
+        );
+        break;
+      case ViewOnEdgeMode.TENSOR_SHAPE:
+        item = this.showOnEdgeItems.find(
+          (item) => item.type === ShowOnEdgeItemType.TENSOR_SHAPE,
+        );
+        break;
+      default:
+        break;
+    }
+    if (item) {
+      item.selected = true;
+      this.handleSetShowOnEdge(true, item);
     }
   }
 }

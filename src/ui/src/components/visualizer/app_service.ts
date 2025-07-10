@@ -29,6 +29,7 @@ import {Graph, GraphCollection, GraphWithLevel} from './common/input_graph';
 import {ModelGraph, ModelNode} from './common/model_graph';
 import {
   AddSnapshotInfo,
+  Command,
   DownloadAsPngInfo,
   ExpandOrCollapseAllGraphLayersInfo,
   LocateNodeInfo,
@@ -108,6 +109,8 @@ export class AppService {
   readonly hoveredNode = signal<NodeInfo | undefined>(undefined);
 
   readonly doubleClickedNode = signal<NodeInfo | undefined>(undefined);
+
+  readonly command = new Subject<Command>();
 
   testMode = false;
 
@@ -617,6 +620,10 @@ export class AppService {
 
   getPaneIndexById(id: string): number {
     return this.panes().findIndex((pane) => pane.id === id);
+  }
+
+  getPaneIdByIndex(index: number): string {
+    return this.panes()[index]?.id ?? '';
   }
 
   addSnapshot(snapshotData: SnapshotData, graphId: string, paneId: string) {

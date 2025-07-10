@@ -895,3 +895,44 @@ export declare interface ToolbarConfig {
   /** Whether to hide the "Custom edge overlays" button. */
   hideCustomEdgeOverlays?: boolean;
 }
+
+/** Base interface for a command. */
+export declare interface CommandBase {
+  type: CommandType;
+  paneIndex: number;
+}
+
+/** Command to collapse the info panel in the given pane. */
+export declare interface CollapseInfoPanelCommand extends CommandBase {
+  type: CommandType.COLLAPSE_INFO_PANEL;
+}
+
+/** Command to show the info panel in the given pane. */
+export declare interface ShowInfoPanelCommand extends CommandBase {
+  type: CommandType.SHOW_INFO_PANEL;
+}
+
+/** Command to set the view on edge mode in the given pane. */
+export declare interface SetViewOnEdgeCommand extends CommandBase {
+  type: CommandType.SET_VIEW_ON_EDGE;
+  mode: ViewOnEdgeMode;
+}
+
+/** Modes for "View on edge". */
+export enum ViewOnEdgeMode {
+  OFF = 'off',
+  TENSOR_SHAPE = 'tensor_shape',
+}
+
+/** Command types. */
+export enum CommandType {
+  COLLAPSE_INFO_PANEL = 'collapse_info_panel',
+  SHOW_INFO_PANEL = 'show_info_panel',
+  SET_VIEW_ON_EDGE = 'set_view_on_edge',
+}
+
+/** Union type for all commands. */
+export type Command =
+  | CollapseInfoPanelCommand
+  | ShowInfoPanelCommand
+  | SetViewOnEdgeCommand;
