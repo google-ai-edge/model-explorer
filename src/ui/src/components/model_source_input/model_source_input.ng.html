@@ -39,6 +39,31 @@ limitations under the License.
           MLIR
         </span> (.mlir, .mlirbc).
       </div>
+
+      @if (customExtensions().length > 0) {
+        <div class="custom-extensions">
+          <div class="section-title">
+            <mat-icon>extension</mat-icon>
+            Loaded custom extensions:
+          </div>
+          <ul>
+            @for (extension of customExtensions(); track extension) {
+              <li>
+                <div class="extension-name">
+                  {{extension.name}}
+                  <div class="exts">
+                    @for (ext of extension.fileExts; track ext) {
+                      <div class="ext">{{ext}}</div>
+                    }
+                  </div>
+                </div>
+                <br>
+                <span class="description">{{extension.description}}</span>
+              </li>
+            }
+          </ul>
+        </div>
+      }
     </div>
 
     <div class="source-input-container" [class.reverse]="isExternal">

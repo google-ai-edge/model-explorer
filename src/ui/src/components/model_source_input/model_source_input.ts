@@ -29,6 +29,7 @@ import {
   ChangeDetectionStrategy,
   ChangeDetectorRef,
   Component,
+  computed,
   DestroyRef,
   ElementRef,
   Inject,
@@ -69,6 +70,7 @@ import {
   isInternalStoragePath,
 } from '../../common/utils';
 import {AdapterExtensionService} from '../../services/adapter_extension_service';
+import {ExtensionService} from '../../services/extension_service';
 import {ModelSource, UrlService} from '../../services/url_service';
 import {Bubble} from '../bubble/bubble';
 import {LocalStorageService} from '../visualizer/local_storage_service';
@@ -145,6 +147,12 @@ export class ModelSourceInput {
   readonly loading = signal<boolean>(false);
   readonly hasUploadedModels = signal<boolean>(false);
   readonly internalColab = INTERNAL_COLAB;
+  readonly customExtensions = computed(() => {
+    if (this.extensionService.loading()) {
+      return [];
+    }
+    return this.extensionService.getCustomExtensions();
+  });
 
   private portal: ComponentPortal<AdapterSelectorPanel> | null = null;
 
@@ -152,6 +160,7 @@ export class ModelSourceInput {
     private readonly changeDetectorRef: ChangeDetectorRef,
     private readonly adapterExtensionService: AdapterExtensionService,
     private readonly destroyRef: DestroyRef,
+    private readonly extensionService: ExtensionService,
     private readonly localStorageService: LocalStorageService,
     @Inject('ModelLoaderService')
     private readonly modelLoaderService: ModelLoaderServiceInterface,

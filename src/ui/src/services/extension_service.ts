@@ -70,6 +70,15 @@ export class ExtensionService {
     }
   }
 
+  /**
+   * Get custom extensions (i.e. not built-in).
+   *
+   * Built-in extensions have ids starting with 'builtin_'.
+   */
+  getCustomExtensions(): Extension[] {
+    return this.extensions.filter((ext) => !ext.id.startsWith('builtin_'));
+  }
+
   private async loadExtensions() {
     // Talk to BE to get registered extensions.
     let exts: Extension[] = [];

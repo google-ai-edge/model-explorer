@@ -81,6 +81,63 @@ $warning_bg_color: #ffefd9;
         color: inherit;
       }
     }
+
+    .custom-extensions {
+      margin-top: 16px;
+
+      .section-title {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-weight: 500;
+
+        mat-icon {
+          font-size: 18px;
+          width: 18px;
+          height: 18px;
+          color: #999;
+        }
+      }
+
+      .extension-name {
+        display: inline-flex;
+        align-items: center;
+      }
+
+      .exts {
+        display: inline-flex;
+        margin-left: 8px;
+        gap: 4px;
+
+        .ext {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 12px;
+          padding: 2px 3px;
+          border-radius: 4px;
+          background-color: #eee;
+          border: 1px solid #ccc;
+          box-sizing: border-box;
+        }
+      }
+
+      ul {
+        max-height: 200px;
+        overflow-y: auto;
+        margin-top: 0px;
+
+        .description {
+          margin-top: 2px;
+          display: inline-block;
+          color: #999;
+        }
+
+        li {
+          margin-top: 10px;
+        }
+      }
+    }
   }
 
   .source-input-container {
