@@ -183,13 +183,6 @@ NodeFilter MakeInstructionRadiusAroundFilter(const xla::HloInstruction* root,
   };
 }
 
-std::string GetSrcInstructionId(const xla::HloInstruction* instruction) {
-  return instruction->opcode() == xla::HloOpcode::kFusion
-             ? GetInstructionId(instruction->fused_instructions_computation()
-                                    ->root_instruction())
-             : GetInstructionId(instruction);
-}
-
 // Gets the computation hierarchy, split by "/", e.g., "computation_0/fusion_1".
 std::string GetComputationHierarchy(
     const std::vector<std::string>& computation_stack) {
@@ -204,7 +197,16 @@ bool IsGetTupleElement(const HloAdapterOption& options,
 
 absl::Status AddHloInstructionIncomingEdges(
     const xla::HloInstruction* instruction, const HloAdapterOption& options,
-    GraphNodeBuilder& builder, OutputEdges& output_edges) {
+    GraphNodeBuilder& builder, OutputEdges& output_edges,
+    const ComputationExpand& computation_expand) {
+  if (instruction->opcode() == xla::HloOpcode::kFusion &&
+      computation_expand(instruction,
+                         instruction->fused_instructions_computation())) {
+    // If the instruction is an expanded fusion, don't connect it to anything
+    // because the operands will be connected to the parameters.
+    return absl::OkStatus();
+  }
+  std::vector<const xla::HloInstruction*> operands;
   // If the instruction is a Parameter within a Fusion computation, we connect
   // the operands of the fusion computation to the parameters.
   if (instruction->opcode() == xla::HloOpcode::kParameter &&
@@ -214,41 +216,38 @@ absl::Status AddHloInstructionIncomingEdges(
     if (fusion_instruction == nullptr) {
       return absl::InternalError("Fusion instruction not found");
     }
-
-    const xla::HloInstruction* operand =
-        fusion_instruction->operand(instruction->parameter_number());
-    std::string src_instruction_id;
-    if (IsGetTupleElement(options, operand)) {
-      src_instruction_id = GetSrcInstructionId(operand->operand(0));
-    } else {
-      src_instruction_id = GetSrcInstructionId(operand);
-    }
-    const std::string output_id =
-        absl::StrCat(output_edges[src_instruction_id].size());
-    builder.AppendEdgeInfo(
-        /*source_node_id_str=*/src_instruction_id,
-        output_id, /*target_node_input_id_str=*/
-        absl::StrCat(instruction->parameter_number()));
-    output_edges[src_instruction_id].push_back(instruction);
-
-    return absl::OkStatus();
+    operands.push_back(
+        fusion_instruction->operand(instruction->parameter_number()));
+  } else {
+    operands.insert(operands.end(), instruction->operands().begin(),
+                    instruction->operands().end());
   }
 
-  for (int i = 0; i < instruction->operand_count(); ++i) {
-    const xla::HloInstruction* operand = instruction->operand(i);
-
+  int input_id = 0;
+  for (const xla::HloInstruction* operand : operands) {
     std::string src_instruction_id;
     if (IsGetTupleElement(options, operand)) {
-      src_instruction_id = GetInstructionId(operand->operand(0));
-    } else {
-      src_instruction_id = GetSrcInstructionId(operand);
+      // Skip the GTE operand, and connect the user to the tuple directly.
+      operand = operand->operand(0);
     }
+
+    if (operand->opcode() == xla::HloOpcode::kFusion &&
+        computation_expand(operand,
+                           operand->fused_instructions_computation())) {
+      // If the operand is a fusion, we connect the user to the root of the
+      // fusion computation.
+      src_instruction_id = GetInstructionId(
+          operand->fused_instructions_computation()->root_instruction());
+    } else {
+      src_instruction_id = GetInstructionId(operand);
+    }
+
     const std::string output_id =
         absl::StrCat(output_edges[src_instruction_id].size());
     builder.AppendEdgeInfo(
         /*source_node_id_str=*/src_instruction_id,
         output_id, /*target_node_input_id_str=*/
-        absl::StrCat(i));
+        absl::StrCat(input_id++));
     output_edges[src_instruction_id].push_back(instruction);
   }
   return absl::OkStatus();
@@ -370,7 +369,7 @@ void SetInstructionNodeAttributes(const xla::HloInstruction* instruction,
 absl::Status BuildHloInstructionNode(
     const xla::HloInstruction* instruction, const HloAdapterOption& options,
     std::vector<std::string>& computation_stack, GraphNodeBuilder& builder,
-    OutputEdges& output_edges) {
+    OutputEdges& output_edges, const ComputationExpand& computation_expand) {
   builder.SetNodeId(GetInstructionId(instruction));
 
   // Set namespace.
@@ -380,8 +379,8 @@ absl::Status BuildHloInstructionNode(
   SetInstructionNodeLabel(instruction, builder);
 
   // Add incoming edges.
-  RETURN_IF_ERROR(AddHloInstructionIncomingEdges(instruction, options, builder,
-                                                 output_edges));
+  RETURN_IF_ERROR(AddHloInstructionIncomingEdges(
+      instruction, options, builder, output_edges, computation_expand));
 
   // Set node attributes.
   SetInstructionNodeAttributes(instruction, options, builder);
@@ -436,7 +435,7 @@ absl::Status HloComputationToGraphImpl(
   if (computation.FusionInstruction() != nullptr) {
     RETURN_IF_ERROR(BuildHloInstructionNode(computation.FusionInstruction(),
                                             options, computation_stack, builder,
-                                            output_edges));
+                                            output_edges, computation_expand));
     builder.SetNodeLabel(GetInstructionId(computation.FusionInstruction()));
     builder.AppendNodeAttribute("Fusion Computation", computation.name());
   } else {
@@ -474,8 +473,9 @@ absl::Status HloComputationToGraphImpl(
     } else {
       // Build the hlo instruction node.
       GraphNodeBuilder builder;
-      RETURN_IF_ERROR(BuildHloInstructionNode(
-          instruction, options, computation_stack, builder, output_edges));
+      RETURN_IF_ERROR(
+          BuildHloInstructionNode(instruction, options, computation_stack,
+                                  builder, output_edges, computation_expand));
 
       // Convert subcomputations within the instruction to subgraphs.
       for (const xla::HloComputation* subcomputation :
