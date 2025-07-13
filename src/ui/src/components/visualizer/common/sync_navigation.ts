@@ -90,6 +90,37 @@ export declare interface SyncNavigationData extends TaskData {
    * See comments above for "related nodes".
    */
   relatedNodesBorderWidth?: number;
+
+  /**
+   * Whether to show diff highlights.
+   *
+   * When enabled, Model Explorer will render diff highlights on nodes based on
+   * the current sync navigation mode. If a node has mapped nodes in the other
+   * pane, but all mapped nodes are missing in the other pane, Model Explorer
+   * will highlight the current node with a specific border color and width (can
+   * be configured below) to indicate a diff.
+   */
+  showDiffHighlights?: boolean;
+
+  /**
+   * The border color and width used to highlight deleted nodes. Default to red
+   * color and 2 px width.
+   *
+   * The deleted nodes are nodes that exist in the left pane but not in the right
+   * pane based on the mapping, and will be highlighted in the left pane.
+   */
+  deletedNodesBorderColor?: string;
+  deletedNodesBorderWidth?: number;
+
+  /**
+   * The border color and width used to highlight new nodes. Default to green
+   * color and 2 px width.
+   *
+   * The new nodes are nodes that exist in the right pane but not in the left
+   * pane based on the mapping, and will be highlighted in the right pane.
+   */
+  newNodesBorderColor?: string;
+  newNodesBorderWidth?: number;
 }
 
 /**

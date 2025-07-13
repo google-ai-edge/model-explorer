@@ -45,6 +45,9 @@ import {
 import {LocalStorageService} from './local_storage_service';
 import {SyncNavigationService} from './sync_navigation_service';
 
+const LOCAL_STORAGE_KEY_MATCH_NODE_ID_HIGHLIGHT_DIFFS =
+  'sync_navigation_match_node_id_highlight_diffs';
+
 /** The button to manage sync navigation. */
 @Component({
   standalone: true,
@@ -85,6 +88,8 @@ export class SyncNavigationButton {
       : 'sync',
   );
   readonly loadingFromCns = this.syncNavigationService.loadingFromCns;
+  readonly matchNodeIdHighlightDiffs =
+    this.syncNavigationService.matchNodeIdHighlightDiffs;
 
   readonly helpPopupSize: OverlaySizeConfig = {
     minWidth: 0,
@@ -100,6 +105,11 @@ export class SyncNavigationButton {
   uploadedFileName = '';
 
   constructor() {
+    this.syncNavigationService.matchNodeIdHighlightDiffs.set(
+      this.localStorageService.getItem(
+        LOCAL_STORAGE_KEY_MATCH_NODE_ID_HIGHLIGHT_DIFFS,
+      ) === 'true',
+    );
 
     // Populate sync modes.
     //
@@ -178,6 +188,16 @@ export class SyncNavigationButton {
       }
     };
     fileReader.readAsText(file);
+  }
+
+  handleToggleMatchNodeIdHighlightDiffs(checked: boolean) {
+    this.syncNavigationService.matchNodeIdHighlightDiffs.set(checked);
+    if (!this.appService.testMode) {
+      this.localStorageService.setItem(
+        LOCAL_STORAGE_KEY_MATCH_NODE_ID_HIGHLIGHT_DIFFS,
+        `${checked}`,
+      );
+    }
   }
 
   private showError(message: string) {

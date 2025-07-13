@@ -48,6 +48,7 @@ export class SyncNavigationService {
   readonly mode = signal<SyncNavigationMode>(SyncNavigationMode.DISABLED);
   readonly navigationSourceChanged$ = new Subject<NavigationSourceInfo>();
   readonly loadingFromCns = signal<boolean>(false);
+  readonly matchNodeIdHighlightDiffs = signal<boolean>(false);
 
   // Used for notifying mode change to other components.
   readonly syncNavigationModeChanged$ =
@@ -56,10 +57,9 @@ export class SyncNavigationService {
   // {} means showing the message, and undefined means hiding the message.
   readonly showNoMappedNodeMessageTrigger$ = new Subject<{} | undefined>();
 
-  private savedProcessedSyncNavigationData: Record<
-    string,
-    ProcessedSyncNavigationData
-  > = {};
+  readonly savedProcessedSyncNavigationData = signal<
+    Record<string, ProcessedSyncNavigationData>
+  >({});
 
   updateNavigationSource(info: NavigationSourceInfo) {
     if (this.mode() === SyncNavigationMode.DISABLED) {
@@ -99,13 +99,15 @@ export class SyncNavigationService {
     }
 
     // Save it.
-    this.savedProcessedSyncNavigationData[mode] = processedData;
+    this.savedProcessedSyncNavigationData.update((data) => {
+      return {...data, [mode]: processedData};
+    });
   }
 
   getMappedNodeIds(paneIndex: number, nodeId: string): string[] {
     const mode = this.mode();
     const curSyncNavigationData: ProcessedSyncNavigationData | undefined =
-      this.savedProcessedSyncNavigationData[mode];
+      this.savedProcessedSyncNavigationData()[mode];
 
     switch (mode) {
       case SyncNavigationMode.MATCH_NODE_ID: {
@@ -139,7 +141,7 @@ export class SyncNavigationService {
   ): string[] {
     const mode = this.mode();
     const curSyncNavigationData: ProcessedSyncNavigationData | undefined =
-      this.savedProcessedSyncNavigationData[mode];
+      this.savedProcessedSyncNavigationData()[mode];
 
     switch (mode) {
       case SyncNavigationMode.MATCH_NODE_ID: {
@@ -159,7 +161,14 @@ export class SyncNavigationService {
 
   getSyncNavigationData(): SyncNavigationData | undefined {
     const mode = this.mode();
-    return this.savedProcessedSyncNavigationData[mode];
+    return this.savedProcessedSyncNavigationData()[mode];
+  }
+
+  getShowDiffHighlightsInMatchNodeIdMode(): boolean {
+    return (
+      this.mode() === SyncNavigationMode.MATCH_NODE_ID &&
+      this.matchNodeIdHighlightDiffs()
+    );
   }
 
   async loadFromCns(path: string): Promise<string> {

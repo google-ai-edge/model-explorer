@@ -16,7 +16,7 @@
  * ==============================================================================
  */
 
-import {effect, Injectable, signal} from '@angular/core';
+import {effect, signal} from '@angular/core';
 import * as three from 'three';
 
 import {WEBGL_ELEMENT_Y_FACTOR} from './common/consts';
@@ -27,26 +27,51 @@ import {
   WebglRoundedRectangles,
 } from './webgl_rounded_rectangles';
 
-const HIGHLIGHT_NODES_HIGHLIGHT_BORDER_Y_OFFSET = -WEBGL_ELEMENT_Y_FACTOR * 0.3;
-
 const THREE = three;
 
-const DEFAULT_HIGHLIGHT_NODES_BORDER_COLOR = '#ff00be';
-const DEFAULT_HIGHLIGHT_NODES_BORDER_WIDTH = 2;
+/**
+ * The default border color used to highlight nodes.
+ */
+export const DEFAULT_HIGHLIGHT_NODES_BORDER_COLOR = '#ff00be';
 
 /**
- * Service for rendering node highlight (a border around the node).
+ * The default border width used to highlight nodes.
  */
-@Injectable()
+export const DEFAULT_HIGHLIGHT_NODES_BORDER_WIDTH = 2;
+
+/**
+ * The default border color used to highlight deleted nodes.
+ */
+export const DEFAULT_DELETE_NODES_BORDER_COLOR = '#f26868';
+
+/**
+ * The default border color used to highlight new nodes.
+ */
+export const DEFAULT_NEW_NODES_BORDER_COLOR = '#aedcae';
+
+/**
+ * The highlight info for a node.
+ */
+export interface HighlightInfo {
+  nodeId: string;
+  borderColor: string;
+  borderWidth: number;
+}
+
+/**
+ * Service for rendering node highlight (an extra border around the node,
+ * outside the node border).
+ */
 export class WebglRendererHighlightNodesService {
   readonly highlightNodesBorders = new WebglRoundedRectangles(8);
 
-  private readonly highlightNodeIds = signal<string[]>([]);
-  private webglRenderer!: WebglRenderer;
+  private readonly highlights = signal<{[nodeId: string]: HighlightInfo}>({});
   private webglRendererThreejsService!: WebglRendererThreejsService;
 
-  init(webglRenderer: WebglRenderer) {
-    this.webglRenderer = webglRenderer;
+  constructor(
+    private readonly webglRenderer: WebglRenderer,
+    private readonly yRelativeOffset: number,
+  ) {
     this.webglRendererThreejsService =
       webglRenderer.webglRendererThreejsService;
 
@@ -56,23 +81,41 @@ export class WebglRendererHighlightNodesService {
     });
   }
 
-  setHighlightNodeIds(nodeIds: string[]) {
-    this.highlightNodeIds.set(nodeIds);
+  setNodeHighlights(
+    highlights: {[nodeId: string]: HighlightInfo},
+    clear = false,
+  ) {
+    if (Object.keys(highlights).length === 0) {
+      this.clearNodeHighlights();
+    } else {
+      this.highlights.update((prevHighlights) => {
+        if (clear) {
+          return highlights;
+        }
+        return {...prevHighlights, ...highlights};
+      });
+    }
+  }
+
+  clearNodeHighlights() {
+    this.highlights.set({});
   }
 
   private clearAndRenderHighlightNodes() {
     this.clearHighlightNodes();
 
-    const nodeIdsToHighlight = this.highlightNodeIds();
-    if (nodeIdsToHighlight.length > 0) {
+    const highlights = this.highlights();
+    if (Object.keys(highlights).length > 0) {
       // Render highlight borders for the result nodes.
       const rectangles: RoundedRectangleData[] = [];
-      const bgColor = new THREE.Color(this.borderColor);
-      const borderWidth =
-        this.webglRenderer.syncNavigationService.getSyncNavigationData()
-          ?.relatedNodesBorderWidth ?? DEFAULT_HIGHLIGHT_NODES_BORDER_WIDTH;
-      for (const nodeId of nodeIdsToHighlight) {
+      for (const nodeId of Object.keys(highlights)) {
+        const curHighlight = highlights[nodeId];
+        const borderWidth = curHighlight.borderWidth;
+        const bgColor = new THREE.Color(curHighlight.borderColor);
         const node = this.webglRenderer.curModelGraph.nodesById[nodeId];
+        if (!node) {
+          continue;
+        }
         const nodeIndex = this.webglRenderer.nodesToRenderMap[nodeId].index;
         const x = this.webglRenderer.getNodeX(node) - borderWidth;
         const y = this.webglRenderer.getNodeY(node) - borderWidth;
@@ -87,9 +130,7 @@ export class WebglRendererHighlightNodesService {
             width,
             height,
           },
-          yOffset:
-            WEBGL_ELEMENT_Y_FACTOR * nodeIndex +
-            HIGHLIGHT_NODES_HIGHLIGHT_BORDER_Y_OFFSET,
+          yOffset: WEBGL_ELEMENT_Y_FACTOR * nodeIndex + this.yRelativeOffset,
           isRounded: true,
           borderColor: {r: 1, g: 1, b: 1},
           bgColor,
@@ -97,7 +138,13 @@ export class WebglRendererHighlightNodesService {
           opacity: 1,
         });
       }
-      this.highlightNodesBorders.generateMesh(rectangles);
+      this.highlightNodesBorders.generateMesh(
+        rectangles,
+        false,
+        false,
+        false,
+        true, // disable initial animation
+      );
       this.webglRendererThreejsService.addToScene(
         this.highlightNodesBorders.mesh,
       );
@@ -118,12 +165,5 @@ export class WebglRendererHighlightNodesService {
       }
       this.webglRendererThreejsService.removeFromScene(mesh);
     }
-  }
-
-  private get borderColor(): string {
-    return (
-      this.webglRenderer.syncNavigationService.getSyncNavigationData()
-        ?.relatedNodesBorderColor ?? DEFAULT_HIGHLIGHT_NODES_BORDER_COLOR
-    );
   }
 }

@@ -61,6 +61,17 @@ limitations under the License.
             {{getModeLabel(mode)}}
           </mat-radio-button>
           @switch (mode) {
+            @case (SyncNavigationMode.MATCH_NODE_ID) {
+              <label class="match-node-id-checkbox">
+                <input type="checkbox"
+                    name="match-node-id-checkbox"
+                    [checked]="matchNodeIdHighlightDiffs()"
+                    [disabled]="syncMode() !== SyncNavigationMode.MATCH_NODE_ID"
+                    #input
+                    (change)="handleToggleMatchNodeIdHighlightDiffs(input.checked)"/>
+                Highlight deleted and new nodes
+              </label>
+            }
             @case (SyncNavigationMode.UPLOAD_MAPPING_FROM_COMPUTER) {
               <button class="upload-mapping-button"
                   mat-flat-button color="primary"

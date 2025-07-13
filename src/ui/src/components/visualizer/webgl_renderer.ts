@@ -31,9 +31,12 @@ import {
   inject,
   Input,
   NgZone,
+  OnChanges,
   OnDestroy,
   OnInit,
   Output,
+  signal,
+  SimpleChanges,
   ViewChild,
   ViewContainerRef,
 } from '@angular/core';
@@ -61,6 +64,7 @@ import {
   NodeType,
   OpNode,
 } from './common/model_graph';
+import {SyncNavigationData, SyncNavigationMode} from './common/sync_navigation';
 import {
   FontWeight,
   NodeDataProviderResultProcessedData,
@@ -112,7 +116,14 @@ import {WebglEdges} from './webgl_edges';
 import {WebglRendererAttrsTableService} from './webgl_renderer_attrs_table_service';
 import {WebglRendererEdgeOverlaysService} from './webgl_renderer_edge_overlays_service';
 import {WebglRendererEdgeTextsService} from './webgl_renderer_edge_texts_service';
-import {WebglRendererHighlightNodesService} from './webgl_renderer_highlight_node_service';
+import {
+  DEFAULT_DELETE_NODES_BORDER_COLOR,
+  DEFAULT_HIGHLIGHT_NODES_BORDER_COLOR,
+  DEFAULT_HIGHLIGHT_NODES_BORDER_WIDTH,
+  DEFAULT_NEW_NODES_BORDER_COLOR,
+  HighlightInfo,
+  WebglRendererHighlightNodesService,
+} from './webgl_renderer_highlight_node_service';
 import {WebglRendererIdenticalLayerService} from './webgl_renderer_identical_layer_service';
 import {
   IO_PICKER_ID_SEP,
@@ -200,7 +211,6 @@ type RenderElement = RenderElementNode | RenderElementEdge;
     WebglRendererAttrsTableService,
     WebglRendererEdgeTextsService,
     WebglRendererEdgeOverlaysService,
-    WebglRendererHighlightNodesService,
     WebglRendererIdenticalLayerService,
     WebglRendererIoHighlightService,
     WebglRendererIoTracingService,
@@ -214,7 +224,7 @@ type RenderElement = RenderElementNode | RenderElementEdge;
   styleUrls: ['./webgl_renderer.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class WebglRenderer implements OnInit, OnDestroy {
+export class WebglRenderer implements OnInit, OnChanges, OnDestroy {
   /**
    * This is the model graph that has been processed from an input graph. The
    * renderer will update this graph in various situations (e.g. when user
@@ -358,6 +368,13 @@ export class WebglRenderer implements OnInit, OnDestroy {
   private readonly edges = new WebglEdges(this.EDGE_COLOR, EDGE_WIDTH);
   readonly texts = new WebglTexts(this.threejsService);
   private readonly mousePos = new THREE.Vector2();
+  private readonly syncNavigationRelatedNodesHighlights =
+    new WebglRendererHighlightNodesService(this, -WEBGL_ELEMENT_Y_FACTOR * 0.3);
+  private readonly syncNavigationDiffHighlights =
+    new WebglRendererHighlightNodesService(
+      this,
+      -WEBGL_ELEMENT_Y_FACTOR * 0.35,
+    );
   private draggingArea = false;
   private hoveredNodeId = '';
   private hoveredGroupNodeIconId = '';
@@ -369,6 +386,14 @@ export class WebglRenderer implements OnInit, OnDestroy {
   private curProcessedNodeStylerRules: ProcessedNodeStylerRule[] = [];
   private renderedEdgeIdsToHide: string[] = [];
   private relayoutDoneFn?: () => void;
+  private readonly paneIdInternal = signal<string>('');
+  private readonly paneIndex = computed(() =>
+    this.appService.getPaneIndexById(this.paneIdInternal()),
+  );
+  private savedSyncNavigationMode: SyncNavigationMode | undefined = undefined;
+  private savedSyncNavigationData: SyncNavigationData | undefined = undefined;
+  private savedShowDiffHighlightsInMatchNodeIdMode: boolean | undefined =
+    undefined;
 
   private readonly selectedNodeInfo = computed(() => {
     const pane = this.appService.getPaneById(this.paneId);
@@ -454,7 +479,6 @@ export class WebglRenderer implements OnInit, OnDestroy {
     private readonly webglRendererAttrsTableService: WebglRendererAttrsTableService,
     readonly webglRendererEdgeTextsService: WebglRendererEdgeTextsService,
     private readonly webglRendererEdgeOverlaysService: WebglRendererEdgeOverlaysService,
-    private readonly webglRendererHighlightNodesService: WebglRendererHighlightNodesService,
     private readonly webglRendererIdenticalLayerService: WebglRendererIdenticalLayerService,
     readonly webglRendererIoHighlightService: WebglRendererIoHighlightService,
     private readonly webglRendererIoTracingService: WebglRendererIoTracingService,
@@ -468,7 +492,6 @@ export class WebglRenderer implements OnInit, OnDestroy {
     this.webglRendererAttrsTableService.init(this);
     this.webglRendererEdgeTextsService.init(this);
     this.webglRendererEdgeOverlaysService.init(this);
-    this.webglRendererHighlightNodesService.init(this);
     this.webglRendererIdenticalLayerService.init(this);
     this.webglRendererIoHighlightService.init(this);
     this.webglRendererIoTracingService.init(this);
@@ -729,6 +752,7 @@ export class WebglRenderer implements OnInit, OnDestroy {
       this.webglRendererIoHighlightService.updateIncomingAndOutgoingHighlights();
       this.webglRendererIdenticalLayerService.updateIdenticalLayerIndicators();
       this.updateNodesStyles();
+      this.renderDiffHighlights();
       this.webglRendererThreejsService.render();
     });
 
@@ -742,14 +766,15 @@ export class WebglRenderer implements OnInit, OnDestroy {
       this.webglRendererThreejsService.render();
     });
 
-    // Handle navigation sync.
+    // Handle navigation sync source changes.
     this.syncNavigationService.navigationSourceChanged$
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((data) => {
+        this.syncNavigationRelatedNodesHighlights.clearNodeHighlights();
+
         if (!data) {
           return;
         }
-        this.webglRendererHighlightNodesService.setHighlightNodeIds([]);
 
         // Handle the case when the current pane is not the source pane, i.e.
         // when a node is selected in the other pane.
@@ -760,10 +785,9 @@ export class WebglRenderer implements OnInit, OnDestroy {
           }
           // Clicking on a node.
           else {
-            const mappedNodeIds = this.syncNavigationService.getMappedNodeIds(
-              data.paneIndex,
-              data.nodeId,
-            );
+            const mappedNodeIds = this.syncNavigationService
+              .getMappedNodeIds(data.paneIndex, data.nodeId)
+              .filter((nodeId) => this.curModelGraph.nodesById[nodeId] != null);
             // Mapped to a single node.
             if (mappedNodeIds.length < 2) {
               const mappedNodeId = mappedNodeIds[0] ?? '';
@@ -798,16 +822,39 @@ export class WebglRenderer implements OnInit, OnDestroy {
         // event.
         else {
           const nodeId = data.nodeId;
-          const relatedNodeIds =
-            this.syncNavigationService.getRelatedNodeIdsFromTheSameSide(
-              data.paneIndex,
-              nodeId,
-            );
+          const relatedNodeIds = this.syncNavigationService
+            .getRelatedNodeIdsFromTheSameSide(data.paneIndex, nodeId)
+            .filter((nodeId) => this.curModelGraph.nodesById[nodeId] != null);
           if (relatedNodeIds.length > 1) {
             this.revealAndHighlightNodes(relatedNodeIds, nodeId, false);
           }
         }
       });
+
+    effect(() => {
+      // Track the changes for the current sync navigation mode and data, and
+      // render the diff highlights if there is any change.
+      const curMode = this.syncNavigationService.mode();
+      const curData =
+        this.syncNavigationService.savedProcessedSyncNavigationData()[curMode];
+      const curShowDiffHighlightsInMatchNodeIdMode =
+        this.syncNavigationService.getShowDiffHighlightsInMatchNodeIdMode();
+      if (
+        curMode === this.savedSyncNavigationMode &&
+        curData === this.savedSyncNavigationData &&
+        curShowDiffHighlightsInMatchNodeIdMode ===
+          this.savedShowDiffHighlightsInMatchNodeIdMode
+      ) {
+        return;
+      }
+
+      this.savedSyncNavigationMode = curMode;
+      this.savedSyncNavigationData = curData;
+      this.savedShowDiffHighlightsInMatchNodeIdMode =
+        curShowDiffHighlightsInMatchNodeIdMode;
+
+      this.renderDiffHighlights();
+    });
   }
 
   ngOnInit() {
@@ -971,6 +1018,12 @@ export class WebglRenderer implements OnInit, OnDestroy {
 
     if (this.benchmark) {
       this.startBenchmark();
+    }
+  }
+
+  ngOnChanges(changes: SimpleChanges) {
+    if (changes['paneId']) {
+      this.paneIdInternal.set(this.paneId);
     }
   }
 
@@ -1786,6 +1839,7 @@ export class WebglRenderer implements OnInit, OnDestroy {
     this.webglRendererIoHighlightService.updateIncomingAndOutgoingHighlights();
     this.webglRendererIdenticalLayerService.updateIdenticalLayerIndicators();
     this.updateNodesStyles();
+    this.renderDiffHighlights();
     this.webglRendererThreejsService.render();
 
     if (!this.inPopup) {
@@ -1830,6 +1884,7 @@ export class WebglRenderer implements OnInit, OnDestroy {
     this.webglRendererIdenticalLayerService.updateIdenticalLayerIndicators();
     this.webglRendererEdgeOverlaysService.updateOverlaysEdges();
     this.updateNodesStyles();
+    this.renderDiffHighlights();
     if (rectToZoomFit) {
       const zoomFitFn = () => {
         this.webglRendererThreejsService.zoomFit(
@@ -1932,6 +1987,7 @@ export class WebglRenderer implements OnInit, OnDestroy {
       this.webglRendererIoHighlightService.updateIncomingAndOutgoingHighlights();
       this.webglRendererIdenticalLayerService.updateIdenticalLayerIndicators();
       this.updateNodesStyles();
+      this.renderDiffHighlights();
       this.webglRendererThreejsService.render();
 
       if (!this.inPopup) {
@@ -3025,16 +3081,25 @@ export class WebglRenderer implements OnInit, OnDestroy {
     if (!node) {
       return false;
     }
-    this.sendRelayoutGraphRequest(
-      nodeId,
-      node.nsParentId ? [node.nsParentId] : [],
-      false,
-      undefined,
-      false,
-      undefined,
-      false,
-      triggerNavigationSync,
-    );
+    if (!this.isNodeRendered(nodeId)) {
+      this.sendRelayoutGraphRequest(
+        nodeId,
+        node.nsParentId ? [node.nsParentId] : [],
+        false,
+        undefined,
+        false,
+        undefined,
+        false,
+        triggerNavigationSync,
+      );
+    } else {
+      this.webglRendererThreejsService.zoomFitOnNode(
+        nodeId,
+        this.curModelGraph,
+        ZOOM_FIT_ON_NODE_DURATION,
+      );
+      this.handleSelectNode(nodeId, triggerNavigationSync);
+    }
     return true;
   }
 
@@ -3204,7 +3269,25 @@ export class WebglRenderer implements OnInit, OnDestroy {
         });
       }
       // Highlight nodes.
-      this.webglRendererHighlightNodesService.setHighlightNodeIds(nodeIds);
+      this.syncNavigationRelatedNodesHighlights.setNodeHighlights(
+        nodeIds.reduce(
+          (acc, nodeId) => {
+            acc[nodeId] = {
+              nodeId,
+              borderColor:
+                this.syncNavigationService.getSyncNavigationData()
+                  ?.relatedNodesBorderColor ??
+                DEFAULT_HIGHLIGHT_NODES_BORDER_COLOR,
+              borderWidth:
+                this.syncNavigationService.getSyncNavigationData()
+                  ?.relatedNodesBorderWidth ??
+                DEFAULT_HIGHLIGHT_NODES_BORDER_WIDTH,
+            };
+            return acc;
+          },
+          {} as {[nodeId: string]: HighlightInfo},
+        ),
+      );
     };
     // Calculate the deepest expanded group node ids.
     const deepestExpandedGroupNodeIds: string[] =
@@ -3266,5 +3349,69 @@ export class WebglRenderer implements OnInit, OnDestroy {
         this.appService.openGraphInSplitPane(subgraph, false, true, openToLeft);
       }
     }
+  }
+
+  /**
+   * Renders diff highlights on nodes based on the current sync navigation mode.
+   *
+   * This function checks if the current sync navigation mode is enabled. If it
+   * is, it iterates through all nodes in the current model graph. For each
+   * node, it checks if it's rendered and if it has mapped nodes in the other
+   * pane. If all mapped nodes are missing in the other pane, it highlights the
+   * current node with a specific border color and width to indicate a diff.
+   */
+  private renderDiffHighlights() {
+    const paneIndex = this.paneIndex();
+    const curHighlights: Record<string, HighlightInfo> = {};
+    const curSyncNavigationData =
+      this.syncNavigationService.getSyncNavigationData();
+    const showDiffHighlights =
+      curSyncNavigationData?.showDiffHighlights ||
+      this.syncNavigationService.getShowDiffHighlightsInMatchNodeIdMode();
+    if (
+      showDiffHighlights &&
+      this.syncNavigationService.mode() !== SyncNavigationMode.DISABLED
+    ) {
+      for (const node of this.curModelGraph.nodes) {
+        if (!this.isNodeRendered(node.id)) {
+          continue;
+        }
+        const mappedNodeIds = this.syncNavigationService.getMappedNodeIds(
+          paneIndex,
+          node.id,
+        );
+        const otherGraph =
+          this.appService.panes()[paneIndex === 0 ? 1 : 0].modelGraph;
+        if (otherGraph) {
+          let allMappedNodesMissing = true;
+          // Check if any of the mapped nodes exists in the other graph.
+          for (const mappedNodeId of mappedNodeIds) {
+            if (otherGraph.nodesById[mappedNodeId]) {
+              allMappedNodesMissing = false;
+              break;
+            }
+          }
+          // If all mapped nodes are missing, highlight the current node.
+          if (allMappedNodesMissing) {
+            curHighlights[node.id] = {
+              nodeId: node.id,
+              borderWidth:
+                paneIndex === 0
+                  ? curSyncNavigationData?.deletedNodesBorderWidth ??
+                    DEFAULT_HIGHLIGHT_NODES_BORDER_WIDTH
+                  : curSyncNavigationData?.newNodesBorderWidth ??
+                    DEFAULT_HIGHLIGHT_NODES_BORDER_WIDTH,
+              borderColor:
+                paneIndex === 0
+                  ? curSyncNavigationData?.deletedNodesBorderColor ??
+                    DEFAULT_DELETE_NODES_BORDER_COLOR
+                  : curSyncNavigationData?.newNodesBorderColor ??
+                    DEFAULT_NEW_NODES_BORDER_COLOR,
+            };
+          }
+        }
+      }
+    }
+    this.syncNavigationDiffHighlights.setNodeHighlights(curHighlights, true);
   }
 }

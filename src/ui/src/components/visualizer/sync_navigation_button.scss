@@ -187,4 +187,12 @@ $sync_highlight_color: #004fb8;
     padding: 2px;
     line-break: anywhere;
   }
+
+  .match-node-id-checkbox {
+    display: flex;
+    align-items: center;
+    margin-left: 32px;
+    margin-bottom: 4px;
+    gap: 4px;
+  }
 }
