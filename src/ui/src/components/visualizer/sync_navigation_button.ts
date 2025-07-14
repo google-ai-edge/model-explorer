@@ -105,11 +105,13 @@ export class SyncNavigationButton {
   uploadedFileName = '';
 
   constructor() {
-    this.syncNavigationService.matchNodeIdHighlightDiffs.set(
-      this.localStorageService.getItem(
-        LOCAL_STORAGE_KEY_MATCH_NODE_ID_HIGHLIGHT_DIFFS,
-      ) === 'true',
-    );
+    if (!this.appService.testMode) {
+      this.syncNavigationService.matchNodeIdHighlightDiffs.set(
+        this.localStorageService.getItem(
+          LOCAL_STORAGE_KEY_MATCH_NODE_ID_HIGHLIGHT_DIFFS,
+        ) === 'true',
+      );
+    }
 
     // Populate sync modes.
     //

@@ -36,7 +36,9 @@ import {
   OnInit,
   Output,
   signal,
+  Signal,
   SimpleChanges,
+  untracked,
   ViewChild,
   ViewContainerRef,
 } from '@angular/core';
@@ -390,6 +392,13 @@ export class WebglRenderer implements OnInit, OnChanges, OnDestroy {
   private readonly paneIndex = computed(() =>
     this.appService.getPaneIndexById(this.paneIdInternal()),
   );
+  private readonly paneGraphTitlesKey: Signal<string> = computed(() => {
+    const panes = this.appService.panes();
+    return panes
+      .map((pane, index) => `${index}:${pane.modelGraph?.id ?? ''}`)
+      .join(',');
+  });
+  private readonly paneCount = computed(() => this.appService.panes().length);
   private savedSyncNavigationMode: SyncNavigationMode | undefined = undefined;
   private savedSyncNavigationData: SyncNavigationData | undefined = undefined;
   private savedShowDiffHighlightsInMatchNodeIdMode: boolean | undefined =
@@ -854,6 +863,15 @@ export class WebglRenderer implements OnInit, OnChanges, OnDestroy {
         curShowDiffHighlightsInMatchNodeIdMode;
 
       this.renderDiffHighlights();
+    });
+
+    // Re-render diff highlights when graph changes in panes, e.g. when a new
+    // graph is loaded in a pane, or when a pane is closed.
+    effect(() => {
+      const key = this.paneGraphTitlesKey();
+      untracked(() => {
+        this.renderDiffHighlights();
+      });
     });
   }
 
@@ -3369,6 +3387,7 @@ export class WebglRenderer implements OnInit, OnChanges, OnDestroy {
       curSyncNavigationData?.showDiffHighlights ||
       this.syncNavigationService.getShowDiffHighlightsInMatchNodeIdMode();
     if (
+      this.paneCount() === 2 &&
       showDiffHighlights &&
       this.syncNavigationService.mode() !== SyncNavigationMode.DISABLED
     ) {
