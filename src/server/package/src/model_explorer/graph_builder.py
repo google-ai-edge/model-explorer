@@ -280,10 +280,11 @@ class EdgeOverlay:
 @dataclass
 class EdgeOverlaysData:
   """The data for edge overlays."""
+
   # The name of this set of overlays, for UI display purposes.
   name: str
 
-  type: str = "edge_overlays"
+  type: str = 'edge_overlays'
 
   # A list of edge overlays.
   overlays: list[EdgeOverlay] = field(default_factory=list)
