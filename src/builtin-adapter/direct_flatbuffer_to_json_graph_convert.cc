@@ -17,6 +17,7 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <cstdlib>
 #include <cstring>
 #include <memory>
 #include <string>
@@ -31,6 +32,7 @@
 #include "absl/strings/ascii.h"
 #include "absl/strings/match.h"
 #include "absl/strings/str_cat.h"
+#include "absl/strings/str_format.h"
 #include "absl/strings/str_join.h"
 #include "absl/strings/str_split.h"
 #include "absl/strings/string_view.h"
@@ -409,9 +411,14 @@ void AddQuantizationParameters(const std::unique_ptr<TensorT>& tensor,
   std::vector<std::string> parameters;
   parameters.reserve(quant->scale.size());
   for (int i = 0; i < quant->scale.size(); ++i) {
-    // Parameters will be shown as "[scale] * (q + [zero_point])"
-    parameters.push_back(
-        absl::StrCat(quant->scale[i], " * (q + ", quant->zero_point[i], ")"));
+    // Parameters will be shown as "[scale] * (q - [zero_point])"
+    const float scale = quant->scale[i];
+    const int64_t zp = quant->zero_point[i];
+    const std::string zp_sign = zp < 0 ? " + " : " - ";
+    const int64_t abs_zp = std::abs(zp);
+    parameters.push_back(abs_zp == 0 ? absl::StrFormat("%f * q", scale)
+                                     : absl::StrFormat("%f * (q %s %d)", scale,
+                                                       zp_sign, abs_zp));
   }
   const std::string quant_str = absl::StrJoin(parameters, ",");
   builder.AppendAttrToMetadata(edge_type, rel_idx, kQuantization, quant_str);
