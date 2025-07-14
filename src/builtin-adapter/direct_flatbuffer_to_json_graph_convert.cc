@@ -414,10 +414,10 @@ void AddQuantizationParameters(const std::unique_ptr<TensorT>& tensor,
     // Parameters will be shown as "[scale] * (q - [zero_point])"
     const float scale = quant->scale[i];
     const int64_t zp = quant->zero_point[i];
-    const std::string zp_sign = zp < 0 ? " + " : " - ";
+    const char zp_sign = zp < 0 ? '+' : '-';
     const int64_t abs_zp = std::abs(zp);
     parameters.push_back(abs_zp == 0 ? absl::StrFormat("%f * q", scale)
-                                     : absl::StrFormat("%f * (q %s %d)", scale,
+                                     : absl::StrFormat("%f * (q %c %d)", scale,
                                                        zp_sign, abs_zp));
   }
   const std::string quant_str = absl::StrJoin(parameters, ",");
