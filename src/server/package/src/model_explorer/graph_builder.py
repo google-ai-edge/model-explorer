@@ -32,6 +32,13 @@ class Graph:
   # It is displayed in the side panel when the group is selected.
   groupNodeAttributes: Union['GroupNodeAttributes', None] = None
 
+  # The data for various tasks that provide extra data to be visualized, such
+  # as node data, edge overlay, etc.
+  tasksData: Union['TasksData', None] = None
+
+  # Layout-related options.
+  layoutConfigs: Union['LayoutConfigs', None] = None
+
 
 @dataclass
 class GraphNode:
@@ -225,3 +232,99 @@ class GraphCollection:
 
   # A list of graphs in this collection.
   graphs: list[Graph] = field(default_factory=list)
+
+
+@dataclass
+class Edge:
+  """An edge in the overlay."""
+
+  # The id of the source node. Op node only.
+  sourceNodeId: str
+
+  # The id of the target node. Op node only.
+  targetNodeId: str
+
+  # Label shown on the edge.
+  label: Union[str, None] = None
+
+
+@dataclass
+class EdgeOverlay:
+  """An edge overlay."""
+
+  # The name displayed in the UI to identify this overlay.
+  name: str
+
+  # The color of the overlay edges.
+  #
+  # They are rendered in this color when any of the nodes in this overlay is
+  # selected.
+  edgeColor: str
+
+  # The edges that define the overlay.
+  edges: list[Edge] = field(default_factory=list)
+
+  # The width of the overlay edges. Default to 2.
+  edgeWidth: Union[int, None] = 2
+
+  # The font size of the edge labels. Default to 7.5.
+  edgeLabelFontSize: Union[float, None] = 7.5
+
+  # If set to `true`, only edges that are directly connected to the currently
+  # selected node (i.e., edges that either start from or end at the selected
+  # node) will be displayed for this overlay. All other edges within this
+  # overlay will be hidden.
+  showEdgesConnectedToSelectedNodeOnly: Union[bool, None] = None
+
+
+@dataclass
+class EdgeOverlaysData:
+  """The data for edge overlays."""
+
+  # The name of this set of overlays, for UI display purposes.
+  name: str
+
+  type: str = 'edge_overlays'
+
+  # A list of edge overlays.
+  overlays: list[EdgeOverlay] = field(default_factory=list)
+
+
+@dataclass
+class TasksData:
+  """Data for various tasks that provide extra data to be visualized."""
+
+  # List of data for edge overlays that will be applied to the left pane
+  # (2-pane view) or the only pane (1-pane view).
+  edgeOverlaysDataListLeftPane: list[EdgeOverlaysData] = field(
+      default_factory=list
+  )
+
+  # List of data for edge overlays that will be applied to the right pane.
+  edgeOverlaysDataListRightPane: list[EdgeOverlaysData] = field(
+      default_factory=list
+  )
+
+
+@dataclass
+class LayoutConfigs:
+  """Layout-related configs."""
+
+  # Number of pixels that separate nodes horizontally in the layout.
+  #
+  # Default is 20.
+  nodeSep: Union[int, None] = None
+
+  # Number of pixels between each rank in the layout.
+  #
+  # A rank is a vertical layer that layout algorithm assigns nodes to, forming
+  # a hierarchical structure to optimize graph layout and minimize edge
+  # crossings.
+  #
+  # Default is 50.
+  rankSep: Union[int, None] = None
+
+  # Number of pixels that separate edges horizontally in the layout.
+  #
+  # Default is 20.
+  edgeSep: Union[int, None] = None
