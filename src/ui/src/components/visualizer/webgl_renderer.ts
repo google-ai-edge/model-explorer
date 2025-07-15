@@ -1754,6 +1754,11 @@ export class WebglRenderer implements OnInit, OnChanges, OnDestroy {
     };
   }
 
+  // Used by tests only
+  scrollGraphArea(deltaX: number, deltaY: number) {
+    this.webglRendererThreejsService.scrollGraphArea(deltaX, deltaY);
+  }
+
   getShowCollapseAllButton(nodeId?: string): boolean {
     const targetNodeId = nodeId ?? this.hoveredNodeId;
     const node = this.curModelGraph.nodesById[targetNodeId];

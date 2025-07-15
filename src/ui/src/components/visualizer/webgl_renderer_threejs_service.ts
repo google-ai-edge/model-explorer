@@ -27,6 +27,7 @@ import {WebglRenderer} from './webgl_renderer';
 
 const DEFAULT_FRUSTUM_SIZE = 500;
 const DEFAULT_CAMERA_Y = 200;
+const D3_CONSTRAINT_PADDING = 20;
 
 const THREE = three;
 
@@ -40,7 +41,7 @@ export class WebglRendererThreejsService {
   camera!: three.OrthographicCamera;
   raycaster!: three.Raycaster;
 
-  private readonly zoom = d3.zoom();
+  readonly zoom = d3.zoom();
   private webglRenderer!: WebglRenderer;
   private curTranslateX = 0;
   private curTranslateY = 0;
@@ -69,6 +70,61 @@ export class WebglRendererThreejsService {
     let savedTranslateY = 0;
     this.zoom
       .scaleExtent([minZoom, maxZoom])
+      // Constrain the translation to the graph area.
+      .constrain((transform) => {
+        const container = this.webglRenderer.container.nativeElement;
+        const width = container.clientWidth;
+        const height = container.clientHeight;
+        const aspect = width / height;
+        const scaledFrustumSize = DEFAULT_FRUSTUM_SIZE / transform.k;
+
+        // Pre-calculate common terms for X transformations
+        const commonXDivisor = 2 * scaledFrustumSize * aspect;
+        const offsetScreenX = D3_CONSTRAINT_PADDING / transform.k;
+        const offsetScreenXWidth =
+          (width - D3_CONSTRAINT_PADDING) / transform.k;
+
+        // Calculate minTransformX
+        const termMinX =
+          this.webglRenderer.currentMaxX +
+          this.convertXFromScreenToScene(offsetScreenX) +
+          scaledFrustumSize * aspect;
+        const minTransformX = (-termMinX * width) / commonXDivisor + width / 2;
+
+        // Calculate maxTransformX
+        const termMaxX =
+          this.webglRenderer.currentMinX +
+          this.convertXFromScreenToScene(offsetScreenXWidth) +
+          scaledFrustumSize * aspect;
+        const maxTransformX = (-termMaxX * width) / commonXDivisor + width / 2;
+
+        // Pre-calculate common terms for Y transformations
+        const commonYDivisor = 2 * scaledFrustumSize;
+        const offsetScreenY = D3_CONSTRAINT_PADDING / transform.k;
+        const offsetScreenYHeight =
+          (height - D3_CONSTRAINT_PADDING) / transform.k;
+
+        // Calculate minTransformY
+        const termMinY =
+          -this.webglRenderer.currentMaxZ +
+          this.convertZFromScreenToScene(offsetScreenY) -
+          scaledFrustumSize;
+        const minTransformY = (termMinY * height) / commonYDivisor + height / 2;
+
+        // Calculate maxTransformY
+        const termMaxY =
+          -this.webglRenderer.currentMinZ +
+          this.convertZFromScreenToScene(offsetScreenYHeight) -
+          scaledFrustumSize;
+        const maxTransformY = (termMaxY * height) / commonYDivisor + height / 2;
+
+        return d3.zoomIdentity
+          .translate(
+            Math.min(maxTransformX, Math.max(minTransformX, transform.x)),
+            Math.min(maxTransformY, Math.max(minTransformY, transform.y)),
+          )
+          .scale(transform.k);
+      })
       .wheelDelta(
         // This controls the speed of pinch-to-zoom (and zoom by
         // ctrl+scroll).
@@ -568,6 +624,13 @@ export class WebglRendererThreejsService {
     return {x: pt.x, y: pt.z};
   }
 
+  // Used by tests only.
+  scrollGraphArea(deltaX: number, deltaY: number) {
+    const container = this.webglRenderer.container.nativeElement;
+    const view = d3.select(container as Element);
+    this.zoom.translateBy(view, deltaX, deltaY);
+  }
+
   private handleZoom() {
     this.curScale = d3.event.transform.k;
     this.curTranslateX = d3.event.transform.x;
@@ -611,18 +674,15 @@ export class WebglRendererThreejsService {
     // Code reference: http://bl.ocks.org/nitaku/b25e6f091e97667c6cae
     const x = this.curTranslateX - width / 2;
     const y = this.curTranslateY - height / 2;
-    this.camera.left =
-      (-DEFAULT_FRUSTUM_SIZE / this.curScale) * aspect -
-      (((x / width) * 2 * DEFAULT_FRUSTUM_SIZE) / this.curScale) * aspect;
-    this.camera.right =
-      (DEFAULT_FRUSTUM_SIZE / this.curScale) * aspect -
-      (((x / width) * 2 * DEFAULT_FRUSTUM_SIZE) / this.curScale) * aspect;
-    this.camera.top =
-      DEFAULT_FRUSTUM_SIZE / this.curScale +
-      ((y * DEFAULT_FRUSTUM_SIZE) / this.curScale / height) * 2;
-    this.camera.bottom =
-      -DEFAULT_FRUSTUM_SIZE / this.curScale +
-      ((y * DEFAULT_FRUSTUM_SIZE) / this.curScale / height) * 2;
+
+    const scaledFrustumSize = DEFAULT_FRUSTUM_SIZE / this.curScale;
+    const offsetX = (x / width) * 2 * scaledFrustumSize * aspect;
+    const offsetY = (y / height) * 2 * scaledFrustumSize;
+
+    this.camera.left = -scaledFrustumSize * aspect - offsetX;
+    this.camera.right = this.camera.left + 2 * scaledFrustumSize * aspect;
+    this.camera.top = scaledFrustumSize + offsetY;
+    this.camera.bottom = this.camera.top - 2 * scaledFrustumSize;
     this.camera.updateProjectionMatrix();
   }
 
