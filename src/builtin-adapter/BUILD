@@ -76,6 +76,7 @@ cc_library(
         "@llvm-project//mlir:SCFDialect",
         "@llvm-project//mlir:ShapeDialect",
         "@llvm-project//mlir:Support",
+        "@llvm-project//mlir:TosaDialect",
         "@shardy//shardy/dialect/sdy/ir:dialect",
         "@stablehlo//stablehlo/tests:check_ops",
         "@stablehlo//:chlo_ops",
