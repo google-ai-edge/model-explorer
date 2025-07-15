@@ -26,7 +26,7 @@ limitations under the License.
     <div class="description-container">
       <div class="description">
         Select models from your comupter or enter the file paths directly (up to 10 in total).<br>
-        Supported model formats:
+        Built-in model formats:
         <a href="https://www.tensorflow.org/" target="_blank">TF</a> (.pb, .pbtxt, .graphdef),
         <a href="https://www.tensorflow.org/lite" target="_blank">TFLite</a> (.tflite),
         <a href="https://www.tensorflow.org/js" target="_blank">TFJS</a> (.json),
@@ -53,7 +53,7 @@ limitations under the License.
                   {{extension.name}}
                   <div class="exts">
                     @for (ext of extension.fileExts; track ext) {
-                      <div class="ext">{{ext}}</div>
+                      <div class="ext">.{{ext}}</div>
                     }
                   </div>
                 </div>
