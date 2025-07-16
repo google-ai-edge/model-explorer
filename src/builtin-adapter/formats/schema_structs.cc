@@ -129,6 +129,8 @@ const char EdgeOverlay::kEdges[] = "edges";
 const char EdgeOverlay::kEdgeColor[] = "edgeColor";
 const char EdgeOverlay::kEdgeWidth[] = "edgeWidth";
 const char EdgeOverlay::kEdgeLabelFontSize[] = "edgeLabelFontSize";
+const char EdgeOverlay::kShowEdgesConnectedToSelectedNodeOnly[] =
+    "showEdgesConnectedToSelectedNodeOnly";
 
 llvm::json::Object EdgeOverlay::Json() const {
   llvm::json::Object json_overlay;
@@ -140,6 +142,10 @@ llvm::json::Object EdgeOverlay::Json() const {
   }
   if (edge_label_font_size.has_value()) {
     json_overlay[kEdgeLabelFontSize] = edge_label_font_size.value();
+  }
+  if (show_edges_connected_to_selected_node_only.has_value()) {
+    json_overlay[kShowEdgesConnectedToSelectedNodeOnly] =
+        show_edges_connected_to_selected_node_only.value();
   }
   return json_overlay;
 }

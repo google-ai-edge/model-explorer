@@ -25,10 +25,18 @@ cc_library(
     srcs = ["shardy_utils.cc"],
     hdrs = ["shardy_utils.h"],
     deps = [
+        "@com_google_absl//absl/container:flat_hash_map",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/random",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status:statusor",
+        "@com_google_absl//absl/strings:str_format",
         "@llvm-project//llvm:Support",
         "@llvm-project//mlir:IR",
         "@llvm-project//mlir:Support",
         "@shardy//shardy/dialect/sdy/ir:dialect",
+        "//:status_macros",
+        "//formats:schema_structs",
     ],
 )
 

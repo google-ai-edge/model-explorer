@@ -23,6 +23,7 @@
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/match.h"
@@ -73,6 +74,7 @@ using ::mlir::func::FuncOp;
 using ::mlir::TFL::ConstBytesAttr;
 
 using OpToNodeIdMap = absl::flat_hash_map<Operation*, std::string>;
+using InputValueToNodeIdMap = llvm::SmallDenseMap<mlir::Value, std::string>;
 using OpdefsMap = absl::flat_hash_map<std::string, OpMetadata>;
 
 inline constexpr llvm::StringLiteral kEmptyString("");
@@ -97,18 +99,23 @@ class Counter {
 // The context maintained during the graph building process.
 struct GraphBuildContext {
   GraphBuildContext(const OpdefsMap& op_defs, const OpToNodeIdMap& seen_ops,
-                    Counter node_counter, Counter tensor_counter,
-                    bool has_debug_info)
+                    const InputValueToNodeIdMap& inputs, Counter node_counter,
+                    Counter tensor_counter, bool has_debug_info)
       : op_defs(op_defs),
         seen_ops(seen_ops),
+        inputs(inputs),
         node_counter(node_counter),
         tensor_counter(tensor_counter),
         has_debug_info(has_debug_info) {}
 
   GraphBuildContext() = default;
 
+  // A map from Model Explorer node label to OpMetadata.
   OpdefsMap op_defs;
+  // A map from MLIR Operation to Model Explorer node ID.
   OpToNodeIdMap seen_ops;
+  // A map from a function input (MLIR) value to Model Explorer node ID.
+  InputValueToNodeIdMap inputs;
   Counter node_counter;
   Counter tensor_counter;
   bool has_debug_info;
@@ -348,6 +355,7 @@ void AddGraphInputs(const VisualizeConfig& config, mlir::func::FuncOp& fop,
   for (const auto& it : llvm::enumerate(fop.getArgumentTypes())) {
     GraphNodeBuilder builder;
     const std::string node_id = GetArgNodeId(it.index(), /*parent_node_id=*/"");
+    context.inputs[fop.getArgument(it.index())] = node_id;
     const std::string node_label = absl::StrFormat("input_%d", it.index());
     builder.SetNodeInfo(/*node_id_str=*/node_id, /*node_label=*/node_label,
                         /*node_name=*/kGraphInputs);
@@ -848,6 +856,26 @@ absl::StatusOr<Subgraph> FuncOpToSubgraph(const VisualizeConfig& config,
   for (Operation& operation : block) {
     RETURN_IF_ERROR(AddNode(config, operation, context, subgraph));
   }
+
+  // Extract shardy propagation edges as an edge overlay if present and add
+  // to the task data to auto-load in the UI.
+  absl::StatusOr<EdgeOverlaysData> propagation_edges =
+      ExtractShardyPropagationEdges(fop, context.seen_ops, context.inputs);
+  if (!propagation_edges.ok()) {
+    LOG(ERROR) << "Failed to extract shardy propagation edges: "
+               << propagation_edges.status();
+    return subgraph;
+  }
+  if (!propagation_edges->overlays.empty()) {
+    // Set the name of the edge overlay to match the subgraph from which it
+    // was extracted, and move it to the subgraph's task data.
+    propagation_edges->name = subgraph.subgraph_id;
+    TasksData edge_overlays_data;
+    edge_overlays_data.edge_overlays_data_list_left_pane.emplace();
+    edge_overlays_data.edge_overlays_data_list_left_pane->push_back(
+        *std::move(propagation_edges));
+    subgraph.tasks_data = std::move(edge_overlays_data);
+  }
   return subgraph;
 }
 
@@ -879,12 +907,15 @@ absl::StatusOr<Graph> MlirToGraph(const VisualizeConfig& config,
     if (func_name == "NoOp") {
       return mlir::WalkResult::skip();
     }
+
     absl::StatusOr<Subgraph> subgraph =
         FuncOpToSubgraph(config, fop, has_debug_info);
+
     if (!subgraph.ok()) {
       log_msg = subgraph.status().message();
       return mlir::WalkResult::interrupt();
     }
+
     graph.subgraphs.push_back(*std::move(subgraph));
     return mlir::WalkResult::advance();
   });

@@ -158,6 +158,8 @@ struct EdgeOverlay {
   std::optional<float> edge_width;
   /// The font size for the edge labels in this overlay.
   std::optional<float> edge_label_font_size;
+  /// Whether to show only edges connected to the selected node.
+  std::optional<bool> show_edges_connected_to_selected_node_only;
 
   llvm::json::Object Json() const;
 
@@ -167,6 +169,7 @@ struct EdgeOverlay {
   static const char kEdgeColor[];
   static const char kEdgeWidth[];
   static const char kEdgeLabelFontSize[];
+  static const char kShowEdgesConnectedToSelectedNodeOnly[];
 };
 
 /// A container for a set of edge overlays.
