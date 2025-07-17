@@ -20,7 +20,7 @@ cc_library(
         "//:graphnode_builder",
         "//:status_macros",
         "//formats:schema_structs",
-        "@org_tensorflow//tensorflow/compiler/xla:shape_util",
+        "@local_xla//xla:shape_util",
         "@local_xla//xla/hlo/ir:hlo",
         "@org_tensorflow//tensorflow/core/profiler/utils:hlo_module_utils",
     ],
