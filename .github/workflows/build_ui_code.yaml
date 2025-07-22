@@ -23,14 +23,14 @@ jobs:
         working-directory: ./src/ui
     strategy:
       matrix:
-        node-version: ["18.19.1"]
+        node-version: ["22.12.0"]
     steps:
       - name: Checkout the source code
         uses: actions/checkout@v3
-      - name: Setup Node.js 
+      - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: '18.19.1'
+          node-version: '22.12.0'
       - name: Install dependencies
         run: npm install
       - name: Install rollup
