@@ -21,9 +21,6 @@ jobs:
     defaults:
       run:
         working-directory: ./src/ui
-    strategy:
-      matrix:
-        node-version: ["22.12.0"]
     steps:
       - name: Checkout the source code
         uses: actions/checkout@v3
