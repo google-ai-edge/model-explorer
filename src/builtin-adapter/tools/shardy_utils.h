@@ -16,8 +16,10 @@
 #ifndef TENSORFLOW_COMPILER_MLIR_LITE_EXPERIMENTAL_GOOGLE_TOOLING_TOOLS_SHARDY_UTILS_H_
 #define TENSORFLOW_COMPILER_MLIR_LITE_EXPERIMENTAL_GOOGLE_TOOLING_TOOLS_SHARDY_UTILS_H_
 
+#include <array>
 #include <cstddef>
 #include <cstdint>
+#include <optional>
 #include <string>
 #include <utility>
 #include <vector>
@@ -150,8 +152,10 @@ class EdgeOverlayBuilder {
   EdgeOverlayBuilder& AddEdge(std::string source_node_id,
                               std::string target_node_id,
                               std::optional<std::string> label = std::nullopt) {
-    edge_overlay_.edges.emplace_back(std::move(source_node_id),
-                                     std::move(target_node_id), label);
+    edge_overlay_.edges.emplace_back(
+        Edge{.source_node_id = std::move(source_node_id),
+             .target_node_id = std::move(target_node_id),
+             .label = label});
     return *this;
   }
 

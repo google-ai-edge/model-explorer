@@ -191,7 +191,8 @@ bool HasShardyPropagationEdges(
     if (auto array_of_prop_edges =
             operation.getAttrOfType<mlir::ArrayAttr>(edge_array_attr)) {
       for (const auto& prop_edges : array_of_prop_edges) {
-        edges.push_back(dyn_cast<mlir::sdy::PropagationEdgesAttr>(prop_edges));
+        edges.push_back(
+            llvm::dyn_cast<mlir::sdy::PropagationEdgesAttr>(prop_edges));
         has_edges = true;
       }
     }
