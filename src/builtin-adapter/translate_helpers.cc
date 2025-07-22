@@ -17,6 +17,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <functional>
 #include <string>
 #include <utility>
 #include <vector>
@@ -40,6 +41,7 @@
 #include "llvm/Support/Casting.h"
 #include "llvm/Support/raw_ostream.h"
 #include "mlir/Dialect/Func/IR/FuncOps.h"
+#include "mlir/Dialect/Tosa/IR/TosaOps.h"
 #include "mlir/IR/Attributes.h"
 #include "mlir/IR/BuiltinAttributes.h"
 #include "mlir/IR/BuiltinOps.h"
@@ -147,6 +149,10 @@ inline bool IsStablehloDialect(Operation& operation) {
 
 inline bool IsShardyDialect(Operation& operation) {
   return llvm::isa<mlir::sdy::SdyDialect>(operation.getDialect());
+}
+
+inline bool IsTosaDialect(Operation& operation) {
+  return llvm::isa<mlir::tosa::TosaDialect>(operation.getDialect());
 }
 
 // Sets the contract for generating the node id for a block argument.
@@ -675,51 +681,48 @@ absl::Status AddNestedRegionNode(const VisualizeConfig& config,
   return absl::OkStatus();
 }
 
-// Adds the nested region to the graph.
-absl::Status MaybeAddNestedRegion(const VisualizeConfig& config,
-                                  Operation& operation,
-                                  GraphBuildContext& context,
-                                  GraphNodeBuilder& cur_node,
-                                  Subgraph& subgraph) {
-  if (operation.getNumRegions() == 0) {
-    return absl::OkStatus();
-  }
-
-  Counter& tensor_counter = context.tensor_counter;
-
-  // Ops with nested regions are grouped within their own namespace, and the op
-  // is pinned to the top of this group. A unique namespace is generated using
-  // the node's label and ID. If the op is already within a parent namespace,
-  // the generated namespace is appended to the parent's namespace.
-  // This generated namespace is also used when no debug info is available.
+// Determines the base namespace for a nested region group.
+//
+// Ops with nested regions are grouped within their own namespace, and the op is
+// pinned to the top of this group. A unique namespace is generated using the
+// node's label and ID. If the op is already within a parent namespace, the
+// generated namespace is appended to the parent's namespace. This generated
+// namespace is also used when no debug info is available.
+std::string DetermineBaseNamespace(const GraphBuildContext& context,
+                                   const GraphNodeBuilder& cur_node) {
   const std::string generated_namespace_part =
       absl::StrFormat("(%s_%s)", cur_node.GetNodeLabel(), cur_node.GetNodeId());
 
-  std::string base_namespace;
   if (cur_node.GetNodeName().empty()) {
     // If the current node doesn't already have a name (e.g., from debug info),
     // use the generated part as its namespace. This applies whether debug info
     // is present or not, as there's no existing name to take precedence.
-    base_namespace = generated_namespace_part;
-  } else {
-    // The current node already has a name (likely from parent scope or debug
-    // info).
-    if (context.has_debug_info) {
-      // If debug information is present, it dictates the namespace.
-      // The existing node name is used directly. TODO(b/421175189): Note that
-      // for nested region ops, this may not always group ops as intended if the
-      // debug info doesn't reflect the nested hierarchy
-      base_namespace = cur_node.GetNodeName();
-    } else {
-      // No debug information, but there's an existing node name (parent scope).
-      // This is where the special handling for nested SDY ops applies.
-      // Create a new, deeper namespace by appending the generated part to the
-      // existing node name. This ensures the op is grouped within its own
-      // sub-namespace.
-      base_namespace = absl::StrFormat("%s/%s", cur_node.GetNodeName(),
-                                       generated_namespace_part);
-    }
+    return generated_namespace_part;
   }
+  // The current node already has a name (likely from parent scope or debug
+  // info).
+  if (context.has_debug_info) {
+    // If debug information is present, it dictates the namespace and the
+    // existing node name is used directly.
+    // TODO(b/421175189): Note that for nested region ops, this may not always
+    // group ops as intended if the debug info doesn't reflect the nested
+    // hierarchy.
+    return cur_node.GetNodeName();
+  }
+  // No debug information, but there's an existing node name (parent scope).
+  // This is where the special handling for nested SDY ops applies.
+  // Create a new, deeper namespace by appending the generated part to the
+  // existing node name. This ensures the op is grouped within its own
+  // sub-namespace.
+  return absl::StrFormat("%s/%s", cur_node.GetNodeName(),
+                         generated_namespace_part);
+}
+
+// Adds graph nodes for all operands of an operation entering a nested region.
+void AddNestedRegionInputs(absl::string_view base_namespace,
+                           Operation& operation, GraphBuildContext& context,
+                           GraphNodeBuilder& cur_node, Subgraph& subgraph) {
+  Counter& tensor_counter = context.tensor_counter;
 
   // Since this node has nested regions, we pin it to the top of the group.
   cur_node.SetNodeName(base_namespace);
@@ -745,6 +748,134 @@ absl::Status MaybeAddNestedRegion(const VisualizeConfig& config,
         GetTypeString(operation.getOperand(input_index).getType()));
     subgraph.nodes.push_back(std::move(builder).Build());
   }
+}
+
+// Processes all generic or unknown regions of an operation.
+absl::Status ProcessGenericRegions(
+    const std::function<absl::Status(absl::string_view, mlir::Region&)>&
+        process_region,
+    Operation& op) {
+  for (int i = 0, e = op.getNumRegions(); i < e; ++i) {
+    const std::string generic_name = absl::StrCat("(region_", i, ")");
+    RETURN_IF_ERROR(process_region(generic_name, op.getRegion(i)));
+  }
+  return absl::OkStatus();
+}
+
+// Processes the nested regions of a Stablehlo operation.
+absl::Status ProcessStablehloRegions(
+    const std::function<absl::Status(absl::string_view, mlir::Region&)>
+        process_region,
+    Operation& op) {
+  if (!IsStablehloDialect(op)) {
+    return absl::OkStatus();
+  }
+  return llvm::TypeSwitch<Operation*, absl::Status>(&op)
+      .Case<mlir::stablehlo::WhileOp>(
+          [&](mlir::stablehlo::WhileOp op) -> absl::Status {
+            RETURN_IF_ERROR(process_region("cond", op.getCond()));
+            return process_region("body", op.getBody());
+          })
+      .Case<mlir::stablehlo::IfOp>(
+          [&](mlir::stablehlo::IfOp op) -> absl::Status {
+            RETURN_IF_ERROR(process_region("true_branch", op.getTrueBranch()));
+            return process_region("false_branch", op.getFalseBranch());
+          })
+      .Case<mlir::stablehlo::AllReduceOp>(
+          [&](mlir::stablehlo::AllReduceOp op) -> absl::Status {
+            return process_region("computation", op.getComputation());
+          })
+      .Case<mlir::stablehlo::ReduceScatterOp>(
+          [&](mlir::stablehlo::ReduceScatterOp op) -> absl::Status {
+            return process_region("computation", op.getComputation());
+          })
+      .Case<mlir::stablehlo::ReduceOp>(
+          [&](mlir::stablehlo::ReduceOp op) -> absl::Status {
+            return process_region("body", op.getBody());
+          })
+      .Case<mlir::stablehlo::MapOp>(
+          [&](mlir::stablehlo::MapOp op) -> absl::Status {
+            return process_region("computation", op.getComputation());
+          })
+      .Case<mlir::stablehlo::ScatterOp>(
+          [&](mlir::stablehlo::ScatterOp op) -> absl::Status {
+            return process_region("update_computation",
+                                  op.getUpdateComputation());
+          })
+      .Case<mlir::stablehlo::SelectAndScatterOp>(
+          [&](mlir::stablehlo::SelectAndScatterOp op) -> absl::Status {
+            RETURN_IF_ERROR(process_region("select", op.getSelect()));
+            return process_region("scatter", op.getScatter());
+          })
+      .Case<mlir::stablehlo::SortOp>(
+          [&](mlir::stablehlo::SortOp op) -> absl::Status {
+            return process_region("comparator", op.getComparator());
+          })
+      .Case<mlir::stablehlo::ReduceWindowOp>(
+          [&](mlir::stablehlo::ReduceWindowOp op) -> absl::Status {
+            return process_region("body", op.getBody());
+          })
+      .Default([&](Operation* op) -> absl::Status {
+        return ProcessGenericRegions(process_region, *op);
+      });
+}
+
+// Processes the nested regions of a Shardy operation.
+absl::Status ProcessShardyRegions(
+    const std::function<absl::Status(absl::string_view, mlir::Region&)>
+        process_region,
+    Operation& op) {
+  if (!IsShardyDialect(op)) {
+    return absl::OkStatus();
+  }
+  return llvm::TypeSwitch<Operation*, absl::Status>(&op)
+      .Case<mlir::sdy::ManualComputationOp>(
+          [&](mlir::sdy::ManualComputationOp op) -> absl::Status {
+            return process_region("body", op.getBody());
+          })
+      .Case<mlir::sdy::NamedComputationOp>(
+          [&](mlir::sdy::NamedComputationOp op) -> absl::Status {
+            return process_region("body", op.getBody());
+          })
+      .Default([&](Operation* op) -> absl::Status {
+        return ProcessGenericRegions(process_region, *op);
+      });
+}
+
+// Processes the nested regions of a Tosa operation.
+absl::Status ProcessTosaRegions(
+    const std::function<absl::Status(absl::string_view, mlir::Region&)>
+        process_region,
+    Operation& op) {
+  if (!IsTosaDialect(op)) {
+    return absl::OkStatus();
+  }
+  return llvm::TypeSwitch<Operation*, absl::Status>(&op)
+      .Case<mlir::tosa::IfOp>([&](mlir::tosa::IfOp op) -> absl::Status {
+        RETURN_IF_ERROR(process_region("then_graph", op.getThenGraph()));
+        return process_region("else_graph", op.getElseGraph());
+      })
+      .Case<mlir::tosa::WhileOp>([&](mlir::tosa::WhileOp op) -> absl::Status {
+        RETURN_IF_ERROR(process_region("cond_graph", op.getCondGraph()));
+        return process_region("body_graph", op.getBodyGraph());
+      })
+      .Default([&](Operation* op) -> absl::Status {
+        return ProcessGenericRegions(process_region, *op);
+      });
+}
+
+// Adds the nested region to the graph.
+absl::Status MaybeAddNestedRegion(const VisualizeConfig& config,
+                                  Operation& operation,
+                                  GraphBuildContext& context,
+                                  GraphNodeBuilder& cur_node,
+                                  Subgraph& subgraph) {
+  if (operation.getNumRegions() == 0) {
+    return absl::OkStatus();
+  }
+
+  const std::string base_namespace = DetermineBaseNamespace(context, cur_node);
+  AddNestedRegionInputs(base_namespace, operation, context, cur_node, subgraph);
 
   // Processes all ops within the region.
   auto process_region = [&](absl::string_view region_name,
@@ -758,60 +889,9 @@ absl::Status MaybeAddNestedRegion(const VisualizeConfig& config,
     return absl::OkStatus();
   };
 
-  std::string region_name;
-  // Stablehlo controls flow ops and and Shardy ops with nested regions are
-  // added here.
-  if (auto while_op = llvm::dyn_cast<mlir::stablehlo::WhileOp>(operation)) {
-    RETURN_IF_ERROR(process_region("cond", while_op.getCond()));
-    RETURN_IF_ERROR(process_region("body", while_op.getBody()));
-  } else if (auto if_op = llvm::dyn_cast<mlir::stablehlo::IfOp>(operation)) {
-    RETURN_IF_ERROR(process_region("true_branch", if_op.getTrueBranch()));
-    RETURN_IF_ERROR(process_region("false_branch", if_op.getFalseBranch()));
-  } else if (auto all_reduce_op =
-                 llvm::dyn_cast<mlir::stablehlo::AllReduceOp>(operation)) {
-    RETURN_IF_ERROR(
-        process_region("computation", all_reduce_op.getComputation()));
-  } else if (auto reduce_scatter_op =
-                 llvm::dyn_cast<mlir::stablehlo::ReduceScatterOp>(operation)) {
-    RETURN_IF_ERROR(
-        process_region("computation", reduce_scatter_op.getComputation()));
-  } else if (auto reduce_op =
-                 llvm::dyn_cast<mlir::stablehlo::ReduceOp>(operation)) {
-    RETURN_IF_ERROR(process_region("body", reduce_op.getBody()));
-  } else if (auto map_op = llvm::dyn_cast<mlir::stablehlo::MapOp>(operation)) {
-    RETURN_IF_ERROR(process_region("computation", map_op.getComputation()));
-  } else if (auto scatter_op =
-                 llvm::dyn_cast<mlir::stablehlo::ScatterOp>(operation)) {
-    RETURN_IF_ERROR(process_region("update_computation",
-                                   scatter_op.getUpdateComputation()));
-  } else if (auto select_and_scatter_op =
-                 llvm::dyn_cast<mlir::stablehlo::SelectAndScatterOp>(
-                     operation)) {
-    RETURN_IF_ERROR(
-        process_region("select", select_and_scatter_op.getSelect()));
-    RETURN_IF_ERROR(
-        process_region("scatter", select_and_scatter_op.getScatter()));
-  } else if (auto sort_op =
-                 llvm::dyn_cast<mlir::stablehlo::SortOp>(operation)) {
-    RETURN_IF_ERROR(process_region("comparator", sort_op.getComparator()));
-  } else if (auto reduce_window_op =
-                 llvm::dyn_cast<mlir::stablehlo::ReduceWindowOp>(operation)) {
-    RETURN_IF_ERROR(process_region("body", reduce_window_op.getBody()));
-  } else if (auto manual_computation_op =
-                 llvm::dyn_cast<mlir::sdy::ManualComputationOp>(operation)) {
-    RETURN_IF_ERROR(process_region("body", manual_computation_op.getBody()));
-  } else if (auto named_computation_op =
-                 llvm::dyn_cast<mlir::sdy::NamedComputationOp>(operation)) {
-    RETURN_IF_ERROR(process_region("body", named_computation_op.getBody()));
-  } else {
-    std::string region_name;
-    for (int i = 0, e = operation.getNumRegions(); i < e; ++i) {
-      // Assigns arbitrary region name for ops that are not listed above. Use
-      // parenthesis to indicate it's generated.
-      region_name = absl::StrCat("(region_", i, ")");
-      RETURN_IF_ERROR(process_region(region_name, operation.getRegion(i)));
-    }
-  }
+  RETURN_IF_ERROR(ProcessStablehloRegions(process_region, operation));
+  RETURN_IF_ERROR(ProcessShardyRegions(process_region, operation));
+  RETURN_IF_ERROR(ProcessTosaRegions(process_region, operation));
   return absl::OkStatus();
 }
 
@@ -831,10 +911,9 @@ absl::Status AddNode(const VisualizeConfig& config, Operation& operation,
   if (IsTfliteDialect(operation)) {
     TfliteMaybeAppendSubgraphs(operation, builder);
     AddTensorTags(op_defs, operation, builder);
-  } else if (IsStablehloDialect(operation) || IsShardyDialect(operation)) {
-    RETURN_IF_ERROR(
-        MaybeAddNestedRegion(config, operation, context, builder, subgraph));
   }
+  RETURN_IF_ERROR(
+      MaybeAddNestedRegion(config, operation, context, builder, subgraph));
   AddOutputsMetadata(operation, context, builder);
   subgraph.nodes.push_back(std::move(builder).Build());
   return absl::OkStatus();

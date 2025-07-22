@@ -33,15 +33,15 @@ class GraphNodeBuilder {
 
   void SetNodeId(absl::string_view node_id_str);
 
-  std::string GetNodeId();
+  std::string GetNodeId() const;
 
   void SetNodeLabel(absl::string_view node_label);
 
-  std::string GetNodeLabel();
+  std::string GetNodeLabel() const;
 
   void SetNodeName(absl::string_view node_name);
 
-  std::string GetNodeName();
+  std::string GetNodeName() const;
 
   // Sets the node id, label and name of GraphNode.
   void SetNodeInfo(absl::string_view node_id_str, absl::string_view node_label,

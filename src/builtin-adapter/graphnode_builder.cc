@@ -50,19 +50,19 @@ void GraphNodeBuilder::SetNodeId(absl::string_view node_id_str) {
   node_.node_id = node_id_str;
 }
 
-std::string GraphNodeBuilder::GetNodeId() { return node_.node_id; }
+std::string GraphNodeBuilder::GetNodeId() const { return node_.node_id; }
 
 void GraphNodeBuilder::SetNodeLabel(absl::string_view node_label) {
   node_.node_label = node_label;
 }
 
-std::string GraphNodeBuilder::GetNodeLabel() { return node_.node_label; }
+std::string GraphNodeBuilder::GetNodeLabel() const { return node_.node_label; }
 
 void GraphNodeBuilder::SetNodeName(absl::string_view node_name) {
   node_.node_name = node_name;
 }
 
-std::string GraphNodeBuilder::GetNodeName() { return node_.node_name; }
+std::string GraphNodeBuilder::GetNodeName() const { return node_.node_name; }
 
 void GraphNodeBuilder::SetNodeInfo(absl::string_view node_id_str,
                                    absl::string_view node_label,

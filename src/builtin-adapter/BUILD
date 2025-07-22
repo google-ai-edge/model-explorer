@@ -24,6 +24,7 @@ cc_library(
         "@llvm-project//mlir:FuncDialect",
         "@llvm-project//mlir:IR",
         "@llvm-project//mlir:Support",
+        "@llvm-project//mlir:TosaDialect",
         "@shardy//shardy/dialect/sdy/ir:dialect",
         "@stablehlo//:stablehlo_ops",
         "@org_tensorflow//tensorflow/compiler/mlir/lite:flatbuffer_tflite_operator_lib",  # buildcleaner: keep
