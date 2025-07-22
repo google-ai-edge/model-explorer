@@ -762,105 +762,121 @@ absl::Status ProcessGenericRegions(
   return absl::OkStatus();
 }
 
-// Processes the nested regions of a Stablehlo operation.
-absl::Status ProcessStablehloRegions(
+// Processes the nested regions of a Stablehlo operation. Returns true if the
+// operation's regions were processed, false otherwise.
+absl::StatusOr<bool> ProcessStablehloRegions(
     const std::function<absl::Status(absl::string_view, mlir::Region&)>
         process_region,
     Operation& op) {
-  if (!IsStablehloDialect(op)) {
-    return absl::OkStatus();
-  }
-  return llvm::TypeSwitch<Operation*, absl::Status>(&op)
+  return llvm::TypeSwitch<Operation*, absl::StatusOr<bool>>(&op)
       .Case<mlir::stablehlo::WhileOp>(
-          [&](mlir::stablehlo::WhileOp op) -> absl::Status {
+          [&](mlir::stablehlo::WhileOp op) -> absl::StatusOr<bool> {
             RETURN_IF_ERROR(process_region("cond", op.getCond()));
-            return process_region("body", op.getBody());
+            RETURN_IF_ERROR(process_region("body", op.getBody()));
+            return true;
           })
       .Case<mlir::stablehlo::IfOp>(
-          [&](mlir::stablehlo::IfOp op) -> absl::Status {
+          [&](mlir::stablehlo::IfOp op) -> absl::StatusOr<bool> {
             RETURN_IF_ERROR(process_region("true_branch", op.getTrueBranch()));
-            return process_region("false_branch", op.getFalseBranch());
+            RETURN_IF_ERROR(
+                process_region("false_branch", op.getFalseBranch()));
+            return true;
           })
       .Case<mlir::stablehlo::AllReduceOp>(
-          [&](mlir::stablehlo::AllReduceOp op) -> absl::Status {
-            return process_region("computation", op.getComputation());
+          [&](mlir::stablehlo::AllReduceOp op) -> absl::StatusOr<bool> {
+            RETURN_IF_ERROR(process_region("computation", op.getComputation()));
+            return true;
           })
       .Case<mlir::stablehlo::ReduceScatterOp>(
-          [&](mlir::stablehlo::ReduceScatterOp op) -> absl::Status {
-            return process_region("computation", op.getComputation());
+          [&](mlir::stablehlo::ReduceScatterOp op) -> absl::StatusOr<bool> {
+            RETURN_IF_ERROR(process_region("computation", op.getComputation()));
+            return true;
           })
       .Case<mlir::stablehlo::ReduceOp>(
-          [&](mlir::stablehlo::ReduceOp op) -> absl::Status {
-            return process_region("body", op.getBody());
+          [&](mlir::stablehlo::ReduceOp op) -> absl::StatusOr<bool> {
+            RETURN_IF_ERROR(process_region("body", op.getBody()));
+            return true;
           })
       .Case<mlir::stablehlo::MapOp>(
-          [&](mlir::stablehlo::MapOp op) -> absl::Status {
-            return process_region("computation", op.getComputation());
+          [&](mlir::stablehlo::MapOp op) -> absl::StatusOr<bool> {
+            RETURN_IF_ERROR(process_region("computation", op.getComputation()));
+            return true;
           })
       .Case<mlir::stablehlo::ScatterOp>(
-          [&](mlir::stablehlo::ScatterOp op) -> absl::Status {
-            return process_region("update_computation",
-                                  op.getUpdateComputation());
+          [&](mlir::stablehlo::ScatterOp op) -> absl::StatusOr<bool> {
+            RETURN_IF_ERROR(process_region("update_computation",
+                                           op.getUpdateComputation()));
+            return true;
           })
       .Case<mlir::stablehlo::SelectAndScatterOp>(
-          [&](mlir::stablehlo::SelectAndScatterOp op) -> absl::Status {
+          [&](mlir::stablehlo::SelectAndScatterOp op) -> absl::StatusOr<bool> {
             RETURN_IF_ERROR(process_region("select", op.getSelect()));
-            return process_region("scatter", op.getScatter());
+            RETURN_IF_ERROR(process_region("scatter", op.getScatter()));
+            return true;
           })
       .Case<mlir::stablehlo::SortOp>(
-          [&](mlir::stablehlo::SortOp op) -> absl::Status {
-            return process_region("comparator", op.getComparator());
+          [&](mlir::stablehlo::SortOp op) -> absl::StatusOr<bool> {
+            RETURN_IF_ERROR(process_region("comparator", op.getComparator()));
+            return true;
           })
       .Case<mlir::stablehlo::ReduceWindowOp>(
-          [&](mlir::stablehlo::ReduceWindowOp op) -> absl::Status {
-            return process_region("body", op.getBody());
+          [&](mlir::stablehlo::ReduceWindowOp op) -> absl::StatusOr<bool> {
+            RETURN_IF_ERROR(process_region("body", op.getBody()));
+            return true;
           })
-      .Default([&](Operation* op) -> absl::Status {
-        return ProcessGenericRegions(process_region, *op);
+      .Default([](Operation* op) -> absl::StatusOr<bool> {
+        // If the op is not found, we return false to indicate it's not
+        // processed.
+        return false;
       });
 }
 
-// Processes the nested regions of a Shardy operation.
-absl::Status ProcessShardyRegions(
+// Processes the nested regions of a Shardy operation. Returns true if the
+// operation's regions were processed, false otherwise.
+absl::StatusOr<bool> ProcessShardyRegions(
     const std::function<absl::Status(absl::string_view, mlir::Region&)>
         process_region,
     Operation& op) {
-  if (!IsShardyDialect(op)) {
-    return absl::OkStatus();
-  }
-  return llvm::TypeSwitch<Operation*, absl::Status>(&op)
+  return llvm::TypeSwitch<Operation*, absl::StatusOr<bool>>(&op)
       .Case<mlir::sdy::ManualComputationOp>(
-          [&](mlir::sdy::ManualComputationOp op) -> absl::Status {
-            return process_region("body", op.getBody());
+          [&](mlir::sdy::ManualComputationOp op) -> absl::StatusOr<bool> {
+            RETURN_IF_ERROR(process_region("body", op.getBody()));
+            return true;
           })
       .Case<mlir::sdy::NamedComputationOp>(
-          [&](mlir::sdy::NamedComputationOp op) -> absl::Status {
-            return process_region("body", op.getBody());
+          [&](mlir::sdy::NamedComputationOp op) -> absl::StatusOr<bool> {
+            RETURN_IF_ERROR(process_region("body", op.getBody()));
+            return true;
           })
-      .Default([&](Operation* op) -> absl::Status {
-        return ProcessGenericRegions(process_region, *op);
+      .Default([](Operation* op) -> absl::StatusOr<bool> {
+        // If the op is not found, we return false to indicate it's not
+        // processed.
+        return false;
       });
 }
 
-// Processes the nested regions of a Tosa operation.
-absl::Status ProcessTosaRegions(
+// Processes the nested regions of a Tosa operation. Returns true if the
+// operation's regions were processed, false otherwise.
+absl::StatusOr<bool> ProcessTosaRegions(
     const std::function<absl::Status(absl::string_view, mlir::Region&)>
         process_region,
     Operation& op) {
-  if (!IsTosaDialect(op)) {
-    return absl::OkStatus();
-  }
-  return llvm::TypeSwitch<Operation*, absl::Status>(&op)
-      .Case<mlir::tosa::IfOp>([&](mlir::tosa::IfOp op) -> absl::Status {
+  return llvm::TypeSwitch<Operation*, absl::StatusOr<bool>>(&op)
+      .Case<mlir::tosa::IfOp>([&](mlir::tosa::IfOp op) -> absl::StatusOr<bool> {
         RETURN_IF_ERROR(process_region("then_graph", op.getThenGraph()));
-        return process_region("else_graph", op.getElseGraph());
+        RETURN_IF_ERROR(process_region("else_graph", op.getElseGraph()));
+        return true;
       })
-      .Case<mlir::tosa::WhileOp>([&](mlir::tosa::WhileOp op) -> absl::Status {
-        RETURN_IF_ERROR(process_region("cond_graph", op.getCondGraph()));
-        return process_region("body_graph", op.getBodyGraph());
-      })
-      .Default([&](Operation* op) -> absl::Status {
-        return ProcessGenericRegions(process_region, *op);
+      .Case<mlir::tosa::WhileOp>(
+          [&](mlir::tosa::WhileOp op) -> absl::StatusOr<bool> {
+            RETURN_IF_ERROR(process_region("cond_graph", op.getCondGraph()));
+            RETURN_IF_ERROR(process_region("body_graph", op.getBodyGraph()));
+            return true;
+          })
+      .Default([](Operation* op) -> absl::StatusOr<bool> {
+        // If the op is not found, we return false to indicate it's not
+        // processed.
+        return false;
       });
 }
 
@@ -889,9 +905,20 @@ absl::Status MaybeAddNestedRegion(const VisualizeConfig& config,
     return absl::OkStatus();
   };
 
-  RETURN_IF_ERROR(ProcessStablehloRegions(process_region, operation));
-  RETURN_IF_ERROR(ProcessShardyRegions(process_region, operation));
-  RETURN_IF_ERROR(ProcessTosaRegions(process_region, operation));
+  bool region_processed = false;
+  if (IsStablehloDialect(operation)) {
+    ASSIGN_OR_RETURN(region_processed,
+                     ProcessStablehloRegions(process_region, operation));
+  } else if (IsShardyDialect(operation)) {
+    ASSIGN_OR_RETURN(region_processed,
+                     ProcessShardyRegions(process_region, operation));
+  } else if (IsTosaDialect(operation)) {
+    ASSIGN_OR_RETURN(region_processed,
+                     ProcessTosaRegions(process_region, operation));
+  }
+  if (!region_processed) {
+    RETURN_IF_ERROR(ProcessGenericRegions(process_region, operation));
+  }
   return absl::OkStatus();
 }
 
