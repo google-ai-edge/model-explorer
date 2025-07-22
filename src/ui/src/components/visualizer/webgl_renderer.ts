@@ -195,6 +195,12 @@ interface RenderElementEdge {
   edge: ModelEdge;
 }
 
+/** Options for rendering the graph. */
+interface RenderGraphOptions {
+  skipReRenderEdges?: boolean;
+  skipReRenderEdgeTexts?: boolean;
+}
+
 /** Union type of node and edge element to render. */
 type RenderElement = RenderElementNode | RenderElementEdge;
 
@@ -370,13 +376,8 @@ export class WebglRenderer implements OnInit, OnChanges, OnDestroy {
   private readonly edges = new WebglEdges(this.EDGE_COLOR, EDGE_WIDTH);
   readonly texts = new WebglTexts(this.threejsService);
   private readonly mousePos = new THREE.Vector2();
-  private readonly syncNavigationRelatedNodesHighlights =
-    new WebglRendererHighlightNodesService(this, -WEBGL_ELEMENT_Y_FACTOR * 0.3);
-  private readonly syncNavigationDiffHighlights =
-    new WebglRendererHighlightNodesService(
-      this,
-      -WEBGL_ELEMENT_Y_FACTOR * 0.35,
-    );
+  private readonly syncNavigationRelatedNodesHighlights!: WebglRendererHighlightNodesService;
+  private readonly syncNavigationDiffHighlights!: WebglRendererHighlightNodesService;
   private draggingArea = false;
   private hoveredNodeId = '';
   private hoveredGroupNodeIconId = '';
@@ -509,6 +510,15 @@ export class WebglRenderer implements OnInit, OnChanges, OnDestroy {
     this.webglRendererSnapshotService.init(this);
     this.webglRendererSubgraphSelectionService.init(this);
     this.webglRendererThreejsService.init(this);
+    this.syncNavigationRelatedNodesHighlights =
+      new WebglRendererHighlightNodesService(
+        this,
+        -WEBGL_ELEMENT_Y_FACTOR * 0.3,
+      );
+    this.syncNavigationDiffHighlights = new WebglRendererHighlightNodesService(
+      this,
+      -WEBGL_ELEMENT_Y_FACTOR * 0.35,
+    );
 
     this.workerService.worker.addEventListener(
       'message',
@@ -732,10 +742,14 @@ export class WebglRenderer implements OnInit, OnChanges, OnDestroy {
         this.curProcessedNodeStylerRules = processNodeStylerRules(
           this.curNodeStylerRules,
         );
-        this.renderGraph();
+        this.renderGraph({
+          skipReRenderEdges: true,
+          skipReRenderEdgeTexts: true,
+        });
         this.webglRendererIoHighlightService.updateIncomingAndOutgoingHighlights();
         this.webglRendererIdenticalLayerService.updateIdenticalLayerIndicators();
         this.updateNodesStyles();
+        this.renderDiffHighlights();
         this.webglRendererThreejsService.render();
       }
     });
@@ -2064,25 +2078,46 @@ export class WebglRenderer implements OnInit, OnChanges, OnDestroy {
     this.workerService.worker.postMessage(req);
   }
 
-  private renderGraph() {
-    this.clearScene();
+  private renderGraph(options?: RenderGraphOptions) {
+    const extraMeshesToSkip: three.Object3D[] = [];
+    if (options?.skipReRenderEdgeTexts) {
+      const edgeTextsMesh = this.webglRendererEdgeTextsService.edgeTexts.mesh;
+      if (edgeTextsMesh) {
+        extraMeshesToSkip.push(edgeTextsMesh);
+      }
+    }
+    if (options?.skipReRenderEdges) {
+      const edgesMesh = this.edges.edgesMesh;
+      if (edgesMesh) {
+        extraMeshesToSkip.push(edgesMesh);
+      }
+      const arrowHeadsMesh = this.edges.arrowHeadsMesh;
+      if (arrowHeadsMesh) {
+        extraMeshesToSkip.push(arrowHeadsMesh);
+      }
+    }
+    this.clearScene(extraMeshesToSkip);
 
-    this.renderEdges();
+    if (!options?.skipReRenderEdges) {
+      this.renderEdges();
+    }
     this.renderTexts();
 
     const keys = getShowOnEdgeInputOutputMetadataKeys(this.curShowOnEdgeItem);
-    if (
-      keys.outputMetadataKey != null ||
-      keys.inputMetadataKey != null ||
-      keys.sourceNodeAttrKey != null ||
-      keys.targetNodeAttrKey != null
-    ) {
-      this.webglRendererEdgeTextsService.renderEdgeTexts({
-        outputMetadataKey: keys.outputMetadataKey,
-        inputMetadataKey: keys.inputMetadataKey,
-        sourceNodeAttrKey: keys.sourceNodeAttrKey,
-        targetNodeAttrKey: keys.targetNodeAttrKey,
-      });
+    if (!options?.skipReRenderEdgeTexts) {
+      if (
+        keys.outputMetadataKey != null ||
+        keys.inputMetadataKey != null ||
+        keys.sourceNodeAttrKey != null ||
+        keys.targetNodeAttrKey != null
+      ) {
+        this.webglRendererEdgeTextsService.renderEdgeTexts({
+          outputMetadataKey: keys.outputMetadataKey,
+          inputMetadataKey: keys.inputMetadataKey,
+          sourceNodeAttrKey: keys.sourceNodeAttrKey,
+          targetNodeAttrKey: keys.targetNodeAttrKey,
+        });
+      }
     }
 
     this.webglRendererAttrsTableService.renderAttrsTable();
@@ -2093,7 +2128,9 @@ export class WebglRenderer implements OnInit, OnChanges, OnDestroy {
     this.webglRendererSubgraphSelectionService.renderSubgraphSelectedNodeMarkers();
     this.updateNodeBgColorWhenFar();
 
-    this.animateIntoPositions();
+    this.animateIntoPositions((t) => {
+      this.updateAnimatinProgress(t, options);
+    });
   }
 
   private renderNodes() {
@@ -2541,18 +2578,22 @@ export class WebglRenderer implements OnInit, OnChanges, OnDestroy {
     );
   }
 
-  private updateAnimatinProgress(t: number) {
+  private updateAnimatinProgress(t: number, options?: RenderGraphOptions) {
     this.nodeBodies.updateAnimationProgress(t);
     this.groupNodeIcons.updateAnimationProgress(t);
     this.groupNodeIconBgs.updateAnimationProgress(t);
     this.subgraphIndicatorBgs.updateAnimationProgress(t);
     this.subgraphIndicatorIcons.updateAnimationProgress(t);
     this.texts.updateAnimationProgress(t);
-    this.webglRendererEdgeTextsService.updateAnimationProgress(t);
+    if (!options?.skipReRenderEdgeTexts) {
+      this.webglRendererEdgeTextsService.updateAnimationProgress(t);
+    }
     this.webglRendererAttrsTableService.updateAnimationProgress(t);
     this.webglRendererNdpService.updateAnimationProgress(t);
     this.artificialGroupBorders.updateAnimationProgress(t);
-    this.edges.updateAnimationProgress(t);
+    if (!options?.skipReRenderEdges) {
+      this.edges.updateAnimationProgress(t);
+    }
   }
 
   private handleMouseMove(event: MouseEvent) {
@@ -2887,7 +2928,7 @@ export class WebglRenderer implements OnInit, OnChanges, OnDestroy {
     animate();
   }
 
-  private clearScene() {
+  private clearScene(extraMeshesToSkip: three.Object3D[] = []) {
     // Remove all meshes from the scene and dispose their geometries and
     // materials.
     //
@@ -2898,6 +2939,7 @@ export class WebglRenderer implements OnInit, OnChanges, OnDestroy {
       this.webglRendererSearchResultsService.searchResultsHighlightBorders.mesh,
       this.webglRendererSearchResultsService.searchResultsNodeLabelHighlightBg
         .mesh,
+      ...extraMeshesToSkip,
     ];
     this.webglRendererThreejsService.clearScene(selfManagedMeshes);
 
