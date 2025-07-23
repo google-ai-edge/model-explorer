@@ -10,64 +10,43 @@ name: PyPI Build Single Platform & Python Version Adapters
 on:
   workflow_dispatch:
     inputs:
-      runner:
-        description: 'Hosted Runner'
+      source-run-id:
+        description: 'The Run ID of the workflow with the build artifacts'
         required: true
-        default: Linux_runner_8_core
-        type: choice
-        options:
-          - Linux_runner_8_core
-          - macos-latest
-          - macos-13
-
-      python-version:
-        description: 'Python Version'
-        required: true
-        default: '3.11'
-        type: choice
-        options:
-          - '3.12'
-          - '3.11'
-          - '3.10'
-          - '3.9'
-
+        type: string
       package-version:
-        description: 'Package Version'
+        description: 'Package Version for the release tag (e.g., 0.0.0)'
         required: true
-        default: '0.0.0'
         type: string
 
 jobs:
-  build_release:
-    runs-on: ${{ github.event.inputs.runner }}
-
+  release:
+    runs-on: ubuntu-latest
+    # You need 'actions: read' to download artifacts from another run
+    # and 'contents: write' to create the GitHub Release.
+    permissions:
+      actions: read
+      contents: write
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Python ${{ github.event.inputs.python-version }}
-        uses: actions/setup-python@v5
+      # Step 1: Download all artifacts from the specified workflow run
+      - name: Download all wheel artifacts from previous run
+        uses: actions/download-artifact@v4
         with:
-          python-version: ${{ github.event.inputs.python-version }}
+          # Use the input to specify which run to get artifacts from
+          run-id: ${{ github.event.inputs.source-run-id }}
+          # The path where artifacts will be downloaded
+          path: dist
 
-      - name: Install Dependencies
-        run: |
-          python -m pip install --upgrade pip setuptools
-          python -m pip install wheel numpy twine
-
-      - name: Build Package
-        run: |
-          cd ./src/builtin-adapter
-          ./python/pip_package/build_pip_package.sh ${{ github.event.inputs.package-version }}
-
-      - name: Verify the Distribution
-        run: twine check ./src/builtin-adapter/gen/adapter_pip/dist/*
-
-      - name: Check Directory Output
-        run: ls -l ./src/builtin-adapter/gen/adapter_pip/dist/*.whl
-
-      - name: Upload Release Asset
+      # Step 2: (Optional) Display the downloaded file structure
+      - name: Display structure of downloaded files
+        run: ls -R dist
+      
+      # Step 3: Create the GitHub Release and upload the assets
+      - name: Create Release and Upload Assets
         uses: softprops/action-gh-release@v2
         with:
-          files: ./src/builtin-adapter/gen/adapter_pip/dist/*.whl
+          # This glob pattern finds all .whl files in the subdirectories
+          files: dist/**/*.whl
           prerelease: true
+          # Use the input to create the correct tag
           tag_name: adapter-v${{ github.event.inputs.package-version }}
