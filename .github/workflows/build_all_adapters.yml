@@ -33,7 +33,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: Install Dependencies
-        run: python -m pip install --upgrade pip setuptools wheel
+        run: python -m pip install --upgrade pip setuptools wheel twine
 
       - name: Build Package
         run: |
