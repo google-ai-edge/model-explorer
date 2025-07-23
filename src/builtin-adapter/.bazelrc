@@ -43,7 +43,6 @@ common --experimental_repo_remote_exec
 #
 # Default build options. These are applied first and unconditionally.
 
-build --repo_env=USE_PYWRAP_RULES=True
 build --copt=-DGRPC_BAZEL_BUILD
 build --host_copt=-DGRPC_BAZEL_BUILD
 build --action_env=GRPC_BAZEL_RUNTIME=1
