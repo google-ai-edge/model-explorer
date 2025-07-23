@@ -47,7 +47,8 @@ IFS='.' read -ra VERSION_PARTS <<< "${PYTHON_VERSION}"
 export TF_PYTHON_VERSION="${VERSION_PARTS[0]}.${VERSION_PARTS[1]}"
 export PROJECT_NAME=${WHEEL_PROJECT_NAME:-ai_edge_model_explorer_adapter}
 BUILD_DIR="gen/adapter_pip"
-BAZEL_FLAGS="--copt=-O3"
+# This variable will hold flags specific to the OS that are not in .bazelrc
+BAZEL_PLATFORM_FLAGS=""
 ARCH="$(uname -m)"
 
 # Build source tree.
@@ -66,18 +67,28 @@ export CROSSTOOL_PYTHON_INCLUDE_PATH
 case "${TENSORFLOW_TARGET}" in
   windows)
     LIBRARY_EXTENSION=".pyd"
+    # The .bazelrc handles all compiler flags. We just need to trigger the config.
+    BAZEL_PLATFORM_FLAGS="--config=windows"
+    # Override ARCH for Windows, as 'uname -m' might not be reliable.
+    ARCH="x86_64"
     ;;
   *)
     LIBRARY_EXTENSION=".so"
     ;;
 esac
 
-# Set linkopt for arm64 architecture.
+# Set linkopt for different architectures for non-Windows platforms.
 case "${ARCH}" in
   x86_64)
+    # No extra flags needed for Linux/Windows x86_64
     ;;
   arm64)
-    BAZEL_FLAGS="${BAZEL_FLAGS} --linkopt="-ld_classic""
+    # MacOS arm64.
+    BAZEL_PLATFORM_FLAGS="${BAZEL_PLATFORM_FLAGS} --linkopt="-ld_classic""
+    ;;
+  aarch64)
+    # Linux arm64.
+    BAZEL_PLATFORM_FLAGS="${BAZEL_PLATFORM_FLAGS} --config=linux_arm64"
     ;;
   *)
     echo "Unsupported architecture: ${ARCH}"
@@ -85,8 +96,9 @@ case "${ARCH}" in
     ;;
 esac
 
+# Note: --config=monolithic is already set for Windows in .bazelrc, but is needed for other platforms.
 bazel build -c opt -s --config=monolithic --config=noaws --config=nogcp --config=nohdfs --config=nonccl \
-  ${BAZEL_FLAGS} python/convert_wrapper:_pywrap_convert_wrapper
+  ${BAZEL_PLATFORM_FLAGS} python/convert_wrapper:_pywrap_convert_wrapper
 cp "bazel-bin/python/convert_wrapper/_pywrap_convert_wrapper${LIBRARY_EXTENSION}" \
    "${BUILD_DIR}/ai_edge_model_explorer_adapter"
 
@@ -98,19 +110,22 @@ chmod u+w "${BUILD_DIR}/ai_edge_model_explorer_adapter/_pywrap_convert_wrapper${
 # Build python wheel.
 cd "${BUILD_DIR}"
 
-# Assign the wheel name based on the platform and architecture. Naming follows
-# TF released wheel package.
-if test -e "/System/Library/CoreServices/SystemVersion.plist"; then
+# Assign the wheel name based on the platform and architecture.
+# This logic must remain in the script.
+if [[ "${TENSORFLOW_TARGET}" == "windows" ]]; then
+    WHEEL_PLATFORM_NAME="win_amd64"
+elif test -e "/System/Library/CoreServices/SystemVersion.plist"; then
   if [[ "${ARCH}" == "arm64" ]]; then
-    # MacOS Silicon
     WHEEL_PLATFORM_NAME="macosx_12_0_arm64"
   else
-    # MacOS Intel
     WHEEL_PLATFORM_NAME="macosx_10_15_x86_64"
   fi
 elif test -e "/etc/lsb-release"; then
-  # Linux
-  WHEEL_PLATFORM_NAME="manylinux_2_17_x86_64"
+  if [[ "${ARCH}" == "aarch64" ]]; then
+    WHEEL_PLATFORM_NAME="manylinux_2_17_aarch64"
+  elif [[ "${ARCH}" == "x86_64" ]]; then
+    WHEEL_PLATFORM_NAME="manylinux_2_17_x86_64"
+  fi
 fi
 
 if [[ -n "${WHEEL_PLATFORM_NAME}" ]]; then
