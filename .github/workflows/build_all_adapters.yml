@@ -40,6 +40,9 @@ jobs:
           cd ./src/builtin-adapter
           ./python/pip_package/build_pip_package.sh ${{ github.event.inputs.package-version }}
 
+      - name: Verify the Distribution
+        run: twine check ./src/builtin-adapter/gen/adapter_pip/dist/*
+
       # Upload the built wheel file as an artifact
       - name: Upload Wheel Artifact
         uses: actions/upload-artifact@v4
