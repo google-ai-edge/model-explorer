@@ -31,13 +31,14 @@ from setuptools import setup
 
 PACKAGE_NAME = os.environ['PROJECT_NAME']
 PACKAGE_VERSION = os.environ['PACKAGE_VERSION']
-DOCLINES = __doc__.split('\n')
+DOCLINES = __doc__.split('\n') if __doc__ else []
 
 setup(
     name=PACKAGE_NAME.replace('_', '-'),
     version=PACKAGE_VERSION,
     description=DOCLINES[0],
-    long_description='\n'.join(DOCLINES[2:]),
+    long_description='\n'.join(DOCLINES[2:]) if len(DOCLINES) > 2 else '',
+    long_description_content_type='text/markdown',
     url='https://github.com/google-ai-edge/model-explorer',
     author='Google AI Edge',
     author_email='odml-devtools-team@google.com',
@@ -63,8 +64,8 @@ setup(
         'Topic :: Software Development :: Libraries',
         'Topic :: Software Development :: Libraries :: Python Modules',
     ],
-    packages=find_packages(exclude=[]),
-    package_dir={'': '.'},
+    packages=find_packages(),
     package_data={'': ['*.so', '*.pyd']},
     install_requires=[],
+    zip_safe=False,
 )

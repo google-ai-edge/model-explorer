@@ -114,10 +114,9 @@ elif test -e "/etc/lsb-release"; then
 fi
 
 if [[ -n "${WHEEL_PLATFORM_NAME}" ]]; then
-  ${PYTHON} setup.py bdist --plat-name=${WHEEL_PLATFORM_NAME} \
-                      bdist_wheel --plat-name=${WHEEL_PLATFORM_NAME}
+  ${PYTHON} setup.py sdist bdist_wheel --plat-name=${WHEEL_PLATFORM_NAME}
 else
-  ${PYTHON} setup.py bdist bdist_wheel
+  ${PYTHON} setup.py sdist bdist_wheel
 fi
 
 echo "Output can be found here:"
