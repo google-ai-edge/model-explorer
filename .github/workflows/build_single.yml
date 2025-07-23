@@ -95,5 +95,4 @@ jobs:
         with:
           files: dist/*.whl
           prerelease: true
-          # Use the version passed from the build job's output
           tag_name: adapter-v${{ needs.build.outputs.package-version }}
