@@ -44,7 +44,7 @@ jobs:
       - name: Upload Wheel Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: python-wheels
+          name: python-wheels-${{ matrix.runner }}-${{ matrix.python-version }}
           path: ./src/builtin-adapter/gen/adapter_pip/dist/*.whl
 
   # Job 2: Create the GitHub Release after all builds are done
@@ -60,16 +60,16 @@ jobs:
       - name: Download all wheel artifacts
         uses: actions/download-artifact@v4
         with:
-          name: python-wheels
+          name: python-wheels-*
           path: dist
 
       - name: Display structure of downloaded files
-        run: ls -R
+        run: ls -R dist
         
       # Create one release and upload all the files
       - name: Upload Release Assets
         uses: softprops/action-gh-release@v2
         with:
-          files: dist/*.whl
+          files: dist/**/*.whl
           prerelease: true
           tag_name: adapter-v${{ github.event.inputs.package-version }}
