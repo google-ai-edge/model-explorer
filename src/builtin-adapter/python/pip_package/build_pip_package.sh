@@ -48,7 +48,6 @@ export TF_PYTHON_VERSION="${VERSION_PARTS[0]}.${VERSION_PARTS[1]}"
 export PROJECT_NAME=${WHEEL_PROJECT_NAME:-ai_edge_model_explorer_adapter}
 BUILD_DIR="gen/adapter_pip"
 BAZEL_FLAGS="--copt=-O3"
-KERNEL="$(uname -s)"
 ARCH="$(uname -m)"
 
 # Build source tree.
@@ -73,12 +72,17 @@ case "${TENSORFLOW_TARGET}" in
     ;;
 esac
 
-# Set linkopt for arm64 architecture.
+# Set linkopt for different architectures.
 case "${ARCH}" in
   x86_64)
     ;;
   arm64)
+    # MacOS arm64.
     BAZEL_FLAGS="${BAZEL_FLAGS} --linkopt="-ld_classic""
+    ;;
+  aarch64)
+    # Linux arm64.
+    BAZEL_FLAGS="${BAZEL_FLAGS} --config=release_arm64_linux"
     ;;
   *)
     echo "Unsupported architecture: ${ARCH}"
@@ -101,7 +105,7 @@ cd "${BUILD_DIR}"
 
 # Assign the wheel name based on the platform and architecture. Naming follows
 # TF released wheel package.
-if [[ "${KERNEL}" == "Darwin" ]]; then
+if test -e "/System/Library/CoreServices/SystemVersion.plist"; then
   if [[ "${ARCH}" == "arm64" ]]; then
     # MacOS Silicon
     WHEEL_PLATFORM_NAME="macosx_12_0_arm64"
@@ -109,15 +113,14 @@ if [[ "${KERNEL}" == "Darwin" ]]; then
     # MacOS Intel
     WHEEL_PLATFORM_NAME="macosx_10_15_x86_64"
   fi
-elif [[ "${KERNEL}" == "Linux" ]]; then
-  # Linux aarch64 or x86_64
-  WHEEL_PLATFORM_NAME="manylinux_2_17_${ARCH}"
-else
-  echo "Unsupported operating system: ${KERNEL}" >&2
-  exit 1
+elif test -e "/etc/lsb-release"; then
+  # Linux
+  if [[ "${ARCH}" == "aarch64" ]]; then
+    WHEEL_PLATFORM_NAME="manylinux_2_17_aarch64"
+  elif [[ "${ARCH}" == "x86_64" ]]; then
+    WHEEL_PLATFORM_NAME="manylinux_2_17_x86_64"
+  fi
 fi
-
-echo "Building wheel for platform: ${WHEEL_PLATFORM_NAME}"
 
 if [[ -n "${WHEEL_PLATFORM_NAME}" ]]; then
   ${PYTHON} setup.py sdist bdist_wheel --plat-name=${WHEEL_PLATFORM_NAME}
