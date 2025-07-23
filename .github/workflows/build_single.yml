@@ -95,4 +95,4 @@ jobs:
         with:
           files: dist/*.whl
           prerelease: true
-          tag_name: adapter-v${{ needs.build.outputs.package-version }}
+          tag_name: adapter-v${{ github.event.inputs.package-version }}
