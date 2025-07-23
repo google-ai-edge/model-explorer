@@ -18,7 +18,7 @@ set -ex
 
 USAGE="$(basename $0) <package-version>
 
-Builds a pip package for the Model Explorer backend adapter.
+Builds a pip package for the Model Explorer backend adapter for Linux and macOS.
 
 <package-version> should be a string of the form "x.x.x", eg. "1.2.0".
 "
@@ -59,28 +59,15 @@ cp  "${SCRIPT_DIR}/setup_with_binary.py" "${BUILD_DIR}/setup.py"
 echo "__version__ = '${PACKAGE_VERSION}'" >> "${BUILD_DIR}/ai_edge_model_explorer_adapter/__init__.py"
 
 # Build python _pywrap_convert_wrapper.
-
 # We need to pass down the environment variable with a possible alternate Python
 # include path for Python 3.x builds to work.
 export CROSSTOOL_PYTHON_INCLUDE_PATH
-
-case "${TENSORFLOW_TARGET}" in
-  windows)
-    LIBRARY_EXTENSION=".pyd"
-    # The .bazelrc handles all compiler flags. We just need to trigger the config.
-    BAZEL_PLATFORM_FLAGS="--config=windows"
-    # Override ARCH for Windows, as 'uname -m' might not be reliable.
-    ARCH="x86_64"
-    ;;
-  *)
-    LIBRARY_EXTENSION=".so"
-    ;;
-esac
+LIBRARY_EXTENSION=".so"
 
 # Set linkopt for different architectures for non-Windows platforms.
 case "${ARCH}" in
   x86_64)
-    # No extra flags needed for Linux/Windows x86_64
+    # No extra flags needed for Linux x86_64
     ;;
   arm64)
     # MacOS arm64.
@@ -96,14 +83,13 @@ case "${ARCH}" in
     ;;
 esac
 
-# Note: --config=monolithic is already set for Windows in .bazelrc, but is needed for other platforms.
+# Note: --config=monolithic is needed for non-Windows platforms.
 bazel build -c opt -s --config=monolithic --config=noaws --config=nogcp --config=nohdfs --config=nonccl \
   ${BAZEL_PLATFORM_FLAGS} python/convert_wrapper:_pywrap_convert_wrapper
 cp "bazel-bin/python/convert_wrapper/_pywrap_convert_wrapper${LIBRARY_EXTENSION}" \
    "${BUILD_DIR}/ai_edge_model_explorer_adapter"
 
 # Bazel generates the wrapper library with r-x permissions for user.
-# At least on Windows, we need write permissions to delete the file.
 # Without this, setuptools fails to clean the build directory.
 chmod u+w "${BUILD_DIR}/ai_edge_model_explorer_adapter/_pywrap_convert_wrapper${LIBRARY_EXTENSION}"
 
@@ -112,9 +98,8 @@ cd "${BUILD_DIR}"
 
 # Assign the wheel name based on the platform and architecture.
 # This logic must remain in the script.
-if [[ "${TENSORFLOW_TARGET}" == "windows" ]]; then
-    WHEEL_PLATFORM_NAME="win_amd64"
-elif test -e "/System/Library/CoreServices/SystemVersion.plist"; then
+WHEEL_PLATFORM_NAME=""
+if test -e "/System/Library/CoreServices/SystemVersion.plist"; then
   if [[ "${ARCH}" == "arm64" ]]; then
     WHEEL_PLATFORM_NAME="macosx_12_0_arm64"
   else
