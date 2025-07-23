@@ -5,7 +5,7 @@
 # https://yaml-online-parser.appspot.com/
 #
 
-name: PyPI Build Release All Backend Adapters
+name: PyPI Build and Release All Backend Adapters
 
 on:
   workflow_dispatch:
@@ -17,13 +17,13 @@ on:
         type: string
 
 jobs:
-  build_release:
+  # Job 1: Build the wheel files for all platforms
+  build:
     strategy:
       matrix:
         runner: [Linux_runner_8_core, macos-latest, macos-13]
         python-version: ['3.9', '3.10', '3.11', '3.12']
     runs-on: ${{ matrix.runner }}
-
     steps:
       - uses: actions/checkout@v4
 
@@ -33,24 +33,43 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: Install Dependencies
-        run: |
-          python -m pip install --upgrade pip setuptools
-          python -m pip install wheel numpy twine
+        run: python -m pip install --upgrade pip setuptools wheel
 
       - name: Build Package
         run: |
           cd ./src/builtin-adapter
           ./python/pip_package/build_pip_package.sh ${{ github.event.inputs.package-version }}
 
-      - name: Verify the Distribution
-        run: twine check ./src/builtin-adapter/gen/adapter_pip/dist/*
+      # Upload the built wheel file as an artifact
+      - name: Upload Wheel Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: python-wheels
+          path: ./src/builtin-adapter/gen/adapter_pip/dist/*.whl
 
-      - name: Check Directory Output
-        run: ls -l ./src/builtin-adapter/gen/adapter_pip/dist/*.whl
+  # Job 2: Create the GitHub Release after all builds are done
+  release:
+    # This job depends on the 'build' job finishing successfully
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      # Grant permission to create a release
+      contents: write
+    steps:
+      # Download all the wheel artifacts uploaded by the build jobs
+      - name: Download all wheel artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: python-wheels
+          path: dist
 
-      - name: Upload Release Asset
+      - name: Display structure of downloaded files
+        run: ls -R
+        
+      # Create one release and upload all the files
+      - name: Upload Release Assets
         uses: softprops/action-gh-release@v2
         with:
-          files: ./src/builtin-adapter/gen/adapter_pip/dist/*.whl
+          files: dist/*.whl
           prerelease: true
           tag_name: adapter-v${{ github.event.inputs.package-version }}
