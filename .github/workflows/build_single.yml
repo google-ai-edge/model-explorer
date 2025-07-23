@@ -39,9 +39,12 @@ on:
         type: string
 
 jobs:
-  build_release:
+  # Job 1: Build the single wheel file
+  build:
     runs-on: ${{ github.event.inputs.runner }}
-
+    # We define an output to pass the package version to the next job
+    outputs:
+      package-version: ${{ github.event.inputs.package-version }}
     steps:
       - uses: actions/checkout@v4
 
@@ -63,12 +66,34 @@ jobs:
       - name: Verify the Distribution
         run: twine check ./src/builtin-adapter/gen/adapter_pip/dist/*
 
-      - name: Check Directory Output
-        run: ls -l ./src/builtin-adapter/gen/adapter_pip/dist/*.whl
+      - name: Upload Wheel as an Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: single-wheel
+          path: ./src/builtin-adapter/gen/adapter_pip/dist/*.whl
 
-      - name: Upload Release Asset
+  # Job 2: Create the release using the built artifact
+  release:
+    # This job runs only after the 'build' job succeeds
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      # Grant permission to create a GitHub Release
+      contents: write
+    steps:
+      - name: Download wheel from build job
+        uses: actions/download-artifact@v4
+        with:
+          name: single-wheel
+          path: dist
+
+      - name: Display downloaded files
+        run: ls -R dist
+
+      - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: ./src/builtin-adapter/gen/adapter_pip/dist/*.whl
+          files: dist/*.whl
           prerelease: true
-          tag_name: adapter-v${{ github.event.inputs.package-version }}
+          # Use the version passed from the build job's output
+          tag_name: adapter-v${{ needs.build.outputs.package-version }}
