@@ -82,7 +82,7 @@ case "${ARCH}" in
     ;;
   aarch64)
     # Linux arm64.
-    BAZEL_FLAGS="${BAZEL_FLAGS} --config=release_arm64_linux"
+    BAZEL_FLAGS="${BAZEL_FLAGS} --config=linux_arm64"
     ;;
   *)
     echo "Unsupported architecture: ${ARCH}"
