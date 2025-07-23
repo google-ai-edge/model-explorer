@@ -33,12 +33,15 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: Install Dependencies
-        run: python -m pip install --upgrade pip setuptools wheel
+        run: python -m pip install --upgrade pip setuptools wheel twine
 
       - name: Build Package
         run: |
           cd ./src/builtin-adapter
           ./python/pip_package/build_pip_package.sh ${{ github.event.inputs.package-version }}
+
+      - name: Verify the Distribution
+        run: twine check ./src/builtin-adapter/gen/adapter_pip/dist/*
 
       # Upload the built wheel file as an artifact
       - name: Upload Wheel Artifact
