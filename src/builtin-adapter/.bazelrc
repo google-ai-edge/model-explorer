@@ -514,3 +514,8 @@ common --noenable_bzlmod
 # TODO: Migrate for https://github.com/bazelbuild/bazel/issues/7260
 common --noincompatible_enable_cc_toolchain_resolution
 common --noincompatible_enable_android_toolchain_resolution
+
+# TODO: Migrate for https://github.com/bazelbuild/bazel/issues/7260
+build:clang_local --noincompatible_enable_cc_toolchain_resolution
+build:clang_local --noincompatible_enable_android_toolchain_resolution
+build:clang_local --repo_env USE_HERMETIC_CC_TOOLCHAIN=0
