@@ -99,7 +99,10 @@ cc_library(
         "@org_tensorflow//tensorflow/core:lib",
         "@org_tensorflow//tensorflow/core:tensorflow",
         "@org_tensorflow//tensorflow/core/protobuf:for_core_protos_cc",
-    ],
+    ] + select({
+        "//conditions:default": [
+        ],
+    }),
 )
 
 cc_library(
