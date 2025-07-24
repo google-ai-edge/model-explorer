@@ -72,12 +72,17 @@ case "${TENSORFLOW_TARGET}" in
     ;;
 esac
 
-# Set linkopt for arm64 architecture.
+# Set linkopt for different architectures.
 case "${ARCH}" in
   x86_64)
     ;;
   arm64)
+    # MacOS arm64.
     BAZEL_FLAGS="${BAZEL_FLAGS} --linkopt="-ld_classic""
+    ;;
+  aarch64)
+    # Linux arm64.
+    BAZEL_FLAGS="${BAZEL_FLAGS} --config=linux_arm64"
     ;;
   *)
     echo "Unsupported architecture: ${ARCH}"
@@ -110,7 +115,11 @@ if test -e "/System/Library/CoreServices/SystemVersion.plist"; then
   fi
 elif test -e "/etc/lsb-release"; then
   # Linux
-  WHEEL_PLATFORM_NAME="manylinux_2_17_x86_64"
+  if [[ "${ARCH}" == "aarch64" ]]; then
+    WHEEL_PLATFORM_NAME="manylinux_2_17_aarch64"
+  elif [[ "${ARCH}" == "x86_64" ]]; then
+    WHEEL_PLATFORM_NAME="manylinux_2_17_x86_64"
+  fi
 fi
 
 if [[ -n "${WHEEL_PLATFORM_NAME}" ]]; then
