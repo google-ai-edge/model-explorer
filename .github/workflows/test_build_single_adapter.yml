@@ -5,40 +5,59 @@
 # https://yaml-online-parser.appspot.com/
 #
 
-name: PyPI Build Release All Backend Adapters
+name: Test Build Single Adapter
 
 on:
   workflow_dispatch:
     inputs:
+      runner:
+        description: 'Hosted Runner'
+        required: true
+        default: Linux_runner_8_core
+        type: choice
+        options:
+          - Linux_runner_8_core
+          - macos-latest
+          - ubuntu-22.04-arm
+
+      python-version:
+        description: 'Python Version'
+        required: true
+        default: '3.11'
+        type: choice
+        options:
+          - '3.12'
+          - '3.11'
+          - '3.10'
+          - '3.9'
+
       package-version:
         description: 'Package Version'
         required: true
         default: '0.0.0'
         type: string
 
+      create-release:
+        description: 'Create a GitHub Release?'
+        required: true
+        default: false
+        type: boolean
+
 jobs:
-  # Job 1: Build the wheel files for all platforms
+  # Job 1: Build the single wheel file
   build:
-    permissions:
-      actions: write
-    strategy:
-      # Ensure all jobs in the matrix will run to completion, even if
-      # some of them fail
-      fail-fast: false
-      matrix:
-        runner: [Linux_runner_8_core, macos-latest, ubuntu-24.04-arm]
-        python-version: ['3.9', '3.10', '3.11', '3.12']
-    runs-on: ${{ matrix.runner }}
+    runs-on: ${{ github.event.inputs.runner }}
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Python ${{ matrix.python-version }}
+      - name: Set up Python ${{ github.event.inputs.python-version }}
         uses: actions/setup-python@v5
         with:
-          python-version: ${{ matrix.python-version }}
+          python-version: ${{ github.event.inputs.python-version }}
 
       - name: Install Dependencies
-        run: python -m pip install --upgrade pip setuptools wheel twine
+        run: |
+          python -m pip install --upgrade pip setuptools wheel twine
 
       - name: Build Package
         run: |
@@ -48,31 +67,31 @@ jobs:
       - name: Verify the Distribution
         run: twine check ./src/builtin-adapter/gen/adapter_pip/dist/*
 
-      - name: Upload Wheel Artifact
+      - name: Upload Wheel as an Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: python-wheels-${{ matrix.runner }}-${{ matrix.python-version }}
+          name: single-wheel
           path: ./src/builtin-adapter/gen/adapter_pip/dist/*.whl
 
-  # Job 2: Create the GitHub Release after all builds are done
+  # Job 2: Create the release using the built artifact
   release:
+    # This job runs only after the 'build' job succeeds
     needs: build
-    # This job will ONLY run if all jobs in the 'build' matrix succeeded.
-    if: success()
+    if: github.event.inputs.create-release == true
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
-      # Download all the wheel artifacts uploaded by the build jobs
-      - name: Download all wheel artifacts
+      - name: Download wheel from build job
         uses: actions/download-artifact@v4
         with:
+          name: single-wheel
           path: dist
 
-      - name: Display structure of downloaded files
+      - name: Display downloaded files
         run: ls -R dist
 
-      - name: Upload Release Assets
+      - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           files: dist/**/*.whl
