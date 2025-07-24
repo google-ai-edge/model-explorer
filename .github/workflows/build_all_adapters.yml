@@ -19,9 +19,14 @@ on:
 jobs:
   # Job 1: Build the wheel files for all platforms
   build:
+    permissions:
+      actions: write
     strategy:
+      # Ensure all jobs in the matrix will run to completion, even if
+      # some of them fail
+      fail-fast: false
       matrix:
-        runner: [Linux_runner_8_core, macos-latest, macos-13]
+        runner: [Linux_runner_8_core, macos-latest, ubuntu-24.04-arm]
         python-version: ['3.9', '3.10', '3.11', '3.12']
     runs-on: ${{ matrix.runner }}
     steps:
@@ -43,7 +48,6 @@ jobs:
       - name: Verify the Distribution
         run: twine check ./src/builtin-adapter/gen/adapter_pip/dist/*
 
-      # Upload the built wheel file as an artifact
       - name: Upload Wheel Artifact
         uses: actions/upload-artifact@v4
         with:
@@ -52,11 +56,11 @@ jobs:
 
   # Job 2: Create the GitHub Release after all builds are done
   release:
-    # This job depends on the 'build' job finishing successfully
     needs: build
+    # This job will ONLY run if all jobs in the 'build' matrix succeeded.
+    if: success()
     runs-on: ubuntu-latest
     permissions:
-      # Grant permission to create a release
       contents: write
     steps:
       # Download all the wheel artifacts uploaded by the build jobs
@@ -67,8 +71,7 @@ jobs:
 
       - name: Display structure of downloaded files
         run: ls -R dist
-        
-      # Create one release and upload all the files
+
       - name: Upload Release Assets
         uses: softprops/action-gh-release@v2
         with:
