@@ -78,7 +78,7 @@ jobs:
       # It only runs if the previous step's output 'cancel_run' is true.
       - name: Cancel Workflow Run on Early Failure
         if: steps.check_time.outputs.cancel_run == 'true' && !cancelled()
-        uses: styfle/cancel-workflow-action
+        uses: styfle/cancel-workflow-action@0.9.1
         with:
           access_token: ${{ github.token }}
       
