@@ -19,12 +19,19 @@ on:
 jobs:
   # Job 1: Build the wheel files for all platforms
   build:
+    permissions:
+      actions: write
     strategy:
+      # Disable default fail-fast to allow our custom logic to run
+      fail-fast: false
       matrix:
-        runner: [Linux_runner_8_core, macos-latest, macos-13]
+        runner: [Linux_runner_8_core, macos-latest, ubuntu-24.04-arm]
         python-version: ['3.9', '3.10', '3.11', '3.12']
     runs-on: ${{ matrix.runner }}
     steps:
+      - name: Record Job Start Time
+        run: echo "JOB_START_TIME=$(date -u +%s)" >> $GITHUB_ENV
+
       - uses: actions/checkout@v4
 
       - name: Set up Python ${{ matrix.python-version }}
@@ -36,14 +43,57 @@ jobs:
         run: python -m pip install --upgrade pip setuptools wheel twine
 
       - name: Build Package
+        id: build_package
+        continue-on-error: true
         run: |
           cd ./src/builtin-adapter
           ./python/pip_package/build_pip_package.sh ${{ github.event.inputs.package-version }}
 
+      # This step decides IF we should cancel, but doesn't do the cancellation itself.
+      # It runs only if the build step failed.
+      - name: Check for Early Failure
+        id: check_time
+        if: steps.build_package.outcome == 'failure' && !cancelled()
+        run: |
+          echo "Build step failed. Checking elapsed time..."
+          
+          # Set the timeout in minutes
+          TIMEOUT_MINUTES=30
+          TIMEOUT_SECONDS=$((TIMEOUT_MINUTES * 60))
+          
+          CURRENT_TIME=$(date -u +%s)
+          ELAPSED_TIME=$((CURRENT_TIME - JOB_START_TIME))
+          
+          echo "Job has been running for $ELAPSED_TIME seconds."
+
+          if [[ $ELAPSED_TIME -lt $TIMEOUT_SECONDS ]]; then
+            echo "Build failed within the $TIMEOUT_MINUTES minute window. Setting flag to cancel workflow."
+            echo "cancel_run=true" >> $GITHUB_OUTPUT
+          else
+            echo "Build failed after the $TIMEOUT_MINUTES minute window. Allowing other jobs to continue."
+            echo "cancel_run=false" >> $GITHUB_OUTPUT
+          fi
+
+      # This step uses the dedicated action to cancel the workflow.
+      # It only runs if the previous step's output 'cancel_run' is true.
+      - name: Cancel Workflow Run on Early Failure
+        if: steps.check_time.outputs.cancel_run == 'true' && !cancelled()
+        uses: styfle/cancel-workflow-action
+        with:
+          access_token: ${{ github.token }}
+      
+      # This step ensures the job is marked as "failure" in the UI if the build failed.
+      # Without this, the job would appear successful because of 'continue-on-error'.
+      - name: Report Build Failure
+        if: steps.build_package.outcome == 'failure'
+        run: |
+          echo "Reporting failure for this job."
+          exit 1
+
+      # The following steps will only run if the build was successful.
       - name: Verify the Distribution
         run: twine check ./src/builtin-adapter/gen/adapter_pip/dist/*
 
-      # Upload the built wheel file as an artifact
       - name: Upload Wheel Artifact
         uses: actions/upload-artifact@v4
         with:
@@ -52,11 +102,11 @@ jobs:
 
   # Job 2: Create the GitHub Release after all builds are done
   release:
-    # This job depends on the 'build' job finishing successfully
     needs: build
+    # Add a condition to only release if all jobs succeeded
+    if: success()
     runs-on: ubuntu-latest
     permissions:
-      # Grant permission to create a release
       contents: write
     steps:
       # Download all the wheel artifacts uploaded by the build jobs
@@ -67,8 +117,7 @@ jobs:
 
       - name: Display structure of downloaded files
         run: ls -R dist
-        
-      # Create one release and upload all the files
+
       - name: Upload Release Assets
         uses: softprops/action-gh-release@v2
         with:
