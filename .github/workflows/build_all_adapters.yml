@@ -57,8 +57,8 @@ jobs:
   # Job 2: Create the GitHub Release after all builds are done
   release:
     needs: build
-    # Ensure this job runs even if some matrix jobs failed
-    if: always()
+    # This job will ONLY run if all jobs in the 'build' matrix succeeded.
+    if: success()
     runs-on: ubuntu-latest
     permissions:
       contents: write
