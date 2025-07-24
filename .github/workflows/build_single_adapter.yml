@@ -5,7 +5,7 @@
 # https://yaml-online-parser.appspot.com/
 #
 
-name: PyPI Build Single Platform & Python Version Adapters
+name: Test Build Single PyPI Adapter
 
 on:
   workflow_dispatch:
@@ -18,7 +18,7 @@ on:
         options:
           - Linux_runner_8_core
           - macos-latest
-          - ubuntu-24.04-arm
+          - ubuntu-22.04-arm
 
       python-version:
         description: 'Python Version'

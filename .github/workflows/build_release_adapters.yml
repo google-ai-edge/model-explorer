@@ -5,7 +5,7 @@
 # https://yaml-online-parser.appspot.com/
 #
 
-name: PyPI Build Release All Backend Adapters
+name: PyPI Build and Release All Built-in Adapters
 
 on:
   workflow_dispatch:
@@ -26,7 +26,7 @@ jobs:
       # some of them fail
       fail-fast: false
       matrix:
-        runner: [Linux_runner_8_core, macos-latest, ubuntu-24.04-arm]
+        runner: [Linux_runner_8_core, macos-latest, ubuntu-22.04-arm]
         python-version: ['3.9', '3.10', '3.11', '3.12']
     runs-on: ${{ matrix.runner }}
     steps:
