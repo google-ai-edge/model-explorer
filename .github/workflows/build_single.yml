@@ -38,8 +38,8 @@ on:
         type: string
 
       create-release:
-        description: 'Create a GitHub Release? (true/false)'
-        required: false
+        description: 'Create a GitHub Release?'
+        required: true
         default: false
         type: boolean
 
