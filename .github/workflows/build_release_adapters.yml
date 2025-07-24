@@ -5,7 +5,7 @@
 # https://yaml-online-parser.appspot.com/
 #
 
-name: PyPI Build and Release All Built-in Adapters
+name: PyPI Build and Release Adapters
 
 on:
   workflow_dispatch:

@@ -5,7 +5,7 @@
 # https://yaml-online-parser.appspot.com/
 #
 
-name: Test Build Single PyPI Adapter
+name: Test Build Single Adapter
 
 on:
   workflow_dispatch:
