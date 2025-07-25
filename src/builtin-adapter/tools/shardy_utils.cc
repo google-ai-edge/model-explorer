@@ -121,6 +121,29 @@ void PrettyPrint(mlir::sdy::PropagationEdgesAttr attr, llvm::raw_ostream& os) {
   }
 }
 
+// Prints a simplified version of AxisRefList, which is easier for users to
+// parse. For example it displays the default printing of
+// #sdy<axis_ref_list{z}> as {"z"}
+void PrettyPrint(mlir::sdy::AxisRefListAttr attr, llvm::raw_ostream& os) {
+  os << strippedAttrString(attr, /*strip_menemonic=*/true);
+}
+
+// Prints a simplified version of ListOfAxisRefLists, which is easier for users
+// to parse. For example it displays the default printing of
+// #sdy<list_of_axis_ref_lists[{}, {x}]> as [{}, {x}]
+void PrettyPrint(mlir::sdy::ListOfAxisRefListsAttr attr,
+                 llvm::raw_ostream& os) {
+  os << strippedAttrString(attr, /*strip_menemonic=*/true);
+}
+
+// Prints a simplified version of AllToAllParamList, which is easier for users
+// to parse. For example it displays the default printing of
+// #sdy<all_to_all_param_list[{x}: 0->2, {y}: 1->3]> as
+// [{"x"}: 0->2, {"y"}: 1->3]
+void PrettyPrint(mlir::sdy::AllToAllParamListAttr attr, llvm::raw_ostream& os) {
+  os << strippedAttrString(attr, /*strip_menemonic=*/true);
+}
+
 }  // namespace
 
 void PrintShardyAttribute(mlir::Attribute attr, llvm::raw_string_ostream& os) {
@@ -140,6 +163,18 @@ void PrintShardyAttribute(mlir::Attribute attr, llvm::raw_string_ostream& os) {
       .Case<mlir::sdy::PropagationEdgesAttr>(
           [&os](mlir::sdy::PropagationEdgesAttr propagation_edges_attr) {
             PrettyPrint(propagation_edges_attr, os);
+          })
+      .Case<mlir::sdy::AxisRefListAttr>(
+          [&os](mlir::sdy::AxisRefListAttr axis_ref_list_attr) {
+            PrettyPrint(axis_ref_list_attr, os);
+          })
+      .Case<mlir::sdy::ListOfAxisRefListsAttr>(
+          [&os](mlir::sdy::ListOfAxisRefListsAttr list_of_axis_ref_lists_attr) {
+            PrettyPrint(list_of_axis_ref_lists_attr, os);
+          })
+      .Case<mlir::sdy::AllToAllParamListAttr>(
+          [&os](mlir::sdy::AllToAllParamListAttr all_to_all_param_list_attr) {
+            PrettyPrint(all_to_all_param_list_attr, os);
           })
       .Default(
           [&](mlir::Attribute attr) { attr.print(os, /*elideType=*/true); });
