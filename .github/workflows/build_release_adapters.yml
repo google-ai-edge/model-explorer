@@ -26,7 +26,7 @@ jobs:
       # some of them fail
       fail-fast: false
       matrix:
-        runner: [Linux_runner_8_core, macos-latest, ubuntu-22.04-arm]
+        runner: [ubuntu-22.04, macos-latest, ubuntu-22.04-arm]
         python-version: ['3.9', '3.10', '3.11', '3.12']
     runs-on: ${{ matrix.runner }}
     steps:

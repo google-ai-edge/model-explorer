@@ -13,10 +13,10 @@ on:
       runner:
         description: 'Hosted Runner'
         required: true
-        default: Linux_runner_8_core
+        default: ubuntu-22.04
         type: choice
         options:
-          - Linux_runner_8_core
+          - ubuntu-22.04
           - macos-latest
           - ubuntu-22.04-arm
 
