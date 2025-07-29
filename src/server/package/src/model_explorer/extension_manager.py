@@ -42,6 +42,15 @@ class ExtensionManager(object, metaclass=Singleton):
   CACHED_REGISTERED_EXTENSIONS: Dict[str, RegisteredExtension] = {}
 
   def __init__(self, custom_extension_modules: list[str] = []):
+    # Don't load extensions from ai_edge_model_explorer_adapter if it is not
+    # available.
+    try:
+      import ai_edge_model_explorer_adapter
+    except ImportError:
+      ExtensionManager.BUILTIN_ADAPTER_MODULES = [
+          '.builtin_pytorch_exportedprogram_adapter',
+      ]
+
     # For custom extensions (i.e. non-built-in extensions), we load their "main"
     # module by default.
     self.custom_extension_modules = [
