@@ -17,7 +17,8 @@ classifiers = [
 dependencies = [
   "flask",
   "ipython",
-  "ai-edge-model-explorer-adapter == 0.1.8",
+  # Skip on windows.
+  "ai-edge-model-explorer-adapter == 0.1.8; sys_platform != 'win32'",
   "packaging",
   "portpicker",
   "requests",
