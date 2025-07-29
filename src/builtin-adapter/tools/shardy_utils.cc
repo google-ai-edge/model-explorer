@@ -62,14 +62,14 @@ using InputValueToNodeIdMap = llvm::SmallDenseMap<mlir::Value, std::string>;
 // parse. For example it displays the default printing of
 // #sdy<manual_axes{"a","b"}> as {"a", "b"}
 void PrettyPrint(mlir::sdy::ManualAxesAttr attr, llvm::raw_string_ostream& os) {
-  os << strippedAttrString(attr, /*strip_menemonic=*/true);
+  os << strippedAttrString(attr, /*stripMnemonic=*/true);
 };
 
 // Prints a simplified version of the sharding attribute, which is easier
 // for users to parse. For example, it displays a sharding attr like
 // #sdy.sharding<@mesh, [{}, {"c"}]> as <@mesh, [{}, {"c"}]>
 void PrettyPrint(mlir::sdy::TensorShardingAttr attr, llvm::raw_ostream& os) {
-  os << strippedAttrString(attr, /*strip_menemonic=*/true);
+  os << strippedAttrString(attr, /*stripMnemonic=*/true);
 }
 
 // Prints a simplified version of the sharding per value attribute, which is
@@ -108,7 +108,7 @@ void PrettyPrint(mlir::sdy::PropagationEdgesAttr attr, llvm::raw_ostream& os) {
     ::llvm::ArrayRef<mlir::sdy::AxisToPropagationDetailsAttr> axis_entries =
         edge.getAxisEntries();
     for (mlir::sdy::AxisToPropagationDetailsAttr axis_entry : axis_entries) {
-      os << '\t' << strippedAttrString(axis_entry, /*strip_menemonic=*/true);
+      os << '\t' << strippedAttrString(axis_entry, /*stripMnemonic=*/true);
       if (&axis_entry != &axis_entries.back()) {
         os << ",";
       }
@@ -119,6 +119,29 @@ void PrettyPrint(mlir::sdy::PropagationEdgesAttr attr, llvm::raw_ostream& os) {
       os << ",\n";
     }
   }
+}
+
+// Prints a simplified version of AxisRefList, which is easier for users to
+// parse. For example it displays the default printing of
+// #sdy<axis_ref_list{z}> as {"z"}
+void PrettyPrint(mlir::sdy::AxisRefListAttr attr, llvm::raw_ostream& os) {
+  os << strippedAttrString(attr, /*stripMnemonic=*/true);
+}
+
+// Prints a simplified version of ListOfAxisRefLists, which is easier for users
+// to parse. For example it displays the default printing of
+// #sdy<list_of_axis_ref_lists[{}, {x}]> as [{}, {x}]
+void PrettyPrint(mlir::sdy::ListOfAxisRefListsAttr attr,
+                 llvm::raw_ostream& os) {
+  os << strippedAttrString(attr, /*stripMnemonic=*/true);
+}
+
+// Prints a simplified version of AllToAllParamList, which is easier for users
+// to parse. For example it displays the default printing of
+// #sdy<all_to_all_param_list[{x}: 0->2, {y}: 1->3]> as
+// [{"x"}: 0->2, {"y"}: 1->3]
+void PrettyPrint(mlir::sdy::AllToAllParamListAttr attr, llvm::raw_ostream& os) {
+  os << strippedAttrString(attr, /*stripMnemonic=*/true);
 }
 
 }  // namespace
@@ -140,6 +163,18 @@ void PrintShardyAttribute(mlir::Attribute attr, llvm::raw_string_ostream& os) {
       .Case<mlir::sdy::PropagationEdgesAttr>(
           [&os](mlir::sdy::PropagationEdgesAttr propagation_edges_attr) {
             PrettyPrint(propagation_edges_attr, os);
+          })
+      .Case<mlir::sdy::AxisRefListAttr>(
+          [&os](mlir::sdy::AxisRefListAttr axis_ref_list_attr) {
+            PrettyPrint(axis_ref_list_attr, os);
+          })
+      .Case<mlir::sdy::ListOfAxisRefListsAttr>(
+          [&os](mlir::sdy::ListOfAxisRefListsAttr list_of_axis_ref_lists_attr) {
+            PrettyPrint(list_of_axis_ref_lists_attr, os);
+          })
+      .Case<mlir::sdy::AllToAllParamListAttr>(
+          [&os](mlir::sdy::AllToAllParamListAttr all_to_all_param_list_attr) {
+            PrettyPrint(all_to_all_param_list_attr, os);
           })
       .Default(
           [&](mlir::Attribute attr) { attr.print(os, /*elideType=*/true); });
@@ -295,7 +330,19 @@ absl::StatusOr<EdgeOverlaysData> ExtractShardyPropagationEdges(
   // different meshes.
   ColorMapper color_mapper;
   EdgeOverlaysData layer;
+
+  // Sort the axes to ensure a deterministic order of the overlays.
+  std::vector<mlir::sdy::AxisRefAttr> sorted_axes;
   for (const auto& [axis, edges] : axis_to_edges) {
+    sorted_axes.push_back(axis);
+  }
+  std::sort(sorted_axes.begin(), sorted_axes.end(),
+            [](mlir::sdy::AxisRefAttr a, mlir::sdy::AxisRefAttr b) {
+              return a.toString() < b.toString();
+            });
+
+  for (const auto& axis : sorted_axes) {
+    const auto& edges = axis_to_edges[axis];
     ASSIGN_OR_RETURN(const std::string color, color_mapper.GetColor(axis));
     EdgeOverlay overlay = EdgeOverlayBuilder()
                               .WithName(axis.toString())
