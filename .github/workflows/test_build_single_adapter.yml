@@ -5,7 +5,7 @@
 # https://yaml-online-parser.appspot.com/
 #
 
-name: Test Build Single Adapter
+name: Test Build Single Adapter PyPI
 
 on:
   workflow_dispatch:
@@ -13,10 +13,10 @@ on:
       runner:
         description: 'Hosted Runner'
         required: true
-        default: Linux_runner_8_core
+        default: ubuntu-22.04
         type: choice
         options:
-          - Linux_runner_8_core
+          - ubuntu-22.04
           - macos-latest
           - ubuntu-22.04-arm
 
@@ -70,7 +70,7 @@ jobs:
       - name: Upload Wheel as an Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: single-wheel
+          name: python-wheels-${{ github.event.inputs.runner }}-${{ github.event.inputs.python-version }}
           path: ./src/builtin-adapter/gen/adapter_pip/dist/*.whl
 
   # Job 2: Create the release using the built artifact
@@ -85,7 +85,6 @@ jobs:
       - name: Download wheel from build job
         uses: actions/download-artifact@v4
         with:
-          name: single-wheel
           path: dist
 
       - name: Display downloaded files
