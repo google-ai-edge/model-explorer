@@ -31,6 +31,7 @@ import {
 import {
   KeyValuePairs,
   MetadataItem,
+  NodeAttributeList,
   NodeAttributePairs,
   NodeAttributeValue,
   NodeDataProviderRunData,
@@ -143,10 +144,26 @@ export class GraphProcessor {
         opNode.hideInLayout = true;
       }
       if (this.config?.nodeAttrsToHide) {
+        const nodeAttrsWithBasicInfo: NodeAttributeList = [];
+        if (graphNode.attrs != null) {
+          nodeAttrsWithBasicInfo.push(...graphNode.attrs);
+        }
+        nodeAttrsWithBasicInfo.push({
+          key: 'id',
+          value: graphNode.id,
+        });
+        nodeAttrsWithBasicInfo.push({
+          key: 'name',
+          value: graphNode.label,
+        });
+        nodeAttrsWithBasicInfo.push({
+          key: 'namespace',
+          value: graphNode.namespace,
+        });
         for (const [attrKey, attrValueRegex] of Object.entries(
           this.config.nodeAttrsToHide,
         )) {
-          const attrValue = graphNode.attrs?.find(
+          const attrValue = nodeAttrsWithBasicInfo.find(
             (attr) => attr.key === attrKey,
           )?.value;
           if (

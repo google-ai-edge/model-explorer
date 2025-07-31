@@ -34,6 +34,7 @@ enum QueryParamKey {
   EXPORT_SELECTED_NODES_BUTTON_LABEL = 'esnbl',
   EXPORT_SELECTED_NODES_BUTTON_ICON = 'esnbi',
   INTERNAL_COLAB = 'internal_colab',
+  NODE_ATTRIBUTES_TO_HIDE = 'nath',
 }
 
 declare interface OldEncodedUrlData {
@@ -84,6 +85,7 @@ export class UrlService {
   enableExportSelectedNodes = false;
   exportSelectedNodesButtonLabel = '';
   exportSelectedNodesButtonIcon = '';
+  nodeAttributesToHide: Record<string, string> = {};
 
   constructor(private readonly router: Router) {
     this.decodeUrl();
@@ -173,6 +175,11 @@ export class UrlService {
         queryParams[QueryParamKey.EXPORT_SELECTED_NODES_BUTTON_ICON] =
           this.exportSelectedNodesButtonIcon;
       }
+      if (Object.keys(this.nodeAttributesToHide).length > 0) {
+        queryParams[QueryParamKey.NODE_ATTRIBUTES_TO_HIDE] = JSON.stringify(
+          this.nodeAttributesToHide,
+        );
+      }
     } else {
       queryParams[QueryParamKey.BENCHMARK] = '1';
     }
@@ -244,6 +251,9 @@ export class UrlService {
       params.get(QueryParamKey.EXPORT_SELECTED_NODES_BUTTON_LABEL) ?? '';
     this.exportSelectedNodesButtonIcon =
       params.get(QueryParamKey.EXPORT_SELECTED_NODES_BUTTON_ICON) ?? '';
+    this.nodeAttributesToHide = JSON.parse(
+      params.get(QueryParamKey.NODE_ATTRIBUTES_TO_HIDE) ?? '{}',
+    ) as Record<string, string>;
     this.benchmark = params.get(QueryParamKey.BENCHMARK) === '1';
   }
 }

@@ -368,6 +368,7 @@ export class HomePage implements AfterViewInit {
       showSidePanelOnNodeSelection: this.settingsService.getBooleanValue(
         SETTING_SHOW_SIDE_PANEL_ON_NODE_SELECTION,
       ),
+      nodeAttrsToHide: this.urlService.nodeAttributesToHide,
     };
   }
 
