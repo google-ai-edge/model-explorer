@@ -558,6 +558,21 @@ export class ModelSourceInput {
     return status;
   }
 
+  linkifyErrorMessage(modelItem: ModelItem): string {
+    const errorMessage: string = modelItem.errorMessage || '';
+    const parts = errorMessage.split(' ');
+    return parts
+      .map((part) => {
+        // TODO(jingjin): Add support for other types of links.
+        if (part.startsWith('go/')) {
+          return `<a href='http://${part}' target='_blank'>${part}</a>`;
+        } else {
+          return part;
+        }
+      })
+      .join(' ');
+  }
+
   get disableAddEnteredModelPathButton(): boolean {
     if (this.hasReachedMaxModelsCount) {
       return true;

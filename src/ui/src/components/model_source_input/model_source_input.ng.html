@@ -189,8 +189,8 @@ limitations under the License.
                       <mat-icon>info</mat-icon>
                     </div>
                     <ng-template #errorInfo>
-                      <div class="model-explorer-error-info-popup">
-                        {{item.errorMessage}}
+                      <div class="model-explorer-error-info-popup"
+                          [innerHTML]="linkifyErrorMessage(item)">
                       </div>
                     </ng-template>
                   }
