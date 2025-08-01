@@ -63,7 +63,7 @@ llvm::json::Object Metadata::Json() const {
 const char GraphEdge::kSourceNodeId[] = "sourceNodeId";
 const char GraphEdge::kSourceNodeOutputId[] = "sourceNodeOutputId";
 const char GraphEdge::kTargetNodeInputId[] = "targetNodeInputId";
-const char GraphEdge::kEdgeMetadata[] = "edgeMetadata";
+const char GraphEdge::kEdgeMetadata[] = "metadata";
 
 llvm::json::Object GraphEdge::Json() const {
   llvm::json::Object json_edge;
