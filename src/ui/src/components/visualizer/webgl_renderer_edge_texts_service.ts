@@ -308,8 +308,12 @@ export class WebglRendererEdgeTextsService {
           // Reverse the string based on whether the first character is at left
           // of the last character or not.
           const reverse =
-            charInfoList[0].pos.x >=
-            charInfoList[charInfoList.length - 1].pos.x;
+            charInfoList[0].pos.x > charInfoList[charInfoList.length - 1].pos.x;
+          const isVertical =
+            Math.abs(
+              charInfoList[0].pos.x -
+                charInfoList[charInfoList.length - 1].pos.x,
+            ) < 1e-7;
 
           if (reverse) {
             const newCharInfoList: Array<{
@@ -362,7 +366,9 @@ export class WebglRendererEdgeTextsService {
             const tan = charInfo.tan;
             let angle = charInfo.angle;
             if (Math.abs(tan.x) < 1e-7) {
-              angle = ((reverse ? 1 : -1) * Math.PI) / 2;
+              angle =
+                ((reverse || (isVertical && tan.y === -1) ? 1 : -1) * Math.PI) /
+                2;
             }
             labels.push({
               id: `${edge.id}_${char}_${i}`,
