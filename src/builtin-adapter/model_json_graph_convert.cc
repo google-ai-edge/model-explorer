@@ -42,6 +42,7 @@
 #include "mlir/IR/AsmState.h"
 #include "mlir/IR/Block.h"
 #include "mlir/IR/BuiltinOps.h"
+#include "mlir/IR/Diagnostics.h"
 #include "mlir/IR/Location.h"
 #include "mlir/IR/MLIRContext.h"
 #include "mlir/IR/Operation.h"
@@ -347,13 +348,21 @@ absl::StatusOr<std::string> ConvertMlirToJson(const VisualizeConfig& config,
   // Enable parsing of MLIR modules with unregistered dialects. This is safe as
   // Model Explorer does not execute operations, only visualizes them.
   context.allowUnregisteredDialects(true);
+
+  std::string diagnostic_messages;
+  mlir::ScopedDiagnosticHandler handler(&context, [&](mlir::Diagnostic& diag) {
+    llvm::raw_string_ostream os(diagnostic_messages);
+    os << diag;
+  });
+
   mlir::ParserConfig parser_config(&context);
-  std::string model_content;
-  RETURN_IF_ERROR(tsl::ReadFileToString(
-      tsl::Env::Default(), std::string(model_path), &model_content));
   auto module_op =
-      mlir::parseSourceString<::mlir::ModuleOp>(model_content, parser_config);
-  if (!module_op) return absl::InternalError("Unable to parse module");
+      mlir::parseSourceFile<::mlir::ModuleOp>(model_path, parser_config);
+  if (!module_op) {
+    return absl::InvalidArgumentError(
+        absl::StrCat("Failed to parse MLIR module: ", diagnostic_messages));
+  }
+
   RETURN_IF_ERROR(DeserializeVhloToStablehlo(*module_op));
 
   if (HasXlaCallModule(*module_op)) {
