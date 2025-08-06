@@ -356,8 +356,11 @@ absl::StatusOr<std::string> ConvertMlirToJson(const VisualizeConfig& config,
   });
 
   mlir::ParserConfig parser_config(&context);
+  std::string model_content;
+  RETURN_IF_ERROR(tsl::ReadFileToString(
+      tsl::Env::Default(), std::string(model_path), &model_content));
   auto module_op =
-      mlir::parseSourceFile<::mlir::ModuleOp>(model_path, parser_config);
+      mlir::parseSourceString<::mlir::ModuleOp>(model_content, parser_config);
   if (!module_op) {
     return absl::InvalidArgumentError(
         absl::StrCat("Failed to parse MLIR module: ", diagnostic_messages));
