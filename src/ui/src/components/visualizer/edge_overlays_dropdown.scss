@@ -114,8 +114,34 @@
 
     .overlay-item {
       display: flex;
-      align-items: center;
-      justify-content: space-between;
+      flex-direction: column;
+
+      .overlay-name {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      .overlay-controls {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+
+      .show-edges-connected-to-selected-node-only {
+        margin-left: 20px;
+      }
+
+      .max-hops-container {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        align-self: flex-end;
+
+        input {
+          width: 36px;
+        }
+      }
 
       label {
         display: flex;
@@ -134,7 +160,7 @@
       .view-label {
         cursor: pointer;
         color: #00639b;
-        opacity: .8;
+        opacity: 0.8;
         user-select: none;
         line-height: 15px;
 
@@ -195,5 +221,4 @@
   .upload-json-file-input {
     display: none;
   }
-
 }

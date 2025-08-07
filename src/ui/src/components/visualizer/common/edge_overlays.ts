@@ -25,6 +25,15 @@ export declare interface EdgeOverlaysData extends TaskData {
   /** The name of this set of overlays, for UI display purposes. */
   name: string;
 
+  /**
+   * The name of the graph that this set of overlays is associated with.
+   *
+   * The name should be the label shown in the graph selector dropdown.
+   *
+   * If not set, this set of overlays will be shown in all graphs.
+   */
+  graphName?: string;
+
   /** A list of edge overlays. */
   overlays: EdgeOverlay[];
 }
@@ -58,6 +67,25 @@ export declare interface EdgeOverlay {
    * overlay will be hidden.
    */
   showEdgesConnectedToSelectedNodeOnly?: boolean;
+
+  /**
+   * The "range" of edges to show when showEdgesConnectedToSelectedNodeOnly is
+   * set to `true. Default to 1.
+   *
+   * This value determines how many "layers" of connections will be displayed
+   * around the selected node.
+   *
+   * For example:
+   *
+   * - A range of 1 shows only the edges directly connected to the selected
+   *   node.
+   * - A range of 2 shows the edges connected to the selected node, as well as
+   *   the edges connected to all of its immediate neighbors.
+   *
+   * The higher the number, the more of the network will be visible around the
+   * selected node.
+   */
+  visibleEdgeHops?: number;
 }
 
 /** An edge in the overlay. */
@@ -87,4 +115,7 @@ export declare interface ProcessedEdgeOverlay extends EdgeOverlay {
 
   /** The set of node ids that are in this overlay. */
   nodeIds: Set<string>;
+
+  /** A map from node id to the edges that start from or end at the node. */
+  adjacencyMap: Map<string, Edge[]>;
 }

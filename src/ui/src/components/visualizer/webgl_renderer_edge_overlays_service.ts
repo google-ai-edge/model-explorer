@@ -19,7 +19,7 @@
 import {Injectable, inject} from '@angular/core';
 import * as three from 'three';
 import {WEBGL_ELEMENT_Y_FACTOR} from './common/consts';
-import {EdgeOverlay} from './common/edge_overlays';
+import {Edge, EdgeOverlay, ProcessedEdgeOverlay} from './common/edge_overlays';
 import {GroupNode, ModelEdge, OpNode} from './common/model_graph';
 import {getIntersectionPoints} from './common/utils';
 import {EdgeOverlaysService} from './edge_overlays_service';
@@ -33,6 +33,11 @@ const THREE = three;
 
 const DEFAULT_EDGE_WIDTH = 1.5;
 
+interface QueueItem {
+  nodeId: string;
+  hops: number;
+}
+
 /**
  * Service for managing edge overlays related tasks in webgl renderer.
  */
@@ -44,9 +49,10 @@ export class WebglRendererEdgeOverlaysService {
   private webglRendererThreejsService!: WebglRendererThreejsService;
   private overlaysEdgesList: WebglEdges[] = [];
   private overlaysEdgeTextsList: WebglTexts[] = [];
+  private bfsEdgeCache: Map<string, Set<Edge>> = new Map();
 
   readonly edgeOverlaysService = inject(EdgeOverlaysService);
-  curOverlays: EdgeOverlay[] = [];
+  curOverlays: ProcessedEdgeOverlay[] = [];
 
   init(webglRenderer: WebglRenderer) {
     this.webglRenderer = webglRenderer;
@@ -93,8 +99,9 @@ export class WebglRendererEdgeOverlaysService {
     // Populate totalEdgePairs.
     for (let i = 0; i < this.curOverlays.length; i++) {
       const subgraph = this.curOverlays[i];
-      for (const {sourceNodeId, targetNodeId, label} of subgraph.edges) {
-        if (!this.shouldShowEdge(subgraph, sourceNodeId, targetNodeId)) {
+      for (const edge of subgraph.edges) {
+        const {sourceNodeId, targetNodeId, label} = edge;
+        if (!this.shouldShowEdge(subgraph, edge)) {
           continue;
         }
         this.addToEdgePairs(sourceNodeId, targetNodeId, totalEdgePairs);
@@ -110,8 +117,9 @@ export class WebglRendererEdgeOverlaysService {
         edgeWidth,
         edgeWidth / DEFAULT_EDGE_WIDTH,
       );
-      for (const {sourceNodeId, targetNodeId, label} of subgraph.edges) {
-        if (!this.shouldShowEdge(subgraph, sourceNodeId, targetNodeId)) {
+      for (const edge of subgraph.edges) {
+        const {sourceNodeId, targetNodeId, label} = edge;
+        if (!this.shouldShowEdge(subgraph, edge)) {
           continue;
         }
 
@@ -215,8 +223,9 @@ export class WebglRendererEdgeOverlaysService {
       }
     };
     for (const subgraph of this.curOverlays) {
-      for (const {sourceNodeId, targetNodeId} of subgraph.edges) {
-        if (!this.shouldShowEdge(subgraph, sourceNodeId, targetNodeId)) {
+      for (const edge of subgraph.edges) {
+        const {sourceNodeId, targetNodeId} = edge;
+        if (!this.shouldShowEdge(subgraph, edge)) {
           continue;
         }
 
@@ -247,25 +256,83 @@ export class WebglRendererEdgeOverlaysService {
   }
 
   /**
-   * Checks if the edge should be shown based on the edge overlay settings and
-   * the currently selected node.
+   * Determines whether a given edge should be visible.
    *
-   * An edge should be shown if:
-   * - The edge overlay setting is not set to show edges connected to the
-   *   selected node only.
-   * - The source or target node of the edge is the selected node when the
-   *   "show edges connected to the selected node only" is set.
+   * This function first checks if the `edgeOverlay` is configured to show
+   * only edges connected to the selected node. If not, all edges are visible,
+   * and the function returns `true`.
+   *
+   * If the overlay is restricted, a Breadth-First Search (BFS) is performed
+   * starting from the `selectedNodeId`. The search explores the graph up to
+   * `visibleEdgeHops`. If the provided `edge` is encountered during
+   * this search, it is considered visible and the function returns `true`.
+   *
+   * If the BFS completes without finding the edge, it means the edge is
+   * outside the specified range from the selected node, and the function
+   * returns `false`.
    */
   private shouldShowEdge(
-    edgeOverlay: EdgeOverlay,
-    sourceNodeId: string,
-    targetNodeId: string,
+    edgeOverlay: ProcessedEdgeOverlay,
+    edge: Edge,
   ): boolean {
+    if (!edgeOverlay.showEdgesConnectedToSelectedNodeOnly) {
+      return true;
+    }
+
     const selectedNodeId = this.webglRenderer.selectedNodeId;
-    return (
-      edgeOverlay.showEdgesConnectedToSelectedNodeOnly !== true ||
-      sourceNodeId === selectedNodeId ||
-      targetNodeId === selectedNodeId
-    );
+    const maxHops = edgeOverlay.visibleEdgeHops ?? 1;
+
+    // Perform BFS to find all the edges connected to the selected node within
+    // the given number of hops.
+    //
+    // Try to find the result in the cache.
+    const cacheKey = `${maxHops}-${edgeOverlay.id}-${selectedNodeId}`;
+    if (this.bfsEdgeCache.has(cacheKey)) {
+      const foundEdges = this.bfsEdgeCache.get(cacheKey)!;
+      return foundEdges.has(edge);
+    }
+
+    // Not found in the cache, so we perform BFS.
+    const queue: QueueItem[] = [{nodeId: selectedNodeId, hops: 0}];
+    const visitedNodes = new Set<string>();
+    const foundEdges = new Set<Edge>();
+
+    visitedNodes.add(selectedNodeId);
+
+    let head = 0;
+    while (head < queue.length) {
+      const {nodeId: currentNodeId, hops: currentHops} = queue[head++];
+
+      // If we have reached the maximum number of hops, we stop exploring
+      // further.
+      if (currentHops >= maxHops) {
+        continue;
+      }
+
+      // Get the neighbors of the current node from the adjacency map.
+      const neighboringEdges =
+        edgeOverlay.adjacencyMap.get(currentNodeId) || [];
+      for (const curEdge of neighboringEdges) {
+        foundEdges.add(curEdge);
+
+        // Determine the next node to visit.
+        const nextNodeId =
+          curEdge.sourceNodeId === currentNodeId
+            ? curEdge.targetNodeId
+            : curEdge.sourceNodeId;
+
+        // If we haven't visited this node yet, add it to the queue for the next
+        // step.
+        if (!visitedNodes.has(nextNodeId)) {
+          visitedNodes.add(nextNodeId);
+          queue.push({nodeId: nextNodeId, hops: currentHops + 1});
+        }
+      }
+    }
+
+    // Add the result to the cache.
+    this.bfsEdgeCache.set(cacheKey, foundEdges);
+
+    return foundEdges.has(edge);
   }
 }

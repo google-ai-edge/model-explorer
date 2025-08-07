@@ -18,6 +18,7 @@
 
 import {Injectable, computed, signal} from '@angular/core';
 import {
+  Edge,
   EdgeOverlaysData,
   ProcessedEdgeOverlay,
   ProcessedEdgeOverlaysData,
@@ -108,6 +109,29 @@ export class EdgeOverlaysService {
     return '';
   }
 
+  toggleShowEdgesConnectedToSelectedNodeOnly(overlayId: string) {
+    this.loadedEdgeOverlays.update((loadedOverlays) => {
+      const overlay = this.getProcessedEdgeOverlayById(overlayId);
+      if (!overlay) {
+        return loadedOverlays;
+      }
+      overlay.showEdgesConnectedToSelectedNodeOnly =
+        !overlay.showEdgesConnectedToSelectedNodeOnly;
+      return [...loadedOverlays];
+    });
+  }
+
+  setVisibleEdgeHops(overlayId: string, visibleEdgeHops: number) {
+    this.loadedEdgeOverlays.update((loadedOverlays) => {
+      const overlay = this.getProcessedEdgeOverlayById(overlayId);
+      if (!overlay) {
+        return loadedOverlays;
+      }
+      overlay.visibleEdgeHops = visibleEdgeHops;
+      return [...loadedOverlays];
+    });
+  }
+
   async loadFromCns(path: string): Promise<string> {
     // Call API to read file content.
     this.remoteSourceLoading.set(true);
@@ -129,6 +153,19 @@ export class EdgeOverlaysService {
 
     return error;
   }
+
+  private getProcessedEdgeOverlayById(
+    overlayId: string,
+  ): ProcessedEdgeOverlay | undefined {
+    for (const overlayData of this.loadedEdgeOverlays()) {
+      for (const overlay of overlayData.processedOverlays) {
+        if (overlay.id === overlayId) {
+          return overlay;
+        }
+      }
+    }
+    return undefined;
+  }
 }
 
 function processOverlay(
@@ -140,15 +177,31 @@ function processOverlay(
     ...overlayData,
   };
   for (const overlay of overlayData.overlays) {
+    const adjacencyMap = new Map<string, Edge[]>();
     const processedOverlay: ProcessedEdgeOverlay = {
       id: genUid(),
       nodeIds: new Set<string>(),
+      adjacencyMap,
       ...overlay,
     };
     processedOverlayData.processedOverlays.push(processedOverlay);
     for (const edge of overlay.edges) {
       processedOverlay.nodeIds.add(edge.sourceNodeId);
       processedOverlay.nodeIds.add(edge.targetNodeId);
+
+      // Build the adjacency map.
+      //
+      // Add the edge to the source node's list
+      if (!adjacencyMap.has(edge.sourceNodeId)) {
+        adjacencyMap.set(edge.sourceNodeId, []);
+      }
+      adjacencyMap.get(edge.sourceNodeId)?.push(edge);
+
+      // Add the same edge to the target node's list
+      if (!adjacencyMap.has(edge.targetNodeId)) {
+        adjacencyMap.set(edge.targetNodeId, []);
+      }
+      adjacencyMap.get(edge.targetNodeId)?.push(edge);
     }
   }
   return processedOverlayData;

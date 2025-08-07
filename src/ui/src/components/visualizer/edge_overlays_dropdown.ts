@@ -156,6 +156,16 @@ export class EdgeOverlaysDropdown {
     this.appService.setNodeToReveal(this.paneId, firstNodeId);
   }
 
+  toggleShowEdgesConnectedToSelectedNode(overlay: OverlayItem) {
+    this.edgeOverlaysService.toggleShowEdgesConnectedToSelectedNodeOnly(
+      overlay.id,
+    );
+  }
+
+  handleMaxHopsChanged(overlay: OverlayItem, value: number) {
+    this.edgeOverlaysService.setVisibleEdgeHops(overlay.id, value);
+  }
+
   private showError(message: string) {
     console.error(message);
     this.snackBar.open(message, 'Dismiss', {

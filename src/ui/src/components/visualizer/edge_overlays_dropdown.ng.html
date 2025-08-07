@@ -68,16 +68,39 @@ limitations under the License.
             </div>
             @for (overlay of overlaySet.overlays; track overlay.id) {
               <div class="overlay-item">
-                <label>
-                  <input type="checkbox" [checked]="overlay.selected"
-                      (change)="toggleOverlaySelection(overlay)"/>
-                  {{overlay.name}}
-                </label>
-                @if (overlay.selected) {
-                  <div class="view-label" (click)="handleClickViewOverlay(overlay)">
-                    View
-                  </div>
-                }
+                <div class="overlay-name">
+                  <label>
+                    <input type="checkbox" [checked]="overlay.selected"
+                        (change)="toggleOverlaySelection(overlay)"/>
+                    {{overlay.name}}
+                  </label>
+                  @if (overlay.selected) {
+                    <div class="view-label" (click)="handleClickViewOverlay(overlay)">
+                      View
+                    </div>
+                  }
+                </div>
+                <div class="overlay-controls">
+                  <!-- Whether to show edges that are connected to the currently selected node. -->
+                  <label class="show-edges-connected-to-selected-node-only">
+                    <input type="checkbox"
+                        [disabled]="!overlay.selected"
+                        [checked]="overlay.processedOverlay.showEdgesConnectedToSelectedNodeOnly"
+                        (change)="toggleShowEdgesConnectedToSelectedNode(overlay)"/>
+                    Only show edges connected to selected node
+                  </label>
+                  @if (overlay.processedOverlay.showEdgesConnectedToSelectedNodeOnly) {
+                    <div class="max-hops-container">
+                      <div class="max-hops-label">
+                        Maximum hops:
+                      </div>
+                      <input type="number" min="1"
+                          [disabled]="!overlay.selected"
+                          [value]="overlay.processedOverlay.visibleEdgeHops ?? 1"
+                          (change)="handleMaxHopsChanged(overlay, $event.target.valueAsNumber)"/>
+                    </div>
+                  }
+                </div>
               </div>
             }
           </div>
