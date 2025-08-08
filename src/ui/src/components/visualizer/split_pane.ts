@@ -84,6 +84,8 @@ export class SplitPane implements OnInit {
   ) {}
 
   ngOnInit() {
+    this.edgeOverlaysService.setPane(this.pane);
+
     // Load edge overlays stored in config.
     const config = this.appService.config();
     const panes = this.appService.panes();

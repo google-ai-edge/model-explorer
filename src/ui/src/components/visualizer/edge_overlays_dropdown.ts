@@ -80,7 +80,7 @@ export class EdgeOverlaysDropdown {
   private readonly snackBar = inject(MatSnackBar);
 
   readonly overlaysSets: Signal<OverlaysSet[]> = computed(() => {
-    const overlays = this.edgeOverlaysService.loadedEdgeOverlays();
+    const overlays = this.edgeOverlaysService.filteredLoadedEdgeOverlays();
     return overlays.map((overlay) => ({
       id: overlay.id,
       name: overlay.name,

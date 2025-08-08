@@ -129,6 +129,9 @@ export class WebglRendererEdgeOverlaysService {
         const targetNode = this.webglRenderer.curModelGraph.nodesById[
           targetNodeId
         ] as OpNode;
+        if (!sourceNode || !targetNode) {
+          continue;
+        }
         const curEdgesCount = this.addToEdgePairs(
           sourceNodeId,
           targetNodeId,
@@ -210,7 +213,7 @@ export class WebglRendererEdgeOverlaysService {
 
     const addNsParentId = (nodeId: string) => {
       const node = this.webglRenderer.curModelGraph.nodesById[nodeId];
-      if (node.nsParentId) {
+      if (node?.nsParentId) {
         const parentNode = this.webglRenderer.curModelGraph.nodesById[
           node.nsParentId
         ] as GroupNode;

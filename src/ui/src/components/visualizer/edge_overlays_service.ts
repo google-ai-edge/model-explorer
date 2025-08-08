@@ -17,27 +17,43 @@
  */
 
 import {Injectable, computed, signal} from '@angular/core';
+import {AppService} from './app_service';
 import {
   Edge,
   EdgeOverlaysData,
   ProcessedEdgeOverlay,
   ProcessedEdgeOverlaysData,
 } from './common/edge_overlays';
-import {ReadFileResp} from './common/types';
+import {Pane, ReadFileResp} from './common/types';
 import {genUid} from './common/utils';
 
 /** A service for managing edge overlays. */
 @Injectable()
 export class EdgeOverlaysService {
+  readonly pane = signal<Pane | undefined>(undefined);
+
   readonly remoteSourceLoading = signal<boolean>(false);
 
-  readonly loadedEdgeOverlays = signal<ProcessedEdgeOverlaysData[]>([]);
+  readonly allLoadedEdgeOverlays = signal<ProcessedEdgeOverlaysData[]>([]);
+
+  readonly filteredLoadedEdgeOverlays = computed(() => {
+    const curPane = this.appService.getPaneById(this.pane()?.id ?? '');
+    if (!curPane) {
+      return [];
+    }
+    const allLoadedEdgeOverlays = this.allLoadedEdgeOverlays();
+    return allLoadedEdgeOverlays.filter(
+      (overlayData) =>
+        !overlayData.graphName ||
+        overlayData.graphName === curPane.modelGraph?.id,
+    );
+  });
 
   readonly selectedOverlayIds = signal<string[]>([]);
 
   readonly selectedOverlays = computed(() => {
     const overlays: ProcessedEdgeOverlay[] = [];
-    for (const overlayData of this.loadedEdgeOverlays()) {
+    for (const overlayData of this.filteredLoadedEdgeOverlays()) {
       for (const overlay of overlayData.processedOverlays) {
         if (this.selectedOverlayIds().includes(overlay.id)) {
           overlays.push(overlay);
@@ -47,17 +63,23 @@ export class EdgeOverlaysService {
     return overlays;
   });
 
+  constructor(private readonly appService: AppService) {}
+
+  setPane(pane: Pane) {
+    this.pane.set(pane);
+  }
+
   addOverlay(overlay: EdgeOverlaysData) {
-    this.loadedEdgeOverlays.update((loadedOverlays) => {
-      return [...loadedOverlays, processOverlay(overlay)];
+    this.allLoadedEdgeOverlays.update((allLoadedOverlays) => {
+      return [...allLoadedOverlays, processOverlay(overlay)];
     });
   }
 
   deleteOverlayData(id: string) {
-    const overlaysDataToDelete = this.loadedEdgeOverlays().find(
+    const overlaysDataToDelete = this.filteredLoadedEdgeOverlays().find(
       (overlaysData) => overlaysData.id === id,
     );
-    this.loadedEdgeOverlays.update((overlayDataList) => {
+    this.allLoadedEdgeOverlays.update((overlayDataList) => {
       return overlayDataList.filter((overlayData) => overlayData.id !== id);
     });
 
@@ -89,9 +111,9 @@ export class EdgeOverlaysService {
 
     // Select all newly-added overlays.
     this.selectedOverlayIds.update((selectedOverlayIds) => {
-      const loadedOverlaysDataList = this.loadedEdgeOverlays();
+      const allLoadedOverlaysDataList = this.allLoadedEdgeOverlays();
       const newOverlayData =
-        loadedOverlaysDataList[loadedOverlaysDataList.length - 1];
+        allLoadedOverlaysDataList[allLoadedOverlaysDataList.length - 1];
       const newIds = newOverlayData.processedOverlays.map(
         (overlay) => overlay.id,
       );
@@ -110,7 +132,7 @@ export class EdgeOverlaysService {
   }
 
   toggleShowEdgesConnectedToSelectedNodeOnly(overlayId: string) {
-    this.loadedEdgeOverlays.update((loadedOverlays) => {
+    this.allLoadedEdgeOverlays.update((loadedOverlays) => {
       const overlay = this.getProcessedEdgeOverlayById(overlayId);
       if (!overlay) {
         return loadedOverlays;
@@ -122,7 +144,7 @@ export class EdgeOverlaysService {
   }
 
   setVisibleEdgeHops(overlayId: string, visibleEdgeHops: number) {
-    this.loadedEdgeOverlays.update((loadedOverlays) => {
+    this.allLoadedEdgeOverlays.update((loadedOverlays) => {
       const overlay = this.getProcessedEdgeOverlayById(overlayId);
       if (!overlay) {
         return loadedOverlays;
@@ -157,7 +179,7 @@ export class EdgeOverlaysService {
   private getProcessedEdgeOverlayById(
     overlayId: string,
   ): ProcessedEdgeOverlay | undefined {
-    for (const overlayData of this.loadedEdgeOverlays()) {
+    for (const overlayData of this.filteredLoadedEdgeOverlays()) {
       for (const overlay of overlayData.processedOverlays) {
         if (overlay.id === overlayId) {
           return overlay;
