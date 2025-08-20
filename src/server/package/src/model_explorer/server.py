@@ -479,7 +479,7 @@ def start(
     colab_port = portpicker.pick_unused_port()
     shell = """
       (async () => {
-          let url = await google.colab.kernel.proxyPort(%PORT%, {"cache": true});
+          let url = await google.colab.kernel.proxyPort(%PORT%);
           if ('%HOSTED_RUNTIME%' !== 'True') {
             url = 'http://localhost:' + %PORT% + '/';
           }
