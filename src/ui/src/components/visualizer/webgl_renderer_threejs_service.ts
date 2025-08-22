@@ -417,6 +417,7 @@ export class WebglRendererThreejsService {
     useCurScale = false,
     capScale = true,
     capMinScale = false,
+    extraScaleFactor = 1,
   ) {
     if (!this.webglRenderer.container) {
       return;
@@ -457,7 +458,12 @@ export class WebglRendererThreejsService {
       }
     }
 
-    this.centerViewAt(targetMidX, targetMidZ, scale, transitionDuration);
+    this.centerViewAt(
+      targetMidX,
+      targetMidZ,
+      scale * extraScaleFactor,
+      transitionDuration,
+    );
   }
 
   zoomFitOnNode(
@@ -485,6 +491,8 @@ export class WebglRendererThreejsService {
           true,
           // Cap min scale when zooming on a node.
           true,
+          // Extra zoom factor.
+          this.webglRenderer.appService.config()?.extraZoomFactorOnNode ?? 1,
         );
       }, 0);
     }
@@ -535,6 +543,8 @@ export class WebglRendererThreejsService {
           true,
           // Cap min scale when zooming on a node.
           true,
+          // Extra zoom factor.
+          this.webglRenderer.appService.config()?.extraZoomFactorOnNode ?? 1,
         );
       }, 0);
     }

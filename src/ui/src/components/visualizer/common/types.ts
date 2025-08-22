@@ -916,12 +916,17 @@ export declare interface ShowInfoPanelCommand extends CommandBase {
 export declare interface SetViewOnEdgeCommand extends CommandBase {
   type: CommandType.SET_VIEW_ON_EDGE;
   mode: ViewOnEdgeMode;
+  value?: string;
 }
 
 /** Modes for "View on edge". */
 export enum ViewOnEdgeMode {
   OFF = 'off',
   TENSOR_SHAPE = 'tensor_shape',
+  SOURCE_NODE_ATTR = 'source_node_attr',
+  TARGET_NODE_ATTR = 'target_node_attr',
+  OUTPUT_METADATA = 'output_metadata',
+  INPUT_METADATA = 'input_metadata',
 }
 
 /** Command types. */

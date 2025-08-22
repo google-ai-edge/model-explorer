@@ -191,4 +191,9 @@ export declare interface VisualizerConfig {
    * Config for the toolbar.
    */
   toolbarConfig?: ToolbarConfig;
+
+  /**
+   * If set, this factor will be applied to the zoom-fit scale on node.
+   */
+  extraZoomFactorOnNode?: number;
 }

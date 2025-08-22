@@ -657,11 +657,14 @@ export class ModelGraphVisualizer implements OnInit, OnDestroy, OnChanges {
    *
    * @param mode the view on edge mode to set.
    * @param paneIndex the index of the pane to set the view on edge mode in.
+   * @param value the value to set if the mode needs a value to work (e.g. the
+   *   metadata key in ViewOnEdgeMode.OUTPUT_METADATA).
    */
-  setViewOnEdge(mode: ViewOnEdgeMode, paneIndex = 0) {
+  setViewOnEdge(mode: ViewOnEdgeMode, paneIndex = 0, value = '') {
     this.appService.command.next({
       type: CommandType.SET_VIEW_ON_EDGE,
       mode,
+      value,
       paneIndex,
     });
   }

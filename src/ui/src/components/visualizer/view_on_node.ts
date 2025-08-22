@@ -503,6 +503,30 @@ export class ViewOnNode {
           (item) => item.type === ShowOnEdgeItemType.TENSOR_SHAPE,
         );
         break;
+      case ViewOnEdgeMode.SOURCE_NODE_ATTR:
+        item = this.showOnEdgeItems.find(
+          (item) => item.type === ShowOnEdgeItemType.SOURCE_NODE_ATTR,
+        );
+        this.curSourceNodeAttrKeyText = command.value ?? '';
+        break;
+      case ViewOnEdgeMode.TARGET_NODE_ATTR:
+        item = this.showOnEdgeItems.find(
+          (item) => item.type === ShowOnEdgeItemType.TARGET_NODE_ATTR,
+        );
+        this.curTargetNodeAttrKeyText = command.value ?? '';
+        break;
+      case ViewOnEdgeMode.OUTPUT_METADATA:
+        item = this.showOnEdgeItems.find(
+          (item) => item.type === ShowOnEdgeItemType.OUTPUT_METADATA,
+        );
+        this.curOutputMetadataKeyText = command.value ?? '';
+        break;
+      case ViewOnEdgeMode.INPUT_METADATA:
+        item = this.showOnEdgeItems.find(
+          (item) => item.type === ShowOnEdgeItemType.INPUT_METADATA,
+        );
+        this.curInputMetadataKeyText = command.value ?? '';
+        break;
       default:
         break;
     }
