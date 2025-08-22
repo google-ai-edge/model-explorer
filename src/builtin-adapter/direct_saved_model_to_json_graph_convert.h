@@ -13,8 +13,8 @@
 // limitations under the License.
 // =============================================================================
 
-#ifndef TENSORFLOW_COMPILER_MLIR_LITE_EXPERIMENTAL_GOOGLE_TOOLING_DIRECT_SAVED_MODEL_TO_JSON_GRAPH_CONVERT_H_
-#define TENSORFLOW_COMPILER_MLIR_LITE_EXPERIMENTAL_GOOGLE_TOOLING_DIRECT_SAVED_MODEL_TO_JSON_GRAPH_CONVERT_H_
+#ifndef DIRECT_SAVED_MODEL_TO_JSON_GRAPH_CONVERT_H_
+#define DIRECT_SAVED_MODEL_TO_JSON_GRAPH_CONVERT_H_
 
 #include <string>
 
@@ -45,4 +45,4 @@ absl::StatusOr<std::string> ConvertSavedModelDirectlyToJson(
 }  // namespace visualization_client
 }  // namespace tooling
 
-#endif  // TENSORFLOW_COMPILER_MLIR_LITE_EXPERIMENTAL_GOOGLE_TOOLING_DIRECT_SAVED_MODEL_TO_JSON_GRAPH_CONVERT_H_
+#endif  // DIRECT_SAVED_MODEL_TO_JSON_GRAPH_CONVERT_H_

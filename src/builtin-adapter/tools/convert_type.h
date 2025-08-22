@@ -13,8 +13,8 @@
 // limitations under the License.
 // =============================================================================
 
-#ifndef TENSORFLOW_COMPILER_MLIR_LITE_EXPERIMENTAL_GOOGLE_TOOLING_TOOLS_CONVERT_TYPE_H_
-#define TENSORFLOW_COMPILER_MLIR_LITE_EXPERIMENTAL_GOOGLE_TOOLING_TOOLS_CONVERT_TYPE_H_
+#ifndef TOOLS_CONVERT_TYPE_H_
+#define TOOLS_CONVERT_TYPE_H_
 
 #include <string>
 
@@ -28,4 +28,4 @@ std::string TensorTypeToString(tflite::TensorType type);
 }  // namespace visualization_client
 }  // namespace tooling
 
-#endif  // TENSORFLOW_COMPILER_MLIR_LITE_EXPERIMENTAL_GOOGLE_TOOLING_TOOLS_CONVERT_TYPE_H_
+#endif  // TOOLS_CONVERT_TYPE_H_

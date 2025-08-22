@@ -13,8 +13,8 @@
 // limitations under the License.
 // =============================================================================
 
-#ifndef TENSORFLOW_COMPILER_MLIR_LITE_EXPERIMENTAL_GOOGLE_TOOLING_FORMATS_SCHEMA_STRUCTS_H_
-#define TENSORFLOW_COMPILER_MLIR_LITE_EXPERIMENTAL_GOOGLE_TOOLING_FORMATS_SCHEMA_STRUCTS_H_
+#ifndef FORMATS_SCHEMA_STRUCTS_H_
+#define FORMATS_SCHEMA_STRUCTS_H_
 
 #include <optional>
 #include <string>
@@ -256,4 +256,4 @@ struct GraphCollection {
 }  // namespace visualization_client
 }  // namespace tooling
 
-#endif  // TENSORFLOW_COMPILER_MLIR_LITE_EXPERIMENTAL_GOOGLE_TOOLING_FORMATS_SCHEMA_STRUCTS_H_
+#endif  // FORMATS_SCHEMA_STRUCTS_H_

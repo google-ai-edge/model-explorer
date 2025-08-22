@@ -13,8 +13,8 @@
 // limitations under the License.
 // =============================================================================
 
-#ifndef TENSORFLOW_COMPILER_MLIR_LITE_EXPERIMENTAL_GOOGLE_TOOLING_TOOLS_NAMESPACE_HEURISTICS_H_
-#define TENSORFLOW_COMPILER_MLIR_LITE_EXPERIMENTAL_GOOGLE_TOOLING_TOOLS_NAMESPACE_HEURISTICS_H_
+#ifndef TOOLS_NAMESPACE_HEURISTICS_H_
+#define TOOLS_NAMESPACE_HEURISTICS_H_
 
 #include <string>
 
@@ -40,4 +40,4 @@ std::string TfliteNodeNamespaceHeuristic(
 }  // namespace visualization_client
 }  // namespace tooling
 
-#endif  // TENSORFLOW_COMPILER_MLIR_LITE_EXPERIMENTAL_GOOGLE_TOOLING_TOOLS_NAMESPACE_HEURISTICS_H_
+#endif  // TOOLS_NAMESPACE_HEURISTICS_H_

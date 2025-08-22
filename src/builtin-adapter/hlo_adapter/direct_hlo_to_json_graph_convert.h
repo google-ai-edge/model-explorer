@@ -13,8 +13,8 @@
 // limitations under the License.
 // =============================================================================
 
-#ifndef TENSORFLOW_COMPILER_MLIR_LITE_EXPERIMENTAL_GOOGLE_TOOLING_HLO_ADAPTER_DIRECT_HLO_TO_JSON_GRAPH_CONVERT_H_
-#define TENSORFLOW_COMPILER_MLIR_LITE_EXPERIMENTAL_GOOGLE_TOOLING_HLO_ADAPTER_DIRECT_HLO_TO_JSON_GRAPH_CONVERT_H_
+#ifndef HLO_ADAPTER_DIRECT_HLO_TO_JSON_GRAPH_CONVERT_H_
+#define HLO_ADAPTER_DIRECT_HLO_TO_JSON_GRAPH_CONVERT_H_
 
 #include <string>
 
@@ -94,4 +94,4 @@ absl::StatusOr<std::string> HloGraphAdapter(
 }  // namespace visualization_client
 }  // namespace tooling
 
-#endif  // TENSORFLOW_COMPILER_MLIR_LITE_EXPERIMENTAL_GOOGLE_TOOLING_HLO_ADAPTER_DIRECT_HLO_TO_JSON_GRAPH_CONVERT_H_
+#endif  // HLO_ADAPTER_DIRECT_HLO_TO_JSON_GRAPH_CONVERT_H_

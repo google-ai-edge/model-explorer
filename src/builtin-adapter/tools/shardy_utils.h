@@ -13,8 +13,8 @@
 // limitations under the License.
 // =============================================================================
 
-#ifndef TENSORFLOW_COMPILER_MLIR_LITE_EXPERIMENTAL_GOOGLE_TOOLING_TOOLS_SHARDY_UTILS_H_
-#define TENSORFLOW_COMPILER_MLIR_LITE_EXPERIMENTAL_GOOGLE_TOOLING_TOOLS_SHARDY_UTILS_H_
+#ifndef TOOLS_SHARDY_UTILS_H_
+#define TOOLS_SHARDY_UTILS_H_
 
 #include <array>
 #include <cstddef>
@@ -166,4 +166,4 @@ class EdgeOverlayBuilder {
 }  // namespace visualization_client
 }  // namespace tooling
 
-#endif  // TENSORFLOW_COMPILER_MLIR_LITE_EXPERIMENTAL_GOOGLE_TOOLING_TOOLS_SHARDY_UTILS_H_
+#endif  // TOOLS_SHARDY_UTILS_H_

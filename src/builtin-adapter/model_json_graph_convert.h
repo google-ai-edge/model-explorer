@@ -13,8 +13,8 @@
 // limitations under the License.
 // =============================================================================
 
-#ifndef TENSORFLOW_COMPILER_MLIR_LITE_EXPERIMENTAL_GOOGLE_TOOLING_MODEL_JSON_GRAPH_CONVERT_H_
-#define TENSORFLOW_COMPILER_MLIR_LITE_EXPERIMENTAL_GOOGLE_TOOLING_MODEL_JSON_GRAPH_CONVERT_H_
+#ifndef MODEL_JSON_GRAPH_CONVERT_H_
+#define MODEL_JSON_GRAPH_CONVERT_H_
 
 #include <string>
 
@@ -42,4 +42,4 @@ absl::StatusOr<std::string> ConvertMlirToJson(const VisualizeConfig& config,
 }  // namespace visualization_client
 }  // namespace tooling
 
-#endif  // TENSORFLOW_COMPILER_MLIR_LITE_EXPERIMENTAL_GOOGLE_TOOLING_MODEL_JSON_GRAPH_CONVERT_H_
+#endif  // MODEL_JSON_GRAPH_CONVERT_H_

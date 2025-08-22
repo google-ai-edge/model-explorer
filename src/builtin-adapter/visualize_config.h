@@ -13,8 +13,8 @@
 // limitations under the License.
 // =============================================================================
 
-#ifndef TENSORFLOW_COMPILER_MLIR_LITE_EXPERIMENTAL_GOOGLE_TOOLING_VISUALIZE_CONFIG_H_
-#define TENSORFLOW_COMPILER_MLIR_LITE_EXPERIMENTAL_GOOGLE_TOOLING_VISUALIZE_CONFIG_H_
+#ifndef VISUALIZE_CONFIG_H_
+#define VISUALIZE_CONFIG_H_
 
 namespace tooling {
 namespace visualization_client {
@@ -33,4 +33,4 @@ struct VisualizeConfig {
 }  // namespace visualization_client
 }  // namespace tooling
 
-#endif  // TENSORFLOW_COMPILER_MLIR_LITE_EXPERIMENTAL_GOOGLE_TOOLING_VISUALIZE_CONFIG_H_
+#endif  // VISUALIZE_CONFIG_H_

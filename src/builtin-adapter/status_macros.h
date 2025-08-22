@@ -13,8 +13,8 @@
 // limitations under the License.
 // =============================================================================
 
-#ifndef TENSORFLOW_COMPILER_MLIR_LITE_EXPERIMENTAL_GOOGLE_TOOLING_STATUS_MACROS_H_
-#define TENSORFLOW_COMPILER_MLIR_LITE_EXPERIMENTAL_GOOGLE_TOOLING_STATUS_MACROS_H_
+#ifndef STATUS_MACROS_H_
+#define STATUS_MACROS_H_
 
 #include "absl/base/optimization.h"
 #include "absl/status/status.h"
@@ -106,4 +106,4 @@ class StatusAdaptorForMacros {
 }  // namespace visualization_client
 }  // namespace tooling
 
-#endif  // TENSORFLOW_COMPILER_MLIR_LITE_EXPERIMENTAL_GOOGLE_TOOLING_STATUS_MACROS_H_
+#endif  // STATUS_MACROS_H_

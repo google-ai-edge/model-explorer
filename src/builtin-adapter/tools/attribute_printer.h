@@ -13,8 +13,8 @@
 // limitations under the License.
 // =============================================================================
 
-#ifndef TENSORFLOW_COMPILER_MLIR_LITE_EXPERIMENTAL_GOOGLE_TOOLING_TOOLS_ATTRIBUTE_PRINTER_H_
-#define TENSORFLOW_COMPILER_MLIR_LITE_EXPERIMENTAL_GOOGLE_TOOLING_TOOLS_ATTRIBUTE_PRINTER_H_
+#ifndef TOOLS_ATTRIBUTE_PRINTER_H_
+#define TOOLS_ATTRIBUTE_PRINTER_H_
 
 #include <cstdint>
 
@@ -65,4 +65,4 @@ void PrintAttribute(const mlir::Attribute& attr, int64_t size_limit,
 }  // namespace visualization_client
 }  // namespace tooling
 
-#endif  // TENSORFLOW_COMPILER_MLIR_LITE_EXPERIMENTAL_GOOGLE_TOOLING_TOOLS_ATTRIBUTE_PRINTER_H_
+#endif  // TOOLS_ATTRIBUTE_PRINTER_H_

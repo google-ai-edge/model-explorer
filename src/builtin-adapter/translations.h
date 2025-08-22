@@ -13,8 +13,8 @@
 // limitations under the License.
 // =============================================================================
 
-#ifndef TENSORFLOW_COMPILER_MLIR_LITE_EXPERIMENTAL_GOOGLE_TOOLING_TRANSLATIONS_H_
-#define TENSORFLOW_COMPILER_MLIR_LITE_EXPERIMENTAL_GOOGLE_TOOLING_TRANSLATIONS_H_
+#ifndef TRANSLATIONS_H_
+#define TRANSLATIONS_H_
 
 #include <utility>
 
@@ -58,4 +58,4 @@ static mlir::LogicalResult MlirToJsonTranslate(mlir::Operation* op,
 }  // namespace visualization_client
 }  // namespace tooling
 
-#endif  // TENSORFLOW_COMPILER_MLIR_LITE_EXPERIMENTAL_GOOGLE_TOOLING_TRANSLATIONS_H_
+#endif  // TRANSLATIONS_H_

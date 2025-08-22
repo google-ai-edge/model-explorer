@@ -13,8 +13,8 @@
 // limitations under the License.
 // =============================================================================
 
-#ifndef TENSORFLOW_COMPILER_MLIR_LITE_EXPERIMENTAL_GOOGLE_TOOLING_TOOLS_LOAD_OPDEFS_H_
-#define TENSORFLOW_COMPILER_MLIR_LITE_EXPERIMENTAL_GOOGLE_TOOLING_TOOLS_LOAD_OPDEFS_H_
+#ifndef TOOLS_LOAD_OPDEFS_H_
+#define TOOLS_LOAD_OPDEFS_H_
 
 #include <string>
 #include <utility>
@@ -40,4 +40,4 @@ absl::flat_hash_map<std::string, OpMetadata> LoadTfliteOpdefs();
 }  // namespace visualization_client
 }  // namespace tooling
 
-#endif  // TENSORFLOW_COMPILER_MLIR_LITE_EXPERIMENTAL_GOOGLE_TOOLING_TOOLS_LOAD_OPDEFS_H_
+#endif  // TOOLS_LOAD_OPDEFS_H_

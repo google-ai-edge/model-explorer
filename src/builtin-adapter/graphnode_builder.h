@@ -13,8 +13,8 @@
 // limitations under the License.
 // =============================================================================
 
-#ifndef TENSORFLOW_COMPILER_MLIR_LITE_EXPERIMENTAL_GOOGLE_TOOLING_GRAPHNODE_BUILDER_H_
-#define TENSORFLOW_COMPILER_MLIR_LITE_EXPERIMENTAL_GOOGLE_TOOLING_GRAPHNODE_BUILDER_H_
+#ifndef GRAPHNODE_BUILDER_H_
+#define GRAPHNODE_BUILDER_H_
 
 #include <string>
 #include <utility>
@@ -95,4 +95,4 @@ class GraphNodeBuilder {
 }  // namespace visualization_client
 }  // namespace tooling
 
-#endif  // TENSORFLOW_COMPILER_MLIR_LITE_EXPERIMENTAL_GOOGLE_TOOLING_GRAPHNODE_BUILDER_H_
+#endif  // GRAPHNODE_BUILDER_H_

@@ -13,8 +13,8 @@
 // limitations under the License.
 // =============================================================================
 
-#ifndef TENSORFLOW_COMPILER_MLIR_LITE_EXPERIMENTAL_GOOGLE_TOOLING_DIRECT_FLATBUFFER_TO_JSON_GRAPH_CONVERT_H_
-#define TENSORFLOW_COMPILER_MLIR_LITE_EXPERIMENTAL_GOOGLE_TOOLING_DIRECT_FLATBUFFER_TO_JSON_GRAPH_CONVERT_H_
+#ifndef DIRECT_FLATBUFFER_TO_JSON_GRAPH_CONVERT_H_
+#define DIRECT_FLATBUFFER_TO_JSON_GRAPH_CONVERT_H_
 
 #include <cstdint>
 #include <string>
@@ -45,4 +45,4 @@ void CustomOptionsToAttributes(
 }  // namespace visualization_client
 }  // namespace tooling
 
-#endif  // TENSORFLOW_COMPILER_MLIR_LITE_EXPERIMENTAL_GOOGLE_TOOLING_DIRECT_FLATBUFFER_TO_JSON_GRAPH_CONVERT_H_
+#endif  // DIRECT_FLATBUFFER_TO_JSON_GRAPH_CONVERT_H_
