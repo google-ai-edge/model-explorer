@@ -616,8 +616,6 @@ absl::Status AddIncomingEdges(Operation& operation, GraphBuildContext& context,
   for (int input_index = 0, e = operation.getNumOperands(); input_index < e;
        ++input_index) {
     mlir::Value val = operation.getOperand(input_index);
-    // We make the assumption that functions bodies are single block.
-    if (val.isUsedOutsideOfBlock(operation.getBlock())) continue;
     RETURN_IF_ERROR(PopulateInputEdgeInfo(val, input_index, context, builder));
   }
   return absl::OkStatus();

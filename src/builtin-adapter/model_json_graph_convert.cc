@@ -62,6 +62,7 @@
 #include "tensorflow/cc/saved_model/reader.h"
 #include "formats/schema_structs.h"
 #include "status_macros.h"
+#include "transforms/conversion.h"
 #include "translate_helpers.h"
 #include "visualize_config.h"
 #include "tensorflow/compiler/mlir/lite/flatbuffer_import.h"
@@ -231,6 +232,13 @@ absl::Status ConvertToStablehloModule(mlir::ModuleOp module_op) {
 
 absl::StatusOr<std::string> ModuleOpToJson(const VisualizeConfig& config,
                                            mlir::Operation* module_op) {
+  mlir::PassManager pm(module_op->getContext());
+  pm.addPass(CreateUniqueOpNamesPass());
+  mlir::LogicalResult result = pm.run(module_op);
+  if (mlir::failed(result)) {
+    return absl::InternalError("Failed to run unique op names pass.");
+  }
+
   std::string json_output;
   llvm::raw_string_ostream json_ost(json_output);
   ASSIGN_OR_RETURN(Graph graph, MlirToGraph(config, module_op));

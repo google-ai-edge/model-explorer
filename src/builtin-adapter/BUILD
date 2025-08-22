@@ -53,8 +53,10 @@ cc_library(
         "@com_google_absl//absl/status:statusor",
         "@llvm-project//llvm:Support",
         "@llvm-project//mlir:IR",
+        "@llvm-project//mlir:Pass",
         "@llvm-project//mlir:Support",
         "//formats:schema_structs",
+        "//transforms:conversion",
     ],
     alwayslink = True,
 )
@@ -93,6 +95,7 @@ cc_library(
         "@org_tensorflow//tensorflow/compiler/mlir/lite:flatbuffer_import",
         "@org_tensorflow//tensorflow/compiler/mlir/lite:tensorflow_lite",
         "//formats:schema_structs",
+        "//transforms:conversion",
         "@org_tensorflow//tensorflow/compiler/mlir/lite/stablehlo:legalize_tf_xla_call_module_to_stablehlo_pass",
         "@org_tensorflow//tensorflow/compiler/mlir/stablehlo:rename_entrypoint_to_main",
         "@org_tensorflow//tensorflow/compiler/mlir/tensorflow",

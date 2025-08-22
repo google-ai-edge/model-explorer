@@ -21,10 +21,13 @@
 #include "absl/status/statusor.h"
 #include "llvm/Support/FormatVariadic.h"
 #include "llvm/Support/JSON.h"
+#include "llvm/Support/LogicalResult.h"
 #include "llvm/Support/raw_ostream.h"
 #include "mlir/IR/Operation.h"
+#include "mlir/Pass/PassManager.h"
 #include "mlir/Support/LogicalResult.h"
 #include "formats/schema_structs.h"
+#include "transforms/conversion.h"
 #include "translate_helpers.h"
 #include "visualize_config.h"
 
@@ -34,6 +37,11 @@ namespace visualization_client {
 static mlir::LogicalResult MlirToJsonTranslateImpl(
     const VisualizeConfig& config, mlir::Operation* op,
     llvm::raw_ostream& output) {
+  mlir::PassManager pm(op->getContext());
+  pm.addPass(CreateUniqueOpNamesPass());
+  if (failed(pm.run(op))) {
+    return mlir::LogicalResult::failure();
+  }
   absl::StatusOr<Graph> result = MlirToGraph(config, op);
   if (!result.ok()) {
     return mlir::LogicalResult::failure();
