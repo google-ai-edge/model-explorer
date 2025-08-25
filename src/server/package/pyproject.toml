@@ -1,6 +1,6 @@
 [project]
 name = "ai-edge-model-explorer"
-version = "0.1.24"
+version = "0.1.25"
 authors = [
   { name="Google LLC", email="opensource@google.com" },
 ]
@@ -18,7 +18,7 @@ dependencies = [
   "flask",
   "ipython",
   # Skip on windows.
-  "ai-edge-model-explorer-adapter == 0.1.10; sys_platform != 'win32'",
+  "ai-edge-model-explorer-adapter == 0.1.11; sys_platform != 'win32'",
   "packaging",
   "portpicker",
   "requests",
