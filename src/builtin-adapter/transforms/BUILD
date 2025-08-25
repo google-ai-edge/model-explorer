@@ -1,6 +1,6 @@
 # This package contains MLIR passes created and used by Model Explorer.
 
-load("//third_party/bazel_rules/rules_cc/cc:cc_library.bzl", "cc_library")
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
 load("@llvm-project//mlir:tblgen.bzl", "gentbl_cc_library")
 
 package(
