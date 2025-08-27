@@ -196,19 +196,22 @@ void AddCustomOptions(const ConstBytesAttr& const_bytes_attr,
 
 // Adds attributes from block arguments to the graph node.
 void AddBlockArgAttrs(const VisualizeConfig& config,
-                      const mlir::BlockArgument& arg,
+                      const mlir::DictionaryAttr& arg_attr_dict,
                       GraphNodeBuilder& builder) {
-  // TODO(b/412976666): Extract all attributes from block arguments, (currently
-  // only supports "sdy.shardings").
-  std::string value;
-  llvm::raw_string_ostream sstream(value);
-  mlir::sdy::TensorShardingAttr attr = mlir::sdy::getSharding(arg);
-  // Don't append sharding attribute to block argument if it is not sharded.
-  if (attr == mlir::sdy::TensorShardingAttr()) {
+  if (arg_attr_dict == nullptr) {
     return;
   }
-  PrintAttribute(attr, config.const_element_count_limit, sstream);
-  builder.AppendNodeAttribute(mlir::sdy::kShardingAttr, value);
+  for (const mlir::NamedAttribute& attr : arg_attr_dict) {
+    std::string value;
+    llvm::raw_string_ostream sstream(value);
+    const llvm::StringRef name = attr.getName();
+    const mlir::Attribute attr_val = attr.getValue();
+    if (SkipAttr(name)) {
+      continue;
+    }
+    PrintAttribute(attr_val, config.const_element_count_limit, sstream);
+    builder.AppendNodeAttribute(name, value);
+  }
 }
 
 // Appends node attributes to the graph node builder.
@@ -376,7 +379,8 @@ void AddGraphInputs(const VisualizeConfig& config, mlir::func::FuncOp& fop,
     }
     builder.AppendAttrToMetadata(EdgeType::kOutput, /*metadata_id=*/0,
                                  kTensorShape, GetTypeString(it.value()));
-    AddBlockArgAttrs(config, fop.getArgument(it.index()), builder);
+
+    AddBlockArgAttrs(config, fop.getArgAttrDict(it.index()), builder);
     subgraph.nodes.push_back(std::move(builder).Build());
   }
 }
