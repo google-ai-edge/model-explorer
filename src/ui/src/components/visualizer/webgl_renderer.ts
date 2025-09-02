@@ -58,6 +58,7 @@ import {
   NODE_LABEL_LINE_HEIGHT,
   WEBGL_ELEMENT_Y_FACTOR,
 } from './common/consts';
+import {Graph, GraphNode} from './common/input_graph';
 import {
   GroupNode,
   ModelEdge,
@@ -1334,6 +1335,62 @@ export class WebglRenderer implements OnInit, OnChanges, OnDestroy {
       },
     };
     this.workerService.worker.postMessage(req);
+  }
+
+  handleClickDownloadGroupNode(nodeId?: string) {
+    const targetNodeId = nodeId ?? this.hoveredNodeId;
+    if (!targetNodeId) {
+      return;
+    }
+
+    let graph = this.appService.getGraphById(this.curModelGraph.id);
+    if (!graph) {
+      return;
+    }
+
+    // Extract the subgraph containing only the descendant nodes of the target
+    // group node.
+    const groupNode: GroupNode = this.curModelGraph.nodesById[
+      targetNodeId
+    ] as GroupNode;
+    const normalizedGroupNodeLabel = groupNode.label.replace(
+      /[^a-zA-Z0-9]/g,
+      '_',
+    );
+    const groupNodeDescendantNodeIds = new Set<String>(
+      groupNode.descendantsOpNodeIds ?? [],
+    );
+    graph = JSON.parse(JSON.stringify(graph)) as Graph;
+    const nodes: GraphNode[] = graph.nodes.filter((node) =>
+      groupNodeDescendantNodeIds.has(node.id),
+    );
+
+    // Filter incoming edges to only keep those whose source nodes are in the
+    // subgraph.
+    for (const node of nodes) {
+      if (node.incomingEdges) {
+        node.incomingEdges = node.incomingEdges.filter((edge) =>
+          groupNodeDescendantNodeIds.has(edge.sourceNodeId),
+        );
+      }
+    }
+
+    // Create a new graph with the subgraph.
+    const subgraphId = `${graph.id}_${normalizedGroupNodeLabel}`;
+    const subgraph: Graph = {
+      id: subgraphId,
+      collectionLabel: graph.collectionLabel,
+      nodes,
+    };
+
+    // Download it.
+    const link = document.createElement('a');
+    link.download = `${subgraphId}.json`;
+    const dataUrl = `data:text/json;charset=utf-8, ${encodeURIComponent(
+      JSON.stringify([subgraph], null, 2),
+    )}`;
+    setAnchorHref(link, dataUrl);
+    link.click();
   }
 
   handleClickGroupNodeIcon(event: MouseEvent) {

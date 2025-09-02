@@ -60,17 +60,24 @@ limitations under the License.
       <mat-icon>unfold_more_double</mat-icon>
       Expand layer & all sub-layers
     </div>
-    <div class="model-explorer-menu-item-with-icon collapse-all"
-        *ngIf="getShowCollapseAllButton(hoveredNodeIdWhenClickingMoreActions)"
-        (click)="handleClickCollapseAll(hoveredNodeIdWhenClickingMoreActions)">
-      <mat-icon>unfold_less_double</mat-icon>
-      Collapse layer & all sub-layers
-    </div>
+    @if (getShowCollapseAllButton(hoveredNodeIdWhenClickingMoreActions)) {
+      <div class="model-explorer-menu-item-with-icon collapse-all"
+          (click)="handleClickCollapseAll(hoveredNodeIdWhenClickingMoreActions)">
+        <mat-icon>unfold_less_double</mat-icon>
+        Collapse layer & all sub-layers
+      </div>
+    }
+    @if (showOpenInPopupButton) {
+      <div class="model-explorer-menu-item-with-icon open-in-popup"
+          (click)="handleClickOpenGroupNodeInPopup($event, hoveredNodeIdWhenClickingMoreActions)">
+        <mat-icon>open_in_new</mat-icon>
+        Open layer in popup
+      </div>
+    }
     <div class="model-explorer-menu-item-with-icon open-in-popup"
-        *ngIf="showOpenInPopupButton"
-        (click)="handleClickOpenGroupNodeInPopup($event, hoveredNodeIdWhenClickingMoreActions)">
-      <mat-icon>open_in_new</mat-icon>
-      Open layer in popup
+        (click)="handleClickDownloadGroupNode(hoveredNodeIdWhenClickingMoreActions)">
+      <mat-icon>download</mat-icon>
+      Download layer's JSON graph
     </div>
   </mat-menu>
 
