@@ -642,7 +642,7 @@ export function getRegexMatchesForNode(
   // Node label.
   if (
     shouldMatchTypes.has(SearchMatchType.NODE_LABEL) &&
-    regex.test(node.label)
+    regex.test(node.label.replace(/\n/gm, ''))
   ) {
     matches.push({
       type: SearchMatchType.NODE_LABEL,
