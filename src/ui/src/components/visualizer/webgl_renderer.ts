@@ -2550,6 +2550,9 @@ export class WebglRenderer implements OnInit, OnChanges, OnDestroy {
     // Node labels.
     for (const {node, index} of this.nodesToRender) {
       let color = this.NODE_LABEL_COLOR;
+      if (isOpNode(node) && node.style?.textColor) {
+        color = new THREE.Color(node.style.textColor);
+      }
 
       // Node styler.
       for (const rule of this.curProcessedNodeStylerRules) {

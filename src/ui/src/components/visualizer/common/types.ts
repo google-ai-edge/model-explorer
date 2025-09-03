@@ -156,6 +156,13 @@ export declare interface GraphNodeStyle {
    * It should be in css format.
    */
   hoveredBorderColor?: string;
+
+  /**
+   * The text color of the node.
+   *
+   * It should be in css format.
+   */
+  textColor?: string;
 }
 
 /** Custom configs for a graph node. */
