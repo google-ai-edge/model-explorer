@@ -21,6 +21,7 @@ import {
   GraphNodeConfig,
   GraphNodeStyle,
   GroupNodeAttributes,
+  GroupNodeConfig,
   IncomingEdge,
   KeyValuePairs,
   NodeAttributePairs,
@@ -50,6 +51,14 @@ export declare interface ModelGraph {
 
   /** Attributes for group nodes. */
   groupNodeAttributes?: GroupNodeAttributes;
+
+  /**
+   * Custom configs for group nodes.
+   *
+   * A group node will be matched to the first config whose namespace regex
+   * matches its namespace.
+   */
+  groupNodeConfigs?: GroupNodeConfig[];
 
   /** Ids of all group nodes that are artificially created. */
   artificialGroupNodeIds?: string[];

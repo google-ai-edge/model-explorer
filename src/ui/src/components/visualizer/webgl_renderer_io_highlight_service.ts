@@ -22,10 +22,11 @@ import * as three from 'three';
 
 import {WEBGL_ELEMENT_Y_FACTOR} from './common/consts';
 import {GroupNode, ModelEdge, ModelNode, OpNode} from './common/model_graph';
-import {FontWeight, Point} from './common/types';
+import {FontWeight, LayoutDirection, Point} from './common/types';
 import {
   findCommonNamespace,
   generateCurvePoints,
+  getLayoutDirection,
   getShowOnEdgeInputOutputMetadataKeys,
   isGroupNode,
   isOpNode,
@@ -127,6 +128,14 @@ export class WebglRendererIoHighlightService {
     if (incoming.overlayEdges.length > 0) {
       const edges: Array<{edge: ModelEdge; index: number}> =
         incoming.overlayEdges.map((edge) => {
+          const fromNodeId = edge.fromNodeId;
+          const fromNode = this.webglRenderer.curModelGraph.nodesById[
+            fromNodeId
+          ] as OpNode;
+          const layoutDirection = getLayoutDirection(
+            this.webglRenderer.curModelGraph,
+            fromNode.nsParentId ?? '',
+          );
           return showOpNodeOutOfLayerEdgesWithoutSelecting
             ? {
                 edge,
@@ -138,8 +147,11 @@ export class WebglRendererIoHighlightService {
                   curvePoints: generateCurvePoints(
                     edge.points,
                     d3.line,
-                    d3.curveMonotoneY,
+                    layoutDirection === LayoutDirection.TOP_BOTTOM
+                      ? d3.curveMonotoneY
+                      : d3.curveMonotoneX,
                     THREE,
+                    layoutDirection === LayoutDirection.TOP_BOTTOM,
                   ),
                 },
                 index: 95 / WEBGL_ELEMENT_Y_FACTOR,
@@ -209,6 +221,14 @@ export class WebglRendererIoHighlightService {
     );
     if (outgoing.overlayEdges.length > 0) {
       const edges = outgoing.overlayEdges.map((edge) => {
+        const fromNodeId = edge.fromNodeId;
+        const fromNode = this.webglRenderer.curModelGraph.nodesById[
+          fromNodeId
+        ] as OpNode;
+        const layoutDirection = getLayoutDirection(
+          this.webglRenderer.curModelGraph,
+          fromNode.nsParentId ?? '',
+        );
         return showOpNodeOutOfLayerEdgesWithoutSelecting
           ? {
               edge,
@@ -220,8 +240,11 @@ export class WebglRendererIoHighlightService {
                 curvePoints: generateCurvePoints(
                   edge.points,
                   d3.line,
-                  d3.curveMonotoneY,
+                  layoutDirection === LayoutDirection.TOP_BOTTOM
+                    ? d3.curveMonotoneY
+                    : d3.curveMonotoneX,
                   THREE,
+                  layoutDirection === LayoutDirection.TOP_BOTTOM,
                 ),
               },
               index: 95 / WEBGL_ELEMENT_Y_FACTOR,

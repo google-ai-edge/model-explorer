@@ -123,7 +123,8 @@ export declare interface Rect {
 /** Attributes for group nodes. */
 export declare interface GroupNodeAttributes {
   /**
-   * From group's namespace to its attribuets (key-value pairs).
+   * From group's namespace (including the name of the group itself) to its
+   * attribuets (key-value pairs).
    *
    * Use empty group namespace for the model-level attributes (i.e. shown in
    * side panel when no node is selected).
@@ -133,6 +134,27 @@ export declare interface GroupNodeAttributes {
 
 /** A single attribute item for group node. */
 export type GroupNodeAttributeItem = string;
+
+/** Custom configs for group nodes matched by the namespace regex. */
+export declare interface GroupNodeConfig {
+  /**
+   * The regex of the namespace of the group node. The namespace to match should
+   * include the name of the group itself.
+   *
+   * For example, for a group/layer a->b->c, the namespace string that the regex
+   * will try to match is "a/b/c"
+   */
+  namespaceRegex: string;
+
+  /** The layout direction of the matching group nodes. */
+  layoutDirection?: LayoutDirection;
+}
+
+/** Layout direction for group nodes. */
+export enum LayoutDirection {
+  TOP_BOTTOM,
+  LEFT_RIGHT,
+}
 
 /** The style of the op node. */
 export declare interface GraphNodeStyle {

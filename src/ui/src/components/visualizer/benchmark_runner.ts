@@ -147,6 +147,7 @@ export class BenchmarkRunner {
         d3.line,
         d3.curveMonotoneY,
         THREE,
+        true,
       );
       const edge: ModelEdge = {
         id,

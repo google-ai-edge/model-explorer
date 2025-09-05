@@ -41,6 +41,7 @@ import {
 import {
   GraphNodeConfig,
   KeyValueList,
+  LayoutDirection,
   NodeDataProviderRunData,
   Point,
   Rect,
@@ -53,6 +54,7 @@ import {
   getGroupNodeAttrsKeyValuePairsForAttrsTable,
   getGroupNodeFieldLabelsFromShowOnNodeItemTypes,
   getLabelWidth,
+  getLayoutDirection,
   getMultiLineLabelExtraHeight,
   getNodeInfoFieldValue,
   getOpNodeAttrsKeyValuePairsForAttrsTable,
@@ -141,7 +143,7 @@ export class GraphLayout {
     }
 
     // Init.
-    this.configLayout(this.dagreGraph);
+    this.configLayout(this.dagreGraph, rootNodeId);
 
     // Get layout graph.
     const layoutGraph = getLayoutGraph(
@@ -209,6 +211,10 @@ export class GraphLayout {
     let maxEdgeY = Number.NEGATIVE_INFINITY;
     const dagreEdgeRefs = this.dagreGraph.edges();
     const edges: ModelEdge[] = [];
+    const layoutDirection = getLayoutDirection(
+      this.modelGraph,
+      rootNodeId ?? '',
+    );
     for (const dagreEdge of dagreEdgeRefs) {
       const points = this.dagreGraph.edge(dagreEdge).points as Point[];
       // tslint:disable-next-line:no-any Allow arbitrary types.
@@ -221,8 +227,13 @@ export class GraphLayout {
           : generateCurvePoints(
               points,
               d3['line'],
-              d3['curveMonotoneY'],
+              d3[
+                layoutDirection === LayoutDirection.TOP_BOTTOM
+                  ? 'curveMonotoneY'
+                  : 'curveMonotoneX'
+              ],
               three,
+              layoutDirection === LayoutDirection.TOP_BOTTOM,
             );
       const fromNode = this.modelGraph.nodesById[dagreEdge.v];
       const toNode = this.modelGraph.nodesById[dagreEdge.w];
@@ -337,10 +348,24 @@ export class GraphLayout {
     };
   }
 
-  private configLayout(dagreGraph: DagreGraphInstance) {
+  private configLayout(dagreGraph: DagreGraphInstance, rootNodeId?: string) {
+    let layoutDirection = getLayoutDirection(this.modelGraph, rootNodeId ?? '');
+    let rankdir = '';
+    switch (layoutDirection) {
+      case LayoutDirection.TOP_BOTTOM:
+        rankdir = 'TB';
+        break;
+      case LayoutDirection.LEFT_RIGHT:
+        rankdir = 'LR';
+        break;
+      default:
+        rankdir = 'TB';
+    }
+
     // See available configs here:
     // https://github.com/dagrejs/dagre/wiki#configuring-the-layout.
     dagreGraph.setGraph({
+      rankdir,
       nodesep: this.modelGraph.layoutConfigs?.nodeSep ?? 20,
       ranksep: this.modelGraph.layoutConfigs?.rankSep ?? 50,
       edgesep: this.modelGraph.layoutConfigs?.edgeSep ?? 20,

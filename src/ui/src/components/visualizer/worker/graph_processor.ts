@@ -746,6 +746,9 @@ export class GraphProcessor {
     if (this.graph.groupNodeAttributes) {
       modelGraph.groupNodeAttributes = this.graph.groupNodeAttributes;
     }
+    if (this.graph.groupNodeConfigs) {
+      modelGraph.groupNodeConfigs = this.graph.groupNodeConfigs;
+    }
     if (this.graph.layoutConfigs) {
       modelGraph.layoutConfigs = this.graph.layoutConfigs;
     }

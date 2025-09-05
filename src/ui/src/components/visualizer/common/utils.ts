@@ -39,6 +39,7 @@ import {
   FieldLabel,
   KeyValueList,
   KeyValuePairs,
+  LayoutDirection,
   NodeAttributeValueType,
   NodeDataProviderResultProcessedData,
   NodeDataProviderRunData,
@@ -221,43 +222,53 @@ export function generateCurvePoints(
   // tslint:disable-next-line:no-any Allow arbitrary types.
   d3Line: any,
   // tslint:disable-next-line:no-any Allow arbitrary types.
-  d3CurveMonotoneY: any,
+  d3CurveMonotone: any,
   // tslint:disable-next-line:no-any Allow arbitrary types.
   three: any,
+  // true: vertical curve, false: horizontal curve.
+  verticalOrHorizontal: boolean,
 ): Point[] {
   let curvePoints: Point[] = [];
   if (points.length === 2) {
     curvePoints = points;
   } else if (
-    points.length === 3 &&
-    points[0].x === points[1].x &&
-    points[1].x === points[2].x
+    (points.length === 3 &&
+      verticalOrHorizontal &&
+      points[0].x === points[1].x &&
+      points[1].x === points[2].x) ||
+    (!verticalOrHorizontal &&
+      points[0].y === points[1].y &&
+      points[1].y === points[2].y)
   ) {
     curvePoints = points;
   } else {
-    // Check if points are sorted by their Y coordinate.
-    let isYSorted = true;
+    // Check if points are sorted by their X or Y coordinate.
+    let isSorted = true;
     let curOrder = 0;
     for (let i = 0; i < points.length - 1; i++) {
       const curPt = points[i];
       const nextPt = points[i + 1];
-      const order = nextPt > curPt ? 1 : -1;
+      const order =
+        (verticalOrHorizontal ? nextPt.y : nextPt.x) >
+        (verticalOrHorizontal ? curPt.y : curPt.x)
+          ? 1
+          : -1;
       if (curOrder !== 0 && curOrder !== order) {
-        isYSorted = false;
+        isSorted = false;
         break;
       }
       curOrder = order;
     }
 
-    // If ys are sorted, use d3's curveMonotoneY to generate curves and
-    // convert them to a CurvePath in threejs. curveMonotoneY looks better
+    // If points are sorted, use d3's curveMonotoneX/Y to generate curves and
+    // convert them to a CurvePath in threejs. curveMonotoneX/Y looks better
     // then catmullrom curves.
     const vec3 = three['Vector3'];
-    if (isYSorted) {
+    if (isSorted) {
       const d3Curve = d3Line()
         .x((d: Point) => d.x)
         .y((d: Point) => d.y)
-        .curve(d3CurveMonotoneY)(points) as string;
+        .curve(d3CurveMonotone)(points) as string;
       const parts = d3Curve
         .split(/M|C/)
         .filter((s) => s !== '')
@@ -1214,4 +1225,26 @@ export function getNodeAttrStringValue(node: OpNode, key: string): string {
     }
   }
   return '';
+}
+
+export function getLayoutDirection(
+  modelGraph: ModelGraph,
+  groupNodeId: string,
+): LayoutDirection {
+  const namespaceName = groupNodeId.replace('___group___', '');
+  for (const config of modelGraph.groupNodeConfigs || []) {
+    try {
+      const regex = new RegExp(config.namespaceRegex);
+      if (regex.test(namespaceName)) {
+        return config.layoutDirection ?? LayoutDirection.TOP_BOTTOM;
+      }
+    } catch (e) {
+      console.warn(
+        'Invalid regex in groupNodeConfigs',
+        config.namespaceRegex,
+        e,
+      );
+    }
+  }
+  return LayoutDirection.TOP_BOTTOM;
 }

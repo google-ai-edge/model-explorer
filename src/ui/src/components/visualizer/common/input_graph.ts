@@ -21,6 +21,7 @@ import {
   GraphNodeConfig,
   GraphNodeStyle,
   GroupNodeAttributes,
+  GroupNodeConfig,
   IncomingEdge,
   KeyValueList,
   MetadataItem,
@@ -83,6 +84,14 @@ export declare interface Graph {
    * It is displayed in the side panel when the group is selected.
    */
   groupNodeAttributes?: GroupNodeAttributes;
+
+  /**
+   * Custom configs for group nodes.
+   *
+   * A group node will be matched to the first config whose namespace regex
+   * matches its namespace.
+   */
+  groupNodeConfigs?: GroupNodeConfig[];
 
   // The data for various tasks that provide extra data to be visualized, such
   // as node data, edge overlay, etc.
