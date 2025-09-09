@@ -43,7 +43,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PYTHON="${CI_BUILD_PYTHON:-python3}"
 PYTHON_VERSION="$(${PYTHON} --version | cut -d " " -f 2)"
 IFS='.' read -ra VERSION_PARTS <<< "${PYTHON_VERSION}"
-# TF only supports python version ["3.9", "3.10", "3.11", "3.12"].
+# TF supports python version ["3.9", "3.10", "3.11", "3.12", "3.13"].
 export TF_PYTHON_VERSION="${VERSION_PARTS[0]}.${VERSION_PARTS[1]}"
 export PROJECT_NAME=${WHEEL_PROJECT_NAME:-ai_edge_model_explorer_adapter}
 BUILD_DIR="gen/adapter_pip"
