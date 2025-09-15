@@ -185,6 +185,15 @@ export declare interface GraphNodeStyle {
    * It should be in css format.
    */
   textColor?: string;
+
+  /**
+   * The border width of the node.
+   *
+   * It should be a number.
+   *
+   * If not set, the default border width is 1.2
+   */
+  borderWidth?: number;
 }
 
 /** Custom configs for a graph node. */

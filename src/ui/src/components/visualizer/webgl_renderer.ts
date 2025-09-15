@@ -2212,6 +2212,7 @@ export class WebglRenderer implements OnInit, OnChanges, OnDestroy {
       const width = this.getNodeWidth(node);
       const height = this.getNodeHeight(node);
       const isGroup = isGroupNode(node);
+      let borderWidth = NODE_BORDER_WIDTH;
       let bgColor = isGroup
         ? this.getGroupNodeBgColor(node)
         : {r: 1, g: 1, b: 1};
@@ -2224,6 +2225,9 @@ export class WebglRenderer implements OnInit, OnChanges, OnDestroy {
         }
         if (node.style.borderColor) {
           borderColor = new THREE.Color(node.style.borderColor);
+        }
+        if (node.style.borderWidth) {
+          borderWidth = node.style.borderWidth;
         }
       }
       let groupNodeIconColor = this.GROUP_NODE_ICON_COLOR;
@@ -2280,7 +2284,7 @@ export class WebglRenderer implements OnInit, OnChanges, OnDestroy {
         isRounded,
         borderColor,
         bgColor,
-        borderWidth: NODE_BORDER_WIDTH,
+        borderWidth,
         opacity: 1,
         changeColorWhenFar:
           (isOpNode(node) || !node.expanded) &&
