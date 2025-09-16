@@ -16,7 +16,7 @@
  * ==============================================================================
  */
 
-import {ApplicationRef} from '@angular/core';
+import {ApplicationRef, provideZoneChangeDetection} from '@angular/core';
 import {createCustomElement} from '@angular/elements';
 import {createApplication} from '@angular/platform-browser';
 import 'zone.js';
@@ -29,7 +29,7 @@ const MODEL_EXPLORER_VISUALIZER_TAG = 'model-explorer-visualizer';
 // Create the wrapper element and register it as a custom element with the
 // browser.
 createApplication({
-  providers: [provideAnimations()],
+  providers: [provideZoneChangeDetection(), provideAnimations()],
 }).then((appRef: ApplicationRef) => {
   if (!customElements.get(MODEL_EXPLORER_VISUALIZER_TAG)) {
     const constructor = createCustomElement(Wrapper, {
