@@ -47,11 +47,14 @@ export declare interface NodeAttribute {
 export type NodeAttributeValue = string | SpecialNodeAttributeValue;
 
 /** non-string node attribute value. */
-export type SpecialNodeAttributeValue = NodeIdsNodeAttributeValue;
+export type SpecialNodeAttributeValue =
+  | NodeIdsNodeAttributeValue
+  | NodesWithAttributeValues;
 
 /** Node attribute value types. */
 export enum NodeAttributeValueType {
   NODE_IDS = 'node_ids',
+  NODE_WITH_ATTRS = 'node_with_attrs',
 }
 
 /**
@@ -62,6 +65,19 @@ export enum NodeAttributeValueType {
 export declare interface NodeIdsNodeAttributeValue {
   type: NodeAttributeValueType.NODE_IDS;
   nodeIds: string[];
+}
+
+/**
+ * A "node with attrs".
+ *
+ * Clicking on a node id will jump to the corresponding node in the graph.
+ */
+export declare interface NodesWithAttributeValues {
+  type: NodeAttributeValueType.NODE_WITH_ATTRS;
+  nodes: {
+    id: string;
+    attrs: KeyValueList;
+  }[];
 }
 
 /** An item in input/output metadata. */

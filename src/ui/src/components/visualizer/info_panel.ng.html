@@ -50,6 +50,31 @@ limitations under the License.
                           </div>
                         }
                       }
+                      @case (NodeAttributeValueType.NODE_WITH_ATTRS) {
+                         @for (node of item.specialValue.nodes; track node.id) {
+                          <div class="node-id-attribute"
+                              (click)="handleLocateNode(node.id, $event)">
+                            {{node.id}}
+                            <div class="locator-icon-container"
+                                [matTooltip]="locatorTooltip"
+                                matTooltipClass="multiline-tooltip-left"
+                                matTooltipPosition="right">
+                              <mat-icon class="locator-icon">my_location</mat-icon>
+                            </div>
+                          </div>
+                          @for (attr of node.attrs; track attr.key) {
+                            <tr>
+                              <td class="key">
+                                <mat-icon class="bullet">circle</mat-icon>
+                                <span class="key-label">{{attr.key}}</span>
+                              </td>
+                              <td class="value">
+                                <hoverable-label [label]="attr.value"></hoverable-label>
+                              </td>
+                            </tr>
+                          }
+                        }
+                      }
                     }
                   } @else {
                     <expandable-info-text
