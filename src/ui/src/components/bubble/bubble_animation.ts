@@ -24,7 +24,6 @@ import {
   transition,
   trigger,
 } from '@angular/animations';
-import {AnimationCurves} from '@angular/material/core';
 
 /** Transition time of bubble animations. */
 export const ANIMATION_TRANSITION_TIME_MS = 200;
@@ -32,8 +31,8 @@ export const ANIMATION_TRANSITION_TIME_MS = 200;
 const HIDDEN_STYLE = style({opacity: 0});
 const VISIBLE_STYLE = style({opacity: 1});
 
-const ENTERING_TIMING = `${ANIMATION_TRANSITION_TIME_MS}ms ${AnimationCurves.DECELERATION_CURVE}`;
-const LEAVING_TIMING = `${ANIMATION_TRANSITION_TIME_MS}ms ${AnimationCurves.STANDARD_CURVE}`;
+const ENTERING_TIMING = `${ANIMATION_TRANSITION_TIME_MS}ms cubic-bezier(0.0,0.0,0.2,1)`;
+const LEAVING_TIMING = `${ANIMATION_TRANSITION_TIME_MS}ms cubic-bezier(0.4,0.0,0.2,1)`;
 
 /** Animations used by bubble. */
 export const BUBBLE_ANIMATIONS: {
