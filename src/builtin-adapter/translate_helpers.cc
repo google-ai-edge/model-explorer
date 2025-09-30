@@ -631,9 +631,7 @@ void AddOutputsMetadata(Operation& operation, GraphBuildContext& context,
                         GraphNodeBuilder& builder) {
   Counter& tensor_counter = context.tensor_counter;
   llvm::SmallVector<llvm::StringRef, 2> tensor_names;
-  if (IsTfliteDialect(operation)) {
-    tensor_names = GetTfliteTensorNames(operation);
-  }
+  tensor_names = GetTfliteTensorNames(operation);
   for (int output_index = 0, e = operation.getNumResults(); output_index < e;
        ++output_index) {
     builder.AppendAttrToMetadata(EdgeType::kOutput, output_index, kTensorIndex,
