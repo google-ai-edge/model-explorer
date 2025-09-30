@@ -627,11 +627,11 @@ absl::Status AddIncomingEdges(Operation& operation, GraphBuildContext& context,
 
 // Iterates through all result values of an operation and adds the output
 // metadata to the graph node.
-void AddOutputsMetadata(Operation& operation, GraphBuildContext& context,
-                        GraphNodeBuilder& builder) {
+void AddOutputsMetadata(const VisualizeConfig& config, Operation& operation,
+                        GraphBuildContext& context, GraphNodeBuilder& builder) {
   Counter& tensor_counter = context.tensor_counter;
   llvm::SmallVector<llvm::StringRef, 2> tensor_names;
-  if (IsTfliteDialect(operation)) {
+  if (IsTfliteDialect(operation) || config.add_tensor_name_attribute) {
     tensor_names = GetTfliteTensorNames(operation);
   }
   for (int output_index = 0, e = operation.getNumResults(); output_index < e;
@@ -678,7 +678,7 @@ absl::Status AddNestedRegionNode(const VisualizeConfig& config,
     RETURN_IF_ERROR(
         MaybeAddNestedRegion(config, operation, context, builder, subgraph));
   }
-  AddOutputsMetadata(operation, context, builder);
+  AddOutputsMetadata(config, operation, context, builder);
   subgraph.nodes.push_back(std::move(builder).Build());
   return absl::OkStatus();
 }
@@ -943,7 +943,7 @@ absl::Status AddNode(const VisualizeConfig& config, Operation& operation,
   }
   RETURN_IF_ERROR(
       MaybeAddNestedRegion(config, operation, context, builder, subgraph));
-  AddOutputsMetadata(operation, context, builder);
+  AddOutputsMetadata(config, operation, context, builder);
   subgraph.nodes.push_back(std::move(builder).Build());
   return absl::OkStatus();
 }

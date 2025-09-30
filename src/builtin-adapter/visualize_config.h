@@ -28,6 +28,10 @@ struct VisualizeConfig {
   // exceeds this threshold, the rest of data will be elided. The default
   // threshold is set to 16 (use -1 to print all).
   int const_element_count_limit = 16;
+
+  // If true, adds the `tensor_name` meta attribute to the node from the MLIR
+  // location. This attribute is always added for the tfl dialect.
+  bool add_tensor_name_attribute = false;
 };
 
 }  // namespace visualization_client
