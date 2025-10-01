@@ -180,9 +180,22 @@ llvm::json::Object TasksData::Json() const {
   return json_tasks_data;
 }
 
+const char GroupNodeConfig::kNamespaceRegex[] = "namespaceRegex";
+const char GroupNodeConfig::kLayoutDirection[] = "layoutDirection";
+
+llvm::json::Object GroupNodeConfig::Json() const {
+  llvm::json::Object json_config;
+  json_config[kNamespaceRegex] = namespace_regex;
+  if (layout_direction.has_value()) {
+    json_config[kLayoutDirection] = (int)layout_direction.value();
+  }
+  return json_config;
+}
+
 const char Subgraph::kSubgraphId[] = "id";
 const char Subgraph::kNodes[] = "nodes";
 const char Subgraph::kTasksData[] = "tasksData";
+const char Subgraph::kGroupNodeConfigs[] = "groupNodeConfigs";
 
 llvm::json::Object Subgraph::Json() const {
   llvm::json::Object json_subgraph;
@@ -190,6 +203,9 @@ llvm::json::Object Subgraph::Json() const {
   json_subgraph[kNodes] = ToJsonArray(nodes);
   if (tasks_data.has_value()) {
     json_subgraph[kTasksData] = tasks_data->Json();
+  }
+  if (!group_node_configs.empty()) {
+    json_subgraph[kGroupNodeConfigs] = ToJsonArray(group_node_configs);
   }
   return json_subgraph;
 }

@@ -208,6 +208,26 @@ struct TasksData {
   static const char kEdgeOverlaysDataListRightPane[];
 };
 
+/// Layout direction for group nodes.
+enum class LayoutDirection {
+  kTopBottom = 0,
+  kLeftRight = 1,
+};
+
+/// Configuration for a group node.
+struct GroupNodeConfig {
+  /// The regex to match against the namespace of group nodes.
+  std::string namespace_regex;
+  /// Whether to expand the group node by default.
+  std::optional<LayoutDirection> layout_direction;
+
+  llvm::json::Object Json() const;
+
+ private:
+  static const char kNamespaceRegex[];
+  static const char kLayoutDirection[];
+};
+
 /// A subgraph corresponds to a single renderable graph with an ID and a list of
 /// nodes.
 struct Subgraph {
@@ -219,6 +239,8 @@ struct Subgraph {
   std::vector<GraphNode> nodes;
   /// Data for various tasks that provide extra data to be visualized.
   std::optional<TasksData> tasks_data;
+  /// Custom configs for group nodes.
+  std::vector<GroupNodeConfig> group_node_configs;
 
   llvm::json::Object Json() const;
 
@@ -226,6 +248,7 @@ struct Subgraph {
   static const char kSubgraphId[];
   static const char kNodes[];
   static const char kTasksData[];
+  static const char kGroupNodeConfigs[];
 };
 
 /// A logical grouping of subgraphs with a shared label.
