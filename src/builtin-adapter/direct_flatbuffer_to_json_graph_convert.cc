@@ -416,8 +416,8 @@ void AddQuantizationParameters(const std::unique_ptr<TensorT>& tensor,
     const int64_t zp = quant->zero_point[i];
     const char zp_sign = zp < 0 ? '+' : '-';
     const int64_t abs_zp = std::abs(zp);
-    parameters.push_back(abs_zp == 0 ? absl::StrFormat("%f * q", scale)
-                                     : absl::StrFormat("%f * (q %c %d)", scale,
+    parameters.push_back(abs_zp == 0 ? absl::StrFormat("%g * q", scale)
+                                     : absl::StrFormat("%g * (q %c %d)", scale,
                                                        zp_sign, abs_zp));
   }
   const std::string quant_str = absl::StrJoin(parameters, ",");
