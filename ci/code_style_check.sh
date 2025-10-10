@@ -72,7 +72,7 @@ fi
 ############################################################
 
 PYINK_COMMAND="pyink --pyink-use-majority-quotes --pyink-indentation=2 --preview --unstable --line-length 80
-      --extend-exclude .downloads --extend-exclude \.pyi --check ./"
+      --extend-exclude '(\.downloads|\.pyi|\.ipynb)$' --check ./"
 
 echo "Testing python formatting with ${PYINK_COMMAND}"
 ${PYINK_COMMAND}
