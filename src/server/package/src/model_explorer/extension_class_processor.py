@@ -31,7 +31,7 @@ class ExtensionClassProcessor(type):
   # 1. Add a base class that extends Extension
   # 2. Add the class name in the ignore list here.
   # 3. Add a if branch in __init__ below.
-  IGNORE_CLASS_NAMES = ['Extension', 'Adapter']
+  IGNORE_CLASS_NAMES = ['Extension', 'Adapter', 'NodeDataProvider']
 
   extension_class: Union[ExtensionClassType, None] = None
   extension_type: str = ''
@@ -46,6 +46,10 @@ class ExtensionClassProcessor(type):
         if base_name == 'Adapter':
           ExtensionClassProcessor.extension_type = 'adapter'
           break
+        elif base_name == 'NodeDataProvider':
+          ExtensionClassProcessor.extension_type = 'node_data_provider'
+          break
+
 
       # Store its class.
       ExtensionClassProcessor.extension_class = cls

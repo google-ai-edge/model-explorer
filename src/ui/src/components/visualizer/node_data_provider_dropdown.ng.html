@@ -23,7 +23,7 @@ limitations under the License.
   <div class="icon-container"
       [bubbleClick]="dropdown"
       [overlaySize]="dropdownSize">
-    @if (remoteSourceLoading()) {
+    @if (remoteSourceLoading() || hasExtensionRunning()) {
       <mat-spinner color="primary" diameter="18">
       </mat-spinner>
     } @else {
@@ -61,5 +61,14 @@ limitations under the License.
         multiple
         accept=".json"
         (change)="handleClickUpload(input)">
+    <div class="section-label extensions">
+      <div>Extensions</div>
+      <a href="https://github.com/google-ai-edge/model-explorer/wiki/2.-User-Guide#custom-node-data"
+        target="_blank">
+        Guide
+      </a>
+    </div>
+    <ndp-extensions-panel (onRunDialogRunClicked)="handleRunDialogRunClicked()">
+    </ndp-extensions-panel>
   </div>
 </ng-template>

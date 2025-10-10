@@ -1,0 +1,61 @@
+.info {
+  color: #777;
+}
+
+.container {
+  padding-top: 8px;
+}
+
+.extension-container {
+  padding: 12px;
+  cursor: pointer;
+
+  &:hover {
+    background-color: #f2f2f2;
+  }
+}
+
+.name-row {
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: normal;
+  display: flex;
+  align-items: center;
+  font-family: 'Google Sans Text', Arial, Helvetica, sans-serif;
+
+  .icon-container {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    margin-right: 6px;
+
+    mat-icon {
+      position: absolute;
+      font-size: 16px;
+      width: 16px;
+      height: 16px;
+
+      &.running {
+        font-size: 10px;
+        width: 10px;
+        height: 10px;
+      }
+    }
+
+    mat-spinner {
+      position: absolute;
+    }
+  }
+}
+
+.description {
+  letter-spacing: normal;
+  font-size: 12px;
+  color: #777;
+  margin-left: 27px;
+  line-height: 14px;
+  font-family: 'Google Sans Text', Arial, Helvetica, sans-serif;
+}

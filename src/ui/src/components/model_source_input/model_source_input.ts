@@ -33,6 +33,7 @@ import {
   DestroyRef,
   ElementRef,
   Inject,
+  Signal,
   signal,
   ViewChild,
   ViewContainerRef,
@@ -59,10 +60,13 @@ import {
 import {IS_EXTERNAL} from '../../common/flags';
 import {type ModelLoaderServiceInterface} from '../../common/model_loader_service_interface';
 import {
+  AdapterExtension,
+  ExtensionType,
   InternalAdapterExtId,
   ModelItem,
   ModelItemStatus,
   ModelItemType,
+  NodeDataProviderExtension,
 } from '../../common/types';
 import {
   getElectronApi,
@@ -147,11 +151,22 @@ export class ModelSourceInput {
   readonly loading = signal<boolean>(false);
   readonly hasUploadedModels = signal<boolean>(false);
   readonly internalColab = INTERNAL_COLAB;
-  readonly customExtensions = computed(() => {
+  readonly customAdapterExtensions:Signal<AdapterExtension[]> = computed(() => {
     if (this.extensionService.loading()) {
       return [];
     }
-    return this.extensionService.getCustomExtensions();
+    return this.extensionService.getCustomExtensions().filter(
+      (ext) => ext.type === ExtensionType.ADAPTER
+    ) as AdapterExtension[];
+  });
+
+  readonly customNdpExtensions:Signal<NodeDataProviderExtension[]>=computed(() => {
+    if (this.extensionService.loading()) {
+      return [];
+    }
+    return this.extensionService.getCustomExtensions().filter(
+      (ext) => ext.type === ExtensionType.NODE_DATA_PROVIDER
+    ) as NodeDataProviderExtension[];
   });
 
   private portal: ComponentPortal<AdapterSelectorPanel> | null = null;

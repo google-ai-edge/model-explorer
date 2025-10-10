@@ -99,6 +99,7 @@ $blue-palette: (
   // Include theme styles for each component used in the application.
   @include mat.autocomplete-theme($theme);
   @include mat.button-theme($theme);
+  @include mat.button-toggle-theme($theme);
   @include mat.card-theme($theme);
   @include mat.checkbox-theme($theme);
   @include mat.dialog-theme($theme);

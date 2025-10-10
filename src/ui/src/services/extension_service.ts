@@ -16,20 +16,31 @@
  * ==============================================================================
  */
 
-import {Injectable, signal} from '@angular/core';
+import { computed, Injectable, signal } from '@angular/core';
 
-import {ExtensionCommand} from '../common/extension_command';
-import {Extension} from '../common/types';
-import {INTERNAL_COLAB} from '../common/utils';
+import {
+  ExtensionCommand,
+  NdpRunCommand,
+  NdpRunResponse,
+} from '../common/extension_command';
+import {
+  ConfigValue,
+  Extension,
+  NdpExtensionRun,
+  NdpExtensionRunStatus,
+  NodeDataProviderExtension,
+} from '../common/types';
+import { INTERNAL_COLAB } from '../common/utils';
 
 const EXTERNAL_GET_EXTENSIONS_API_PATH = '/api/v1/get_extensions';
 const EXTERNAL_SEND_CMD_GET_API_PATH = '/api/v1/send_command';
 const EXTERNAL_SEND_CMD_POST_API_PATH = '/apipost/v1/send_command';
+const CHECK_NDP_RUN_STATUS_INTERNAL_MS = 2000;
 
 /**
  * Service for managing model explorer extensions.
  */
-@Injectable({providedIn: 'root'})
+@Injectable({ providedIn: 'root' })
 export class ExtensionService {
   readonly loading = signal<boolean>(true);
   readonly internalColab = INTERNAL_COLAB;
@@ -41,13 +52,15 @@ export class ExtensionService {
   }
 
   async sendCommandToExtension<T>(
-    cmd: ExtensionCommand,
-  ): Promise<{cmdResp?: T; otherError?: string}> {
+    cmd: ExtensionCommand
+  ): Promise<{ cmdResp?: T; otherError?: string }> {
     try {
       let resp: Response | undefined = undefined;
       // In internal colab, use GET request.
       if (this.internalColab) {
-        const url = `${EXTERNAL_SEND_CMD_GET_API_PATH}?json=${JSON.stringify(cmd)}`;
+        const url = `${EXTERNAL_SEND_CMD_GET_API_PATH}?json=${JSON.stringify(
+          cmd
+        )}`;
         resp = await fetch(url);
       }
       // In other environments, use POST request.
@@ -62,11 +75,11 @@ export class ExtensionService {
         resp = await fetch(EXTERNAL_SEND_CMD_POST_API_PATH, requestData);
       }
       if (!resp.ok) {
-        return {otherError: `Failed to convert model. ${resp.status}`};
+        return { otherError: `Failed to run extension: ${resp.status}` };
       }
-      return {cmdResp: (await resp.json()) as T};
+      return { cmdResp: (await resp.json()) as T };
     } catch (e) {
-      return {otherError: e as string};
+      return { otherError: e as string };
     }
   }
 
@@ -77,6 +90,29 @@ export class ExtensionService {
    */
   getCustomExtensions(): Extension[] {
     return this.extensions.filter((ext) => !ext.id.startsWith('builtin_'));
+  }
+
+  async runNdpExtension(
+    extension: NodeDataProviderExtension,
+    modelPath: string,
+    configValues: Record<string, ConfigValue>
+  ): Promise<{
+    cmdResp?: NdpRunResponse;
+    otherError?: string;
+  }> {
+    const cmd: NdpRunCommand = {
+      cmdId: 'run',
+      extensionId: extension.id,
+      modelPath,
+      configValues,
+    };
+    console.log('cmd: ', cmd);
+    const resp = await this.sendCommandToExtension<NdpRunResponse>(cmd);
+    console.log('resp: ', resp);
+    return {
+      cmdResp: resp.cmdResp,
+      otherError: resp.otherError,
+    };
   }
 
   private async loadExtensions() {

@@ -1,0 +1,28 @@
+@if (extensions().length > 0) {
+  <div class="container">
+    @for(extension of extensions(); track extension.id) {
+      <div class="extension-container"
+          (click)="handleClickExtension(extension)">
+        <div class="name-row">
+          <div class="icon-container">
+            <mat-icon [class.running]="isExtensionRunning(extension.id)">
+              {{extension.icon}}
+            </mat-icon>
+            @if (isExtensionRunning(extension.id)) {
+              <mat-spinner color="primary" diameter="20">
+              </mat-spinner>
+            }
+          </div>
+          <div class="name">{{extension.name}}</div>
+        </div>
+        <div class="description">
+          {{extension.description}}
+        </div>
+      </div>
+    }
+  </div>
+} @else {
+  <div class="info">
+    No extensions
+  </div>
+}

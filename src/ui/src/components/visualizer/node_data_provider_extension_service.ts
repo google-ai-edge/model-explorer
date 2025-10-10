@@ -16,14 +16,14 @@
  * ==============================================================================
  */
 
-import {computed, Injectable, signal} from '@angular/core';
-import {toObservable} from '@angular/core/rxjs-interop';
+import { computed, Injectable, signal } from '@angular/core';
+import { toObservable } from '@angular/core/rxjs-interop';
 
-import {IS_EXTERNAL} from '../../common/flags';
+import { IS_EXTERNAL } from '../../common/flags';
 
-import {AppService} from './app_service';
-import {COLOR_NAME_TO_HEX} from './common/consts';
-import {ModelGraph} from './common/model_graph';
+import { AppService } from './app_service';
+import { COLOR_NAME_TO_HEX } from './common/consts';
+import { ModelGraph } from './common/model_graph';
 import {
   NodeDataProviderData,
   NodeDataProviderResultProcessedData,
@@ -31,7 +31,7 @@ import {
   ReadFileResp,
   ThresholdItem,
 } from './common/types';
-import {genUid, isOpNode} from './common/utils';
+import { genUid, isOpNode } from './common/utils';
 
 interface Rgb {
   r: number;
@@ -63,8 +63,29 @@ export class NodeDataProviderExtensionService {
 
   readonly remoteSourceLoading = signal<boolean>(false);
 
+  readonly hasExtensionRunning = computed(() => {
+    let running = false;
+    for (const runId of Object.keys(this.runStatus())) {
+      for (const runStatus of Object.values(this.runStatus()[runId])) {
+        if (runStatus) {
+          running = true;
+          break;
+        }
+      }
+      if (running) {
+        break;
+      }
+    }
+    return running;
+  });
+
+  // extensionId -> { runId -> running or not }
+  readonly runStatus = signal<Record<string, Record<string, boolean>>>(
+    {}
+  );
+
   private readonly leftPaneModelGraph$ = toObservable(
-    computed(() => this.appService.panes()[0].modelGraph),
+    computed(() => this.appService.panes()[0].modelGraph)
   );
 
   private readonly rightPaneModelGraph$ = toObservable(
@@ -74,7 +95,7 @@ export class NodeDataProviderExtensionService {
         return undefined;
       }
       return panes[1].modelGraph;
-    }),
+    })
   );
 
   constructor(private readonly appService: AppService) {
@@ -100,7 +121,7 @@ export class NodeDataProviderExtensionService {
     modelGraph: ModelGraph,
     nodeDataProviderData?: NodeDataProviderData,
     clearExisting = false,
-    remotePath?: string,
+    remotePath?: string
   ) {
     const collectionId = modelGraph.collectionLabel;
 
@@ -130,7 +151,7 @@ export class NodeDataProviderExtensionService {
             : {
                 [modelGraph.id]: this.processNodeDataProviderDataForGraph(
                   modelGraph,
-                  nodeDataProviderData,
+                  nodeDataProviderData
                 ),
               },
         extensionId,
@@ -150,7 +171,7 @@ export class NodeDataProviderExtensionService {
         }
       }
 
-      return {...runs};
+      return { ...runs };
     });
   }
 
@@ -158,7 +179,7 @@ export class NodeDataProviderExtensionService {
     runId: string,
     data: NodeDataProviderData,
     modelGraph: ModelGraph,
-    error?: string,
+    error?: string
   ) {
     this.runs.update((runs) => {
       const run = runs[runId];
@@ -169,12 +190,12 @@ export class NodeDataProviderExtensionService {
       }
       run.results[modelGraph.id] = this.processNodeDataProviderDataForGraph(
         modelGraph,
-        data,
+        data
       );
       if (error) {
         run.error = error;
       }
-      return {...runs};
+      return { ...runs };
     });
   }
 
@@ -203,9 +224,9 @@ export class NodeDataProviderExtensionService {
     if (!resp.ok) {
       this.updateRunResults(
         runId,
-        {[modelGraph.id]: {results: {}}},
+        { [modelGraph.id]: { results: {} } },
         modelGraph,
-        `Failed to load JSON file "${path}"`,
+        `Failed to load JSON file "${path}"`
       );
       this.remoteSourceLoading.set(false);
       return;
@@ -217,44 +238,44 @@ export class NodeDataProviderExtensionService {
       if (json.error) {
         this.updateRunResults(
           runId,
-          {[modelGraph.id]: {results: {}}},
+          { [modelGraph.id]: { results: {} } },
           modelGraph,
-          `Failed to process JSON file. ${json.error}`,
+          `Failed to process JSON file. ${json.error}`
         );
       } else {
         try {
           this.updateRunResults(
             runId,
             this.getNodeDataProviderData(json.content, modelGraph),
-            modelGraph,
+            modelGraph
           );
           this.notifyRemoteNodeDataChanges();
         } catch (e) {
           this.updateRunResults(
             runId,
-            {[modelGraph.id]: {results: {}}},
+            { [modelGraph.id]: { results: {} } },
             modelGraph,
-            `Failed to process JSON file. ${e}`,
+            `Failed to process JSON file. ${e}`
           );
         }
       }
     } else {
       const json = JSON.parse(
-        (await resp.text()).replace(")]}'\n", ''),
+        (await resp.text()).replace(")]}'\n", '')
       ) as ReadFileResp;
       try {
         this.updateRunResults(
           runId,
           this.getNodeDataProviderData(json.content, modelGraph),
-          modelGraph,
+          modelGraph
         );
         this.notifyRemoteNodeDataChanges();
       } catch (e) {
         this.updateRunResults(
           runId,
-          {[modelGraph.id]: {results: {}}},
+          { [modelGraph.id]: { results: {} } },
           modelGraph,
-          `Failed to process JSON file. ${e}`,
+          `Failed to process JSON file. ${e}`
         );
       }
     }
@@ -265,7 +286,7 @@ export class NodeDataProviderExtensionService {
   deleteRun(runId: string) {
     this.runs.update((runs) => {
       delete runs[runId];
-      return {...runs};
+      return { ...runs };
     });
     this.notifyRemoteNodeDataChanges();
 
@@ -275,7 +296,7 @@ export class NodeDataProviderExtensionService {
         const runs = this.getRunsForModelGraph(pane.modelGraph!);
         this.appService.setSelectedNodeDataProviderRunId(
           pane.id,
-          runs.length > 0 ? runs[0].runId : undefined,
+          runs.length > 0 ? runs[0].runId : undefined
         );
       }
     }
@@ -283,7 +304,7 @@ export class NodeDataProviderExtensionService {
 
   getSelectedRunForModelGraph(
     paneId: string,
-    modelGraph: ModelGraph,
+    modelGraph: ModelGraph
   ): NodeDataProviderRunData | undefined {
     const selectedRunId =
       this.appService.getSelectedNodeDataProviderRunId(paneId);
@@ -312,9 +333,19 @@ export class NodeDataProviderExtensionService {
     return ret;
   }
 
+  setRunStatus(extensionId: string, runId: string, running: boolean) {
+    this.runStatus.update((runStatus) => {
+      if (!runStatus[extensionId]) {
+        runStatus[extensionId] = {};
+      }
+      runStatus[extensionId][runId] = running;
+      return { ...runStatus };
+    });
+  }
+
   private processNodeDataProviderDataForGraph(
     modelGraph: ModelGraph,
-    nodeDataProviderData: NodeDataProviderData,
+    nodeDataProviderData: NodeDataProviderData
   ): Record<string, NodeDataProviderResultProcessedData> {
     this.genOutputTensorIdToNodeIdMap(modelGraph);
 
@@ -333,13 +364,13 @@ export class NodeDataProviderExtensionService {
       if (gradientItem.bgColor != null) {
         processedGradientItem.bgColor = this.getRgbFromColor(
           gradientItem.bgColor,
-          '#ffffff',
+          '#ffffff'
         );
       }
       if (gradientItem.textColor != null) {
         processedGradientItem.textColor = this.getRgbFromColor(
           gradientItem.textColor,
-          '#000000',
+          '#000000'
         );
       }
       processedGradientItems.push(processedGradientItem);
@@ -348,7 +379,7 @@ export class NodeDataProviderExtensionService {
     let min = Number.POSITIVE_INFINITY;
     let max = Number.NEGATIVE_INFINITY;
     if (processedGradientItems.length > 0) {
-      for (const {value} of Object.values(graphData.results)) {
+      for (const { value } of Object.values(graphData.results)) {
         if (typeof value === 'number') {
           min = Math.min(min, value);
           max = Math.max(max, value);
@@ -365,7 +396,7 @@ export class NodeDataProviderExtensionService {
           graphData.thresholds || [],
           processedGradientItems,
           min,
-          max,
+          max
         );
       }
 
@@ -379,7 +410,7 @@ export class NodeDataProviderExtensionService {
           graphData.thresholds || [],
           processedGradientItems,
           min,
-          max,
+          max
         );
       }
 
@@ -424,7 +455,7 @@ export class NodeDataProviderExtensionService {
         results[indexId] = {
           ...respResult,
           strValue,
-          allValues: {[id]: respResult.value},
+          allValues: { [id]: respResult.value },
         };
       } else {
         // Accumulate all results that map to this node in the `allValues` field
@@ -450,7 +481,7 @@ export class NodeDataProviderExtensionService {
     thresholds: ThresholdItem[],
     gradient: ProcessedGradientItem[],
     min: number,
-    max: number,
+    max: number
   ): string {
     if (gradient.length > 0) {
       return this.getColorFromGradient(
@@ -459,7 +490,7 @@ export class NodeDataProviderExtensionService {
         min,
         max,
         true,
-        'transparent',
+        'transparent'
       );
     } else {
       for (const thrshold of thresholds) {
@@ -476,7 +507,7 @@ export class NodeDataProviderExtensionService {
     thresholds: ThresholdItem[],
     gradient: ProcessedGradientItem[],
     min: number,
-    max: number,
+    max: number
   ): string {
     if (gradient.length > 0) {
       return this.getColorFromGradient(value, gradient, min, max, false, '');
@@ -496,7 +527,7 @@ export class NodeDataProviderExtensionService {
     min: number,
     max: number,
     isBgColor: boolean,
-    defaultColor: string,
+    defaultColor: string
   ): string {
     const targetStop = (value - min) / (max - min);
     for (let i = 0; i < gradient.length - 1; i++) {
@@ -541,7 +572,7 @@ export class NodeDataProviderExtensionService {
 
   private handleModelGraphInPaneChanged(
     modelGraph: ModelGraph,
-    paneIndex: number,
+    paneIndex: number
   ) {
     // Process node data provider results for the model graph.
     const runsForModelGraph = this.getRunsForModelGraph(modelGraph);
@@ -556,7 +587,7 @@ export class NodeDataProviderExtensionService {
         ) {
           run.results[modelGraph.id] = this.processNodeDataProviderDataForGraph(
             modelGraph,
-            run.nodeDataProviderData,
+            run.nodeDataProviderData
           );
         }
       }
@@ -564,14 +595,14 @@ export class NodeDataProviderExtensionService {
       // Set the first run as the selected run.
       this.appService.setSelectedNodeDataProviderRunId(
         this.appService.panes()[paneIndex].id,
-        runsForModelGraph[0].runId,
+        runsForModelGraph[0].runId
       );
     }
   }
 
   private getRgbFromColor(
     color: string,
-    defaultColor: string,
+    defaultColor: string
   ): Rgb | undefined {
     let hexColor = color;
     if (!color.startsWith('#')) {

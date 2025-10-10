@@ -109,6 +109,9 @@ export declare interface Graph {
 
   // The ids of its parent graphs.
   parentGraphIds?: string[];
+
+  // The absolute path of the model that generates this graph.
+  modelPath?: string;
 }
 
 /** A graph with its level, used in the graph selector. */

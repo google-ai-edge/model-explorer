@@ -20,6 +20,7 @@ from importlib import import_module
 from typing import Any, Dict, Union
 
 from .adapter_runner import AdapterRunner
+from .ndp_runner import NdpRunner
 from .consts import MODULE_NAME
 from .extension_class_processor import ExtensionClassProcessor
 from .registered_extension import RegisteredExtension
@@ -58,6 +59,7 @@ class ExtensionManager(object, metaclass=Singleton):
     ]
     self.extensions: list[RegisteredExtension] = []
     self.adapter_runner: AdapterRunner = AdapterRunner()
+    self.ndp_runner: NdpRunner = NdpRunner()
 
   def load_extensions(self) -> None:
     """Loads all extensions."""
@@ -92,6 +94,10 @@ class ExtensionManager(object, metaclass=Singleton):
     if extension.type == 'adapter':
       resp = self.adapter_runner.run_adapter(extension=extension, cmd=cmd)
       return convert_adapter_response(resp)
+    # Node data provider.
+    elif extension.type == 'node_data_provider':
+      resp = self.ndp_runner.run_ndp(extension=extension, cmd=cmd)
+      return resp
 
     return {}
 
@@ -134,15 +140,22 @@ class ExtensionManager(object, metaclass=Singleton):
           continue
 
         if ExtensionClassProcessor.extension_class is not None:
-          extension = RegisteredExtension(
-              metadata=ExtensionClassProcessor.extension_class.metadata,
-              type=ExtensionClassProcessor.extension_type,
-              ext_class=ExtensionClassProcessor.extension_class,
-          )
-          self.extensions.append(extension)
-          ExtensionManager.CACHED_REGISTERED_EXTENSIONS[module_full_name] = (
-              extension
-          )
+          metadata = ExtensionClassProcessor.extension_class.metadata
+          metadata_list = []
+          if isinstance(metadata, list):
+            metadata_list = metadata
+          else:
+            metadata_list = [metadata]
+          for metadata in metadata_list:
+            extension = RegisteredExtension(
+                metadata=metadata,
+                type=ExtensionClassProcessor.extension_type,
+                ext_class=ExtensionClassProcessor.extension_class,
+            )
+            self.extensions.append(extension)
+            ExtensionManager.CACHED_REGISTERED_EXTENSIONS[module_full_name] = (
+                extension
+            )
 
   def _get_extension_by_id(self, id: str) -> Union[RegisteredExtension, None]:
     matches = [ext for ext in self.extensions if ext.metadata.id == id]

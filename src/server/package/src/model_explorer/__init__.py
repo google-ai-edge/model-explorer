@@ -15,10 +15,11 @@
 
 from importlib.metadata import version
 
-from . import graph_builder, node_data_builder
+from . import graph_builder, node_data_builder, config_editor
 from .adapter import Adapter, AdapterMetadata
 from .apis import config, visualize, visualize_from_config, visualize_pytorch
 from .consts import PACKAGE_NAME
+from .node_data_provider import NodeDataProvider, NodeDataProviderMetadata, NodeDataProviderResult
 from .types import ModelExplorerGraphs
 
 # Default 'exports'.
@@ -30,8 +31,12 @@ __all__ = [
     'Adapter',
     'AdapterMetadata',
     'ModelExplorerGraphs',
+    'NodeDataProvider',
+    'NodeDataProviderMetadata',
+    'NodeDataProviderResult',
     'graph_builder',
     'node_data_builder',
+    'config_editor',
 ]
 
 __version__ = version(PACKAGE_NAME)

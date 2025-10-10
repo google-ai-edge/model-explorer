@@ -16,29 +16,29 @@
  * ==============================================================================
  */
 
-import {Injectable, signal} from '@angular/core';
+import { Injectable, signal } from '@angular/core';
 
-import {GRAPHS_MODEL_SOURCE_PREFIX} from '../common/consts';
+import { GRAPHS_MODEL_SOURCE_PREFIX } from '../common/consts';
 import {
   AdapterConvertCommand,
   AdapterConvertResponse,
 } from '../common/extension_command';
-import {ModelLoaderServiceInterface} from '../common/model_loader_service_interface';
+import { ModelLoaderServiceInterface } from '../common/model_loader_service_interface';
 import {
   InternalAdapterExtId,
   ModelItem,
   ModelItemStatus,
   ModelItemType,
 } from '../common/types';
-import {processJson, processUploadedJsonFile} from '../common/utils';
+import { processJson, processUploadedJsonFile } from '../common/utils';
 import {
   Graph,
   GraphCollection,
 } from '../components/visualizer/common/input_graph';
-import {processErrorMessage} from '../components/visualizer/common/utils';
+import { processErrorMessage } from '../components/visualizer/common/utils';
 
-import {ExtensionService} from './extension_service';
-import {SettingsService} from './settings_service';
+import { ExtensionService } from './extension_service';
+import { SettingsService } from './settings_service';
 
 const UPLOAD_API_PATH = '/apipost/v1/upload';
 const LOAD_GRAPHS_JSON_API_PATH = '/api/v1/load_graphs_json';
@@ -62,12 +62,12 @@ declare interface ReadTextFileResponse {
 export class ModelLoaderService implements ModelLoaderServiceInterface {
   // The loaded graph collections
   readonly loadedGraphCollections = signal<GraphCollection[] | undefined>(
-    undefined,
+    undefined
   );
 
   constructor(
     private readonly settingsService: SettingsService,
-    readonly extensionService: ExtensionService,
+    readonly extensionService: ExtensionService
   ) {}
 
   async loadModels(modelItems: ModelItem[]) {
@@ -138,7 +138,7 @@ export class ModelLoaderService implements ModelLoaderServiceInterface {
             modelItem,
             filePath,
             fileName,
-            false,
+            false
           );
           break;
       }
@@ -155,7 +155,7 @@ export class ModelLoaderService implements ModelLoaderServiceInterface {
             if (modelItem.type === ModelItemType.GRAPH_JSONS_FROM_SERVER) {
               // Load the json from backend.
               result = await this.loadGraphsFromBackendGraphsJson(
-                modelItem.path,
+                modelItem.path
               );
               modelItem.status.set(ModelItemStatus.DONE);
             }
@@ -175,7 +175,7 @@ export class ModelLoaderService implements ModelLoaderServiceInterface {
         default:
           // Upload the file
           modelItem.status.set(ModelItemStatus.UPLOADING);
-          const {path, error: uploadError} = await this.uploadModelFile(file);
+          const { path, error: uploadError } = await this.uploadModelFile(file);
           if (uploadError) {
             modelItem.selected = false;
             modelItem.status.set(ModelItemStatus.ERROR);
@@ -188,7 +188,7 @@ export class ModelLoaderService implements ModelLoaderServiceInterface {
             modelItem,
             path,
             file.name,
-            true,
+            true
           );
           break;
       }
@@ -207,7 +207,7 @@ export class ModelLoaderService implements ModelLoaderServiceInterface {
   }
 
   private async loadGraphsFromBackendGraphsJson(
-    graphPath: string,
+    graphPath: string
   ): Promise<GraphCollection[]> {
     // Get graphs index.
     //
@@ -218,15 +218,15 @@ export class ModelLoaderService implements ModelLoaderServiceInterface {
     const name = partsStr.substring(0, lastSlashIndex);
     const index = Number(partsStr.substring(lastSlashIndex + 1));
     const resp = await fetch(
-      `${LOAD_GRAPHS_JSON_API_PATH}?graph_index=${index}`,
+      `${LOAD_GRAPHS_JSON_API_PATH}?graph_index=${index}`
     );
     const json = (await resp.json()) as AdapterConvertResponse;
     return this.processAdapterConvertResponse(json, name);
   }
 
   private async uploadModelFile(
-    file: File,
-  ): Promise<{path: string; error?: string}> {
+    file: File
+  ): Promise<{ path: string; error?: string }> {
     const data = new FormData();
     data.append('file', file, file.name);
     const uploadResp = await fetch(UPLOAD_API_PATH, {
@@ -241,7 +241,7 @@ export class ModelLoaderService implements ModelLoaderServiceInterface {
       };
     } else {
       const path = (JSON.parse(await uploadResp.text()) as UploadResponse).path;
-      return {path};
+      return { path };
     }
   }
 
@@ -249,7 +249,7 @@ export class ModelLoaderService implements ModelLoaderServiceInterface {
     modelItem: ModelItem,
     path: string,
     fileName: string,
-    deleteAfterConversion: boolean,
+    deleteAfterConversion: boolean
   ): Promise<GraphCollection[]> {
     let result: GraphCollection[] = [];
     modelItem.status.set(ModelItemStatus.PROCESSING);
@@ -260,9 +260,9 @@ export class ModelLoaderService implements ModelLoaderServiceInterface {
       settings: this.settingsService.getAllSettingsValues(),
       deleteAfterConversion,
     };
-    const {cmdResp, otherError: cmdError} =
+    const { cmdResp, otherError: cmdError } =
       await this.extensionService.sendCommandToExtension<AdapterConvertResponse>(
-        convertCommand,
+        convertCommand
       );
     const error = cmdResp?.error || cmdError;
     if (error) {
@@ -271,7 +271,7 @@ export class ModelLoaderService implements ModelLoaderServiceInterface {
       modelItem.errorMessage = error;
       return [];
     } else if (cmdResp) {
-      result = this.processAdapterConvertResponse(cmdResp, fileName);
+      result = this.processAdapterConvertResponse(cmdResp, fileName, path);
     }
     modelItem.status.set(ModelItemStatus.DONE);
     return result;
@@ -280,11 +280,18 @@ export class ModelLoaderService implements ModelLoaderServiceInterface {
   private processAdapterConvertResponse(
     resp: AdapterConvertResponse,
     fileName: string,
+    path = ''
   ): GraphCollection[] {
     if (resp.graphs) {
-      return [{label: fileName, graphs: resp.graphs}];
+      for (const graph of resp.graphs) {
+        graph.modelPath = path;
+      }
+      return [{ label: fileName, graphs: resp.graphs }];
     } else if (resp.graphCollections) {
       return resp.graphCollections.map((item) => {
+        for (const graph of item.graphs) {
+          graph.modelPath = path;
+        }
         return {
           label: item.label === '' ? fileName : `${fileName} (${item.label})`,
           graphs: item.graphs,

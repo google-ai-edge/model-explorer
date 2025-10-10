@@ -16,7 +16,7 @@
  * ==============================================================================
  */
 
-import {WritableSignal} from '@angular/core';
+import { WritableSignal } from '@angular/core';
 
 /**
  * TF versions.
@@ -66,8 +66,14 @@ export declare interface AdapterExtension extends ExtensionBase {
   matchHttpUrl?: boolean;
 }
 
+export declare interface NodeDataProviderExtension extends ExtensionBase {
+  type: ExtensionType.NODE_DATA_PROVIDER;
+  icon: string;
+  configEditors: ConfigEditor[];
+}
+
 /** Union type for extension. */
-export type Extension = AdapterExtension;
+export type Extension = AdapterExtension | NodeDataProviderExtension;
 
 /** An item in the model table. */
 export interface ModelItem {
@@ -110,4 +116,88 @@ export enum ModelItemStatus {
   UPLOADING = 'Uploading',
   DONE = 'Done',
   ERROR = 'Error',
+}
+
+export enum ConfigEditorType {
+  TEXT_INPUT = 'text_input',
+  TEXT_AREA = 'text_area',
+  SLIDE_TOGGLE = 'slide_toggle',
+  COLOR_PICKER = 'color_picker',
+  DROP_DOWN = 'drop_down',
+  BUTTON_TOGGLE = 'button_toggle',
+  FILE = 'file',
+}
+
+export declare interface ConfigEditorBase {
+  type: ConfigEditorType;
+  id: string;
+  label?: string;
+  defaultValue?: ConfigValue;
+  required?: boolean;
+}
+
+export declare interface TextInputConfigEditor extends ConfigEditorBase {
+  type: ConfigEditorType.TEXT_INPUT;
+  number: boolean;
+}
+
+export declare interface TextAreaConfigEditor extends ConfigEditorBase {
+  type: ConfigEditorType.TEXT_AREA;
+  height: number;
+}
+
+export declare interface SlideToggleConfigEditor extends ConfigEditorBase {
+  type: ConfigEditorType.SLIDE_TOGGLE;
+}
+
+export declare interface ColorPickerConfigEditor extends ConfigEditorBase {
+  type: ConfigEditorType.COLOR_PICKER;
+}
+
+export declare interface DropDownConfigEditor extends ConfigEditorBase {
+  type: ConfigEditorType.DROP_DOWN;
+  options: OptionItem[];
+}
+
+export declare interface ButtonToggleConfigEditor extends ConfigEditorBase {
+  type: ConfigEditorType.BUTTON_TOGGLE;
+  options: OptionItem[];
+  multiple: boolean;
+}
+
+export declare interface FileConfigEditor extends ConfigEditorBase {
+  type: ConfigEditorType.FILE;
+}
+
+export declare interface OptionItem {
+  value: string;
+  label: string;
+}
+
+export type ConfigEditor =
+  | TextInputConfigEditor
+  | TextAreaConfigEditor
+  | SlideToggleConfigEditor
+  | ColorPickerConfigEditor
+  | DropDownConfigEditor
+  | ButtonToggleConfigEditor
+  | FileConfigEditor;
+
+/** Config value. */
+export type ConfigValue = string | boolean | number | string[];
+
+export interface NdpExtensionRun {
+  runId: string;
+  extensionId: string;
+  runName: string;
+  creationTimeTs: number;
+  status: NdpExtensionRunStatus;
+  finishTimeTs?: number;
+  error?: string;
+}
+
+export enum NdpExtensionRunStatus {
+  RUNNNING = 'running',
+  DONE = 'done',
+  ERROR = 'error',
 }
