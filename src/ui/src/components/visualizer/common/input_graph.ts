@@ -93,6 +93,16 @@ export declare interface Graph {
    */
   groupNodeConfigs?: GroupNodeConfig[];
 
+  /**
+   * A list of labels. Nodes whose label matches any label in the list
+   * (case-insensitive) will be hidden from the visualzation.
+   *
+   * This overrides the node labels set in the settings, or the
+   * `nodeLabelsToHide` field in the `VisualizerConfig` * passed to the
+   * visualizer.
+   */
+  nodeLabelsToHide?: string[];
+
   // The data for various tasks that provide extra data to be visualized, such
   // as node data, edge overlay, etc.
   tasksData?: TasksData;
