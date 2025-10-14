@@ -22,6 +22,7 @@
   align-items: center;
   line-height: 14px;
   position: relative;
+  color: var(--me-on-surface-color);
 
   .collection-label {
     font-weight: 700;
@@ -55,7 +56,7 @@
   }
 
   .node-count-label {
-    color: #999;
+    color: var(--me-on-surface-low-color);
     margin-left: 12px;
   }
 
@@ -66,7 +67,7 @@
 
   .graph-selector-label {
     font-size: 12px;
-    border: 1px solid #aaa;
+    border: 1px solid var(--me-outline-variant-color);
     border-radius: 3px;
     padding: 2px 4px;
     cursor: pointer;
@@ -83,7 +84,7 @@
     }
 
     &:hover {
-      border-color: #ea8600;
+      border-color: var(--me-primary-color);
     }
   }
 
@@ -93,16 +94,17 @@
     justify-content: center;
     margin-left: 4px;
     cursor: pointer;
-    opacity: 0.6;
+    color: var(--me-on-surface-variant-color);
 
     &:hover {
-      opacity: 1;
+      color: var(--me-on-surface-color);
     }
   }
 }
 
 ::ng-deep .graph-selector-panel {
-  background-color: white;
+  color: var(--me-on-surface-color);
+  background-color: var(--me-surface-container-low-color);
 
   mat-option {
     height: 24px;
@@ -132,11 +134,11 @@
         white-space: nowrap;
         text-overflow: ellipsis;
         /* stylelint-disable-next-line declaration-no-important -- override MDC */
-        color: black !important;
+        color: var(--me-on-surface-color) !important;
       }
 
       .node-count-label {
-        color: #999;
+        color: var(--me-on-surface-low-color);
       }
     }
 
@@ -156,7 +158,7 @@
 
       .block-container {
         border-radius: 3px;
-        border: 1px solid #999;
+        border: 1px solid var(--me-outline-variant-color);
         height: 100%;
         width: 100%;
         box-sizing: border-box;
@@ -168,7 +170,7 @@
         .right-block {
           height: 100%;
           width: 50%;
-          background-color: #999;
+          background-color: var(--me-surface-container-low-color);
           border-top-right-radius: 2px;
           border-bottom-right-radius: 2px;
         }
@@ -188,11 +190,6 @@
 
     mat-pseudo-checkbox {
       display: none;
-    }
-
-    &.selected {
-      /* stylelint-disable-next-line declaration-no-important -- override MDC */
-      background-color: #fff1de !important;
     }
   }
 
@@ -224,7 +221,7 @@
         width: 100%;
         box-sizing: border-box;
         pointer-events: all;
-        border: 1px solid #ccc;
+        border: 1px solid var(--me-outline-variant-color);
         height: 20px;
         border-radius: 4px;
         padding: 0 2px;

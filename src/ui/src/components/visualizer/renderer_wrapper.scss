@@ -36,17 +36,18 @@
     box-sizing: border-box;
     height: 40px;
     display: flex;
-    background-color: #edf2fa;
+    color: var(--me-on-surface-color);
+    background-color: var(--me-surface-container-high-color);
     border-radius: 99px;
     align-items: center;
-    outline: 2px solid white;
+    outline: 2px solid var(--me-surface-color);
 
     &.in-popup {
       padding-left: 10px;
     }
 
     &:has(search-bar::ng-deep input:focus) {
-      border-color: #1a73e8;
+      border-color: var(--me-primary-color);
     }
 
     search-bar {
@@ -65,8 +66,8 @@
       justify-content: center;
 
       &.enabled {
-        background-color: #ffdeb1;
-        outline: 1px solid #ea8600;
+        background-color: var(--me-warning-container-color);
+        outline: 1px solid var(--me-warning-text-color);
         border-radius: 4px;
       }
 
@@ -81,10 +82,10 @@
       width: 20px;
       height: 20px;
       cursor: pointer;
-      opacity: 0.6;
+      opacity: 0.85;
 
       &:hover {
-        opacity: 0.9;
+        opacity: 1;
       }
 
       &.expand-all,
@@ -109,9 +110,9 @@
 
     .vertical-divider {
       width: 1px;
-      border-left: 1px solid #d0d0d0;
+      border-left: 1px solid var(--me-outline-variant-color);
       margin: 2px 5px;
-      height : 20px;
+      height: 20px;
     }
 
     edge-overlays-dropdown {
@@ -132,6 +133,11 @@
 }
 
 ::ng-deep .model-explorer-download-png-menu {
+  /* stylelint-disable-next-line declaration-no-important -- override MDC */
+  color: var(--me-on-surface-color) !important;
+  /* stylelint-disable-next-line declaration-no-important -- override MDC */
+  background-color: var(--me-surface-container-low-color) !important;
+
   .menu-item {
     /* stylelint-disable-next-line declaration-no-important -- override MDC */
     letter-spacing: normal !important;
@@ -144,7 +150,7 @@
     align-items: center;
 
     &:hover {
-      background-color: #eee;
+      background-color: var(--me-surface-container-high-color);
     }
   }
 
@@ -154,7 +160,7 @@
     font-size: 12px;
     letter-spacing: normal;
     padding: 6px 8px 0 4px;
-    border-top: 1px solid #ddd;
+    border-top: 1px solid var(--me-outline-variant-color);
     margin-top: 8px;
     cursor: pointer;
 

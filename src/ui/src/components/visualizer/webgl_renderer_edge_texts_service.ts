@@ -25,6 +25,7 @@ import {ModelEdge} from './common/model_graph';
 import {FontWeight} from './common/types';
 import {getNodeAttrStringValue, isOpNode} from './common/utils';
 import {ThreejsService} from './threejs_service';
+import {ColorVariable} from './visualizer_theme_service';
 import {WebglRenderer} from './webgl_renderer';
 import {WebglRendererThreejsService} from './webgl_renderer_threejs_service';
 import {LabelData, WebglTexts} from './webgl_texts';
@@ -34,8 +35,6 @@ const THREE = three;
 /** Service for rendering edge texts. */
 @Injectable()
 export class WebglRendererEdgeTextsService {
-  readonly EDGE_TEXT_COLOR = new THREE.Color('#041E49');
-
   private readonly threejsService: ThreejsService = inject(ThreejsService);
   readonly edgeTexts = new WebglTexts(this.threejsService);
 
@@ -58,9 +57,13 @@ export class WebglRendererEdgeTextsService {
   }) {
     const labels = this.genLabelsOnEdges(
       this.webglRenderer.edgesToRender,
-      this.EDGE_TEXT_COLOR,
+      new THREE.Color(
+        this.webglRenderer.visualizerThemeService.getColor(
+          ColorVariable.ON_SURFACE_COLOR,
+        ),
+      ),
       0,
-      95,
+      95.1,
       undefined,
       data?.outputMetadataKey,
       data?.inputMetadataKey,
@@ -89,6 +92,11 @@ export class WebglRendererEdgeTextsService {
     const disallowVerticalEdgeLabels =
       this.appService.config()?.disallowVerticalEdgeLabels || false;
     const labels: LabelData[] = [];
+    const borderColor = new THREE.Color(
+      this.webglRenderer.visualizerThemeService.getColor(
+        ColorVariable.SURFACE_COLOR,
+      ),
+    );
     const charsInfo = this.threejsService.getCharsInfo(FontWeight.MEDIUM);
     for (const {edge} of edges) {
       const fromNode =
@@ -201,7 +209,7 @@ export class WebglRendererEdgeTextsService {
           y,
           z: posY,
           color,
-          borderColor: {r: 1, g: 1, b: 1},
+          borderColor,
         });
       };
       if (textLongerThanCurve) {
@@ -390,7 +398,7 @@ export class WebglRendererEdgeTextsService {
               color,
               angle,
               edgeTextMode: true,
-              borderColor: {r: 1, g: 1, b: 1},
+              borderColor,
             });
           }
         }

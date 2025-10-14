@@ -58,7 +58,7 @@
 
       .info-msg {
         margin-bottom: 2px;
-        color: #999;
+        color: var(--me-on-surface-low-color);
         font-size: 12px;
 
         .underline {
@@ -94,7 +94,7 @@
 
         .index {
           width: 16px;
-          color: #999;
+          color: var(--me-on-surface-variant-color);
           flex-shrink: 0;
           line-height: 14px;
         }
@@ -103,18 +103,18 @@
           line-height: 14px;
 
           &.hidden {
-            color: #999;
+            color: var(--me-on-surface-variant-color);
           }
         }
       }
     }
 
     .icon-container {
-      background-color: #eee;
-      border: 1px solid #999;
+      background-color: var(--me-surface-container-high-color);
+      border: 1px solid var(--me-outline-color);
 
       mat-icon {
-        color: #999;
+        color: var(--me-on-surface-variant-color);
       }
     }
   }
@@ -135,17 +135,17 @@
     height: 12px;
     flex-shrink: 0;
     display: none;
-    background-color: #d7f1ff;
+    background-color: var(--me-secondary-container-color);
     border-radius: 2px;
     margin-left: 2px;
     cursor: pointer;
     align-items: center;
     justify-content: center;
-    border: 1px solid #4e90b5;
-    opacity: .75;
+    border: 1px solid var(--me-on-secondary-container-color);
+    opacity: 0.75;
 
     mat-icon {
-      color: #00639b;
+      color: var(--me-primary-color);
       font-size: 11px;
       width: 11px;
       height: 11px;

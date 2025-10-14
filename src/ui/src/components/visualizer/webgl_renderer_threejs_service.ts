@@ -23,6 +23,7 @@ import * as three from 'three';
 import {ModelGraph} from './common/model_graph';
 import {Point, Rect} from './common/types';
 import {getHighQualityPixelRatio, IS_MAC} from './common/utils';
+import {ColorVariable} from './visualizer_theme_service';
 import {WebglRenderer} from './webgl_renderer';
 
 const DEFAULT_FRUSTUM_SIZE = 500;
@@ -201,7 +202,7 @@ export class WebglRendererThreejsService {
 
     // Set up THREE.js scene.
     this.scene = new THREE.Scene();
-    this.scene.background = new THREE.Color(0xffffff);
+    this.updateSceneBackground();
 
     // Create a camera with orthographic projection.
     //
@@ -280,6 +281,14 @@ export class WebglRendererThreejsService {
 
     this.raycaster = new THREE.Raycaster();
     this.raycaster.params.Points!.threshold = 5.5;
+  }
+
+  updateSceneBackground() {
+    this.scene.background = new THREE.Color(
+      this.webglRenderer.visualizerThemeService.getColor(
+        ColorVariable.SURFACE_COLOR,
+      ),
+    );
   }
 
   clearScene(objsToSkip: Array<three.Object3D | undefined> = []) {

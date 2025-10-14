@@ -62,7 +62,7 @@ import {Bubble} from '../bubble/bubble';
 ::ng-deep bubble-container:has(.model-explorer-hoverable-label-popup) {
   width: 100%;
   box-shadow: none;
-  border: 1px solid #ccc;
+  border: 1px solid var(--me-outline-variant-color);
   border-radius: 4px;
 }
 
@@ -70,8 +70,8 @@ import {Bubble} from '../bubble/bubble';
   padding: 2px;
   font-size: 12px;
   line-height: 12px;
-  background-color: white;
-  color: #999;
+  background-color: var(--me-surface-container-low-color);
+  color: var(--me-on-surface-low-color);
   font-family: 'Google Sans Text', Arial, Helvetica, sans-serif;
 }
 `,

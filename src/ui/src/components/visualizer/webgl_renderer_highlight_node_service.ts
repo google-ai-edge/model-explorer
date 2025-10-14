@@ -63,7 +63,7 @@ export interface HighlightInfo {
  * outside the node border).
  */
 export class WebglRendererHighlightNodesService {
-  readonly highlightNodesBorders = new WebglRoundedRectangles(8);
+  readonly highlightNodesBorders: WebglRoundedRectangles;
 
   private readonly highlights = signal<{[nodeId: string]: HighlightInfo}>({});
   private webglRendererThreejsService!: WebglRendererThreejsService;
@@ -74,6 +74,10 @@ export class WebglRendererHighlightNodesService {
   ) {
     this.webglRendererThreejsService =
       webglRenderer.webglRendererThreejsService;
+    this.highlightNodesBorders = new WebglRoundedRectangles(
+      8,
+      this.webglRenderer.visualizerThemeService,
+    );
 
     // Handle highlight nodes changes.
     effect(() => {

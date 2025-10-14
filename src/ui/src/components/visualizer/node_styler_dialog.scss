@@ -25,6 +25,9 @@
 
 .title-container {
   position: relative;
+  color: var(--me-on-surface-color);
+  background-color: var(--me-surface-container-high-color);
+  margin-bottom: 0;
 }
 
 .title {
@@ -36,7 +39,7 @@
 .description {
   line-height: 14px;
   font-size: 12px;
-  color: #777;
+  color: var(--me-on-surface-variant-color);
   margin-top: 6px;
   margin-bottom: 4px;
   font-weight: normal;
@@ -48,6 +51,18 @@
   align-items: center;
   justify-content: space-between;
   padding: 0 24px;
+  background-color: var(--me-surface-container-high-color);
+
+  button {
+    background-color: var(--me-secondary-container-color);
+    color: var(--me-on-secondary-container-color);
+
+    &.close {
+      height: 30px;
+      background-color: var(--me-primary-color);
+      color: var(--me-on-primary-color);
+    }
+  }
 }
 
 .action-button {
@@ -67,29 +82,28 @@
 .dialog-content {
   padding: 0;
   box-sizing: border-box;
-  border-top: 1px solid #e6e6e6;
-  border-bottom: 1px solid #e6e6e6;
-  background-color: #f9f9f9;
+  background-color: var(--me-surface-container-low-color);
   overflow: hidden auto;
+  color: var(--me-on-surface-color);
 
   .no-rules-message {
     padding: 12px 24px;
     font-size: 12px;
-    color: #777;
+    color: var(--me-on-surface-variant-color);
   }
 }
 
 .common-input {
   padding: 0 4px;
-  border: 1px solid #ccc;
+  border: 1px solid var(--me-outline-variant-color);
   border-radius: 4px;
   height: 22px;
   box-sizing: border-box;
   outline: none;
 
   &:focus {
-    border-color: #1a73e8;
-    outline: 1px solid #1a73e8;
+    border-color: var(--me-primary-color);
+    outline: 1px solid var(--me-primary-color);
   }
 }
 
@@ -99,11 +113,11 @@
 
   th:not(.action-btns),
   td:not(.action-btns) {
-    border-right: 1px solid #e6e6e6;
+    border-right: 1px solid var(--me-outline-hairline-variant-color);
   }
 
   tr td {
-    border-bottom: 1px solid #e6e6e6;
+    border-bottom: 1px solid var(--me-outline-hairline-variant-color);
   }
 
   thead {
@@ -111,12 +125,13 @@
     height: 32px;
     position: sticky;
     top: 0;
-    background-color: #f1f1f1;
+    color: var(--me-on-surface-variant-color);
+    background-color: var(--me-surface-container-color);
     z-index: 100;
 
     th {
       font-weight: 500;
-      border-bottom: 1px solid #e6e6e6;
+      border-bottom: 1px solid var(--me-outline-hairline-variant-color);
 
       &.query {
         padding-left: 24px;
@@ -129,9 +144,10 @@
           .icon-container {
             width: 16px;
             height: 16px;
-            opacity: .6;
+            opacity: 0.85;
             cursor: pointer;
             margin-left: 4px;
+            color: var(--me-on-surface-variant-color);
 
             &:hover {
               opacity: 1;
@@ -211,16 +227,17 @@
           display: flex;
           justify-content: flex-end;
           gap: 2px;
+          color: var(--me-on-surface-variant-color);
         }
 
         .icon-container {
           display: flex;
-          opacity: 0.6;
+          opacity: .7;
           cursor: pointer;
           margin-top: 2px;
 
           &:hover {
-            opacity: 1;
+            opacity: .9;
           }
 
           mat-icon {
@@ -253,17 +270,16 @@
         align-items: center;
         overflow: hidden;
         border-radius: 4px;
-        border: 1px solid #ccc;
+        border: 1px solid var(--me-outline-variant-color);
         margin-left: 4px;
         width: fit-content;
-        background-color: white;
         box-sizing: border-box;
         height: 24px;
         position: relative;
 
         &:focus-within {
-          border-color: #1a73e8;
-          outline: 1px solid #1a73e8;
+          border-color: var(--me-primary-color);
+          outline: 1px solid var(--me-primary-color);
         }
 
         label {
@@ -271,10 +287,10 @@
           width: 16px;
           height: 16px;
           margin: 2px;
-          background-color: red;
+          background-color: var(--me-error-text-color);
           border-radius: 4px;
           cursor: pointer;
-          border: 1px solid #ddd;
+          border: 1px solid var(--me-outline-variant-color);
 
           input {
             visibility: hidden;
@@ -285,7 +301,7 @@
           width: 100px;
           border: none;
           height: 100%;
-          background-color: transparent;
+          // background-color: transparent;
           outline: none;
         }
       }
@@ -300,7 +316,7 @@
         input {
           width: 80px;
           height: 28px;
-          border: 1px solid #ccc;
+          border: 1px solid var(--me-outline-variant-color);
           border-radius: 4px;
           background-color: transparent;
           box-sizing: border-box;

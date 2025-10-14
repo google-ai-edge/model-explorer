@@ -16,16 +16,15 @@
  * ==============================================================================
  */
 
-@use 'variables';
-
 $block_width: 30px;
 $block_height: 14px;
 
 .container {
   height: fit-content;
-  background-color: rgba(255, 255, 255, 0.9);
+  background-color: var(--me-surface-color);
   padding: 8px;
   line-height: normal;
+  color: var(--me-on-surface-color);
 
   &.hide {
     display: none;
@@ -46,63 +45,64 @@ $block_height: 14px;
       width: $block_width;
       height: $block_height;
       border-radius: 5px;
-      border: 1px solid #666;
-      background-color: #fff;
+      border: 1px solid var(--me-outline-color);
+      background-color: var(--me-surface-color);
     }
 
     .group-node-key {
       width: $block_width;
       height: $block_height;
-      border: 1px solid #777;
+      border: 1px solid var(--me-outline-color);
       border-radius: 5px;
-      background-color: #eaeaf2;
+      background-color: var(--me-group-node-bg-color1);
     }
 
     .artificial-layer-key {
-      border: 1px solid variables.$artificial-layer;
+      border: 1px solid var(--me-artificial-groups-border-color);
       width: $block_width;
       height: $block_height;
-      background-color: #f1f1f1;
+      background-color: var(--me-on-surface-container-low-color);
     }
 
     .selected-node-key {
       width: $block_width;
       height: $block_height;
-      border: 2px solid variables.$selection-color;
+      border: 2px solid var(--me-primary-color);
       border-radius: 5px;
-      background-color: #c2e7ff;
+      background-color: var(--me-secondary-container-color);
     }
 
     .identical-group-key {
       width: $block_width;
       height: $block_height;
-      border: 1px solid #777;
-      background-color: #e2edff;
+      border: 1px solid var(--me-outline-color);
+      border-radius: 5px;
+      background-color: var(--me-identical-group-bg-color);
     }
 
     .input-key {
       width: $block_width;
       height: $block_height;
       border-radius: 5px;
-      border: 2px solid variables.$incoming-edge-color;
+      border: 2px solid var(--me-incoming-edge-color);
     }
 
     .output-key {
       width: $block_width;
       height: $block_height;
       border-radius: 5px;
-      border: 2px solid variables.$outgoing-edge-color;
+      border: 2px solid var(--me-outgoing-edge-color);
     }
 
     .shortcut {
-      color: #777;
+      color: var(--me-on-surface-variant-color);
       font-size: 10px;
       line-height: 10px;
     }
 
     .divider {
       height: 1px;
-      border-top: 1px solid #ccc;
+      border-top: 1px solid var(--me-outline-variant-color);
       margin: 8px 0 4px;
     }
   }

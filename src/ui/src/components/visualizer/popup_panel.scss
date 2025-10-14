@@ -31,17 +31,17 @@ $resizer-size: 8px;
   font-size: 13px;
   outline: 2px solid transparent;
   position: relative;
-  background-color: white;
+  background-color: var(--me-surface-color);
   border-radius: 4px;
   overflow: hidden;
-  border: 2px solid #aaa;
+  border: 2px solid var(--me-outline-variant-color);
   cursor: pointer;
 
   .title {
     height: 27px;
-    border-bottom: 1px solid #ccc;
+    border-bottom: 1px solid var(--me-outline-variant-color);
     box-sizing: border-box;
-    background-color: #e7f3ff;
+    background-color: var(--me-surface-container-high-color);
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -50,6 +50,7 @@ $resizer-size: 8px;
     border-top-left-radius: 2px;
     border-top-right-radius: 2px;
     white-space: nowrap;
+    color: var(--me-on-surface-color);
 
     .label {
       flex-grow: 1;
@@ -93,11 +94,11 @@ $resizer-size: 8px;
 }
 
 .container.selected {
-  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  box-shadow: var(--me-bubble-shadow);
 
   .title {
-    background-color: #ea8600;
-    color: white;
+    background-color: var(--me-active-panel-bar-bg-color);
+    color: var(--me-on-surface-inverse-color);
   }
 }
 

@@ -113,7 +113,6 @@ export class WebglRendererEdgeOverlaysService {
       const edgeWidth = subgraph.edgeWidth ?? DEFAULT_EDGE_WIDTH;
       const edges: Array<{edge: ModelEdge; index: number}> = [];
       const curWebglEdges = new WebglEdges(
-        new THREE.Color(subgraph.edgeColor),
         edgeWidth,
         edgeWidth / DEFAULT_EDGE_WIDTH,
       );
@@ -168,7 +167,11 @@ export class WebglRendererEdgeOverlaysService {
           index: 96 / WEBGL_ELEMENT_Y_FACTOR,
         });
       }
-      curWebglEdges.generateMesh(edges, this.webglRenderer.curModelGraph);
+      curWebglEdges.generateMesh(
+        new THREE.Color(subgraph.edgeColor),
+        edges,
+        this.webglRenderer.curModelGraph,
+      );
       this.webglRendererThreejsService.addToScene(curWebglEdges.edgesMesh);
       this.webglRendererThreejsService.addToScene(curWebglEdges.arrowHeadsMesh);
       this.overlaysEdgesList.push(curWebglEdges);

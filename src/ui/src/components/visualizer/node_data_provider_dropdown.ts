@@ -29,7 +29,6 @@ import {MatIconModule} from '@angular/material/icon';
 import {MatProgressSpinnerModule} from '@angular/material/progress-spinner';
 import {MatTooltipModule} from '@angular/material/tooltip';
 
-import {Bubble} from '../bubble/bubble';
 import {BubbleClick} from '../bubble/bubble_click';
 
 import {AppService} from './app_service';
@@ -45,7 +44,6 @@ import {NodeDataProviderExtensionService} from './node_data_provider_extension_s
   standalone: true,
   selector: 'node-data-provider-dropdown',
   imports: [
-    Bubble,
     BubbleClick,
     CommonModule,
     MatButtonModule,

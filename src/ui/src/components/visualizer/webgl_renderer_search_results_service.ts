@@ -16,7 +16,7 @@
  * ==============================================================================
  */
 
-import {effect, Injectable} from '@angular/core';
+import {effect, inject, Injectable} from '@angular/core';
 import * as three from 'three';
 
 import {AppService} from './app_service';
@@ -28,6 +28,10 @@ import {
 import {ModelNode} from './common/model_graph';
 import {FontWeight, SearchMatchType, SearchResults} from './common/types';
 import {isGroupNode, splitLabel} from './common/utils';
+import {
+  ColorVariable,
+  VisualizerThemeService,
+} from './visualizer_theme_service';
 import {WebglRenderer} from './webgl_renderer';
 import {WebglRendererThreejsService} from './webgl_renderer_threejs_service';
 import {
@@ -46,10 +50,18 @@ const THREE = three;
  */
 @Injectable()
 export class WebglRendererSearchResultsService {
-  readonly SEARCH_RESULTS_HIGHLIGHT_COLOR = new THREE.Color('#f5d55a');
+  private readonly visualizerThemeService: VisualizerThemeService = inject(
+    VisualizerThemeService,
+  );
 
-  readonly searchResultsHighlightBorders = new WebglRoundedRectangles(8);
-  readonly searchResultsNodeLabelHighlightBg = new WebglRoundedRectangles(4);
+  readonly searchResultsHighlightBorders = new WebglRoundedRectangles(
+    8,
+    this.visualizerThemeService,
+  );
+  readonly searchResultsNodeLabelHighlightBg = new WebglRoundedRectangles(
+    4,
+    this.visualizerThemeService,
+  );
 
   private webglRenderer!: WebglRenderer;
   private webglRendererThreejsService!: WebglRendererThreejsService;
@@ -104,6 +116,11 @@ export class WebglRendererSearchResultsService {
       }
     }
     // Render highlight borders for the result nodes.
+    const searchResultsHighlightColor = new THREE.Color(
+      this.webglRenderer.visualizerThemeService.getColor(
+        ColorVariable.SEARCH_RESULTS_HIGHLIGHT_COLOR,
+      ),
+    );
     const rectangles: RoundedRectangleData[] = [];
     for (const nodeId of visibleNodeIds) {
       const node = this.webglRenderer.curModelGraph.nodesById[nodeId];
@@ -126,7 +143,7 @@ export class WebglRendererSearchResultsService {
           SEARCH_RESULTS_HIGHLIGHT_BORDER_Y_OFFSET,
         isRounded: true,
         borderColor: {r: 1, g: 1, b: 1},
-        bgColor: this.SEARCH_RESULTS_HIGHLIGHT_COLOR,
+        bgColor: searchResultsHighlightColor,
         borderWidth: 0,
         opacity: 1,
       });
@@ -188,7 +205,7 @@ export class WebglRendererSearchResultsService {
               SEARCH_RESULTS_NODE_LABEL_HIGHLIGHT_Y_OFFSET,
             isRounded: true,
             borderColor: {r: 1, g: 1, b: 1},
-            bgColor: this.SEARCH_RESULTS_HIGHLIGHT_COLOR,
+            bgColor: searchResultsHighlightColor,
             borderWidth: 0,
             opacity: 1,
           });

@@ -32,6 +32,10 @@ import {FontWeight, NodeDataProviderValueInfo} from './common/types';
 import {genSortedValueInfos, isGroupNode} from './common/utils';
 import {NodeDataProviderExtensionService} from './node_data_provider_extension_service';
 import {ThreejsService} from './threejs_service';
+import {
+  ColorVariable,
+  VisualizerThemeService,
+} from './visualizer_theme_service';
 import {WebglRenderer} from './webgl_renderer';
 import {WebglRendererThreejsService} from './webgl_renderer_threejs_service';
 import {
@@ -71,8 +75,11 @@ export class WebglRendererNdpService {
   private webglRenderer!: WebglRenderer;
   private webglRendererThreejsService!: WebglRendererThreejsService;
   private readonly threejsService: ThreejsService = inject(ThreejsService);
+  private readonly visualizerThemeService: VisualizerThemeService = inject(
+    VisualizerThemeService,
+  );
   private readonly nodeDataProviderDistributionBars =
-    new WebglRoundedRectangles(0);
+    new WebglRoundedRectangles(0, this.visualizerThemeService);
   private readonly nodeDataProviderSummaryTexts = new WebglTexts(
     this.threejsService,
   );
@@ -105,6 +112,11 @@ export class WebglRendererNdpService {
 
     const rectangles: RoundedRectangleData[] = [];
     const texts: LabelData[] = [];
+    const labelColor = new THREE.Color(
+      this.webglRenderer.visualizerThemeService.getColor(
+        ColorVariable.ON_SURFACE_COLOR,
+      ),
+    );
     for (const {node, index} of this.webglRenderer.nodesToRender) {
       if (!groupIdToSortedValueInfos[node.id]) {
         continue;
@@ -199,7 +211,7 @@ export class WebglRendererNdpService {
             hAlign: 'left',
             vAlign: 'center',
             weight: FontWeight.MEDIUM,
-            color: {r: 0, g: 0, b: 0},
+            color: labelColor,
             x: this.webglRenderer.getNodeX(groupNode) + 12,
             y: 96,
             z: indexColorBlockY,
@@ -213,7 +225,7 @@ export class WebglRendererNdpService {
             hAlign: 'right',
             vAlign: 'center',
             weight: FontWeight.MEDIUM,
-            color: {r: 0, g: 0, b: 0},
+            color: labelColor,
             x:
               this.webglRenderer.getNodeX(groupNode) +
               this.webglRenderer.getNodeWidth(groupNode) -

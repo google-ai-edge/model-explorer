@@ -23,6 +23,7 @@ import {
   Component,
   DestroyRef,
   effect,
+  inject,
   Input,
   OnChanges,
   SimpleChanges,
@@ -51,6 +52,10 @@ import {
 import {InfoPanelService, SortingDirection} from './info_panel_service';
 import {NodeDataProviderExtensionService} from './node_data_provider_extension_service';
 import {Paginator} from './paginator';
+import {
+  ColorVariable,
+  VisualizerThemeService,
+} from './visualizer_theme_service';
 
 interface Row {
   // Node id.
@@ -153,8 +158,11 @@ export class NodeDataProviderSummaryPanel implements OnChanges {
   private curModelGraph?: ModelGraph;
   private prevModelGraph?: ModelGraph;
   private prevRunsKey = '';
+  private prevTheme = '';
   // "Model graph collection + id + root group node id" to ordered nodes.
   private readonly orderedNodesCache: Record<string, OpNode[]> = {};
+
+  private readonly visualizerThemeService = inject(VisualizerThemeService);
 
   constructor(
     private readonly appService: AppService,
@@ -187,6 +195,13 @@ export class NodeDataProviderSummaryPanel implements OnChanges {
     });
 
     effect(() => {
+      const curTheme = this.appService.theme();
+      let themeChanged = false;
+      if (this.prevTheme !== curTheme) {
+        themeChanged = true;
+        this.prevTheme = curTheme;
+      }
+
       this.curModelGraph = this.appService.getPaneById(this.paneId)?.modelGraph;
       const runs = this.curModelGraph
         ? this.nodeDataProviderExtensionService.getRunsForModelGraph(
@@ -206,7 +221,10 @@ export class NodeDataProviderSummaryPanel implements OnChanges {
         runsChanged = true;
       }
 
-      if (this.curModelGraph && (modelGraphChanged || runsChanged)) {
+      if (
+        this.curModelGraph &&
+        (modelGraphChanged || runsChanged || themeChanged)
+      ) {
         // Update run items in the index panel.
         this.runItems = [];
         const runs = this.nodeDataProviderExtensionService.getRunsForModelGraph(
@@ -663,7 +681,9 @@ export class NodeDataProviderSummaryPanel implements OnChanges {
         const value: any = nodeResult?.value;
         const strValue = nodeResult?.strValue || '-';
         const bgColor = nodeResult?.bgColor || '';
-        const textColor = nodeResult?.textColor || 'black';
+        const textColor =
+          nodeResult?.textColor ||
+          this.visualizerThemeService.getColor(ColorVariable.ON_SURFACE_COLOR);
         cols.push({value, strValue, bgColor, textColor});
 
         // Update stats.

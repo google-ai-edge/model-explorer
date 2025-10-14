@@ -115,6 +115,10 @@ import {SubgraphSelectionService} from './subgraph_selection_service';
 import {SyncNavigationService} from './sync_navigation_service';
 import {ThreejsService} from './threejs_service';
 import {UiStateService} from './ui_state_service';
+import {
+  ColorVariable,
+  VisualizerThemeService,
+} from './visualizer_theme_service';
 import {WebglEdges} from './webgl_edges';
 import {WebglRendererAttrsTableService} from './webgl_renderer_attrs_table_service';
 import {WebglRendererEdgeOverlaysService} from './webgl_renderer_edge_overlays_service';
@@ -278,42 +282,16 @@ export class WebglRenderer implements OnInit, OnChanges, OnDestroy {
 
   readonly appService: AppService = inject(AppService);
   private readonly threejsService: ThreejsService = inject(ThreejsService);
+  readonly visualizerThemeService = inject(VisualizerThemeService);
 
-  readonly SELECTED_NODE_BORDER_COLOR = new THREE.Color('#1A73E8');
-  readonly SELECTED_NODE_BG_COLOR = new THREE.Color('#C2E7FF');
-  readonly HOVERED_NODE_BORDER_COLOR = new THREE.Color('#000');
-  readonly HOVERED_GROUP_NODE_BORDER_COLOR = new THREE.Color('#666');
-  readonly IDENTICAL_GROUPS_BG_COLOR = new THREE.Color('#e2edff');
-  readonly NODE_LABEL_COLOR = new THREE.Color('#041E49');
-  readonly OP_NODE_BORDER_COLOR = new THREE.Color('#777');
-  readonly GROUP_NODE_BORDER_COLOR = new THREE.Color('#aaa');
-  readonly GROUP_NODE_LABEL_SEPARATOR_COLOR = new THREE.Color('#DADCE0');
-  readonly GROUP_NODE_ICON_COLOR = new THREE.Color('#444746');
-  readonly GROUP_NODE_PIN_TO_TOP_SEPARATOR_COLOR = new THREE.Color('#bbb');
-  readonly EDGE_COLOR = new THREE.Color(
-    this.appService.config()?.edgeColor || '#aaa',
-  );
-  readonly EDGE_COLOR_INCOMING = new THREE.Color('#009e73');
-  readonly EDGE_TEXT_COLOR_INCOMING = new THREE.Color('#125341');
-  readonly EDGE_COLOR_OUTGOING = new THREE.Color('#d55e00');
-  readonly EDGE_TEXT_COLOR_OUTGOING = new THREE.Color('#994d11');
-  readonly ARTIFCIAL_GROUPS_BORDER_COLOR = new THREE.Color('#800080');
-  readonly SUBGRAPH_INDICATOR_BORDER_COLOR = new THREE.Color('#135cbb');
-  readonly SUBGRAPH_INDICATOR_BG_COLOR = new THREE.Color('#d5e7ff');
-  readonly GROUP_NODE_BG_COLORS: three.Color[] = (() => {
-    const startLightness = 96;
-    const endLightness = 84;
-    const count = 6;
-    const factor = (endLightness - startLightness) / (count - 1);
-    const colors: three.Color[] = [];
-    for (let i = 0; i < count; i++) {
-      const curLightness = startLightness + i * factor;
-      colors.push(
-        new THREE.Color(`hsl(212, 40%, ${Math.round(curLightness)}%)`),
-      );
-    }
-    return colors;
-  })();
+  readonly GROUP_NODE_BG_COLORS: ColorVariable[] = [
+    ColorVariable.GROUP_NODE_BG_COLOR1,
+    ColorVariable.GROUP_NODE_BG_COLOR2,
+    ColorVariable.GROUP_NODE_BG_COLOR3,
+    ColorVariable.GROUP_NODE_BG_COLOR4,
+    ColorVariable.GROUP_NODE_BG_COLOR5,
+    ColorVariable.GROUP_NODE_BG_COLOR6,
+  ];
 
   graphId = '';
   curModelGraph!: ModelGraph;
@@ -368,13 +346,25 @@ export class WebglRenderer implements OnInit, OnChanges, OnDestroy {
     | undefined = undefined;
   private prevNodeDataProviderRun: NodeDataProviderRunData | undefined =
     undefined;
-  private readonly nodeBodies = new WebglRoundedRectangles(6);
+  private readonly nodeBodies = new WebglRoundedRectangles(
+    6,
+    this.visualizerThemeService,
+  );
   private readonly groupNodeIcons = new WebglTexts(this.threejsService);
-  private readonly groupNodeIconBgs = new WebglRoundedRectangles(99);
-  private readonly artificialGroupBorders = new WebglRoundedRectangles(6);
-  private readonly subgraphIndicatorBgs = new WebglRoundedRectangles(3);
+  private readonly groupNodeIconBgs = new WebglRoundedRectangles(
+    99,
+    this.visualizerThemeService,
+  );
+  private readonly artificialGroupBorders = new WebglRoundedRectangles(
+    6,
+    this.visualizerThemeService,
+  );
+  private readonly subgraphIndicatorBgs = new WebglRoundedRectangles(
+    3,
+    this.visualizerThemeService,
+  );
   private readonly subgraphIndicatorIcons = new WebglTexts(this.threejsService);
-  private readonly edges = new WebglEdges(this.EDGE_COLOR, EDGE_WIDTH);
+  private readonly edges = new WebglEdges(EDGE_WIDTH);
   readonly texts = new WebglTexts(this.threejsService);
   private readonly mousePos = new THREE.Vector2();
   private readonly syncNavigationRelatedNodesHighlights!: WebglRendererHighlightNodesService;
@@ -473,6 +463,8 @@ export class WebglRenderer implements OnInit, OnChanges, OnDestroy {
         break;
     }
   };
+
+  private firstThemeUpdate = true;
 
   constructor(
     readonly changeDetectorRef: ChangeDetectorRef,
@@ -888,6 +880,30 @@ export class WebglRenderer implements OnInit, OnChanges, OnDestroy {
         this.renderDiffHighlights();
       });
     });
+
+    // Re-render when theme changes.
+    effect(() => {
+      this.appService.theme();
+
+      // Skip first change.
+      if (this.firstThemeUpdate) {
+        this.firstThemeUpdate = false;
+        return;
+      }
+
+      untracked(() => {
+        this.savedUpdateNodeBgWhenFarProgress = -1;
+        this.webglRendererThreejsService.updateSceneBackground();
+        this.renderGraph();
+        // This has to be placed before updateNodesStyles because it calculates
+        // data needed to update nodes styles correctly.
+        this.webglRendererIoHighlightService.updateIncomingAndOutgoingHighlights();
+        this.webglRendererIdenticalLayerService.updateIdenticalLayerIndicators();
+        this.updateNodesStyles();
+        this.renderDiffHighlights();
+        this.webglRendererThreejsService.render();
+      });
+    });
   }
 
   ngOnInit() {
@@ -1039,15 +1055,12 @@ export class WebglRenderer implements OnInit, OnChanges, OnDestroy {
     // Store the renderer to global for testing purpose.
     // tslint:disable-next-line:no-any Allow arbitrary types.
     const windowAny = window as any;
-    if (windowAny[GLOBAL_KEY] == null) {
-      windowAny[GLOBAL_KEY] = {
-        renderers: {},
-      };
+    if (windowAny[GLOBAL_KEY]?.renderers != null) {
+      const paneIndex = this.inPopup
+        ? -1
+        : this.appService.getPaneIndexById(this.paneId);
+      windowAny[GLOBAL_KEY].renderers[paneIndex] = this;
     }
-    const paneIndex = this.inPopup
-      ? -1
-      : this.appService.getPaneIndexById(this.paneId);
-    windowAny[GLOBAL_KEY].renderers[paneIndex] = this;
 
     if (this.benchmark) {
       this.startBenchmark();
@@ -1665,7 +1678,12 @@ export class WebglRenderer implements OnInit, OnChanges, OnDestroy {
       return;
     }
     this.savedUpdateNodeBgWhenFarProgress = progress;
-    this.nodeBodies.setBgColorWhenFar(this.NODE_LABEL_COLOR, progress / 3);
+    this.nodeBodies.setBgColorWhenFar(
+      new THREE.Color(
+        this.visualizerThemeService.getColor(ColorVariable.ON_SURFACE_COLOR),
+      ),
+      progress / 3,
+    );
   }
 
   showIoTree(
@@ -2204,6 +2222,23 @@ export class WebglRenderer implements OnInit, OnChanges, OnDestroy {
     const subgraphIndicatorRectangles: RoundedRectangleData[] = [];
     const subgraphIndicatorIcons: LabelData[] = [];
     const scale = NODE_LABEL_HEIGHT / this.texts.getFontSize();
+    const opNodeBgColor = new THREE.Color(
+      this.visualizerThemeService.getColor(ColorVariable.SURFACE_COLOR),
+    );
+    const groupNodeIconBgColor = new THREE.Color(
+      this.visualizerThemeService.getColor(ColorVariable.ON_SURFACE_COLOR),
+    );
+    const groupNodePinToTopSeparatorColor = new THREE.Color(
+      this.visualizerThemeService.getColor(ColorVariable.OUTLINE_VARIANT_COLOR),
+    );
+    const subgraphIndicatorBorderColor = new THREE.Color(
+      this.visualizerThemeService.getColor(ColorVariable.PRIMARY_COLOR),
+    );
+    const subgraphIndicatorBgColor = new THREE.Color(
+      this.visualizerThemeService.getColor(
+        ColorVariable.SECONDARY_CONTAINER_COLOR,
+      ),
+    );
     for (let i = 0; i < numNodes; i++) {
       const node = this.nodesToRender[i].node;
       const nodeIndex = this.nodesToRender[i].index;
@@ -2213,11 +2248,14 @@ export class WebglRenderer implements OnInit, OnChanges, OnDestroy {
       const height = this.getNodeHeight(node);
       const isGroup = isGroupNode(node);
       let borderWidth = NODE_BORDER_WIDTH;
-      let bgColor = isGroup
-        ? this.getGroupNodeBgColor(node)
-        : {r: 1, g: 1, b: 1};
-      let borderColor = this.threeColorToRgb(
-        isGroup ? this.GROUP_NODE_BORDER_COLOR : this.OP_NODE_BORDER_COLOR,
+      let bgColor = isGroup ? this.getGroupNodeBgColor(node) : opNodeBgColor;
+      let borderColor = new THREE.Color(
+        isGroup
+          ? this.visualizerThemeService.getColor(
+              // Use the default edge color as the group node border color.
+              ColorVariable.EDGE_COLOR,
+            )
+          : this.visualizerThemeService.getColor(ColorVariable.OUTLINE_COLOR),
       );
       if (isOpNode(node) && node.style) {
         if (node.style.backgroundColor) {
@@ -2230,7 +2268,11 @@ export class WebglRenderer implements OnInit, OnChanges, OnDestroy {
           borderWidth = node.style.borderWidth;
         }
       }
-      let groupNodeIconColor = this.GROUP_NODE_ICON_COLOR;
+      let groupNodeIconColor = new THREE.Color(
+        this.visualizerThemeService.getColor(
+          ColorVariable.ON_SURFACE_VARIANT_COLOR,
+        ),
+      );
 
       // Node styler.
       for (const rule of this.curProcessedNodeStylerRules) {
@@ -2288,10 +2330,10 @@ export class WebglRenderer implements OnInit, OnChanges, OnDestroy {
         opacity: 1,
         changeColorWhenFar:
           (isOpNode(node) || !node.expanded) &&
-          // Don't change color when the node has non-white bg color.
-          bgColor.r === 1 &&
-          bgColor.g === 1 &&
-          bgColor.b === 1,
+          // Don't change color when the node has non-original bg color.
+          bgColor.r === opNodeBgColor.r &&
+          bgColor.g === opNodeBgColor.g &&
+          bgColor.b === opNodeBgColor.b,
       });
 
       // Render separator between the pinned node and the rest of the nodes.
@@ -2310,8 +2352,8 @@ export class WebglRenderer implements OnInit, OnChanges, OnDestroy {
           },
           yOffset: WEBGL_ELEMENT_Y_FACTOR * nodeIndex + 0.1,
           isRounded: true,
-          borderColor: this.GROUP_NODE_PIN_TO_TOP_SEPARATOR_COLOR,
-          bgColor: this.GROUP_NODE_PIN_TO_TOP_SEPARATOR_COLOR,
+          borderColor: groupNodePinToTopSeparatorColor,
+          bgColor: groupNodePinToTopSeparatorColor,
           borderWidth: 1,
           opacity: 1,
         });
@@ -2337,8 +2379,8 @@ export class WebglRenderer implements OnInit, OnChanges, OnDestroy {
           yOffset:
             WEBGL_ELEMENT_Y_FACTOR * this.nodesToRenderMap[node.id].index,
           isRounded: true,
-          borderColor: this.SUBGRAPH_INDICATOR_BORDER_COLOR,
-          bgColor: this.SUBGRAPH_INDICATOR_BG_COLOR,
+          borderColor: subgraphIndicatorBorderColor,
+          bgColor: subgraphIndicatorBgColor,
           borderWidth: 1,
           opacity: 1,
         });
@@ -2351,7 +2393,7 @@ export class WebglRenderer implements OnInit, OnChanges, OnDestroy {
           hAlign: 'center',
           vAlign: 'center',
           weight: FontWeight.ICONS,
-          color: this.SUBGRAPH_INDICATOR_BORDER_COLOR,
+          color: subgraphIndicatorBorderColor,
           x:
             this.getNodeX(node) +
             this.getNodeWidth(node) +
@@ -2430,7 +2472,7 @@ export class WebglRenderer implements OnInit, OnChanges, OnDestroy {
             WEBGL_ELEMENT_Y_FACTOR * nodeIndex + GROUP_NODE_ICON_BG_OFFSET,
           isRounded: true,
           borderColor: {r: 1, g: 1, b: 1},
-          bgColor: {r: 0, g: 0, b: 0},
+          bgColor: groupNodeIconBgColor,
           borderWidth: 0,
           opacity: 0,
         });
@@ -2448,7 +2490,7 @@ export class WebglRenderer implements OnInit, OnChanges, OnDestroy {
             WEBGL_ELEMENT_Y_FACTOR * nodeIndex + GROUP_NODE_ICON_BG_OFFSET,
           isRounded: true,
           borderColor: {r: 1, g: 1, b: 1},
-          bgColor: {r: 0, g: 0, b: 0},
+          bgColor: groupNodeIconBgColor,
           borderWidth: 0,
           opacity: 0,
         });
@@ -2543,7 +2585,14 @@ export class WebglRenderer implements OnInit, OnChanges, OnDestroy {
           }
         }
       }
-      this.edges.generateMesh(this.edgesToRender, this.curModelGraph);
+      this.edges.generateMesh(
+        new THREE.Color(
+          this.appService.config()?.edgeColor ??
+            this.visualizerThemeService.getColor(ColorVariable.EDGE_COLOR),
+        ),
+        this.edgesToRender,
+        this.curModelGraph,
+      );
       this.webglRendererThreejsService.addToScene(this.edges.edgesMesh);
       this.webglRendererThreejsService.addToScene(this.edges.arrowHeadsMesh);
     }
@@ -2553,7 +2602,9 @@ export class WebglRenderer implements OnInit, OnChanges, OnDestroy {
     const labels: LabelData[] = [];
     // Node labels.
     for (const {node, index} of this.nodesToRender) {
-      let color = this.NODE_LABEL_COLOR;
+      let color = new THREE.Color(
+        this.visualizerThemeService.getColor(ColorVariable.ON_SURFACE_COLOR),
+      );
       if (isOpNode(node) && node.style?.textColor) {
         color = new THREE.Color(node.style.textColor);
       }
@@ -2606,6 +2657,11 @@ export class WebglRenderer implements OnInit, OnChanges, OnDestroy {
 
   private renderArtificialGroupBorders() {
     const rectangles: RoundedRectangleData[] = [];
+    const artificialGroupBorderColor = new THREE.Color(
+      this.visualizerThemeService.getColor(
+        ColorVariable.ARTIFICIAL_GROUPS_BORDER_COLOR,
+      ),
+    );
     for (const nodeId of this.curModelGraph.artificialGroupNodeIds || []) {
       if (!this.isNodeRendered(nodeId)) {
         continue;
@@ -2631,7 +2687,7 @@ export class WebglRenderer implements OnInit, OnChanges, OnDestroy {
           ARTIFICIAL_GROUP_NODE_BORDER_Y_OFFSET,
         isRounded: false,
         borderColor: {r: 1, g: 1, b: 1},
-        bgColor: this.ARTIFCIAL_GROUPS_BORDER_COLOR,
+        bgColor: artificialGroupBorderColor,
         borderWidth: 0,
         opacity: 1,
       });
@@ -2812,9 +2868,14 @@ export class WebglRenderer implements OnInit, OnChanges, OnDestroy {
               curNode.identicalGroupIndex === selectedIdenticalGroupIndex,
           )
           .map(({node}) => node.id);
+        const identicalGroupBgColor = new THREE.Color(
+          this.visualizerThemeService.getColor(
+            ColorVariable.IDENTICAL_GROUP_BG_COLOR,
+          ),
+        );
         this.nodeBodies.updateBgColor(
           identicalGroupNodeIds,
-          this.IDENTICAL_GROUPS_BG_COLOR,
+          identicalGroupBgColor,
         );
       }
     }
@@ -2823,9 +2884,11 @@ export class WebglRenderer implements OnInit, OnChanges, OnDestroy {
     //
     // Hover.
     const hoveredNode = this.curModelGraph.nodesById[this.hoveredNodeId];
-    let hoveredNodeBorderColor = isGroupNode(hoveredNode)
-      ? this.HOVERED_GROUP_NODE_BORDER_COLOR
-      : this.HOVERED_NODE_BORDER_COLOR;
+    let hoveredNodeBorderColor = new THREE.Color(
+      isGroupNode(hoveredNode)
+        ? this.visualizerThemeService.getColor(ColorVariable.OUTLINE_COLOR)
+        : this.visualizerThemeService.getColor(ColorVariable.ON_SURFACE_COLOR),
+    );
     if (isOpNode(hoveredNode) && hoveredNode.style?.hoveredBorderColor) {
       hoveredNodeBorderColor = new THREE.Color(
         hoveredNode.style.hoveredBorderColor,
@@ -2839,21 +2902,42 @@ export class WebglRenderer implements OnInit, OnChanges, OnDestroy {
     if (this.selectedNodeId && node != null) {
       this.nodeBodies.updateBorderColor(
         [this.selectedNodeId],
-        this.SELECTED_NODE_BORDER_COLOR,
+        new THREE.Color(
+          this.visualizerThemeService.getColor(ColorVariable.PRIMARY_COLOR),
+        ),
       );
       this.nodeBodies.updateBorderWidth(
         [this.selectedNodeId],
         SELECTED_NODE_BORDER_WIDTH,
       );
-      this.nodeBodies.updateBgColor(
-        [this.selectedNodeId],
-        this.SELECTED_NODE_BG_COLOR,
-        isOpNode(node),
-      );
+      if (!isOpNode(node)) {
+        this.nodeBodies.updateBgColor(
+          [this.selectedNodeId],
+          new THREE.Color(
+            this.visualizerThemeService.getColor(
+              ColorVariable.SECONDARY_CONTAINER_COLOR,
+            ),
+          ),
+        );
+      } else {
+        // For op nodes, only update the ones whose bg color is unchanged (i.e.
+        // still the original bg color).
+        this.nodeBodies.updateBgColor(
+          [this.selectedNodeId],
+          new THREE.Color(
+            this.visualizerThemeService.getColor(
+              ColorVariable.SECONDARY_CONTAINER_COLOR,
+            ),
+          ),
+          new THREE.Color(
+            this.visualizerThemeService.getColor(ColorVariable.SURFACE_COLOR),
+          ),
+        );
+      }
     }
 
     // Group node icon.
-    this.groupNodeIconBgs.updateOpacity([this.hoveredGroupNodeIconId], 0.07);
+    this.groupNodeIconBgs.updateOpacity([this.hoveredGroupNodeIconId], 0.1);
 
     // IO highlights.
     const highlightedIncomingNodeIds = Object.keys(
@@ -2863,9 +2947,9 @@ export class WebglRenderer implements OnInit, OnChanges, OnDestroy {
       this.nodeBodies.updateBorderColor(
         highlightedIncomingNodeIds,
         new THREE.Color(
-          this.EDGE_COLOR_INCOMING.r,
-          this.EDGE_COLOR_INCOMING.g,
-          this.EDGE_COLOR_INCOMING.b,
+          this.visualizerThemeService.getColor(
+            ColorVariable.INCOMING_EDGE_COLOR,
+          ),
         ),
       );
       for (const nodeId of highlightedIncomingNodeIds) {
@@ -2879,9 +2963,9 @@ export class WebglRenderer implements OnInit, OnChanges, OnDestroy {
       this.nodeBodies.updateBorderColor(
         highlightedOutgoingNodeIds,
         new THREE.Color(
-          this.EDGE_COLOR_OUTGOING.r,
-          this.EDGE_COLOR_OUTGOING.g,
-          this.EDGE_COLOR_OUTGOING.b,
+          this.visualizerThemeService.getColor(
+            ColorVariable.OUTGOING_EDGE_COLOR,
+          ),
         ),
       );
       for (const nodeId of highlightedOutgoingNodeIds) {
@@ -2949,7 +3033,12 @@ export class WebglRenderer implements OnInit, OnChanges, OnDestroy {
             ),
         )
         .map(({edge}) => edge.id);
-      this.edges.updateColors(edgeIdsToDim, {r: 0.92, g: 0.92, b: 0.92});
+      this.edges.updateColors(
+        edgeIdsToDim,
+        new THREE.Color(
+          this.visualizerThemeService.getColor(ColorVariable.EDGE_DIMMED_COLOR),
+        ),
+      );
     }
   }
 
@@ -3061,10 +3150,12 @@ export class WebglRenderer implements OnInit, OnChanges, OnDestroy {
       modelGraphHeight,
     );
     // Don't render the "color blocks" on nodes when zooming out far.
-    this.nodeBodies.setBgColorWhenFar(this.NODE_LABEL_COLOR, 0);
+    this.nodeBodies.setBgColorWhenFar({r: 0, g: 0, b: 0}, 0);
     this.webglRendererThreejsService.renderPngDownloader(curCamera);
     this.nodeBodies.setBgColorWhenFar(
-      this.NODE_LABEL_COLOR,
+      new THREE.Color(
+        this.visualizerThemeService.getColor(ColorVariable.ON_SURFACE_COLOR),
+      ),
       this.savedUpdateNodeBgWhenFarProgress / 3,
     );
 
@@ -3074,7 +3165,9 @@ export class WebglRenderer implements OnInit, OnChanges, OnDestroy {
     setAnchorHref(link, canvas.toDataURL());
     link.click();
     this.webglRendererThreejsService.setSceneBackground(
-      new THREE.Color(0xffffff),
+      new THREE.Color(
+        this.visualizerThemeService.getColor(ColorVariable.SURFACE_COLOR),
+      ),
     );
   }
 
@@ -3113,15 +3206,11 @@ export class WebglRenderer implements OnInit, OnChanges, OnDestroy {
   private getGroupNodeBgColor(groupNode: GroupNode): WebglColor {
     const ns = groupNode.namespace || '';
     const level = ns.split('/').filter((part) => part !== '').length;
-    const color =
+    const colorVariable =
       this.GROUP_NODE_BG_COLORS[
         Math.min(this.GROUP_NODE_BG_COLORS.length - 1, level)
       ];
-    return this.threeColorToRgb(color);
-  }
-
-  private threeColorToRgb(color: three.Color): WebglColor {
-    return {r: color.r, g: color.g, b: color.b};
+    return new THREE.Color(this.visualizerThemeService.getColor(colorVariable));
   }
 
   private startBenchmark() {

@@ -17,12 +17,18 @@
  */
 
 button {
+  color: var(--me-on-surface-variant-color);
+
   &.disabled {
     pointer-events: none;
   }
 
   mat-icon.highlight {
-    background: linear-gradient(45deg, #0089ff 0 30%, #f1af00 70% 100%);
+    background: linear-gradient(
+      45deg,
+      var(--me-primary-color) 0 30%,
+      var(--me-warning-text-color) 70% 100%
+    );
     background-clip: text;
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;

@@ -16,8 +16,6 @@
  * ==============================================================================
  */
 
-@use 'variables';
-
 :host {
   position: relative;
   width: 370px;
@@ -29,8 +27,9 @@
   width: 100%;
   height: 100%;
   box-sizing: border-box;
-  border-left: 1px solid #e1e3e1;
-  background-color: white;
+  border-left: 1px solid var(--me-outline-hairline-color);
+  color: var(--me-on-surface-color);
+  background-color: var(--me-surface-color);
   font-size: 12px;
   overflow-y: auto;
   position: relative;
@@ -68,17 +67,17 @@
         align-items: center;
 
         &.search-match {
-          background-color: variables.$search-match-color;
+          background-color: var(--me-search-results-highlight-color);
         }
 
         .index {
-          color: #999;
+          color: var(--me-on-surface-variant-color);
           min-width: 14px;
           margin-right: 2px;
         }
 
         .name {
-          color: #00639b;
+          color: var(--me-primary-color);
           font-weight: 500;
           display: flex;
           align-items: center;
@@ -91,7 +90,7 @@
             line-break: anywhere;
 
             &:hover {
-              background-color: #f6f6f6;
+              background-color: var(--me-surface-container-high-color);
 
               .locator-icon-container {
                 opacity: 0.8;
@@ -104,7 +103,7 @@
       .target-op-container {
         display: flex;
         align-items: center;
-        color: #999;
+        color: var(--me-on-surface-low-color);
         font-weight: normal;
 
         mat-icon.arrow {
@@ -116,7 +115,7 @@
       }
 
       .source-op-node-label {
-        color: #999;
+        color: var(--me-on-surface-variant-color);
         font-weight: normal;
         margin-left: 6px;
       }
@@ -135,7 +134,7 @@
   }
 
   .section:not(:first-child) {
-    border-top: 1px solid #dadce0;
+    border-top: 1px solid var(--me-outline-hairline-color);
   }
 
   .filler {
@@ -154,9 +153,9 @@
     z-index: 100;
     flex-shrink: 0;
     box-sizing: border-box;
-    background-color: white;
+    color: var(--me-on-surface-color);
+    background-color: var(--me-surface-color);
     user-select: none;
-    color: rgba(0, 0, 0, 0.87);
 
     &.input,
     &.output,
@@ -186,6 +185,10 @@
         height: 20px;
       }
 
+      &:hover {
+        background-color: var(--me-surface-container-high-color);
+      }
+
       ::ng-deep .mat-mdc-button-touch-target {
         display: none;
       }
@@ -203,7 +206,7 @@
   .output-item-label {
     font-size: 13px;
     padding: 4px 12px;
-    color: #00639b;
+    color: var(--me-primary-color);
     font-weight: 500;
   }
 
@@ -223,12 +226,12 @@
       vertical-align: text-top;
 
       &.search-match {
-        background-color: variables.$search-match-color;
+        background-color: var(--me-search-results-highlight-color);
       }
 
       &:hover.has-hover-values {
         cursor: pointer;
-        background-color: #f6f6f6;
+        background-color: var(--me-surface-container-low-color);
       }
 
       mat-icon.bullet {
@@ -236,14 +239,14 @@
         font-size: 4px;
         width: 5px;
         height: 5px;
-        color: #bbb;
+        color: var(--me-on-surface-low-color);
         margin-right: 4px;
         margin-top: 6px;
       }
     }
 
     td.key {
-      color: #999;
+      color: var(--me-on-surface-low-color);
       padding-right: 6px;
       white-space: nowrap;
       min-width: 100px;
@@ -284,7 +287,7 @@
       }
 
       &.search-match {
-        background-color: variables.$search-match-color;
+        background-color: var(--me-search-results-highlight-color);
       }
     }
 
@@ -293,8 +296,8 @@
       border-radius: 99px;
       display: flex;
       align-items: center;
-      background-color: #d7f1ff;
-      color: #00639b;
+      background-color: var(--me-secondary-container-color);
+      color: var(--me-on-secondary-container-color);
       width: fit-content;
       height: 16px;
       padding: 0 6px;
@@ -316,7 +319,7 @@
     padding: 0 12px;
 
     &.search-match {
-      background-color: variables.$search-match-color;
+      background-color: var(--me-search-results-highlight-color);
     }
 
     .label-row {
@@ -327,7 +330,7 @@
 
     .label {
       font-weight: 500;
-      color: #aaa;
+      color: var(--me-on-surface-low-color);
       font-size: 12px;
       margin-bottom: 1px;
     }
@@ -367,7 +370,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    opacity: 0.5;
+    opacity: 0.7;
     margin-left: 4px;
 
     &.left {
@@ -381,11 +384,11 @@
     }
 
     &:hover {
-      opacity: 0.8;
+      opacity: 0.85;
     }
 
     mat-icon {
-      color: #333;
+      color: var(--me-on-surface-variant-color);
       font-size: 12px;
       width: 12px;
       height: 12px;
@@ -405,7 +408,7 @@
     }
 
     mat-icon {
-      color: #333;
+      color: var(--me-on-surface-variant-color);
       font-size: 14px;
       width: 14px;
       height: 14px;
@@ -413,14 +416,22 @@
 
     &.input.visible {
       mat-icon {
-        color: #009e73;
+        color: var(--me-incoming-edge-color);
       }
     }
 
     &.output.visible {
       mat-icon {
-        color: #d55e00;
+        color: var(--me-outgoing-edge-color);
       }
+    }
+  }
+
+  ::ng-deep {
+    a,
+    a:visited {
+      /* stylelint-disable-next-line declaration-no-important -- override MDC */
+      color: var(--me-link-color) !important;
     }
   }
 }
@@ -437,7 +448,7 @@
 
   &:hover,
   &.resizing {
-    background-color: rgba(0, 0, 0, 0.04);
+    background-color: var(--me-surface-container-low-color);
   }
 }
 
@@ -447,24 +458,24 @@
   bottom: 2px;
   width: 16px;
   height: 20px;
-  border: 1px solid #ccc;
+  border: 1px solid var(--me-outline-variant-color);
   border-right: none;
   box-sizing: border-box;
   border-radius: 99px;
   border-top-right-radius: 0;
   border-bottom-right-radius: 0;
   cursor: pointer;
-  background-color: white;
+  background-color: var(--me-surface-container-lowest-color);
 
   &:hover {
-    background-color: #eee;
+    background-color: var(--me-surface-container-low-color);
   }
 
   mat-icon {
     width: 18px;
     height: 18px;
     font-size: 18px;
-    color: #999;
+    color: var(--me-on-surface-variant-color);
   }
 }
 
@@ -475,11 +486,12 @@
 ::ng-deep .model-explorer-const-values-popup {
   padding: 8px;
   line-height: 12px;
-  background-color: white;
+  color: var(--me-on-surface-color);
+  background-color: var(--me-surface-container-low-color);
 
   .values-count-msg {
     margin-bottom: 8px;
-    color: #999;
+    color: var(--me-on-surface-low-color);
     font-size: 12px;
   }
 

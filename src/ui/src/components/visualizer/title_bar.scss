@@ -25,12 +25,13 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border-bottom: 1px solid #ddd;
+  border-bottom: 1px solid var(--me-outline-hairline-color);
+  background-color: var(--me-surface-color);
 
   .title {
     font-weight: normal;
     cursor: pointer;
-    color: #444746;
+    color: var(--me-on-surface-color);
     font-size: 20px;
     display: flex;
     align-items: center;
@@ -52,7 +53,7 @@
   .divider {
     width: 1px;
     height: 28px;
-    border-left: 1px solid #ccc;
+    border-left: 1px solid var(--me-outline-variant-color);
     margin: 0 16px;
 
     &.tighter-right {
@@ -68,7 +69,7 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      color: black;
+      color: var(--me-on-surface-variant-color);
     }
   }
 

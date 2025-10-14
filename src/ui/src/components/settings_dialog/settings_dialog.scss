@@ -21,7 +21,8 @@
 }
 
 .title-container {
-  border-bottom: 1px solid #ddd;
+  background-color: var(--me-surface-container-low-color);
+  border-bottom: 1px solid var(--me-outline-variant-color);
 }
 
 .title {
@@ -32,17 +33,18 @@
 
 .local-storage-info {
   font-size: 12px;
-  color: #777;
+  color: var(--me-on-surface-variant-color);
   margin-top: 6px;
 }
 
 .dialog-content {
   padding-bottom: 0;
+  background-color: var(--me-surface-container-color);
 }
 
 .settings-container {
   font-size: 13px;
-  color: black;
+  color: var(--me-on-surface-color);
   margin-top: 20px;
   margin-bottom: 10px;
 }
@@ -65,11 +67,11 @@
       width: 16px;
       height: 16px;
       margin-left: 12px;
-      opacity: 0.4;
+      opacity: 0.6;
       cursor: pointer;
 
       &:hover {
-        opacity: 0.6;
+        opacity: 0.8;
       }
 
       mat-icon {
@@ -82,8 +84,11 @@
 
   input,
   textarea {
+    color: var(--me-on-surface-color);
+    background-color: transparent;
     box-sizing: border-box;
     width: 100%;
+    border: 1px solid var(--me-outline-color);
   }
 
   // Hide up/down arrows for number input.
@@ -94,14 +99,14 @@
   }
 
   .reset {
-    color: #999;
+    color: var(--me-on-surface-variant-color);
     cursor: pointer;
     margin-top: 2px;
     text-decoration: underline;
     user-select: none;
 
     &:hover {
-      color: #777;
+      opacity: 0.6;
     }
   }
 }
@@ -111,16 +116,16 @@
   align-items: center;
   overflow: hidden;
   border-radius: 2px;
-  border: 1px solid rgb(118, 118, 118);
+  border: 1px solid var(--me-outline-color);
   width: 100%;
-  background-color: white;
+  background-color: transparent;
   box-sizing: border-box;
   height: 24px;
   position: relative;
 
   &:focus-within {
-    border-color: #1a73e8;
-    outline: 1px solid #1a73e8;
+    border-color: var(--me-primary-color);
+    outline: 1px solid var(--me-primary-color);
   }
 
   label {
@@ -128,10 +133,9 @@
     width: 16px;
     height: 16px;
     margin: 2px;
-    background-color: red;
     border-radius: 4px;
     cursor: pointer;
-    border: 1px solid #ddd;
+    border: 1px solid var(--me-outline-variant-color);
 
     input {
       visibility: hidden;
@@ -147,14 +151,15 @@
 }
 
 .buttons-container {
-  border-top: 1px solid #ddd;
+  border-top: 1px solid var(--me-outline-variant-color);
+  background-color: var(--me-surface-container-low-color);
 }
 
 ::ng-deep {
   .model-explorer-settings-help-popup {
     font-size: 12px;
     padding: 8px;
-    background-color: white;
+    background-color: var(--me-surface-container-low-color);
     line-height: normal;
 
     .bold {

@@ -24,10 +24,10 @@
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    opacity: 0.6;
+    opacity: 0.85;
 
     &:hover {
-      opacity: 0.9;
+      opacity: 1;
     }
 
     mat-icon {
@@ -47,7 +47,8 @@
   padding: 12px;
   padding-top: 10px;
   font-size: 12px;
-  background-color: white;
+  color: var(--me-on-surface-color);
+  background-color: var(--me-surface-container-low-color);
   display: flex;
   flex-direction: column;
 
@@ -66,7 +67,7 @@
       font-size: 16px;
       width: 16px;
       height: 16px;
-      color: #777;
+      color: var(--me-on-surface-variant-color);
     }
   }
 
@@ -95,11 +96,11 @@
     display: flex;
     flex-direction: column;
     padding-bottom: 8px;
-    border-bottom: 1px solid #ccc;
+    border-bottom: 1px solid var(--me-outline-variant-color);
     gap: 8px;
 
     .no-overlays-label {
-      color: #999;
+      color: var(--me-on-surface-variant-color);
     }
 
     .overlay-set-label {
@@ -159,7 +160,7 @@
 
       .view-label {
         cursor: pointer;
-        color: #00639b;
+        color: var(--me-primary-color);
         opacity: 0.8;
         user-select: none;
         line-height: 15px;
@@ -187,9 +188,16 @@
     font-size: 12px !important;
     /* stylelint-disable-next-line declaration-no-important -- override MDC */
     letter-spacing: normal !important;
+    background-color: var(--me-primary-color);
+    color: var(--me-on-primary-color);
 
     &.upload {
       margin-top: 2px;
+    }
+
+    &[disabled] {
+      color: var(--me-on-surface-variant-color);
+      background-color: var(--me-surface-container-highest-color);
     }
 
     ::ng-deep .mat-mdc-button-touch-target {
@@ -199,17 +207,17 @@
 
   .or-divider {
     height: 1px;
-    border-top: 1px solid #eee;
+    border-top: 1px solid var(--me-outline-hairline-color);
     position: relative;
     margin-top: 12px;
 
     .or-label {
       font-size: 10px;
       top: -12px;
-      color: #aaa;
+      color: var(--me-on-surface-low-color);
       position: absolute;
       padding: 2px;
-      background-color: white;
+      background-color: var(--me-surface-container-low-color);
       display: flex;
       align-items: center;
       justify-content: center;

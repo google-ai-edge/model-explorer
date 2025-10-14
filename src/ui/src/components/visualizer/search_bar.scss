@@ -19,7 +19,7 @@
 .container {
   position: relative;
   overflow: visible;
-  background-color: white;
+  background-color: var(--me-surface-color);
   border-radius: 99px;
   height: 30px;
   display: flex;
@@ -33,6 +33,7 @@
 
     mat-icon.search,
     mat-icon.clear {
+      color: var(--me-on-surface-variant-color);
       font-size: 20px;
       width: 20px;
       height: 20px;
@@ -40,11 +41,11 @@
     }
 
     mat-icon.clear {
-      opacity: 0.6;
+      opacity: 0.85;
       cursor: pointer;
 
       &:hover {
-        opacity: 0.9;
+        opacity: 1;
       }
     }
 
@@ -57,6 +58,7 @@
       font-size: 12px;
       flex-grow: 1;
       min-width: 0;
+      background-color: transparent;
     }
 
     .btn-clear-container {
@@ -70,8 +72,8 @@
       align-items: center;
       justify-content: center;
       cursor: pointer;
-      color: #999;
-      opacity: 0.8;
+      color: var(--me-on-surface-variant-color);
+      opacity: 0.85;
 
       &:hover {
         opacity: 1;
@@ -86,7 +88,7 @@
   }
 
   .input-container:has(input:focus) mat-icon.search {
-    color: #1a73e8;
+    color: var(--me-primary-color);
   }
 
   .search-results-container {
@@ -94,19 +96,17 @@
     position: absolute;
     top: calc(100% + 12px);
     left: -4px;
-    border: 1px solid #ccc;
+    border: 1px solid var(--me-outline-variant-color);
     border-radius: 4px;
     width: 380px;
     display: flex;
     flex-direction: column;
-    background-color: white;
-    box-shadow:
-      0 4px 6px -1px rgb(0 0 0 / 0.1),
-      0 2px 4px -2px rgb(0 0 0 / 0.1);
+    background-color: var(--me-surface-container-lowest-color);
+    box-shadow: var(--me-bubble-shadow);
 
     .title-container {
-      background-color: #f6f6f6;
-      border-bottom: 1px solid #ddd;
+      background-color: var(--me-surface-container-color);
+      border-bottom: 1px solid var(--me-outline-hairline-color);
       box-sizing: border-box;
       padding: 0 10px 10px;
     }
@@ -135,7 +135,7 @@
         display: flex;
         align-items: center;
         font-size: 12px;
-        color: #ccc;
+        color: var(--me-on-surface-variant-color);
       }
     }
 
@@ -157,19 +157,19 @@
         justify-content: center;
         cursor: pointer;
         user-select: none;
-        border: 1px solid #ccc;
+        border: 1px solid var(--me-outline-variant-color);
         padding: 4px 14px;
         border-radius: 6px;
-        background-color: white;
-        color: #474747;
+        background-color: var(--me-surface-color);
+        color: var(--me-on-surface-variant-color);
 
         &.selected {
-          border-color: #a3c9ff;
-          background-color: #a3c9ff;
-          color: #001d35;
+          border-color: var(--me-secondary-container-color);
+          background-color: var(--me-secondary-container-color);
+          color: var(--me-on-surface-color);
 
           mat-icon {
-            color: #001d35;
+            color: var(--me-on-surface-color);
           }
         }
 
@@ -187,7 +187,7 @@
           font-size: 16px;
           width: 16px;
           height: 16px;
-          color: #474747;
+          color: var(--me-on-surface-variant-color);
         }
 
         .option-label {
@@ -202,20 +202,20 @@
   .footer {
     height: 32px;
     min-height: 32px;
-    background-color: #f6f6f6;
-    border-top: 1px solid #ddd;
+    background-color: var(--me-surface-container-color);
+    border-top: 1px solid var(--me-outline-hairline-color);
     box-sizing: border-box;
     padding: 0 10px;
     font-size: 12px;
     display: flex;
     align-items: center;
-    color: #777;
+    color: var(--me-on-surface-variant-color);
 
     mat-icon {
       font-size: 16px;
       height: 16px;
       width: 16px;
-      color: #777;
+      color: var(--me-on-surface-variant-color);
       margin-right: 4px;
     }
   }
@@ -224,22 +224,21 @@
     position: absolute;
     top: calc(100% + 12px);
     left: -4px;
-    color: #999;
+    color: var(--me-on-surface-variant-color);
     padding: 8px;
-    border: 1px solid #ccc;
+    border: 1px solid var(--me-outline-hairline-color);
     border-radius: 4px;
-    background-color: white;
+    background-color: var(--me-surface-container-color);
     font-size: 12px;
-    box-shadow:
-      0 4px 6px -1px rgb(0 0 0 / 0.1),
-      0 2px 4px -2px rgb(0 0 0 / 0.1);
+    box-shadow: var(--me-bubble-shadow);
   }
 }
 
 ::ng-deep .model-explorer-search-help-popup {
   padding: 12px;
   font-size: 12px;
-  background-color: white;
+  color: var(--me-on-surface-color);
+  background-color: var(--me-surface-container-low-color);
 
   ul {
     margin-block-end: 0;
@@ -247,11 +246,11 @@
 
   .code {
     display: inline-block;
-    background-color: #fffdd0;
+    background-color: var(--me-surface-container-high-color);
     font-family: monospace;
 
     &.regex {
-      background-color: #e6d0ff;
+      background-color: var(--me-warning-container-color);
     }
   }
 }

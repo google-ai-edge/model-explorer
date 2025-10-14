@@ -17,8 +17,8 @@
  */
 
 .container {
-  border: 1px solid #3876c7;
-  background-color: #d5e7ff;
+  border: 1px solid var(--me-primary-color);
+  background-color: var(--me-secondary-container-color);
   border-radius: 4px;
   box-sizing: border-box;
   padding: 4px 8px;
@@ -29,7 +29,7 @@
   .item {
     display: flex;
     align-items: center;
-    color: #777;
+    color: var(--me-on-surface-variant-color);
 
     &:hover:not(.current) {
       cursor: pointer;
@@ -37,12 +37,12 @@
     }
 
     &.current {
-      color: black;
+      color: var(--me-on-secondary-container-color);
     }
   }
 
   .separator {
-    color: #999;
+    color: var(--me-outline-color);
     font-size: 16px;
     width: 16px;
     height: 16px;

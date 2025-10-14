@@ -17,9 +17,7 @@ limitations under the License.
 -->
 
 <div class="container"
-    [bubble]="help"
-    [overlaySize]="helpPopupSize"
-    [hoverDelayMs]="10">
+    matTooltip="Style nodes with custom data">
   <div class="icon-container"
       [bubbleClick]="dropdown"
       [overlaySize]="dropdownSize">
@@ -32,12 +30,6 @@ limitations under the License.
     <span class="label">Add per-node data</span>
   </div>
 </div>
-
-<ng-template #help>
-  <div class="model-explorer-help-popup">
-    Add custom data and styles to the nodes in the current model
-  </div>
-</ng-template>
 
 <ng-template #dropdown>
   <div class="model-explorer-node-data-provider-dropdown">

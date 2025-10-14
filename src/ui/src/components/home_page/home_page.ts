@@ -24,6 +24,7 @@ import {
   effect,
   HostListener,
   Inject,
+  inject,
   Signal,
   signal,
   ViewChild,
@@ -56,6 +57,7 @@ import {
   SettingKey,
   SettingsService,
 } from '../../services/settings_service';
+import {ThemePreference, ThemeService} from '../../services/theme_service';
 import {UrlService} from '../../services/url_service';
 import {ModelSourceInput} from '../model_source_input/model_source_input';
 import {OpenInNewTabButton} from '../open_in_new_tab_button/open_in_new_tab_button';
@@ -110,6 +112,43 @@ export class HomePage implements AfterViewInit {
   readonly loadingExtensions;
   readonly loadedGraphCollections;
   runningVersion = computed(() => this.newVersionService.info().runningVersion);
+
+  private readonly themeService = inject(ThemeService);
+  readonly curThemePreference = this.themeService.curThemePreference;
+
+  readonly themeIcon = computed(() => {
+    const userPreference = this.themeService.curThemePreference();
+    switch (userPreference) {
+      case ThemePreference.DARK:
+        return 'dark_mode';
+      case ThemePreference.LIGHT:
+        return 'light_mode';
+      default:
+        return 'brightness_auto';
+    }
+  });
+
+  readonly themeMenuItems = computed(() => [
+    {
+      label: `System default (${this.themeService.isDarkMode() ? 'dark' : 'light'})`,
+      icon: 'brightness_auto',
+      themePreference: ThemePreference.SYSTEM,
+    },
+    {
+      label: 'Light mode',
+      icon: 'light_mode',
+      themePreference: ThemePreference.LIGHT,
+    },
+    {
+      label: 'Dark mode',
+      icon: 'dark_mode',
+      themePreference: ThemePreference.DARK,
+    },
+  ]);
+
+  readonly visualizerTheme = computed(() =>
+    this.themeService.isDarkMode() ? 'dark' : 'light',
+  );
 
   initialUiState?: VisualizerUiState;
   dismissWelcomeCard = false;
@@ -306,6 +345,10 @@ export class HomePage implements AfterViewInit {
     this.dialog.open(OpenSourceLibsDialog, {});
   }
 
+  handleClickTheme(themePreference: ThemePreference) {
+    this.themeService.setThemePreference(themePreference);
+  }
+
   get showWelcomeCard(): boolean {
     const setting = this.settingsService.getSettingByKey(
       SettingKey.SHOW_WELCOME_CARD,
@@ -319,6 +362,7 @@ export class HomePage implements AfterViewInit {
   get curConfig(): VisualizerConfig {
     const showTfliteConsts =
       this.route.snapshot.queryParams['show_tflite_consts'] === '1';
+    const edgeColor = this.settingsService.getStringValue(SETTING_EDGE_COLOR);
     return {
       nodeLabelsToHide: this.settingsService
         .getStringValue(SETTING_HIDE_OP_NODES_WITH_LABELS)
@@ -338,7 +382,11 @@ export class HomePage implements AfterViewInit {
       edgeLabelFontSize: this.settingsService.getNumberValue(
         SETTING_EDGE_LABEL_FONT_SIZE,
       ),
-      edgeColor: this.settingsService.getStringValue(SETTING_EDGE_COLOR),
+      // When the edge color is set to the default value, we don't want to
+      // pass it to the visualizer config, so that the default color from
+      // visualizer theme will be used.
+      edgeColor:
+        edgeColor === SETTING_EDGE_COLOR.defaultValue ? undefined : edgeColor,
       maxConstValueCount: this.settingsService.getNumberValue(
         SETTING_MAX_CONST_ELEMENT_COUNT_LIMIT,
       ),

@@ -32,6 +32,10 @@ import {
   isOpNode,
 } from './common/utils';
 import {ThreejsService} from './threejs_service';
+import {
+  ColorVariable,
+  VisualizerThemeService,
+} from './visualizer_theme_service';
 import {WebglEdges} from './webgl_edges';
 import {WebglRenderer} from './webgl_renderer';
 import {WebglRendererThreejsService} from './webgl_renderer_threejs_service';
@@ -58,11 +62,6 @@ interface OverlayModelEdge extends ModelEdge {
 /** Service for managing input/output highlighting related tasks. */
 @Injectable()
 export class WebglRendererIoHighlightService {
-  readonly EDGE_COLOR_INCOMING = new THREE.Color('#009e73');
-  readonly EDGE_TEXT_COLOR_INCOMING = new THREE.Color('#125341');
-  readonly EDGE_COLOR_OUTGOING = new THREE.Color('#d55e00');
-  readonly EDGE_TEXT_COLOR_OUTGOING = new THREE.Color('#994d11');
-
   inputsRenderedEdges: ModelEdge[] = [];
   outputsRenderedEdges: ModelEdge[] = [];
   inputsByHighlightedNode: Record<string, OpNode[]> = {};
@@ -71,14 +70,18 @@ export class WebglRendererIoHighlightService {
   private webglRenderer!: WebglRenderer;
   private webglRendererThreejsService!: WebglRendererThreejsService;
   private readonly threejsService: ThreejsService = inject(ThreejsService);
-  readonly ioPickerBgs = new WebglRoundedRectangles(99);
+  private readonly visualizerThemeService: VisualizerThemeService = inject(
+    VisualizerThemeService,
+  );
+  readonly ioPickerBgs = new WebglRoundedRectangles(
+    99,
+    this.visualizerThemeService,
+  );
   private readonly ioPickerTexts = new WebglTexts(this.threejsService);
   private readonly incomingHighlightedEdges = new WebglEdges(
-    this.EDGE_COLOR_INCOMING,
     EDGE_WIDTH_IO_HIGHLIGHT,
   );
   private readonly outgoingHighlightedEdges = new WebglEdges(
-    this.EDGE_COLOR_OUTGOING,
     EDGE_WIDTH_IO_HIGHLIGHT,
   );
   private readonly incomingHighlightedEdgeTexts = new WebglTexts(
@@ -158,6 +161,11 @@ export class WebglRendererIoHighlightService {
               };
         });
       this.incomingHighlightedEdges.generateMesh(
+        new THREE.Color(
+          this.webglRenderer.visualizerThemeService.getColor(
+            ColorVariable.INCOMING_EDGE_COLOR,
+          ),
+        ),
         edges,
         this.webglRenderer.curModelGraph,
       );
@@ -186,9 +194,13 @@ export class WebglRendererIoHighlightService {
         const labels =
           this.webglRenderer.webglRendererEdgeTextsService.genLabelsOnEdges(
             edges,
-            this.EDGE_TEXT_COLOR_INCOMING,
+            new THREE.Color(
+              this.webglRenderer.visualizerThemeService.getColor(
+                ColorVariable.INCOMING_EDGE_TEXT_COLOR,
+              ),
+            ),
             0,
-            95,
+            95.1,
             undefined,
             outputMetadataKey,
             inputMetadataKey,
@@ -251,6 +263,11 @@ export class WebglRendererIoHighlightService {
             };
       });
       this.outgoingHighlightedEdges.generateMesh(
+        new THREE.Color(
+          this.webglRenderer.visualizerThemeService.getColor(
+            ColorVariable.OUTGOING_EDGE_COLOR,
+          ),
+        ),
         edges,
         this.webglRenderer.curModelGraph,
       );
@@ -279,9 +296,13 @@ export class WebglRendererIoHighlightService {
         const labels =
           this.webglRenderer.webglRendererEdgeTextsService.genLabelsOnEdges(
             edges,
-            this.EDGE_TEXT_COLOR_OUTGOING,
+            new THREE.Color(
+              this.webglRenderer.visualizerThemeService.getColor(
+                ColorVariable.OUTGOING_EDGE_TEXT_COLOR,
+              ),
+            ),
             undefined,
-            95,
+            95.1,
             undefined,
             outputMetadataKey,
             inputMetadataKey,
@@ -305,6 +326,21 @@ export class WebglRendererIoHighlightService {
     // Io picker bgs and texts.
     const ioPickerBgRectangles: RoundedRectangleData[] = [];
     const ioPickerLabels: LabelData[] = [];
+    const ioPickerIncomingBgColor = new THREE.Color(
+      this.webglRenderer.visualizerThemeService.getColor(
+        ColorVariable.INCOMING_EDGE_COLOR,
+      ),
+    );
+    const ioPickerOutgoingBgColor = new THREE.Color(
+      this.webglRenderer.visualizerThemeService.getColor(
+        ColorVariable.OUTGOING_EDGE_COLOR,
+      ),
+    );
+    const ioPickerTextColor = new THREE.Color(
+      this.webglRenderer.visualizerThemeService.getColor(
+        ColorVariable.SURFACE_COLOR,
+      ),
+    );
     for (const nodeId of Object.keys({
       ...this.inputsByHighlightedNode,
       ...this.outputsByHighlightedNode,
@@ -329,9 +365,7 @@ export class WebglRendererIoHighlightService {
           yOffset: 95,
           isRounded: true,
           borderColor: {r: 1, g: 1, b: 1},
-          bgColor: isInput
-            ? this.EDGE_COLOR_INCOMING
-            : this.EDGE_COLOR_OUTGOING,
+          bgColor: isInput ? ioPickerIncomingBgColor : ioPickerOutgoingBgColor,
           borderWidth: 0,
           opacity: 1,
         });
@@ -345,7 +379,7 @@ export class WebglRendererIoHighlightService {
           hAlign: 'center',
           vAlign: 'center',
           weight: FontWeight.MEDIUM,
-          color: {r: 1, g: 1, b: 1},
+          color: ioPickerTextColor,
           x: this.webglRenderer.getNodeX(node) + width / 2,
           y: 96,
           z: this.webglRenderer.getNodeY(node) - height / 4 + 1,

@@ -24,6 +24,10 @@ import {GroupNode, ModelNode, OpNode} from './common/model_graph';
 import {FontWeight, WebglColor} from './common/types';
 import {SubgraphSelectionService} from './subgraph_selection_service';
 import {ThreejsService} from './threejs_service';
+import {
+  ColorVariable,
+  VisualizerThemeService,
+} from './visualizer_theme_service';
 import {WebglRenderer} from './webgl_renderer';
 import {WebglRendererThreejsService} from './webgl_renderer_threejs_service';
 import {
@@ -47,10 +51,14 @@ export class WebglRendererSubgraphSelectionService {
   private webglRenderer!: WebglRenderer;
   private webglRendererThreejsService!: WebglRendererThreejsService;
   private readonly threejsService: ThreejsService = inject(ThreejsService);
+  private readonly visualizerThemeService: VisualizerThemeService = inject(
+    VisualizerThemeService,
+  );
 
   private curSubgraphSelectedNodeIds: Record<string, boolean> = {};
   private readonly subgraphsSelectedNodeMarkerBgs = new WebglRoundedRectangles(
     99,
+    this.visualizerThemeService,
   );
   private readonly subgraphSelectedNodeMarkerTexts = new WebglTexts(
     this.threejsService,
@@ -110,6 +118,11 @@ export class WebglRendererSubgraphSelectionService {
       }
     }
     const labels: LabelData[] = [];
+    const countLabelColor = new THREE.Color(
+      this.webglRenderer.visualizerThemeService.getColor(
+        ColorVariable.ON_SURFACE_COLOR,
+      ),
+    );
     for (const nodeId of ancestorGroupNodeIds) {
       if (!this.webglRenderer.isNodeRendered(nodeId)) {
         continue;
@@ -137,7 +150,7 @@ export class WebglRendererSubgraphSelectionService {
         hAlign: 'center',
         vAlign: 'center',
         weight: FontWeight.MEDIUM,
-        color: this.webglRenderer.NODE_LABEL_COLOR,
+        color: countLabelColor,
         x,
         y: 96,
         z: y + 1,

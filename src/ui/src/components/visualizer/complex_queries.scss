@@ -26,11 +26,16 @@
 
   input {
     height: 22px;
-    border: 1px solid #ccc;
+    border: 1px solid var(--me-outline-variant-color);
     border-radius: 4px;
     box-sizing: border-box;
     padding: 0 4px;
     outline: none;
+
+    &:focus {
+      border-color: var(--me-primary-color);
+      outline: 1px solid var(--me-primary-color);
+    }
   }
 
   input.regex {
@@ -65,7 +70,7 @@
   }
 
   .node-type-selector {
-    border: 1px solid #ccc;
+    border: 1px solid var(--me-outline-variant-color);
     border-radius: 4px;
     outline: none;
     height: 23px;
@@ -80,10 +85,12 @@
     right: 0;
     top: 4px;
     cursor: pointer;
-    opacity: 0.6;
+    opacity: .7;
+    color: var(--me-on-surface-variant-color);
+    margin-top: -1px;
 
     &:hover {
-      opacity: 1;
+      opacity: .9;
     }
 
     mat-icon {
@@ -103,13 +110,15 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background-color: #ddd;
+    color: var(--me-on-surface-variant-color);
+    background-color: var(--me-surface-container-highest-color);
     border-radius: 4px;
     cursor: pointer;
     padding: 4px;
 
     &.selected {
-      background-color: #a3c9ff;
+      color: var(--me-on-secondary-container-color);
+      background-color: var(--me-secondary-container-color);
     }
 
     &.disabled {
@@ -120,7 +129,7 @@
       font-size: 14px;
       width: 14px;
       height: 14px;
-      color: #333;
+      color: var(--me-on-surface-variant-color);
     }
   }
 }
@@ -160,13 +169,14 @@
     cursor: pointer;
     display: flex;
     align-items: center;
+    color: var(--me-on-surface-color);
 
     .label {
       margin-left: 6px;
     }
 
     &:hover {
-      background-color: #eee;
+      background-color: var(--me-surface-container-high-color);
     }
   }
 }
@@ -179,7 +189,7 @@
   justify-content: center;
   font-weight: 700;
   user-select: none;
-  color: #aaa;
+  color: var(--me-on-surface-low-color);
 
   .r {
     font-size: 12px;
@@ -200,7 +210,7 @@
   font-size: 10px;
   font-weight: 700;
   user-select: none;
-  color: #aaa;
+  color: var(--me-on-surface-low-color);
 }
 
 ::ng-deep .model-explorer-node-type-icon {
@@ -211,6 +221,6 @@
     font-size: 16px;
     width: 16px;
     height: 16px;
-    color: #aaa;
+    color: var(--me-on-surface-low-color);
   }
 }

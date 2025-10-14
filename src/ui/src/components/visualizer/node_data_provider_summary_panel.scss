@@ -1,22 +1,18 @@
-/**
- * @license
- * Copyright 2024 The Model Explorer Authors. All Rights Reserved.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- * ==============================================================================
- */
-
-@use 'variables';
+// @license
+// Copyright 2024 The Model Explorer Authors. All Rights Reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+// ==============================================================================
 
 .container {
   padding-top: 12px;
@@ -31,8 +27,8 @@
     height: 16px;
     border-radius: 8px;
     box-sizing: border-box;
-    border: 1px solid #999;
-    background-color: #eee;
+    border: 1px solid var(--me-outline-color);
+    background-color: var(--me-surface-container-high-color);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -45,7 +41,7 @@
 
     input {
       width: 100%;
-      border: 1px solid #ccc;
+      border: 1px solid var(--me-outline-variant-color);
       padding: 3px 4px 3px 19px;
       border-radius: 4px;
       box-sizing: border-box;
@@ -55,7 +51,7 @@
       font-size: 12px;
       width: 12px;
       height: 12px;
-      color: #999;
+      color: var(--me-on-surface-variant-color);
 
       &.filter {
         position: absolute;
@@ -74,7 +70,7 @@
       justify-content: center;
 
       &:hover mat-icon {
-        color: #555;
+        color: var(--me-on-surface-variant-color);
       }
     }
   }
@@ -93,7 +89,7 @@
       cursor: default;
 
       mat-icon {
-        color: #e1a011;
+        color: var(--me-warning-text-color);
       }
     }
 
@@ -119,7 +115,7 @@
       width: 16px;
       height: 16px;
       line-height: 16px;
-      color: black;
+      color: var(--me-on-surface-variant-color);
     }
   }
 
@@ -132,7 +128,7 @@
       cursor: pointer;
 
       &.selected {
-        background-color: #fff2d5;
+        background-color: var(--me-warning-container-color);
       }
 
       .index-number-container {
@@ -174,7 +170,7 @@
     }
 
     .label {
-      color: #777;
+      color: var(--me-on-surface-variant-color);
     }
   }
 
@@ -186,7 +182,7 @@
       font-size: 16px;
       height: 16px;
       width: 16px;
-      color: #a00;
+      color: var(--me-error-text-color);
     }
   }
 
@@ -230,17 +226,17 @@
   }
 
   table {
-    border: 1px solid #ccc;
+    border: 1px solid var(--me-outline-variant-color);
     border-radius: 4px;
     width: 100%;
     box-sizing: border-box;
     user-select: none;
-    background-color: #fdfdfd;
+    background-color: var(--me-surface-container-low-color);
     overflow: hidden;
 
     thead {
       height: 24px;
-      background-color: #f2f2f2;
+      background-color: var(--me-surface-container-high-color);
       font-size: 11px;
     }
 
@@ -250,7 +246,7 @@
     }
 
     tr:hover {
-      outline: 1px solid #999;
+      outline: 1px solid var(--me-outline-color);
     }
 
     td,
@@ -259,11 +255,11 @@
       text-align: left;
 
       &.node-label {
-        border-left: 1px solid #ddd;
+        border-left: 1px solid var(--me-outline-hairline-color);
       }
 
       &.value-col {
-        border-left: 1px solid #ddd;
+        border-left: 1px solid var(--me-outline-hairline-color);
         max-width: 80px;
         text-overflow: ellipsis;
         overflow: hidden;
@@ -280,7 +276,7 @@
         font-size: 12px;
         width: 12px;
         height: 12px;
-        color: #999;
+        color: var(--me-on-surface-variant-color);
         margin-left: 4px;
         flex-shrink: 0;
       }
@@ -305,17 +301,17 @@
       cursor: pointer;
 
       &:hover {
-        text-decoration: underline dotted #0085f2;
+        text-decoration: underline dotted var(--me-primary-color);
       }
     }
 
     td.input {
-      color: variables.$incoming-edge-color;
+      color: var(--me-incoming-edge-color);
       font-weight: 500;
     }
 
     td.output {
-      color: variables.$outgoing-edge-color;
+      color: var(--me-outgoing-edge-color);
       font-weight: 500;
     }
   }

@@ -1,24 +1,18 @@
-/**
- * @license
- * Copyright 2024 The Model Explorer Authors. All Rights Reserved.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- * ==============================================================================
- */
-
-$table_border_color: #c4c7c5;
-$warning_text_color: #ab6c17;
-$warning_bg_color: #ffefd9;
+// @license
+// Copyright 2024 The Model Explorer Authors. All Rights Reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+// ==============================================================================
 
 .container {
   width: 100%;
@@ -27,7 +21,7 @@ $warning_bg_color: #ffefd9;
   display: flex;
   align-items: flex-start;
   flex-direction: column;
-  border: 1px solid #dadce0;
+  border: 1px solid var(--me-surface-variant-color);
   border-radius: 8px;
   overflow: hidden;
 
@@ -46,12 +40,12 @@ $warning_bg_color: #ffefd9;
   }
 
   .title {
-    color: #1f1f1f;
+    color: var(--me-on-surface-color);
     font-size: 24px;
   }
 
   .description-container {
-    color: #444746;
+    color: var(--me-on-surface-variant-color);
     font-size: 14px;
     margin-top: 8px;
 
@@ -61,7 +55,7 @@ $warning_bg_color: #ffefd9;
       .tfhub {
         display: inline-block;
         text-decoration: underline;
-        text-decoration-color: #aaa;
+        text-decoration-color: var(--me-on-surface-variant-color);
         cursor: help;
       }
 
@@ -69,7 +63,7 @@ $warning_bg_color: #ffefd9;
         display: inline-block;
         margin-right: 6px;
         text-decoration: underline;
-        text-decoration-color: #aaa;
+        text-decoration-color: var(--me-on-surface-variant-color);
         cursor: help;
 
         &.external {
@@ -95,11 +89,12 @@ $warning_bg_color: #ffefd9;
           font-size: 18px;
           width: 18px;
           height: 18px;
-          color: #999;
+          color: var(--me-on-surface-variant-color);
         }
       }
 
       .extension-name {
+        color: var(--me-on-surface-color);
         display: inline-flex;
         align-items: center;
       }
@@ -116,8 +111,8 @@ $warning_bg_color: #ffefd9;
           font-size: 12px;
           padding: 2px 3px;
           border-radius: 4px;
-          background-color: #eee;
-          border: 1px solid #ccc;
+          background-color: var(--me-surface-container-high-color);
+          border: 1px solid var(--me-outline-variant-color);
           box-sizing: border-box;
         }
       }
@@ -130,7 +125,7 @@ $warning_bg_color: #ffefd9;
         .description {
           margin-top: 2px;
           display: inline-block;
-          color: #999;
+          color: var(--me-on-surface-variant-color);
         }
 
         li {
@@ -157,7 +152,7 @@ $warning_bg_color: #ffefd9;
     .input-container {
       height: 100%;
       box-sizing: border-box;
-      background-color: #f0f4f9;
+      background-color: var(--me-surface-container-high-color);
       border-radius: 99px;
       flex-grow: 1;
       display: flex;
@@ -170,20 +165,22 @@ $warning_bg_color: #ffefd9;
         border: none;
         outline: none;
         background-color: transparent;
-        color: #444746;
+        color: var(--me-on-surface-color);
         font-size: 14px;
         margin-right: 16px;
       }
 
       .btn-add-model-path {
-        background-color: white;
+        background-color: var(--me-surface-color);
         border-radius: 99px;
-        color: #0b57d0;
+        color: var(--me-link-color);
         height: 40px;
+        box-shadow: none;
+        border: 1px solid var(--me-surface-variant-color);
 
         &[disabled] {
-          background-color: rgba(31, 31, 31, 0.12);
-          color: rgba(31, 31, 31, 0.38);
+          background-color: var(--me-disabled-button-bg-color);
+          color: var(--me-disabled-button-color);
         }
       }
     }
@@ -191,18 +188,18 @@ $warning_bg_color: #ffefd9;
     .or-label {
       font-size: 14px;
       margin: 0 20px;
-      color: #5f6368;
+      color: var(--me-on-surface-variant-color);
     }
 
     .btn-upload {
       height: 100%;
-      background-color: #c2e7ff;
+      background-color: var(--me-secondary-container-color);
       border-radius: 99px;
-      color: #001d35;
+      color: var(--me-on-secondary-container-color);
 
       &[disabled] {
-        background-color: rgba(31, 31, 31, 0.12);
-        color: rgba(31, 31, 31, 0.38);
+        background-color: var(--me-disabled-button-bg-color);
+        color: var(--me-disabled-button-color);
       }
     }
 
@@ -212,8 +209,8 @@ $warning_bg_color: #ffefd9;
   }
 
   .model-count-warning {
-    color: $warning_text_color;
-    background-color: $warning_bg_color;
+    color: var(--me-warning-text-color);
+    background-color: var(--me-warning-container-color);
     margin: 4px 0;
     width: fit-content;
     padding: 2px 9px;
@@ -224,7 +221,7 @@ $warning_bg_color: #ffefd9;
 
   .models-table {
     width: 100%;
-    color: #1f1f1f;
+    color: var(--me-on-surface-color);
     font-size: 14px;
     margin-top: 18px;
     overflow: hidden auto;
@@ -239,8 +236,8 @@ $warning_bg_color: #ffefd9;
         position: sticky;
         top: 0;
         z-index: 100;
-        box-shadow: inset 0 -1px 0 $table_border_color;
-        background-color: white;
+        box-shadow: inset 0 -1px 0 var(--me-surface-variant-color);
+        background-color: var(--me-surface-color);
 
         .model-name-col {
           width: 100%;
@@ -266,7 +263,7 @@ $warning_bg_color: #ffefd9;
             font-size: 20px;
             width: 20px;
             height: 20px;
-            color: #777;
+            color: var(--me-on-surface-variant-color);
           }
         }
       }
@@ -284,7 +281,7 @@ $warning_bg_color: #ffefd9;
         padding: 0;
 
         &:not(:last-child) {
-          border-bottom: 1px solid $table_border_color;
+          border-bottom: 1px solid var(--me-surface-variant-color);
         }
       }
 
@@ -305,22 +302,6 @@ $warning_bg_color: #ffefd9;
 
         mat-checkbox {
           margin-right: 2px;
-
-          // Uncomment below to make the checkbox gray on select.
-          /*
-          ::ng-deep .mdc-checkbox__ripple {
-            display: none;
-          }
-
-          ::ng-deep .mdc-checkbox__background {
-            background-color: white;
-            border-color: #80868B;
-
-            svg {
-              color: #80868B;
-            }
-          }
-          */
         }
 
         .model-path {
@@ -358,8 +339,8 @@ $warning_bg_color: #ffefd9;
       }
 
       .no-supported-adapter-msg {
-        color: $warning_text_color;
-        background-color: $warning_bg_color;
+        color: var(--me-warning-text-color);
+        background-color: var(--me-warning-container-color);
         padding: 2px 8px;
         width: fit-content;
         border-radius: 4px;
@@ -381,24 +362,23 @@ $warning_bg_color: #ffefd9;
         .model-status-label-container {
           font-size: 12px;
           padding: 2px 8px;
-          background-color: #f1f3f4;
+          background-color: var(--me-surface-container-high-color);
           display: flex;
           align-items: center;
           justify-content: center;
-          color: #3c4043;
           width: fit-content;
           border-radius: 4px;
           white-space: nowrap;
           font-weight: 500;
 
           &.done {
-            color: #0d652d;
-            background-color: #e6f4ea;
+            color: var(--me-success-text-color);
+            background-color: var(--me-success-container-color);
           }
 
           &.error {
-            color: #a50e0e;
-            background-color: #fce8e6;
+            color: var(--me-error-text-color);
+            background-color: var(--me-error-container-color);
           }
         }
 
@@ -411,6 +391,7 @@ $warning_bg_color: #ffefd9;
           cursor: pointer;
 
           mat-icon {
+            color: var(--me-on-surface-variant-color);
             width: 20px;
             height: 20px;
             font-size: 20px;
@@ -434,7 +415,7 @@ $warning_bg_color: #ffefd9;
           font-size: 20px;
           width: 20px;
           height: 20px;
-          color: #444746;
+          color: var(--me-on-surface-variant-color);
         }
       }
     }
@@ -448,14 +429,14 @@ $warning_bg_color: #ffefd9;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    background-color: #f0f4f9;
+    background-color: var(--me-surface-container-high-color);
     padding: 0 24px 0 38px;
 
     .selection-status {
       display: flex;
       align-items: center;
       font-size: 14px;
-      color: #444746;
+      color: var(--me-on-surface-variant-color);
 
       &.hide {
         visibility: hidden;
@@ -474,7 +455,7 @@ $warning_bg_color: #ffefd9;
         font-size: 20px;
         width: 20px;
         height: 20px;
-        color: #444746;
+        color: var(--me-on-surface-variant-color);
       }
     }
 
@@ -483,45 +464,12 @@ $warning_bg_color: #ffefd9;
       border-radius: 99px;
     }
   }
-
-  .instructions-container {
-    font-size: 13px;
-    color: #555;
-    margin-top: 24px;
-    display: none;
-
-    mat-icon {
-      font-size: 18px;
-      width: 18px;
-      height: 18px;
-      margin-right: 4px;
-    }
-
-    .instruction-title {
-      display: flex;
-      align-items: center;
-
-      .model-format {
-        color: #333;
-        margin-right: 4px;
-        margin-left: 4px;
-        border: 1px solid #ccc;
-        border-radius: 4px;
-        padding: 2px 4px;
-        cursor: pointer;
-
-        &:hover {
-          background-color: #eee;
-        }
-      }
-    }
-  }
 }
 
 ::ng-deep .model-explorer-upload-help-popup {
   padding: 12px;
   font-weight: normal;
-  color: #555;
+  color: var(--me-on-surface-color);
   line-height: 14px;
   font-size: 12px;
   font-family: 'Google Sans Text', Arial, Helvetica, sans-serif;
@@ -530,7 +478,7 @@ $warning_bg_color: #ffefd9;
 ::ng-deep .model-explorer-adapter-help-popup {
   padding: 12px;
   font-weight: normal;
-  color: #555;
+  color: var(--me-on-surface-color);
   line-height: 15px;
   font-size: 12px;
   font-family: 'Google Sans Text', Arial, Helvetica, sans-serif;
@@ -543,7 +491,7 @@ $warning_bg_color: #ffefd9;
 ::ng-deep .model-explorer-model-format-help-popup {
   padding: 12px;
   font-weight: normal;
-  color: #555;
+  color: var(--me-on-surface-color);
   line-height: 15px;
   font-size: 12px;
   font-family: 'Google Sans Text', Arial, Helvetica, sans-serif;
@@ -555,7 +503,7 @@ $warning_bg_color: #ffefd9;
 
   .example {
     margin-top: 8px;
-    color: #aaa;
+    color: var(--me-on-surface-variant-color);
 
     ul {
       margin: 4px 0;
@@ -569,14 +517,15 @@ $warning_bg_color: #ffefd9;
 
   .info {
     display: inline-block;
-    background-color: #ffd1a8;
+    color: var(--me-warning-text-color);
+    background-color: var(--me-warning-container-color);
   }
 }
 
 ::ng-deep .model-explorer-error-info-popup {
   padding: 12px;
   font-weight: normal;
-  background-color: #f0f4f9;
+  background-color: var(--me-surface-container-low-color);
   line-height: 14px;
   font-size: 12px;
   font-family: 'Google Sans Text', Arial, Helvetica, sans-serif;

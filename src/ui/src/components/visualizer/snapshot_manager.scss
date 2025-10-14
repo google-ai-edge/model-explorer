@@ -43,10 +43,10 @@
     font-size: 20px;
     width: 20px;
     height: 20px;
-    opacity: 0.6;
+    opacity: 0.85;
 
     &:hover {
-      opacity: 0.9;
+      opacity: 1;
     }
   }
 
@@ -62,19 +62,19 @@
       width: 16px;
       height: 16px;
       border-radius: 8px;
-      background-color: #7cacf8;
-      color: white;
+      background-color: var(--me-primary-color);
+      color: var(--me-on-primary-color);
       box-sizing: border-box;
       display: flex;
       align-items: center;
       justify-content: center;
       font-weight: 500;
       cursor: pointer;
+      opacity: 0.7;
 
       &:hover,
       &.clicked {
-        background-color: #0b57d0;
-        color: white;
+        opacity: 1;
       }
     }
   }
@@ -83,16 +83,17 @@
 ::ng-deep .model-explorer-snapshot-popup {
   font-size: 11px;
   line-height: 12px;
-  background-color: white;
+  color: var(--me-on-surface-color);
+  background-color: var(--me-surface-container-low-color);
 
   .info-row {
-    color: #333;
+    color: var(--me-on-surface-color);
     display: flex;
     align-items: center;
     justify-content: space-between;
-    background-color: #f6f6f6;
+    background-color: var(--me-surface-container-color);
     padding: 4px 8px;
-    border-bottom: 1px solid #ddd;
+    border-bottom: 1px solid var(--me-outline-variant-color);
 
     .icon-container {
       display: flex;

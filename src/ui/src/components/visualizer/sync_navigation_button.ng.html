@@ -54,12 +54,13 @@ limitations under the License.
     @for (mode of allSyncModes; track mode) {
       <div class="section">
         <div class="select-container">
-          <mat-radio-button [disableRipple]="true" color="primary"
-              [checked]="syncMode() === mode"
-              [class.cns]="mode === SyncNavigationMode.LOAD_MAPPING_FROM_CNS"
-              (change)="setSyncMode(mode)">
+          <label class="sync-mode-radio-button">
+            <input type="radio" name="mode"
+                [checked]="syncMode() === mode"
+                [class.cns]="mode === SyncNavigationMode.LOAD_MAPPING_FROM_CNS"
+                (change)="setSyncMode(mode)" />
             {{getModeLabel(mode)}}
-          </mat-radio-button>
+          </label>
           @switch (mode) {
             @case (SyncNavigationMode.MATCH_NODE_ID) {
               <label class="match-node-id-checkbox">

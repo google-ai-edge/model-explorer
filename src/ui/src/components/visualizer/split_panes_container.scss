@@ -22,6 +22,7 @@
   position: relative;
   width: 100%;
   height: 100%;
+  background-color: var(--me-surface-color);
 
   .pane-container {
     position: relative;
@@ -31,13 +32,13 @@
     .pane-title-container {
       height: 24px;
       box-sizing: border-box;
-      background-color: #eee;
+      background-color: var(--me-surface-container-high-color);
       padding: 0 12px;
       display: flex;
       align-items: center;
       justify-content: space-between;
       font-size: 12px;
-      color: #999;
+      color: var(--me-on-surface-variant-color);
       cursor: pointer;
       flex-shrink: 0;
 
@@ -59,7 +60,7 @@
         align-items: center;
         justify-content: center;
         cursor: pointer;
-        color: #999;
+        color: var(--me-on-surface-variant-color);
         opacity: 0.8;
         margin-left: 6px;
 
@@ -77,7 +78,7 @@
       .divider {
         width: 1px;
         height: 12px;
-        background-color: #999;
+        background-color: var(--me-outline-color);
         margin: 0 4px 0 12px;
       }
     }
@@ -91,15 +92,15 @@
 
     &.selected {
       mat-icon {
-        color: white;
+        color: var(--me-on-surface-inverse-color);
       }
 
       .pane-title-container {
-        background-color: #ea8600;
-        color: white;
+        background-color: var(--me-active-panel-bar-bg-color);
+        color: var(--me-on-surface-inverse-color);
 
         .divider {
-          background-color: white;
+          background-color: var(--me-on-surface-inverse-color);
         }
       }
     }
@@ -111,8 +112,8 @@
       width: 100%;
       height: 100%;
       z-index: 150;
-      color: #999;
-      background-color: white;
+      color: var(--me-on-surface-color);
+      background-color: var(--me-surface-color);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -145,7 +146,7 @@
           }
 
           mat-icon {
-            color: #ccc;
+            color: var(--me-on-surface-variant-color);
             font-size: 18px;
             width: 18px;
             height: 18px;
@@ -157,7 +158,7 @@
       .progress-bar-container {
         height: 7px;
         width: 280px;
-        border: 1px solid #ccc;
+        border: 1px solid var(--me-outline-variant-color);
         border-radius: 99px;
         box-sizing: border-box;
         overflow: hidden;
@@ -165,7 +166,7 @@
         .progress-bar-body {
           height: 100%;
           transition: width 100ms;
-          background-color: #ccc;
+          background-color: var(--me-outline-variant-color);
         }
       }
 
@@ -175,12 +176,13 @@
         display: flex;
         justify-content: center;
         margin-top: 4px;
+        color: var(--me-on-surface-variant-color);
       }
 
       .error-msg {
         font-size: 13px;
         padding: 16px;
-        color: #a00;
+        color: var(--me-error-text-color);
       }
     }
   }
@@ -202,14 +204,14 @@
       background-color: rgba(0, 0, 0, 0.04);
 
       .resizer-line {
-        border-color: #fcc986;
+        border-color: var(--me-active-panel-bar-bg-color);
       }
     }
 
     .resizer-line {
       height: 100%;
       width: 1px;
-      border-left: 1px solid #999;
+      border-left: 1px solid var(--me-outline-color);
     }
   }
 
@@ -219,7 +221,7 @@
     top: 0px;
     height: 24px;
     // Over resizer.
-    z-index: 250; 
+    z-index: 250;
 
     .no-mapped-node-message {
       position: absolute;
@@ -227,8 +229,8 @@
       width: 140px;
       font-size: 12px;
       left: -44px;
-      background-color: #a00;
-      color: white;
+      background-color: var(--me-error-container-color);
+      color: var(--me-error-text-color);
       padding: 2px 4px;
       display: flex;
       align-items: center;
@@ -262,7 +264,7 @@
     }
 
     mat-icon {
-      color: #0a0;
+      color: var(--me-success-text-color);
       font-size: 16px;
       width: 16px;
       height: 16px;

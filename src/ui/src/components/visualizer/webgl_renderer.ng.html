@@ -54,7 +54,7 @@ limitations under the License.
   </div>
 
   <!-- More actions menu -->
-  <mat-menu #moreActionsMenu="matMenu">
+  <mat-menu #moreActionsMenu="matMenu" class="more-actions-menu">
     <div class="model-explorer-menu-item-with-icon expand-all"
         (click)="handleClickExpandAll(hoveredNodeIdWhenClickingMoreActions)">
       <mat-icon>unfold_more_double</mat-icon>
@@ -122,7 +122,7 @@ limitations under the License.
   </div>
 
   <!-- Subgraph menu -->
-  <mat-menu #menu="matMenu">
+  <mat-menu #menu="matMenu" class="subgraph-menu">
     @for (subgraphId of curSubgraphIdsForMenu; track subgraphId) {
       <div class="model-explorer-menu-item-with-icon"
           (click)="handleClickSubgraphId(subgraphId, $event)">

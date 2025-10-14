@@ -119,8 +119,8 @@ export class NewVersionService {
   font-size: 12px;
   display: flex;
   align-items: center;
-  color: #ab6c17;
-  background-color: #ffefd9;
+  color: var(--me-warning-text-color);
+  background-color: var(--me-warning-container-color);
   line-height: 18px;
   border-radius: 99px;
   font-weight: 500;
@@ -137,7 +137,7 @@ export class NewVersionService {
 ::ng-deep .model-explorer-upgrade-popup {
   padding: 8px;
   font-size: 12px;
-  background-color: white;
+  background-color: var(--me-surface-container-low-color);
   line-height: normal;
 
   .bold {
@@ -149,20 +149,20 @@ export class NewVersionService {
   }
 
   .code {
-    background-color: #f1f1f1;
+    background-color: var(--me-surface-container-highest-color);
     font-family: monospace;
     margin-top: 4px;
     padding: 4px;
     font-size: 11px;
   }
- 
+
   .items {
     display: flex;
     flex-direction: column;
     gap: 4px;
     margin-top: 12px;
   }
- 
+
   .release-notes,
   .download-desktop-app {
     display: flex;
@@ -174,7 +174,7 @@ export class NewVersionService {
     width: 16px;
     height: 16px;
     margin-right: 4px;
-    color: #777;
+    color: var(--me-on-surface-variant-color);
   }
 }
 `,

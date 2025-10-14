@@ -31,7 +31,7 @@
     cursor: pointer;
 
     &:hover {
-      background-color: #ddd;
+      background-color: var(--me-surface-container-highest-color);
 
       mat-icon {
         opacity: 1;
@@ -45,7 +45,7 @@
 
     mat-icon {
       opacity: 0.7;
-      color: #333;
+      color: var(--me-on-surface-variant-color);
       font-size: 20px;
       width: 20px;
       height: 20px;
@@ -53,7 +53,7 @@
   }
 
   .range-text {
-    color: #333;
+    color: var(--me-on-surface-variant-color);
     font-size: 12px;
     display: flex;
     align-items: center;

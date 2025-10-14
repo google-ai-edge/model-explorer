@@ -1,0 +1,117 @@
+// @license
+// Copyright 2024 The Model Explorer Authors. All Rights Reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+// ==============================================================================
+
+@mixin light-colors {
+  --me-primary-color: #0b57d0;
+  --me-on-primary-color: #fff;
+  --me-surface-container-highest-color: #dde3ea;
+  --me-surface-container-high-color: #e9eef6;
+  --me-surface-container-color: #f0f4f9;
+  --me-surface-container-low-color: #f8fafd;
+  --me-surface-container-lowest-color: #fff;
+  --me-on-surface-color: #1f1f1f;
+  --me-on-surface-variant-color: #444746;
+  --me-on-surface-low-color: #999;
+  --me-on-surface-inverse-color: #f2f2f2;
+  --me-surface-color: #fff;
+  --me-surface-variant-color: #e1e3e1;
+  --me-primary-container-color: #d3e3fd;
+  --me-on-primary-container-color: #0842a0;
+  --me-secondary-container-color: #c2e7ff;
+  --me-on-secondary-container-color: #004a77;
+  --me-outline-color: #747775;
+  --me-outline-variant-color: #c4c7c5;
+  --me-outline-hairline-color: #dadce0;
+  --me-outline-hairline-variant-color: #e6e6e6;
+  --me-link-color: #0b57d0;
+  --me-disabled-button-bg-color: #1f1f1f1f;
+  --me-disabled-button-color: #1f1f1f61;
+  --me-success-container-color: #e6f4ea;
+  --me-success-text-color: #188038;
+  --me-warning-container-color: #fef7e0;
+  --me-warning-text-color: #e37400;
+  --me-error-container-color: #fce8e6;
+  --me-error-text-color: #d93025;
+  --me-tooltip-bg-color: rgba(0, 0, 0, 0.9);
+  --me-bubble-shadow: 0 1px 2px 0 rgba(60, 64, 67, 0.3), 0 1px 3px 1px rgba(60, 64, 67, 0.15);
+  --me-edge-color: #aaa;
+  --me-edge-dimmed-color: #eaeaea;
+  --me-group-node-bg-color1: #f0f4f8;
+  --me-group-node-bg-color2: #e9eff5;
+  --me-group-node-bg-color3: #dee7f1;
+  --me-group-node-bg-color4: #d7e2ee;
+  --me-group-node-bg-color5: #cddae9;
+  --me-group-node-bg-color6: #c5d5e6;
+  --me-incoming-edge-color: #009e73;
+  --me-incoming-edge-text-color: #125341;
+  --me-outgoing-edge-color: #d55e00;
+  --me-outgoing-edge-text-color: #994d11;
+  --me-identical-group-bg-color: #e2edff;
+  --me-artificial-groups-border-color: #800080;
+  --me-search-results-highlight-color: #f5d55a;
+  --me-active-panel-bar-bg-color: #ea8600;
+}
+
+@mixin dark-colors {
+  --me-primary-color: #a8c7fa;
+  --me-on-primary-color: #062e6f;
+  --me-surface-container-highest-color: #333537;
+  --me-surface-container-high-color: #282a2c;
+  --me-surface-container-color: #1e1f20;
+  --me-surface-container-low-color: #1b1b1b;
+  --me-surface-container-lowest-color: #0e0e0e;
+  --me-on-surface-color: #e3e3e3;
+  --me-on-surface-variant-color: #c4c7c5;
+  --me-on-surface-low-color: #888;
+  --me-on-surface-inverse-color: #303030;
+  --me-surface-color: #131314;
+  --me-surface-variant-color: #444746;
+  --me-primary-container-color: #0842a0;
+  --me-on-primary-container-color: #d3e3fd;
+  --me-secondary-container-color: #004a77;
+  --me-on-secondary-container-color: #c2e7ff;
+  --me-outline-color: #8e918f;
+  --me-outline-variant-color: #444746;
+  --me-outline-hairline-color: #3c4043;
+  --me-outline-hairline-variant-color: #2d2d2d;
+  --me-link-color: #a8c7fa;
+  --me-disabled-button-bg-color: #bebebe1f;
+  --me-disabled-button-color: #767676;
+  --me-success-container-color: #37493f;
+  --me-success-text-color: #5bb974;
+  --me-warning-container-color: #554c33;
+  --me-warning-text-color: #fcc934;
+  --me-error-container-color: #523a3b;
+  --me-error-text-color: #ee675c;
+  --me-tooltip-bg-color: rgba(255, 255, 255, 0.9);
+  --me-bubble-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.3), 0 1px 3px 1px rgba(0, 0, 0, 0.15);
+  --me-edge-color: #555;
+  --me-edge-dimmed-color: #1f1f1f;
+  --me-group-node-bg-color1: #152231;
+  --me-group-node-bg-color2: #182739;
+  --me-group-node-bg-color3: #1d2f43;
+  --me-group-node-bg-color4: #20344a;
+  --me-group-node-bg-color5: #243b55;
+  --me-group-node-bg-color6: #27405c;
+  --me-incoming-edge-color: #5bb974;
+  --me-incoming-edge-text-color: #83c992;
+  --me-outgoing-edge-color: #e58344;
+  --me-outgoing-edge-text-color: #ec945e;
+  --me-identical-group-bg-color: #34659d;
+  --me-artificial-groups-border-color: #a24e99;
+  --me-search-results-highlight-color: #77610c;
+  --me-active-panel-bar-bg-color: #f8cd77;
+}

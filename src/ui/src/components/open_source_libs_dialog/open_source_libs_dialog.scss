@@ -39,20 +39,20 @@
   .name {
     font-size: 16px;
     font-weight: 700;
-    color: #333;
+    color: var(--me-on-surface-color);
   }
 
   .copyright {
     font-size: 12px;
-    color: #777;
+    color: var(--me-on-surface-variant-color);
   }
 
   .license-container {
     width: 520px;
     font-size: 11px;
-    border: 1px solid #ccc;
+    border: 1px solid var(--me-outline-variant-color);
     margin-top: 8px;
-    background-color: #f9f9f9;
+    background-color: var(--me-surface-container-low-color);
     height: 100px;
     overflow: hidden;
     position: relative;

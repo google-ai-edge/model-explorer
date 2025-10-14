@@ -18,6 +18,7 @@
 
 @use 'sass:map';
 @use '@angular/material' as mat;
+@use 'colors';
 
 $hue-undefined: 'undefined';
 $blue-palette: (
@@ -27,7 +28,7 @@ $blue-palette: (
   300: #8ab4f8,
   400: #669df6,
   500: #4285f4,
-  600: #1a73e8,
+  600: #0b57d0,
   700: #1967d2,
   800: #185abc,
   900: #174ea6,
@@ -53,48 +54,94 @@ $blue-palette: (
   ),
 );
 
+$blue-palette-dark: (
+  50: #e8f0fe,
+  100: #d2e3fc,
+  200: #aecbfa,
+  300: #8ab4f8,
+  400: #669df6,
+  500: #4285f4,
+  600: #a8c7fa,
+  700: #1967d2,
+  800: #185abc,
+  900: #174ea6,
+  A100: $hue-undefined,
+  A200: $hue-undefined,
+  A400: $hue-undefined,
+  A700: $hue-undefined,
+  contrast: (
+    50: #174ea6,
+    100: #174ea6,
+    200: #174ea6,
+    300: #174ea6,
+    400: #174ea6,
+    500: white,
+    600: #062e6f,
+    700: white,
+    800: white,
+    900: white,
+    A100: $hue-undefined,
+    A200: $hue-undefined,
+    A400: $hue-undefined,
+    A700: $hue-undefined,
+  ),
+);
+
 // Angular Material theme file.
 // See https://material.angular.io/guide/theming for more details.
 
-/// Mixin that applies this application's Angular Material theme.
-/// This mixin should be applied as part of your application's
-/// global styles.
-@mixin light-mode() {
-  // The `mat.core` mixin applies common styles used by multiple
-  // components, such ripples, overlays, high contrast mode, etc.
-  // copybara:insert_begin(external)
-  // @include mat.core();
-  // copybara:insert_end
+// The `mat.core` mixin applies common styles used by multiple
+// components, such ripples, overlays, high contrast mode, etc.
+// copybara:insert_begin(external)
+// @include mat.core();
+// copybara:insert_end
 
-  // Define the application's color palettes.
-  $primary: mat.m2-define-palette($blue-palette, 600);
-  $accent: mat.m2-define-palette($blue-palette, 600);
+// Define the application's color palettes.
+$primary: mat.m2-define-palette($blue-palette, 600);
+$accent: mat.m2-define-palette($blue-palette, 600);
+$primary_dark: mat.m2-define-palette($blue-palette-dark, 600);
+$accent_dark: mat.m2-define-palette($blue-palette-dark, 600);
 
-  // Create a typography config
-  $typography-config: mat.m2-define-typography-config();
+// Create a typography config
+$typography-config: mat.m2-define-typography-config();
 
-  // Create a theme definition that specifies color palettes,
-  // typography config, and default density level.
-  $theme: mat.m2-define-light-theme(
-    (
-      color: (
-        primary: $primary,
-        accent: $accent,
-      ),
-      typography: $typography-config,
-      density: 0,
-    )
-  );
-  $color-palette: map.get($theme, 'color');
-  $background-colors: map.get($color-palette, 'background');
-  $foreground-colors: map.get($color-palette, 'foreground');
+// Create a theme definition that specifies color palettes,
+// typography config, and default density level.
+$light-theme: mat.m2-define-light-theme(
+  (
+    color: (
+      primary: $primary,
+      accent: $accent,
+    ),
+    typography: $typography-config,
+    density: 0,
+  )
+);
+
+$dark-theme: mat.m2-define-dark-theme(
+  (
+    color: (
+      primary: $primary_dark,
+      accent: $accent_dark,
+    ),
+    typography: $typography-config,
+    density: 0,
+  )
+);
+
+// Include the optional typography hierachy CSS classes.
+// See go/mat-typography-hierarchy-classes for a list of the emitted classes.
+@include mat.typography-hierarchy($typography-config);
+
+body {
+  @include mat.m2-typography-level($typography-config, body-1);
+}
+
+@mixin apply-color($theme) {
+  @include mat.all-component-themes($theme);
 
   // Include theme-specific styles for "core" features like ripples and elevation.
   @include mat.core-theme($theme);
-
-  // Include the optional typography hierachy CSS classes.
-  // See go/mat-typography-hierarchy-classes for a list of the emitted classes.
-  @include mat.typography-hierarchy($typography-config);
 
   // Include theme styles for each component used in the application.
   @include mat.autocomplete-theme($theme);
@@ -115,9 +162,41 @@ $blue-palette: (
   @include mat.snack-bar-theme($theme);
   @include mat.tooltip-theme($theme);
   @include mat.tree-theme($theme);
+}
 
-  body {
-    @include mat.m2-typography-level($typography-config, body-1);
-    background-color: map.get($background-colors, 'background');
+/// Mixin that applies this application's Angular Material theme.
+/// This mixin should be applied as part of your application's
+/// global styles.
+@mixin light-mode {
+  @include apply-color($light-theme);
+
+  color-scheme: light;
+
+  @include colors.light-colors;
+}
+
+@mixin dark-mode {
+  @include apply-color($dark-theme);
+
+  color-scheme: dark;
+
+  @include colors.dark-colors;
+}
+
+body[data-metheme='light'] {
+  @include light-mode;
+}
+
+body[data-metheme='dark'] {
+  @include dark-mode;
+}
+
+body:not([data-metheme]) {
+  @media (prefers-color-scheme: light) {
+    @include light-mode;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    @include dark-mode;
   }
 }

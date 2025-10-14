@@ -22,7 +22,7 @@
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    color: #666;
+    color: var(--me-on-surface-variant-color);
 
     // These are for positioning the dropdown menu better.
     padding-bottom: 12px;
@@ -41,14 +41,14 @@
     }
 
     &:hover {
-      color: #444;
+      color: var(--me-on-surface-color);
     }
   }
 }
 
 ::ng-deep .model-explorer-node-data-provider-dropdown {
   font-size: 12px;
-  background-color: white;
+  background-color: var(--me-surface-container-low-color);
   display: flex;
   flex-direction: column;
   padding-bottom: 8px;
@@ -56,7 +56,7 @@
   .section-label {
     padding: 8px 12px;
     font-size: 11px;
-    background: #f1f1f1;
+    background-color: var(--me-surface-container-highest-color);
     font-weight: 500;
     text-transform: uppercase;
 
@@ -64,7 +64,7 @@
       text-transform: none;
       font-weight: normal;
       letter-spacing: normal;
-      color: #777;
+      color: var(--me-on-surface-variant-color);
       line-height: 12px;
       padding-bottom: 5px;
       display: flex;
@@ -118,7 +118,7 @@
 
   .description {
     font-size: 12px;
-    color: #777;
+    color: var(--me-on-surface-variant-color);
     line-height: 18px;
     letter-spacing: normal;
   }
@@ -139,9 +139,16 @@
     font-size: 12px !important;
     /* stylelint-disable-next-line declaration-no-important -- override MDC */
     letter-spacing: normal !important;
+    color: var(--me-on-primary-color);
+    background-color: var(--me-primary-color);
 
     &.upload {
       margin-top: 2px;
+    }
+
+    &[disabled] {
+      color: var(--me-on-surface-variant-color);
+      background-color: var(--me-surface-container-highest-color);
     }
 
     ::ng-deep .mat-mdc-button-touch-target {
@@ -151,17 +158,17 @@
 
   .or-divider {
     height: 1px;
-    border-top: 1px solid #eee;
+    border-top: 1px solid var(--me-outline-variant-color);
     position: relative;
     margin-top: 12px;
 
     .or-label {
       font-size: 10px;
       top: -12px;
-      color: #aaa;
+      color: var(--me-on-surface-variant-color);
       position: absolute;
       padding: 2px;
-      background-color: white;
+      background-color: var(--me-surface-container-low-color);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -177,7 +184,7 @@
   .no-extension,
   .loading-extension {
     padding: 12px 0 4px 16px;
-    color: #999;
+    color: var(--me-on-surface-variant-color);
     font-size: 13px;
     letter-spacing: normal;
   }

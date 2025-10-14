@@ -1,22 +1,18 @@
-/**
- * @license
- * Copyright 2024 The Model Explorer Authors. All Rights Reserved.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- * ==============================================================================
- */
-
-@use 'variables';
+// @license
+// Copyright 2024 The Model Explorer Authors. All Rights Reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+// ==============================================================================
 
 .io-tree {
   background-color: transparent;
@@ -24,29 +20,29 @@
 
   &.solid-background {
     transform-origin: top center;
-    background-color: white;
-    border: 1px solid #ccc;
+    background-color: var(--me-surface-container-low-color);
+    border: 1px solid var(--me-outline-variant-color);
     border-radius: 4px;
     padding-bottom: 8px;
     min-width: 270px;
-    box-shadow:
-      0 4px 6px -1px rgb(0 0 0 / 0.1),
-      0 2px 4px -2px rgb(0 0 0 / 0.1);
+    box-shadow: var(--me-bubble-shadow);
   }
 
   mat-tree-node {
+    color: var(--me-on-surface-color);
+
     &.has-locator,
     &.has-values {
       cursor: pointer;
 
       &:hover {
-        background-color: #f3f3f3;
+        background-color: var(--me-surface-container-high-color);
       }
     }
 
     &.highlight {
       .label {
-        color: #00639b;
+        color: var(--me-primary-color);
         font-weight: 500;
       }
     }
@@ -89,19 +85,19 @@
         }
 
         .node-label.color-bold {
-          color: #00639b;
+          color: var(--me-primary-color);
           font-weight: 500;
         }
 
         .node-label.search-match {
-          background-color: variables.$search-match-color;
+          background-color: var(--me-search-results-highlight-color);
         }
       }
 
       .hover-for-values-label {
         text-decoration: underline;
         text-decoration-style: dotted;
-        color: #999;
+        color: var(--me-on-surface-variant-color);
         margin-left: 8px;
       }
 
@@ -116,20 +112,20 @@
           vertical-align: text-top;
 
           &.search-match {
-            background-color: variables.$search-match-color;
+            background-color: var(--me-search-results-highlight-color);
           }
 
           mat-icon.bullet {
             font-size: 4px;
             width: 5px;
             height: 5px;
-            color: #bbb;
+            color: var(--me-on-surface-variant-color);
             margin-right: 2px;
           }
         }
 
         td.key {
-          color: #999;
+          color: var(--me-on-surface-variant-color);
           padding-right: 4px;
           white-space: nowrap;
           line-height: 12px;
@@ -150,7 +146,7 @@
   }
 
   .expandable-tree-node {
-    color: #999;
+    color: var(--me-on-surface-low-color);
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -160,7 +156,7 @@
     padding-left: 4px;
 
     &.highlight {
-      color: rgba(0, 0, 0, 0.87);
+      color: var(--on-surface-color);
     }
 
     &:hover .locator-container {
@@ -168,7 +164,7 @@
     }
 
     mat-icon.expander {
-      color: #999;
+      color: var(--me-on-surface-low-color);
     }
 
     .label-container {
@@ -213,7 +209,7 @@
     align-items: center;
 
     mat-icon.locator-icon {
-      color: #333;
+      color: var(--me-on-surface-variant-color);
       font-size: 16px;
       width: 16px;
       height: 16px;
@@ -238,14 +234,14 @@
     justify-self: center;
     padding: 4px;
     border-radius: 99px;
-    background-color: #e8f0fe;
+    background-color: var(--me-surface-container-high-color);
     box-sizing: border-box;
 
     mat-icon {
       font-size: 12px;
       width: 12px;
       height: 12px;
-      color: #9da3a9;
+      color: var(--me-on-surface-variant-color);
     }
   }
 
@@ -284,11 +280,11 @@
   padding: 8px;
   font-size: 11px;
   line-height: 12px;
-  background-color: white;
+  background-color: var(--me-surface-container-low-color);
 
   .values-count-msg {
     margin-bottom: 8px;
-    color: #999;
+    color: var(--me-on-surface-variant-color);
   }
 
   .content {

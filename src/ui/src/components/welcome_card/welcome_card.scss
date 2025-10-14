@@ -20,19 +20,19 @@
   width: 100%;
   height: 100%;
   box-sizing: border-box;
-  border: 1px solid #dadce0;
+  border: 1px solid var(--me-surface-variant-color);
   border-radius: 8px;
   padding: 24px;
   display: flex;
   justify-content: space-between;
 
   .title {
-    color: #1f1f1f;
+    color: var(--me-on-surface-color);
     font-size: 24px;
   }
 
   .description {
-    color: #3c4043;
+    color: var(--me-on-surface-variant-color);
     margin-top: 8px;
     font-size: 14px;
   }
@@ -43,13 +43,13 @@
 
   .doc-link {
     font-size: 14px;
-    color: #0b57d0;
+    color: var(--me-link-color);
     cursor: pointer;
     opacity: 0.8;
     margin-bottom: 8px;
 
     .doc-text {
-      color: #0b57d0;
+      color: var(--me-link-color);
     }
 
     a {
@@ -71,19 +71,7 @@
       width: 18px;
       height: 18px;
       margin-right: 8px;
-      color: #0b57d0;
+      color: var(--me-link-color);
     }
-  }
-
-  .video-container {
-    width: 430px;
-    height: 100%;
-    border-radius: 8px;
-    background-color: #f1f1f1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #999;
-    font-size: 13px;
   }
 }

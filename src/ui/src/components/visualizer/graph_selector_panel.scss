@@ -17,10 +17,7 @@
  */
 
 .container {
-  box-shadow:
-    0 3px 5px -1px rgba(0, 0, 0, 0.2),
-    0 6px 10px 0 rgba(0, 0, 0, 0.14),
-    0 1px 18px 0 rgba(0, 0, 0, 0.12);
+  box-shadow: var(--me-bubble-shadow);
   transform-origin: top center;
   font-size: 12px;
   padding: 8px 0;
@@ -37,7 +34,7 @@
     width: calc(100% - 20px);
     box-sizing: border-box;
     pointer-events: all;
-    border: 1px solid #ccc;
+    border: 1px solid var(--me-outline-variant-color);
     height: 20px;
     border-radius: 4px;
     padding: 0 2px;
@@ -60,11 +57,22 @@
       cursor: pointer;
 
       &:hover {
-        background-color: rgba(0, 0, 0, 0.04);
+        background-color: var(--me-surface-container-high-color);
       }
 
       &.selected {
-        background-color: #c2e7ff;
+        color: var(--me-on-secondary-container-color);
+        background-color: var(--me-secondary-container-color);
+
+        .action-button {
+          .block-container {
+            border-color: var(--me-on-secondary-container-color);
+
+            .right-block {
+              background-color: var(--me-on-secondary-container-color);
+            }
+          }
+        }
       }
 
       .graph-info-wrapper {
@@ -83,7 +91,7 @@
         font-size: 16px;
         width: 16px;
         height: 16px;
-        color: #999;
+        color: var(--me-on-surface-low-color);
         margin-right: 4px;
         transform: rotate(-180deg);
       }
@@ -95,7 +103,7 @@
       }
 
       .node-count-label {
-        color: #999;
+        color: var(--me-on-surface-low-color);
         margin-left: 12px;
       }
 
@@ -115,7 +123,7 @@
 
         .block-container {
           border-radius: 3px;
-          border: 1px solid #999;
+          border: 1px solid var(--me-on-surface-low-color);
           height: 100%;
           width: 100%;
           box-sizing: border-box;
@@ -127,7 +135,7 @@
           .right-block {
             height: 100%;
             width: 50%;
-            background-color: #999;
+            background-color: var(--me-on-surface-low-color);
             border-top-right-radius: 2px;
             border-bottom-right-radius: 2px;
           }

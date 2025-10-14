@@ -23,6 +23,10 @@ import {GroupNode} from './common/model_graph';
 import {FontWeight} from './common/types';
 import {isGroupNode} from './common/utils';
 import {ThreejsService} from './threejs_service';
+import {
+  ColorVariable,
+  VisualizerThemeService,
+} from './visualizer_theme_service';
 import {WebglRenderer} from './webgl_renderer';
 import {IO_PICKER_HEIGHT} from './webgl_renderer_io_highlight_service';
 import {WebglRendererThreejsService} from './webgl_renderer_threejs_service';
@@ -40,15 +44,17 @@ const THREE = three;
 /** Service for rendering identical layers indicator. */
 @Injectable()
 export class WebglRendererIdenticalLayerService {
-  readonly IDENTICAL_GROUPS_BG_COLOR = new THREE.Color('#e2edff');
-  readonly IDENTICAL_GROUPS_INDICATOR_BG_COLOR = new THREE.Color('#e3e3e3');
-  readonly IDENTICAL_GROUPS_INDICATOR_BORDER_COLOR = new THREE.Color('#ccc');
-
   private webglRenderer!: WebglRenderer;
   private webglRendererThreejsService!: WebglRendererThreejsService;
   private readonly threejsService: ThreejsService = inject(ThreejsService);
+  private readonly visualizerThemeService: VisualizerThemeService = inject(
+    VisualizerThemeService,
+  );
 
-  private readonly identicalLayerIndicatorBgs = new WebglRoundedRectangles(99);
+  private readonly identicalLayerIndicatorBgs = new WebglRoundedRectangles(
+    99,
+    this.visualizerThemeService,
+  );
   private readonly identicalLayerIndicatorTexts = new WebglTexts(
     this.threejsService,
   );
@@ -87,6 +93,21 @@ export class WebglRendererIdenticalLayerService {
         .map(
           ({node}) => this.webglRenderer.curModelGraph.nodesById[node.id],
         ) as GroupNode[];
+      const indicatorBorderColor = new THREE.Color(
+        this.webglRenderer.visualizerThemeService.getColor(
+          ColorVariable.OUTLINE_VARIANT_COLOR,
+        ),
+      );
+      const indicatorBgColor = new THREE.Color(
+        this.webglRenderer.visualizerThemeService.getColor(
+          ColorVariable.SURFACE_CONTAINER_COLOR,
+        ),
+      );
+      const indicatorTextColor = new THREE.Color(
+        this.webglRenderer.visualizerThemeService.getColor(
+          ColorVariable.ON_SURFACE_COLOR,
+        ),
+      );
       for (const node of identicalGroupNodes) {
         if (node.id === selectedNode.id) {
           continue;
@@ -120,8 +141,8 @@ export class WebglRendererIdenticalLayerService {
           },
           yOffset: 95.2,
           isRounded: true,
-          borderColor: this.IDENTICAL_GROUPS_INDICATOR_BORDER_COLOR,
-          bgColor: this.IDENTICAL_GROUPS_INDICATOR_BG_COLOR,
+          borderColor: indicatorBorderColor,
+          bgColor: indicatorBgColor,
           borderWidth: 1,
           opacity: 1,
         });
@@ -132,7 +153,7 @@ export class WebglRendererIdenticalLayerService {
           hAlign: 'center',
           vAlign: 'center',
           weight: FontWeight.MEDIUM,
-          color: {r: 0, g: 0, b: 0},
+          color: indicatorTextColor,
           x: badgeX,
           y: 96,
           z: badgeY + badgeYOffset,

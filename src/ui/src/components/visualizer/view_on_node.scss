@@ -24,10 +24,10 @@
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    opacity: 0.6;
+    opacity: 0.85;
 
     &:hover {
-      opacity: 0.9;
+      opacity: 1;
     }
 
     mat-icon {
@@ -42,7 +42,8 @@
   padding: 12px;
   padding-top: 10px;
   font-size: 12px;
-  background-color: white;
+  color: var(--me-on-surface-color);
+  background-color: var(--me-surface-container-low-color);
   display: flex;
   flex-direction: column;
 
@@ -75,7 +76,7 @@
       font-size: 20px;
       width: 20px;
       height: 20px;
-      color: #999;
+      color: var(--me-on-surface-variant-color);
     }
   }
 
@@ -84,7 +85,7 @@
     align-items: center;
     gap: 4px;
     cursor: pointer;
-    color: #555;
+    color: var(--me-on-surface-variant-color);
     user-select: none;
 
     input[type='checkbox'] {
@@ -118,13 +119,13 @@
     input {
       flex-grow: 1;
       box-sizing: border-box;
-      border: 1px solid #aaa;
+      border: 1px solid var(--me-outline-color);
       border-radius: 3px;
       padding: 3px 26px 3px 4px;
       width: 200px;
 
       &::placeholder {
-        color: #aaa;
+        color: var(--me-on-surface-low-color);
       }
     }
 
@@ -150,7 +151,7 @@
         font-size: 16px;
         width: 16px;
         height: 16px;
-        color: #999;
+        color: var(--me-on-surface-variant-color);
       }
     }
   }
@@ -159,7 +160,8 @@
 ::ng-deep .model-explorer-view-on-node-help-popup {
   padding: 12px;
   font-size: 12px;
-  background-color: white;
+  color: var(--me-on-surface-color);
+  background-color: var(--me-surface-container-low-color);
 
   ul {
     margin-block-end: 0;
@@ -167,11 +169,11 @@
 
   .code {
     display: inline-block;
-    background-color: #fffdd0;
+    background-color: var(--me-surface-container-high-color);
     font-family: monospace;
 
     &.regex {
-      background-color: #e6d0ff;
+      background-color: var(--me-warning-container-color);
     }
   }
 }

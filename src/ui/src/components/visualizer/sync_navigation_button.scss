@@ -16,8 +16,6 @@
  * ==============================================================================
  */
 
-$sync_highlight_color: #004fb8;
-
 @keyframes rotating {
   from {
     transform: rotate(0deg);
@@ -33,11 +31,11 @@ $sync_highlight_color: #004fb8;
   align-items: center;
   font-size: 11px;
   cursor: pointer;
-  color: #777;
+  color: var(--me-on-surface-variant-color);
   padding: 0 5px;
-  background-color: white;
+  background-color: var(--me-surface-color);
   border-radius: 99px;
-  border: 1px solid #ccc;
+  border: 1px solid var(--me-outline-variant-color);
   box-sizing: border-box;
 
   .content {
@@ -52,11 +50,11 @@ $sync_highlight_color: #004fb8;
   }
 
   &.enabled {
-    background-color: $sync_highlight_color;
-    color: white;
+    background-color: var(--me-primary-color);
+    color: var(--me-on-primary-color);
 
     mat-icon {
-      color: white;
+      color: var(--me-on-surface-inverse-color);
     }
   }
 
@@ -73,7 +71,8 @@ $sync_highlight_color: #004fb8;
 
 ::ng-deep .model-explorer-sync-navigation-dropdown {
   font-size: 12px;
-  background-color: white;
+  color: var(--me-on-surface-color);
+  background-color: var(--me-surface-container-low-color);
   display: flex;
   flex-direction: column;
   padding-bottom: 12px;
@@ -82,7 +81,7 @@ $sync_highlight_color: #004fb8;
     padding: 8px 12px;
     margin-bottom: 8px;
     font-size: 11px;
-    background: #f1f1f1;
+    background: var(--me-surface-container-high-color);
     font-weight: 500;
     text-transform: uppercase;
     display: flex;
@@ -108,12 +107,13 @@ $sync_highlight_color: #004fb8;
         font-size: 18px;
         height: 18px;
         width: 18px;
-        color: #999;
+        color: var(--me-on-surface-variant-color);
       }
     }
   }
 
   .section {
+    padding-left: 6px;
     padding-right: 16px;
   }
 
@@ -145,6 +145,19 @@ $sync_highlight_color: #004fb8;
   .select-container {
     display: flex;
     flex-direction: column;
+    margin-top: 4px;
+
+    .sync-mode-radio-button {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      cursor: pointer;
+
+      input {
+        margin-bottom: 4px;
+        cursor: pointer;
+      }
+    }
   }
 
   .upload-mapping-button {
@@ -155,9 +168,16 @@ $sync_highlight_color: #004fb8;
     font-size: 12px !important;
     /* stylelint-disable-next-line declaration-no-important -- override MDC */
     letter-spacing: normal !important;
+    background-color: var(--me-primary-color);
+    color: var(--me-on-primary-color);
 
     &.cns {
       margin-top: 4px;
+    }
+
+    &[disabled] {
+      color: var(--me-on-surface-variant-color);
+      background-color: var(--me-surface-container-highest-color);
     }
 
     ::ng-deep .mat-mdc-button-touch-target {
@@ -171,7 +191,7 @@ $sync_highlight_color: #004fb8;
 
   .uploaded-file-name {
     margin-left: 36px;
-    color: #999;
+    color: var(--me-on-surface-variant-color);
     line-break: anywhere;
     line-height: 14px;
   }

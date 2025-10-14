@@ -45,6 +45,8 @@ limitations under the License.
           <mat-icon>bug_report</mat-icon>
         </button>
       </a>
+      <ng-container *ngTemplateOutlet="themePicker">
+      </ng-container>
 
       <button mat-icon-button aria-label="about" matTooltip="About"
           [matMenuTriggerFor]="menu">
@@ -104,14 +106,41 @@ limitations under the License.
       [config]="curConfig"
       [initialUiState]="initialUiState"
       [nodeDataSources]="remoteNodeDataPaths"
+      [theme]="visualizerTheme()"
       (titleClicked)="handleClickTitle()"
       (modelGraphProcessed)="handleModelGraphProcessed($event)"
       (uiStateChanged)="handleUiStateChanged($event)"
       (remoteNodeDataPathsChanged)="handleRemoteNodeDataPathsChanged($event)"
       (syncNavigationModeChanged)="handleSyncNavigationModeChanged($event)">
+    <div class="btns-container">
+      <div class="theme-picker-btn-external-container">
+        <ng-container *ngTemplateOutlet="themePicker">
+        </ng-container>
+      </div>
+    </div>
   </model-graph-visualizer>
 
   <div class="dragover-overlay">
     <div class="msg">Drop to add model files</div>
   </div>
 </div>
+
+<ng-template #themePicker>
+  <button mat-icon-button aria-label="theme"
+      class="theme-picker-btn"
+      matTooltip="Switch theme"
+      [matMenuTriggerFor]="themeMenu">
+    <mat-icon>{{themeIcon()}}</mat-icon>
+  </button>
+  <mat-menu #themeMenu="matMenu">
+    @for (item of themeMenuItems(); track item.label) {
+      <button mat-menu-item
+          class="theme-button"
+          [class.selected]="item.themePreference === curThemePreference()"
+          (click)="handleClickTheme(item.themePreference)">
+        <mat-icon>{{item.icon}}</mat-icon>
+        {{item.label}}
+      </button>
+    }
+  </mat-menu>
+</ng-template>

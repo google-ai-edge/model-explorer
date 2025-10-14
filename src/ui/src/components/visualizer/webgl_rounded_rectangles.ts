@@ -19,6 +19,10 @@
 import * as three from 'three';
 
 import {Rect, UniformValue, WebglColor} from './common/types';
+import {
+  ColorVariable,
+  VisualizerThemeService,
+} from './visualizer_theme_service';
 
 const THREE = three;
 
@@ -29,6 +33,7 @@ uniform float borderRadius;
 // Set this to <0 to disable animation.
 uniform float animationProgress;
 uniform vec4 bgColorWhenFar;
+uniform vec3 baseColor;
 
 attribute vec4 bound;
 attribute vec4 targetBound;
@@ -96,6 +101,7 @@ precision highp float;
 
 uniform float borderRadius;
 uniform vec4 bgColorWhenFar;
+uniform vec3 baseColor;
 
 varying vec2 vUv;
 varying vec2 vSize;
@@ -169,7 +175,7 @@ void main() {
   // Border.
   float c = FillLine(uv,
     vec2(-0.5 * aspect, 0.0), vec2(0.5 * aspect, 0.0), vec2(0.0, 0.5), radius);
-  finalColor = mix(vec4(vBorderColor.rgb, 1.0), vec4(1.0, 1.0, 1.0, 0.0), c);
+  finalColor = mix(vec4(vBorderColor.rgb, 1.0), vec4(baseColor.rgb, 0.0), c);
 
   // Body.
   float c2 = FillLine(uv,
@@ -228,7 +234,10 @@ export class WebglRoundedRectangles {
   private lastBorderWidthUpdateRectangles: RoundedRectangleData[] = [];
   private lastOpacityUpdateRectangles: RoundedRectangleData[] = [];
 
-  constructor(private readonly radius: number) {
+  constructor(
+    private readonly radius: number,
+    private readonly visualizerThemeService: VisualizerThemeService,
+  ) {
     this.planeGeo = new THREE.PlaneGeometry(1, 1);
     this.planeGeo.rotateX(-Math.PI / 2);
 
@@ -240,6 +249,7 @@ export class WebglRoundedRectangles {
         'borderRadius': {value: this.radius},
         'animationProgress': this.curAnimationProgrssUniform,
         'bgColorWhenFar': {value: [0, 0, 0, 0]},
+        'baseColor': {value: [1, 1, 1]},
       },
       vertexShader: VERTEX_SHADER,
       fragmentShader: FRAGMENT_SHADER,
@@ -377,6 +387,14 @@ export class WebglRoundedRectangles {
       ),
     );
 
+    const surfaceColor = new THREE.Color(
+      this.visualizerThemeService.getColor(ColorVariable.SURFACE_COLOR),
+    );
+    this.material.uniforms['baseColor'].value = [
+      surfaceColor.r,
+      surfaceColor.g,
+      surfaceColor.b,
+    ];
     this.mesh = new THREE.Mesh(geometry, this.material);
     this.mesh.frustumCulled = false;
 
@@ -490,7 +508,7 @@ export class WebglRoundedRectangles {
   updateBgColor(
     nodeIds: string[],
     color: three.Color,
-    ignoreNonWhiteBackground = false,
+    bgColorToUpdate?: three.Color,
   ) {
     if (!this.mesh) {
       return;
@@ -506,11 +524,15 @@ export class WebglRoundedRectangles {
           continue;
         }
         const index = savedRectangle.index;
-        if (ignoreNonWhiteBackground) {
+        if (bgColorToUpdate) {
           const originR = this.originalBgColors[index * 3];
           const originG = this.originalBgColors[index * 3 + 1];
           const originB = this.originalBgColors[index * 3 + 2];
-          if (originR !== 1 || originG !== 1 || originB !== 1) {
+          if (
+            originR !== bgColorToUpdate.r ||
+            originG !== bgColorToUpdate.g ||
+            originB !== bgColorToUpdate.b
+          ) {
             continue;
           }
         }

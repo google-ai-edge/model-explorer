@@ -16,6 +16,26 @@
  * ==============================================================================
  */
 
+@use '../../theme/colors';
+
+// Theme variables.
+//
+// Needs to match the theme variables in theme.scss.
+:host[data-metheme='light'],
+::ng-deep body,
+::ng-deep body[data-metheme='light'] {
+  color-scheme: light;
+
+  @include colors.light-colors;
+}
+
+:host[data-metheme='dark'],
+::ng-deep body[data-metheme='dark'] {
+  color-scheme: dark;
+
+  @include colors.dark-colors;
+}
+
 .container {
   width: 100%;
   height: 100%;
@@ -48,7 +68,7 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      color: #999;
+      color: var(--me-on-surface-variant-color);
     }
 
     split-panes-container {
@@ -69,8 +89,9 @@
   .model-explorer-help-popup {
     font-size: 12px;
     padding: 8px;
-    background-color: white;
+    background-color: var(--me-surface-container-low-color);
     line-height: normal;
+    color: var(--me-on-surface-color);
 
     .bold {
       font-weight: 700;
@@ -79,7 +100,7 @@
     .shortcut {
       display: flex;
       align-items: center;
-      color: #777;
+      color: var(--me-on-surface-variant-color);
       margin-top: 8px;
 
       mat-icon {
@@ -87,13 +108,25 @@
         width: 20px;
         height: 20px;
         margin-right: 2px;
-        color: #777;
+        color: var(--me-on-surface-variant-color);
       }
     }
 
     .description {
-      color: #777;
+      color: var(--me-on-surface-variant-color);
       margin-top: 8px;
     }
+  }
+
+  .mat-mdc-tooltip-surface {
+    /* stylelint-disable-next-line declaration-no-important -- override MDC */
+    background-color: var(--me-tooltip-bg-color) !important;
+    /* stylelint-disable-next-line declaration-no-important -- override MDC */
+    color: var(--me-on-surface-inverse-color) !important;
+  }
+
+  .mat-mdc-dialog-surface {
+    /* stylelint-disable-next-line declaration-no-important -- override MDC */
+    background-color: var(--me-surface-container-low-color) !important;
   }
 }

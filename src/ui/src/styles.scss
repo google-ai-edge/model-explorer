@@ -16,8 +16,7 @@
  * ==============================================================================
  */
 
-@use './theme/theme' as theme;
-@include theme.light-mode();
+@use 'theme/theme';
 
 html,
 body {
@@ -29,7 +28,7 @@ body {
   letter-spacing: normal;
   overflow: hidden;
   font-family: 'Google Sans Text', Arial, Helvetica, sans-serif;
-  background-color: white;
+  background-color: var(--me-surface-color);
 }
 
 input,
@@ -38,7 +37,7 @@ textarea {
 }
 
 button > span {
-  font-family: "Google Sans Text", Arial, Helvetica, sans-serif;
+  font-family: 'Google Sans Text', Arial, Helvetica, sans-serif;
   letter-spacing: normal;
 }
 

@@ -199,7 +199,6 @@ export class WebglEdges {
   private lastYOffsetsUpdateArrowHeads: ArrowHead[] = [];
 
   constructor(
-    private readonly color: WebglColor,
     private readonly edgeWidth: number,
     private readonly arrowScale = 1,
   ) {
@@ -242,6 +241,7 @@ export class WebglEdges {
   }
 
   generateMesh(
+    color: WebglColor,
     edges: Array<{edge: ModelEdge; index: number}>,
     modelGraph: ModelGraph,
     forceNoAnimation = false,
@@ -307,7 +307,7 @@ export class WebglEdges {
         targetEndPoints.push(...curEndpoints);
 
         yOffsets.push(index * WEBGL_ELEMENT_Y_FACTOR);
-        colors.push(this.color.r, this.color.g, this.color.b);
+        colors.push(color.r, color.g, color.b);
         newSavedEdgeSegments[segmentId] = {
           endPoints: curEndpoints,
           index: segmentIndex,
@@ -337,7 +337,7 @@ export class WebglEdges {
           arrowHeadYOffsets.push(
             index * WEBGL_ELEMENT_Y_FACTOR + WEBGL_ELEMENT_Y_FACTOR / 2,
           );
-          arrowHeadColors.push(this.color.r, this.color.g, this.color.b);
+          arrowHeadColors.push(color.r, color.g, color.b);
           newSavedArrowHeads[arrowHeadId] = {
             index: edgeIndex,
             lastSegmentEndPoints: curLastSegmentEndpoints,

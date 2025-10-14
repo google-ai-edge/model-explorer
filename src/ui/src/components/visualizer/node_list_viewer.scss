@@ -27,11 +27,12 @@
   justify-content: center;
   padding: 4px 6px;
   border-radius: 4px;
-  background-color: #a3c9ff;
+  color: var(--me-on-secondary-container-color);
+  background-color: var(--me-secondary-container-color);
   line-height: 14px;
   cursor: pointer;
   user-select: none;
-  opacity: .8;
+  opacity: 0.8;
 
   &:hover {
     opacity: 1;
@@ -39,13 +40,14 @@
 
   &.disabled {
     pointer-events: none;
-    background-color: #ddd;
+    color: var(--me-disabled-button-color);
+    background-color: var(--me-disabled-button-bg-color);
   }
 }
 
 ::ng-deep .model-explorer-node-list {
   font-size: 12px;
-  background-color: white;
+  background: var(--me-surface-container-low-color);
   line-height: normal;
 }
 
