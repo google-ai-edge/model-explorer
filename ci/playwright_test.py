@@ -75,6 +75,11 @@ def delay_click_canvas(page: Page, x: int, y: int):
 
 
 def select_dark_theme(page: Page):
+  # Use `.last` to reliably target the *visible* theme picker button.
+  #
+  # For example, when in the graph view, the home page's theme picker remains
+  # in the DOM but is hidden, meaning the last element is the active and
+  # visible one.
   page.locator(".theme-picker-btn").last.click()
   page.get_by_text("Dark mode").click()
 
