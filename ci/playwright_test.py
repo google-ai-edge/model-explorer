@@ -75,7 +75,7 @@ def delay_click_canvas(page: Page, x: int, y: int):
 
 
 def select_dark_theme(page: Page):
-  page.locator(".theme-picker-btn").first.click()
+  page.locator(".theme-picker-btn").last.click()
   page.get_by_text("Dark mode").click()
 
 
@@ -95,6 +95,7 @@ def test_homepage(page: Page):
   page.goto(LOCAL_SERVER)
   expect(page).to_have_title(re.compile("Model Explorer"))
   take_and_compare_screenshot(page, "homepage.png")
+
   select_dark_theme(page)
   take_and_compare_screenshot(page, "homepage_dark.png")
 
@@ -111,6 +112,7 @@ def test_litert_direct_adapter(page: Page):
   page.locator("canvas").first.click(position={"x": 469, "y": 340})
 
   take_and_compare_screenshot(page, "litert_direct.png")
+
   select_dark_theme(page)
   take_and_compare_screenshot(page, "litert_direct_dark.png")
 
