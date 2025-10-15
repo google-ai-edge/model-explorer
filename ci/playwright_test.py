@@ -74,7 +74,17 @@ def delay_click_canvas(page: Page, x: int, y: int):
   page.locator("canvas").first.click(position={"x": x, "y": y})
 
 
-def delay_take_screenshot(page: Page, file_path: str):
+def select_dark_theme(page: Page):
+  # Use `.last` to reliably target the *visible* theme picker button.
+  #
+  # For example, when in the graph view, the home page's theme picker remains
+  # in the DOM but is hidden, meaning the last element is the active and
+  # visible one.
+  page.locator(".theme-picker-btn").last.click()
+  page.get_by_text("Dark mode").click()
+
+
+def delay_take_screenshot(page: Page, file_path: Path):
   time.sleep(2)  # Delay for the animation
   page.screenshot(path=file_path)
 
@@ -91,11 +101,14 @@ def test_homepage(page: Page):
   expect(page).to_have_title(re.compile("Model Explorer"))
   take_and_compare_screenshot(page, "homepage.png")
 
+  select_dark_theme(page)
+  take_and_compare_screenshot(page, "homepage_dark.png")
+
 
 def test_litert_direct_adapter(page: Page):
   page.goto(LOCAL_SERVER)
   page.get_by_placeholder("Absolute file paths (").fill(
-      TEST_FILES_DIR / "fully_connected.tflite"
+      str(TEST_FILES_DIR / "fully_connected.tflite")
   )
   page.get_by_role("button", name="Add").click()
   page.get_by_text("arrow_drop_down").click()
@@ -105,11 +118,14 @@ def test_litert_direct_adapter(page: Page):
 
   take_and_compare_screenshot(page, "litert_direct.png")
 
+  select_dark_theme(page)
+  take_and_compare_screenshot(page, "litert_direct_dark.png")
+
 
 def test_litert_mlir_adapter(page: Page):
   page.goto(LOCAL_SERVER)
   page.get_by_placeholder("Absolute file paths (").fill(
-      TEST_FILES_DIR / "fully_connected.tflite"
+      str(TEST_FILES_DIR / "fully_connected.tflite")
   )
   page.get_by_role("button", name="Add").click()
   page.get_by_text("arrow_drop_down").click()
@@ -123,7 +139,7 @@ def test_litert_mlir_adapter(page: Page):
 def test_tf_mlir_adapter(page: Page):
   page.goto(LOCAL_SERVER)
   page.get_by_placeholder("Absolute file paths (").fill(
-      TEST_FILES_DIR / "simple_add/saved_model.pb"
+      str(TEST_FILES_DIR / "simple_add/saved_model.pb")
   )
   page.get_by_role("button", name="Add").click()
   page.get_by_text("arrow_drop_down").click()
@@ -137,7 +153,7 @@ def test_tf_mlir_adapter(page: Page):
 def test_tf_direct_adapter(page: Page):
   page.goto(LOCAL_SERVER)
   page.get_by_placeholder("Absolute file paths (").fill(
-      TEST_FILES_DIR / "simple_add/saved_model.pb"
+      str(TEST_FILES_DIR / "simple_add/saved_model.pb")
   )
   page.get_by_role("button", name="Add").click()
   page.get_by_text("arrow_drop_down").click()
@@ -153,7 +169,7 @@ def test_tf_direct_adapter(page: Page):
 def test_tf_graphdef_adapter(page: Page):
   page.goto(LOCAL_SERVER)
   page.get_by_placeholder("Absolute file paths (").fill(
-      TEST_FILES_DIR / "graphdef_foo.pbtxt"
+      str(TEST_FILES_DIR / "graphdef_foo.pbtxt")
   )
   page.get_by_role("button", name="Add").click()
   delay_view_model(page)
@@ -165,7 +181,7 @@ def test_tf_graphdef_adapter(page: Page):
 def test_shlo_mlir_adapter(page: Page):
   page.goto(LOCAL_SERVER)
   page.get_by_placeholder("Absolute file paths (").fill(
-      TEST_FILES_DIR / "stablehlo_sin.mlir"
+      str(TEST_FILES_DIR / "stablehlo_sin.mlir")
   )
   page.get_by_role("button", name="Add").click()
   delay_view_model(page)
@@ -198,7 +214,7 @@ def test_reuse_server_non_pytorch(page: Page):
   # Load a tflite model
   page.goto(LOCAL_SERVER)
   page.get_by_placeholder("Absolute file paths (").fill(
-      TEST_FILES_DIR / "fully_connected.tflite"
+      str(TEST_FILES_DIR / "fully_connected.tflite")
   )
   page.get_by_role("button", name="Add").click()
   delay_view_model(page)
@@ -217,7 +233,7 @@ def test_reuse_server_pytorch(page: Page):
   # Load a tflite model
   page.goto(LOCAL_SERVER)
   page.get_by_placeholder("Absolute file paths (").fill(
-      TEST_FILES_DIR / "fully_connected.tflite"
+      str(TEST_FILES_DIR / "fully_connected.tflite")
   )
   page.get_by_role("button", name="Add").click()
   delay_view_model(page)
@@ -238,7 +254,7 @@ def test_reuse_server_pytorch_from_config(page: Page):
   # Load a tflite model
   page.goto(LOCAL_SERVER)
   page.get_by_placeholder("Absolute file paths (").fill(
-      TEST_FILES_DIR / "fully_connected.tflite"
+      str(TEST_FILES_DIR / "fully_connected.tflite")
   )
   page.get_by_role("button", name="Add").click()
   delay_view_model(page)
