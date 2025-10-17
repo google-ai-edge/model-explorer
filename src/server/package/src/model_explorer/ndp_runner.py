@@ -29,7 +29,7 @@ class NdpRunner:
     if cmd_id == 'run':
       modelPath = os.path.expanduser(cmd['modelPath'])
       return asdict(fn(extension.metadata.id, modelPath, cmd['configValues']))
-    elif cmd_id == 'getConfigEditors':
+    elif cmd_id == 'get_config_editors':
       return asdict(fn(extension.metadata.id))
     else:
       return {}

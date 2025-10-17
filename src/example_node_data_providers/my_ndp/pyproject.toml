@@ -1,5 +1,5 @@
 [project]
-name = "test-node-data-provider"
+name = "my-ndp"
 version = "0.0.1"
 
 dependencies = [

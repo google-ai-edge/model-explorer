@@ -14,7 +14,7 @@
 # ==============================================================================
 
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from abc import abstractmethod
 from typing import Union
 
@@ -34,8 +34,34 @@ class NodeDataProviderMetadata(ExtensionMetadata):
   # and use the icon name from the side panel.
   icon: str = 'extension'
 
+  # Conditions that must be met for this extension to appear in the UI.
   #
-  adapterExtensionIds: list[str] = field(default_factory=list)
+  # If unset, this extension applies to all graphs.
+  filter: Union['NodeDataProviderFilter', None] = None
+
+
+@dataclass
+class NodeDataProviderFilter:
+  """
+  The filter conditions that determine whether a node data provider
+  extension should be available or visible in the UI.
+
+  The filter conditions (modelFileExts and adapterIds) are combined using
+  an AND logic. For the extension to be selected, both conditions
+  must be met (if set).
+  """
+
+  # Extensions (e.g. 'tflite', 'json') of the model files that this extension
+  # supports. Don't include ".".
+  #
+  # Unset (None) means the extension applies to all model file extensions.
+  modelFileExts: Union[list[str], None] = None
+
+  # IDs of the adapter(s) used to convert the model graph that this extension
+  # supports.
+  #
+  # Unset (None) means the extension applies to all adapter IDs.
+  adapterIds: Union[list[str], None] = None
 
 
 @dataclass
@@ -47,7 +73,7 @@ class NodeDataProviderResult:
   result: Union[GraphNodeData, None] = None
 
   # Error message.
-  error: str= ''
+  error: str = ''
 
 
 @dataclass
@@ -59,7 +85,6 @@ class GetConfigEditorsResult:
 
   # Error message.
   error: str = ''
-
 
 
 class NodeDataProvider(Extension):
@@ -87,13 +112,13 @@ class NodeDataProvider(Extension):
     pass
 
   @abstractmethod
-  def run(self, extension_id: str, model_path: str, configs: dict) -> NodeDataProviderResult:
-    """Starts the node data calculation.
+  def run(self, extension_id: str, model_path: str, config_values: dict) -> NodeDataProviderResult:
+    """Calculates the node data.
 
     Args:
       extension_id: The id of the extension.
       model_path: The path to the model file.
-      configs: key-value pairs for the config values that users entered in the
-          UI.
+      config_values: key-value pairs for the config values that users entered in
+          the UI.
     """
     pass

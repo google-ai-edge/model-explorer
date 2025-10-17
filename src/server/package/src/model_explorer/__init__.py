@@ -19,7 +19,7 @@ from . import graph_builder, node_data_builder, config_editor
 from .adapter import Adapter, AdapterMetadata
 from .apis import config, visualize, visualize_from_config, visualize_pytorch
 from .consts import PACKAGE_NAME
-from .node_data_provider import NodeDataProvider, NodeDataProviderMetadata, NodeDataProviderResult, GetConfigEditorsResult
+from .node_data_provider import GetConfigEditorsResult, NodeDataProvider, NodeDataProviderFilter, NodeDataProviderMetadata, NodeDataProviderResult
 from .types import ModelExplorerGraphs
 
 # Default 'exports'.
@@ -32,6 +32,7 @@ __all__ = [
     'AdapterMetadata',
     'ModelExplorerGraphs',
     'NodeDataProvider',
+    'NodeDataProviderFilter',
     'NodeDataProviderMetadata',
     'GetConfigEditorsResult',
     'NodeDataProviderResult',
