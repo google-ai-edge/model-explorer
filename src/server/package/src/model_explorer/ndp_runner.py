@@ -1,7 +1,6 @@
 import os
-from .types import ModelExplorerGraphs, NdpCommand
+from .types import NdpCommand
 
-from .node_data_provider import NodeDataProviderResult
 from .registered_extension import RegisteredExtension
 from .utils import get_instance_method
 from dataclasses import asdict
@@ -18,11 +17,19 @@ class NdpRunner:
     instance = extension_class()
 
     # Get the method by the cmdId.
-    fn = get_instance_method(instance, cmd['cmdId'])
+    cmd_id = cmd['cmdId']
+    fn = get_instance_method(instance, cmd_id)
     if fn is None:
       raise Exception(
-          f'Method {cmd["cmdId"]} not implemented in the node data provider extension'
+          f'Method {cmd_id} not implemented in the node data provider extension'
           f' "{extension.metadata.name}"'
       )
-    modelPath = os.path.expanduser(cmd['modelPath'])
-    return asdict(fn(extension.metadata.id, modelPath, cmd['configValues']))
+
+    # Run it.
+    if cmd_id == 'run':
+      modelPath = os.path.expanduser(cmd['modelPath'])
+      return asdict(fn(extension.metadata.id, modelPath, cmd['configValues']))
+    elif cmd_id == 'getConfigEditors':
+      return asdict(fn(extension.metadata.id))
+    else:
+      return {}

@@ -32,6 +32,9 @@ class ConfigEditor:
   # `Id` will be used as fallback label if this field is not specified.
   label: str = ''
 
+  # The help text, shown in a popup when a "?" icon is hovered over.
+  help: str = ''
+
   # Default value of the editor.
   defaultValue: Union[str, bool, float, int, None, list[str]] = None
 

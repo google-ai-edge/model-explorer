@@ -28,14 +28,6 @@ from .node_data_builder import GraphNodeData
 class NodeDataProviderMetadata(ExtensionMetadata):
   """Metadata for a node data provider extension."""
 
-  # A list of config editors to configure this node data provider extension.
-  #
-  # When user clicks a NDP extension to run, the UI will show a dialog to let
-  # users fill in some data config for this run. The dialog will generate the
-  # proper UI elements for each config editor and will pass the config data
-  # (indexed by config editor id) to `NodeDataProvider.run`.
-  configEditors: list[ConfigEditor] = field(default_factory=list)
-
   # The icon of the task, for display purpose.
   #
   # You can pick an icon from https://fonts.google.com/icons?icon.set=Material+Icons
@@ -58,6 +50,18 @@ class NodeDataProviderResult:
   error: str= ''
 
 
+@dataclass
+class GetConfigEditorsResult:
+  """The result of the get_config_editors method."""
+
+  # Config editors.
+  configEditors: Union[list[ConfigEditor], None] = None
+
+  # Error message.
+  error: str = ''
+
+
+
 class NodeDataProvider(Extension):
   """The base class of a node data provider extension."""
 
@@ -69,10 +73,25 @@ class NodeDataProvider(Extension):
     Extension.__init__(self)
 
   @abstractmethod
+  def get_config_editors(self, extension_id: str) -> list[ConfigEditor]:
+    """Returns the config editors for the given extension.
+
+    When user clicks a NDP extension to run, the UI will show a dialog to let
+    users fill in some data config for this run. The dialog will generate the
+    proper UI elements for each config editor and will pass the config data
+    (indexed by config editor id) to `NodeDataProvider.run` below.
+
+    Args:
+      extension_id: The id of the extension.
+    """
+    pass
+
+  @abstractmethod
   def run(self, extension_id: str, model_path: str, configs: dict) -> NodeDataProviderResult:
     """Starts the node data calculation.
 
     Args:
+      extension_id: The id of the extension.
       model_path: The path to the model file.
       configs: key-value pairs for the config values that users entered in the
           UI.

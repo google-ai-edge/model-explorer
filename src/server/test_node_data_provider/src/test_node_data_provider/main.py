@@ -1,5 +1,5 @@
-from model_explorer.config_editor import TextInputConfigEditor, TextAreaConfigEditor, SlideToggleConfigEditor, ColorPickerConfigEditor, OptionItem, DropDownConfigEditor, ButtonToggleConfigEditor, FileConfigEditor
-from model_explorer import NodeDataProvider, NodeDataProviderMetadata, NodeDataProviderResult
+from model_explorer.config_editor import ConfigEditor, TextInputConfigEditor, TextAreaConfigEditor, SlideToggleConfigEditor, ColorPickerConfigEditor, OptionItem, DropDownConfigEditor, ButtonToggleConfigEditor, FileConfigEditor
+from model_explorer import NodeDataProvider, NodeDataProviderMetadata, NodeDataProviderResult, GetConfigEditorsResult
 from model_explorer.node_data_builder import GraphNodeData, NodeDataResult, GradientItem
 import time
 import json
@@ -11,12 +11,23 @@ class TestNodeDataProvider(NodeDataProvider):
           id='test-ndp',
           name='My test node data provider',
           description='A node data provider for testing purpose',
-          adapterExtensionIds=['tosa_flatbuffer_adapter'],
+          adapterExtensionIds=['tosa_flatbuffer_adapter']),
+      NodeDataProviderMetadata(
+          id='test-ndp2',
+          icon='face',
+          name='Another node data provider',
+          description='hello node data provider for some other testing purpose',
+      )
+  ]
+
+  def get_config_editors(self, extension_id: str) -> GetConfigEditorsResult:
+    if extension_id == 'test-ndp':
+      return GetConfigEditorsResult(
           configEditors=[
               TextInputConfigEditor(
                   id="text_input_1", label='Text input 1', defaultValue="defaul text"),
               TextInputConfigEditor(
-                  id="text_input_number", label='Number only',
+                  id="text_input_number", label='Number only', help='must be a number',
                   defaultValue="100", number=True),
               TextAreaConfigEditor(
                   id="text_area_1", label="Text area 1", height=60),
@@ -51,19 +62,19 @@ class TestNodeDataProvider(NodeDataProvider):
                                                label="Right", value="right"),
                                        ], multiple=True)
           ]
-      ),
-      NodeDataProviderMetadata(
-          id='test-ndp2',
-          icon='face',
-          name='Another node data provider',
-          description='hello node data provider for some other testing purpose',
+      )
+    elif extension_id == 'test-ndp2':
+      return GetConfigEditorsResult(
           configEditors=[
               TextInputConfigEditor(id="text_input_1", label='Text input 1'),
               FileConfigEditor(id='file1', label='File 1'),
               FileConfigEditor(id='file2', label='File 2')
-          ],
+          ]
       )
-  ]
+    else:
+      return GetConfigEditorsResult(
+          error='Unsupported extension id'
+      )
 
   def run(self, extension_id: str, model_path: str, config_values: dict) -> NodeDataProviderResult:
     print(json.dumps(config_values, indent=2))
