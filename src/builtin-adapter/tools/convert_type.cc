@@ -62,6 +62,8 @@ std::string TensorTypeToString(tflite::TensorType type) {
       return "uint16";
     case tflite::TensorType_INT4:
       return "int4";
+    case tflite::TensorType_INT2:
+      return "int2";
     default:
       return "unknown";
   }
