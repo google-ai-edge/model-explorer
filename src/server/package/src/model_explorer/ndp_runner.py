@@ -9,9 +9,7 @@ from dataclasses import asdict
 class NdpRunner:
   """A runner to run node data provider extension."""
 
-  def run_ndp(
-      self, extension: RegisteredExtension, cmd: NdpCommand
-  ) -> dict:
+  def run_ndp(self, extension: RegisteredExtension, cmd: NdpCommand) -> dict:
     # Get extension class and create an instance.
     extension_class = extension.ext_class
     instance = extension_class()

@@ -50,6 +50,5 @@ class ExtensionClassProcessor(type):
           ExtensionClassProcessor.extension_type = 'node_data_provider'
           break
 
-
       # Store its class.
       ExtensionClassProcessor.extension_class = cls

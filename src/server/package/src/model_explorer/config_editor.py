@@ -41,6 +41,7 @@ class ConfigEditor:
 
 # --- Specialized Editor Configs ---
 
+
 @dataclass
 class TextInputConfigEditor(ConfigEditor):
   """Configuration for a simple text input editor."""
@@ -101,5 +102,3 @@ class FileConfigEditor(ConfigEditor):
   """Configuration for a file upload editor."""
 
   type: Literal['file'] = 'file'
-
-

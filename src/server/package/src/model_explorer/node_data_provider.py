@@ -91,8 +91,9 @@ class NodeDataProvider(Extension):
   """The base class of a node data provider extension."""
 
   # Subclass needs to override this class variable to provide its metadata.
-  metadata: Union[NodeDataProviderMetadata,
-                  list[NodeDataProviderMetadata]] = NodeDataProviderMetadata()
+  metadata: Union[NodeDataProviderMetadata, list[NodeDataProviderMetadata]] = (
+      NodeDataProviderMetadata()
+  )
 
   def __init__(self):
     Extension.__init__(self)
@@ -112,7 +113,9 @@ class NodeDataProvider(Extension):
     pass
 
   @abstractmethod
-  def run(self, extension_id: str, model_path: str, config_values: dict) -> NodeDataProviderResult:
+  def run(
+      self, extension_id: str, model_path: str, config_values: dict
+  ) -> NodeDataProviderResult:
     """Calculates the node data.
 
     Args:

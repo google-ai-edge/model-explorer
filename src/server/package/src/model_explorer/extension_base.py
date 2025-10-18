@@ -22,7 +22,8 @@ class Extension(object, metaclass=ExtensionClassProcessor):
   """The base class for all extensions."""
 
   # Base class needs to override this class variable to provide its metadata.
-  metadata: Union[ExtensionMetadata,
-                  list[ExtensionMetadata]] = ExtensionMetadata()
+  metadata: Union[ExtensionMetadata, list[ExtensionMetadata]] = (
+      ExtensionMetadata()
+  )
 
   pass
