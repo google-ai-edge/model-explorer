@@ -32,6 +32,20 @@ class Graph:
   # It is displayed in the side panel when the group is selected.
   groupNodeAttributes: Union['GroupNodeAttributes', None] = None
 
+  # Custom configs for group nodes.
+  #
+  # A group node will be matched to the first config whose namespace regex
+  # matches its namespace.
+  groupNodeConfigs: Union[list['GroupNodeConfig'], None] = None
+
+  # A list of labels. Nodes whose label matches any label in the list
+  # (case-insensitive) will be hidden from the visualization.
+  #
+  # This overrides the node labels set in the settings, or the
+  # `nodeLabelsToHide` field in the `VisualizerConfig` passed to the
+  # visualizer.
+  nodeLabelsToHide: Union[list[str], None] = None
+
   # The data for various tasks that provide extra data to be visualized, such
   # as node data, edge overlay, etc.
   tasksData: Union['TasksData', None] = None
@@ -220,6 +234,33 @@ class GraphNodeConfig:
 # Use empty group namespace for the graph-level attributes (i.e. shown in
 # side panel when no node is selected).
 GroupNodeAttributes = Dict[str, Dict[str, str]]
+
+
+@dataclass
+class GroupNodeConfig:
+  """
+  Custom configs for group nodes matched by the namespace regex.
+  """
+
+  # The regex of the namespace of the group node. The namespace to match should
+  # include the name of the group itself.
+  #
+  # For example, for a group/layer a->b->c, the namespace string that the regex
+  # will try to match is "a/b/c"
+  namespaceRegex: str
+
+  # The layout direction of the matching group nodes.
+  #
+  # 0: top-bottom (default)
+  # 1: left-right
+  layoutDirection: Union[int, None] = None
+
+
+class LayoutDirection:
+  """Defines the possible layout directions for visualization."""
+
+  TOP_BOTTOM = 0
+  LEFT_RIGHT = 1
 
 
 @dataclass
