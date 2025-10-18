@@ -66,8 +66,21 @@ export declare interface AdapterExtension extends ExtensionBase {
   matchHttpUrl?: boolean;
 }
 
+/** Metadata of a node data provider extension. */
+export declare interface NodeDataProviderExtension extends ExtensionBase {
+  type: ExtensionType.NODE_DATA_PROVIDER;
+  icon: string;
+  filter?: NodeDataProviderFilter;
+}
+
+/** Filter for node data provider extensions. */
+export declare interface NodeDataProviderFilter {
+  modelFileExts?: string[];
+  adapterIds?: string[];
+}
+
 /** Union type for extension. */
-export type Extension = AdapterExtension;
+export type Extension = AdapterExtension | NodeDataProviderExtension;
 
 /** An item in the model table. */
 export interface ModelItem {
@@ -110,4 +123,110 @@ export enum ModelItemStatus {
   UPLOADING = 'Uploading',
   DONE = 'Done',
   ERROR = 'Error',
+}
+
+/** The type of a config editor. */
+export enum ConfigEditorType {
+  TEXT_INPUT = 'text_input',
+  TEXT_AREA = 'text_area',
+  SLIDE_TOGGLE = 'slide_toggle',
+  COLOR_PICKER = 'color_picker',
+  DROP_DOWN = 'drop_down',
+  BUTTON_TOGGLE = 'button_toggle',
+  FILE = 'file',
+}
+
+/** The base config editor interface. */
+export declare interface ConfigEditorBase {
+  type: ConfigEditorType;
+  id: string;
+  label?: string;
+  defaultValue?: ConfigValue;
+  required?: boolean;
+  // TODO(do not submit): incorporate help into config editor.
+  help?: string;
+}
+
+/** Text input config editor. */
+export declare interface TextInputConfigEditor extends ConfigEditorBase {
+  type: ConfigEditorType.TEXT_INPUT;
+  number: boolean;
+}
+
+/** Text area config editor. */
+export declare interface TextAreaConfigEditor extends ConfigEditorBase {
+  type: ConfigEditorType.TEXT_AREA;
+  height: number;
+}
+
+/** Slide toggle config editor. */
+export declare interface SlideToggleConfigEditor extends ConfigEditorBase {
+  type: ConfigEditorType.SLIDE_TOGGLE;
+}
+
+/** Color picker config editor. */
+export declare interface ColorPickerConfigEditor extends ConfigEditorBase {
+  type: ConfigEditorType.COLOR_PICKER;
+}
+
+/** Drop down config editor. */
+export declare interface DropDownConfigEditor extends ConfigEditorBase {
+  type: ConfigEditorType.DROP_DOWN;
+  options: OptionItem[];
+}
+
+/** Button toggle config editor. */
+export declare interface ButtonToggleConfigEditor extends ConfigEditorBase {
+  type: ConfigEditorType.BUTTON_TOGGLE;
+  options: OptionItem[];
+  multiple: boolean;
+}
+
+/** File upload config editor. */
+export declare interface FileConfigEditor extends ConfigEditorBase {
+  type: ConfigEditorType.FILE;
+}
+
+/** An option item in a drop down or button toggle config editor. */
+export declare interface OptionItem {
+  value: string;
+  label: string;
+}
+
+/** Union type for config editors. */
+export type ConfigEditor =
+  | TextInputConfigEditor
+  | TextAreaConfigEditor
+  | SlideToggleConfigEditor
+  | ColorPickerConfigEditor
+  | DropDownConfigEditor
+  | ButtonToggleConfigEditor
+  | FileConfigEditor;
+
+/** Config value. */
+export type ConfigValue = string | boolean | number | string[];
+
+/** An NDP extension run. */
+export interface NdpExtensionRun {
+  runId: string;
+  extensionId: string;
+  runName: string;
+  creationTimeTs: number;
+  status: NdpExtensionRunStatus;
+  finishTimeTs?: number;
+  error?: string;
+}
+
+/** The status of an NDP extension run. */
+export enum NdpExtensionRunStatus {
+  RUNNNING = 'running',
+  DONE = 'done',
+  ERROR = 'error',
+}
+
+/** The data for a node data provider extension run. */
+export interface RunNdpExtensionData {
+  extension: NodeDataProviderExtension;
+  runName: string;
+  configValues: Record<string, ConfigValue>;
 }

@@ -18,8 +18,18 @@
 
 import {Injectable, signal} from '@angular/core';
 
-import {ExtensionCommand} from '../common/extension_command';
-import {Extension} from '../common/types';
+import {
+  ExtensionCommand,
+  NdpGetConfigEditorsCommand,
+  NdpGetConfigEditorsResponse,
+  NdpRunCommand,
+  NdpRunResponse,
+} from '../common/extension_command';
+import {
+  ConfigValue,
+  Extension,
+  NodeDataProviderExtension,
+} from '../common/types';
 import {INTERNAL_COLAB} from '../common/utils';
 
 const EXTERNAL_GET_EXTENSIONS_API_PATH = '/api/v1/get_extensions';
@@ -62,7 +72,7 @@ export class ExtensionService {
         resp = await fetch(EXTERNAL_SEND_CMD_POST_API_PATH, requestData);
       }
       if (!resp.ok) {
-        return {otherError: `Failed to convert model. ${resp.status}`};
+        return {otherError: `Failed to run extension: ${resp.status}`};
       }
       return {cmdResp: (await resp.json()) as T};
     } catch (e) {
@@ -77,6 +87,43 @@ export class ExtensionService {
    */
   getCustomExtensions(): Extension[] {
     return this.extensions.filter((ext) => !ext.id.startsWith('builtin_'));
+  }
+
+  async getNdpConfigEditors(extension: NodeDataProviderExtension): Promise<{
+    cmdResp?: NdpGetConfigEditorsResponse;
+    otherError?: string;
+  }> {
+    const cmd: NdpGetConfigEditorsCommand = {
+      cmdId: 'get_config_editors',
+      extensionId: extension.id,
+    };
+    const resp =
+      await this.sendCommandToExtension<NdpGetConfigEditorsResponse>(cmd);
+    return {
+      cmdResp: resp.cmdResp,
+      otherError: resp.otherError,
+    };
+  }
+
+  async runNdpExtension(
+    extension: NodeDataProviderExtension,
+    modelPath: string,
+    configValues: Record<string, ConfigValue>,
+  ): Promise<{
+    cmdResp?: NdpRunResponse;
+    otherError?: string;
+  }> {
+    const cmd: NdpRunCommand = {
+      cmdId: 'run',
+      extensionId: extension.id,
+      modelPath,
+      configValues,
+    };
+    const resp = await this.sendCommandToExtension<NdpRunResponse>(cmd);
+    return {
+      cmdResp: resp.cmdResp,
+      otherError: resp.otherError,
+    };
   }
 
   private async loadExtensions() {

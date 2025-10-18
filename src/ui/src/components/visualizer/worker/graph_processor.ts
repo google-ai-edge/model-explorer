@@ -744,6 +744,8 @@ export class GraphProcessor {
       layoutGraphEdges: {},
       minDescendantOpNodeCount: -1,
       maxDescendantOpNodeCount: -1,
+      modelPath: this.graph.modelPath,
+      adapterId: this.graph.adapterId,
     };
     if (this.graph.groupNodeAttributes) {
       modelGraph.groupNodeAttributes = this.graph.groupNodeAttributes;

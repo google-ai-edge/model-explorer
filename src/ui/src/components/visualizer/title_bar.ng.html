@@ -24,7 +24,9 @@ limitations under the License.
     <new-version-chip></new-version-chip>
   </div>
   <div class="right-container">
-    <node-data-provider-dropdown></node-data-provider-dropdown>
+    <node-data-provider-dropdown
+        (onRunNdpExtension)="handleRunNdpExtension($event)">
+    </node-data-provider-dropdown>
     <div class="divider"></div>
 
     <graph-selector></graph-selector>

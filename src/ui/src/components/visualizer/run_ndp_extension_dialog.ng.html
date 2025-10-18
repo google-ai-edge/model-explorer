@@ -1,0 +1,175 @@
+<!--
+@license
+Copyright 2025 The Model Explorer Authors. All Rights Reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+==============================================================================
+-->
+
+<div mat-dialog-title class="title">
+  Run: {{extensionName}}
+</div>
+<div mat-dialog-content class="content">
+  @if (loadingConfigEditors()) {
+    <div class="loading-container">
+      Loading...
+    </div>
+  } 
+  @else if (loadingConfigEditorsError()) {
+    <div class="error-container">
+      {{loadingConfigEditorsError()}}
+    </div>
+  }
+  @else {
+    <form [formGroup]="form">
+      <div class="rows">
+        @for (editor of configEditors(); track editor.id) {
+          <div class="row">
+            <div class="label-row">
+              <div class="label" [class.error]="hasFormError(editor.id)">
+                {{editor.label || editor.id}}
+                @if (isFormRequired(editor.id)) {
+                  (required)
+                }
+              </div>
+              @if (editor.help) {
+                <div class="icon-container"
+                    [bubble]="helpPopup"
+                    [overlaySize]="helpPopupSize"
+                    [hoverDelayMs]="100">
+                  <mat-icon>help_outline</mat-icon>
+                </div>
+                <ng-template #helpPopup>
+                  <div class="model-explorer-ndp-extension-help-popup">
+                    {{editor.help}}
+                  </div>
+                </ng-template>
+              }
+            </div>
+            @switch (editor.type) {
+              @case (ConfigEditorType.TEXT_INPUT) {
+                <input class="text-input-editor"
+                    [attr.type]="editor.number ? 'number' : 'text'"
+                    formControlName="{{editor.id}}">
+              }
+              @case (ConfigEditorType.TEXT_AREA) {
+                <textarea class="text-input-editor"
+                    formControlName="{{editor.id}}"
+                    [style.height.px]="editor.height"></textarea>
+              }
+              @case (ConfigEditorType.SLIDE_TOGGLE) {
+                <mat-slide-toggle
+                    color="primary"
+                    formControlName="{{editor.id}}">
+                </mat-slide-toggle>
+              }
+              @case (ConfigEditorType.COLOR_PICKER) {
+                <div class="color-picker-container">
+                  <label [style.background-color]="getFormStringValue(editor.id)">
+                    <input type="color" formControlName="{{editor.id}}">
+                  </label>
+                  <input type="text"
+                      [value]="getFormStringValue(editor.id)"
+                      formControlName="{{editor.id}}">
+                </div>
+              }
+              @case (ConfigEditorType.DROP_DOWN) {
+                <select formControlName="{{editor.id}}">
+                  @for (option of editor.options; track option.value) {
+                    <option [value]="option.value"
+                        [selected]="option.value === getFormStringValue(editor.id)">
+                      {{option.label}}
+                    </option>
+                  }
+                </select>
+              }
+              @case (ConfigEditorType.BUTTON_TOGGLE) {
+                <div class="button-toggle-container">
+                  @for (option of editor.options; track option.value; let last = $last) {
+                    <div class="button-toggle"
+                        [class.selected]="getFormStringArrayValue(editor.id).includes(option.value)"
+                        [class.last]="last"
+                        (click)="toggleFormStringArrayValue(editor.multiple, editor.id, option.value)">
+                      <div class="icon-container"
+                          [class.hide]="!getFormStringArrayValue(editor.id).includes(option.value)" >
+                        <mat-icon [class.hide]="!getFormStringArrayValue(editor.id).includes(option.value)" >check</mat-icon>
+                      </div>
+                      {{option.label}}
+                    </div>
+                  }
+                </div>
+              }
+              @case (ConfigEditorType.FILE) {
+                @switch (getFileUploadStatus(editor.id)) {
+                  @case (FileUploadStatusType.READY) {
+                    <div class="file-drop-container"
+                        [class.drag-over]="isDragOver(editor.id)"
+                        (dragover)="handleDragOver($event, editor.id)"
+                        (dragleave)="handleDragLeave($event, editor.id)"
+                        (drop)="handleDrop($event, editor.id)">
+                      <mat-icon>upload_file</mat-icon>
+                      <div>
+                        Drag and drop file here or
+                        <span class="choose-file"
+                            (click)="input.click()">
+                          Choose file
+                        </span>
+                      </div>
+                    </div>
+                  }
+                  @case (FileUploadStatusType.UPLOADING) {
+                    <div class="file-drop-container">
+                      <mat-spinner color="primary" diameter="20">
+                      </mat-spinner>
+                      <div class="upload-msg">
+                        Uploading {{getFileUploadName(editor.id)}}...
+                      </div>
+                    </div>
+                  }
+                  @case (FileUploadStatusType.UPLOADED) {
+                    <div class="file-drop-container">
+                      <div class="uploaded-container">
+                        <div class="uploaded-status">
+                          <mat-icon class="uploaded">check_circle</mat-icon>
+                          <div class="upload-msg">{{getFileUploadName(editor.id)}}</div>
+                        </div>
+                        <div class="remove-btn"
+                            (click)="handleClickRemoveUpload(editor.id)">
+                          Remove
+                        </div>
+                      </div>
+                    </div>
+                  }
+                }
+                <input class="file-upload-input" type="file" #input
+                    (change)="handleUploadFile(editor, input)">
+              }
+            }
+          </div>
+        }
+      </div>
+    </form>
+  }
+</div>
+<div class="buttons-row" mat-dialog-actions align="end">
+  <div class="buttons-container">
+    <button mat-button [mat-dialog-close]="undefined">
+      Cancel
+    </button>
+    <button mat-flat-button color="primary"
+        [disabled]="form.invalid || loadingConfigEditors() || loadingConfigEditorsError()"
+        (click)="handleClickRun()">
+      Run
+    </button>
+  </div>
+</div>

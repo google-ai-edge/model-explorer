@@ -101,7 +101,8 @@
       }
     }
 
-    &.upload {
+    &.upload,
+    &.extensions {
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -113,6 +114,10 @@
         text-transform: none;
         pointer-events: all;
       }
+    }
+
+    &.extensions {
+      margin-top: 12px;
     }
   }
 

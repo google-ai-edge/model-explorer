@@ -16,7 +16,12 @@
  * ==============================================================================
  */
 
-import {Graph, GraphCollection,} from '../components/visualizer/common/input_graph';
+import {
+  Graph,
+  GraphCollection,
+} from '../components/visualizer/common/input_graph';
+import {NodeDataProviderGraphData} from '../components/visualizer/common/types';
+import {ConfigEditor, ConfigValue} from './types';
 
 /** A command sent to extension. */
 export declare interface ExtensionCommand {
@@ -38,5 +43,29 @@ export declare interface AdapterConvertCommand extends ExtensionCommand {
 export declare interface AdapterConvertResponse {
   graphs?: Graph[];
   graphCollections?: GraphCollection[];
+  error?: string;
+}
+
+/** Node data provider's "get_config_editors" command. */
+export declare interface NdpGetConfigEditorsCommand extends ExtensionCommand {
+  cmdId: 'get_config_editors';
+}
+
+/** Node data provider's "get_config_editors" command response. */
+export declare interface NdpGetConfigEditorsResponse {
+  configEditors?: ConfigEditor[];
+  error?: string;
+}
+
+/** Node data provider's "run" command. */
+export declare interface NdpRunCommand extends ExtensionCommand {
+  cmdId: 'run';
+  modelPath: string;
+  configValues: Record<string, ConfigValue>;
+}
+
+/** Node data provider's "run" command response. */
+export declare interface NdpRunResponse {
+  result?: NodeDataProviderGraphData;
   error?: string;
 }

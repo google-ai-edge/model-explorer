@@ -63,6 +63,25 @@ export class NodeDataProviderExtensionService {
 
   readonly remoteSourceLoading = signal<boolean>(false);
 
+  readonly hasExtensionRunning = computed(() => {
+    let running = false;
+    for (const runId of Object.keys(this.runStatus())) {
+      for (const runStatus of Object.values(this.runStatus()[runId])) {
+        if (runStatus) {
+          running = true;
+          break;
+        }
+      }
+      if (running) {
+        break;
+      }
+    }
+    return running;
+  });
+
+  // extensionId -> { runId -> running or not }
+  readonly runStatus = signal<Record<string, Record<string, boolean>>>({});
+
   private readonly leftPaneModelGraph$ = toObservable(
     computed(() => this.appService.panes()[0].modelGraph),
   );
@@ -310,6 +329,16 @@ export class NodeDataProviderExtensionService {
       }
     }
     return ret;
+  }
+
+  setRunStatus(extensionId: string, runId: string, running: boolean) {
+    this.runStatus.update((runStatus) => {
+      if (!runStatus[extensionId]) {
+        runStatus[extensionId] = {};
+      }
+      runStatus[extensionId][runId] = running;
+      return {...runStatus};
+    });
   }
 
   private processNodeDataProviderDataForGraph(

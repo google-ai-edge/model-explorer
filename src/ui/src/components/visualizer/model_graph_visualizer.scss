@@ -129,4 +129,11 @@
     /* stylelint-disable-next-line declaration-no-important -- override MDC */
     background-color: var(--me-surface-container-low-color) !important;
   }
+
+  .mat-mdc-snackbar-surface {
+    /* stylelint-disable-next-line declaration-no-important -- override MDC */
+    background-color: var(--me-tooltip-bg-color) !important;
+    /* stylelint-disable-next-line declaration-no-important -- override MDC */
+    color: var(--me-on-surface-inverse-color) !important;
+  }
 }
