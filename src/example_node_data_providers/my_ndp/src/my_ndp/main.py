@@ -107,7 +107,7 @@ class TestNodeDataProvider(NodeDataProvider):
     if extension_id == "test-ndp":
       # Typically you would use `model_path` and `config_values` to calculate
       # node data. Here for demonstration purpose we just populate values for
-      # node id 0-121 with a gradient color.
+      # node id 0-121 (the node ids in coco-ssd.json) with a gradient color.
       results = {}
 
       # Use config editor id to retrive value.
