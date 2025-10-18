@@ -36,6 +36,16 @@ AdapterCommand = TypedDict(
     },
 )
 
+NdpCommand = TypedDict(
+    'NdpCommand',
+    {
+        'cmdId': str,
+        'modelPath': str,
+        'configValues': Dict,
+    },
+)
+
+
 ModelExplorerGraphs = TypedDict(
     'ModelExplorerGraphs',
     {
