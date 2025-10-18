@@ -167,7 +167,7 @@ limitations under the License.
       Cancel
     </button>
     <button mat-flat-button color="primary"
-        [disabled]="form.invalid || loadingConfigEditors() || loadingConfigEditorsError()"
+        [disabled]="form.invalid || loadingConfigEditors() || loadingConfigEditorsError() !== ''"
         (click)="handleClickRun()">
       Run
     </button>
