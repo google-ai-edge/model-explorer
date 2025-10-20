@@ -40,9 +40,9 @@ rules_shell_toolchains()
 # b) get the sha256 hash of the commit by running:
 #    curl -L https://github.com/tensorflow/tensorflow/archive/<COMMIT_HASH>.tar.gz | sha256sum
 #    and update TENSORFLOW_SHA256 with the result.
-TENSORFLOW_COMMIT = "ec7c1948718638d4e63a68ce511c8425d930b7d9"
+TENSORFLOW_COMMIT = "dc12ec45566c0fc15599f1e37cd8e346d0409f72"
 
-TENSORFLOW_SHA256 = "f67de8c5db765f11ffb7ef28bac151398e46f76c74b3d5c156bc894ec54b0bfb"
+TENSORFLOW_SHA256 = "4d7e5c77efeddbdb1503e84e84dcc8d8fb62085396be3466b34b0d6725e7ffd5"
 
 http_archive(
     name = "org_tensorflow",
