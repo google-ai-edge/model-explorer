@@ -32,8 +32,14 @@ class ConfigEditor:
   # `Id` will be used as fallback label if this field is not specified.
   label: str = ''
 
+  # The description text, shown below the config editor.
+  description: str = ''
+
   # The help text, shown in a popup when a "?" icon is hovered over.
   help: str = ''
+
+  # Whether the config is required or not.
+  required: bool = False
 
   # Default value of the editor.
   defaultValue: Union[str, bool, float, int, None, list[str]] = None

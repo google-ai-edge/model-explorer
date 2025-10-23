@@ -261,6 +261,8 @@ def start(
   extension_manager = ExtensionManager(extensions)
   extension_manager.load_extensions()
   extension_metadata_list = extension_manager.get_extensions_metadata()
+
+  # Print loaded extensions by type.
   num_extensions = len(extension_metadata_list)
   print(
       f'Loaded {num_extensions} extension{"" if num_extensions == 1 else "s"}:'
