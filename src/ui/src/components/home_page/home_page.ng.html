@@ -113,7 +113,11 @@ limitations under the License.
       (remoteNodeDataPathsChanged)="handleRemoteNodeDataPathsChanged($event)"
       (syncNavigationModeChanged)="handleSyncNavigationModeChanged($event)">
     <div class="btns-container">
-      <div class="theme-picker-btn-external-container">
+      <div class="btns-container-external">
+        <button mat-icon-button aria-label="settings" matTooltip="Advanced settings"
+            (click)="handleClickSettings(true)">
+          <mat-icon>settings</mat-icon>
+        </button>
         <ng-container *ngTemplateOutlet="themePicker">
         </ng-container>
       </div>
