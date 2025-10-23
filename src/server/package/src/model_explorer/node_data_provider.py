@@ -90,7 +90,12 @@ class GetConfigEditorsResult:
 class NodeDataProvider(Extension):
   """The base class of a node data provider extension."""
 
-  # Subclass needs to override this class variable to provide its metadata.
+  # Subclasses must override this class variable to supply the metadata for the
+  # concrete provider(s) it implements.
+  #
+  # If a single `NodeDataProvider` implementation offers multiple distinct
+  # providers, define a list of `NodeDataProviderMetadata` objects here to
+  # register them all.
   metadata: Union[NodeDataProviderMetadata, list[NodeDataProviderMetadata]] = (
       NodeDataProviderMetadata()
   )
@@ -99,7 +104,7 @@ class NodeDataProvider(Extension):
     Extension.__init__(self)
 
   @abstractmethod
-  def get_config_editors(self, extension_id: str) -> list[ConfigEditor]:
+  def get_config_editors(self, provider_id: str) -> list[ConfigEditor]:
     """Returns the config editors for the given extension.
 
     When user clicks a NDP extension to run, the UI will show a dialog to let
@@ -108,18 +113,20 @@ class NodeDataProvider(Extension):
     (indexed by config editor id) to `NodeDataProvider.run` below.
 
     Args:
-      extension_id: The id of the extension.
+      provider_id: The id of the provider, matching the id specified in the
+          corresponding `NodeDataProviderMetadata` defined in `metadata`.
     """
     pass
 
   @abstractmethod
   def run(
-      self, extension_id: str, model_path: str, config_values: dict
+      self, provider_id: str, model_path: str, config_values: dict
   ) -> NodeDataProviderResult:
     """Calculates the node data.
 
     Args:
-      extension_id: The id of the extension.
+      provider_id: The id of the provider, matching the id specified in the
+          corresponding `NodeDataProviderMetadata` defined in `metadata`.
       model_path: The path to the model file.
       config_values: key-value pairs for the config values that users entered in
           the UI.
