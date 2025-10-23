@@ -28,23 +28,12 @@ import {
 import {MatButtonModule} from '@angular/material/button';
 import {MatIconModule} from '@angular/material/icon';
 import {MatProgressSpinnerModule} from '@angular/material/progress-spinner';
-import {MatTooltipModule} from '@angular/material/tooltip';
-
-import {MatDialog} from '@angular/material/dialog';
 import {MatSlideToggleModule} from '@angular/material/slide-toggle';
-import {
-  ExtensionType,
-  NodeDataProviderExtension,
-  RunNdpExtensionData,
-} from '../../common/types';
+import {MatTooltipModule} from '@angular/material/tooltip';
+import {ExtensionType, NodeDataProviderExtension} from '../../common/types';
 import {ExtensionService} from '../../services/extension_service';
 import {AppService} from './app_service';
 import {NodeDataProviderExtensionService} from './node_data_provider_extension_service';
-import {
-  RunNdpExtensionDialog,
-  RunNdpExtensionDialogData,
-  RunNdpExtensionDialogResult,
-} from './run_ndp_extension_dialog';
 
 /** The drop down menu for add per-node data. */
 @Component({
@@ -63,7 +52,8 @@ import {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class NodeDataProviderExtensionsPanel {
-  readonly onRunNdpExtension = output<RunNdpExtensionData>();
+  readonly onOpenNdpExtensionDialogClicked =
+    output<NodeDataProviderExtension>();
 
   protected readonly extensions: Signal<NodeDataProviderExtension[]> = computed(
     () => {
@@ -95,33 +85,9 @@ export class NodeDataProviderExtensionsPanel {
   private readonly nodeDataProviderExtensionService = inject(
     NodeDataProviderExtensionService,
   );
-  private readonly dialog = inject(MatDialog);
 
   handleClickExtension(extension: NodeDataProviderExtension) {
-    // Show run task dialog.
-    const data: RunNdpExtensionDialogData = {
-      extension,
-      extensionService: this.extensionService,
-    };
-    const dialogRef = this.dialog.open(RunNdpExtensionDialog, {
-      width: '400px',
-      data,
-    });
-
-    // Process result.
-    dialogRef
-      .afterClosed()
-      .subscribe(async (result?: RunNdpExtensionDialogResult) => {
-        if (result == null) {
-          return;
-        }
-
-        this.onRunNdpExtension.emit({
-          extension,
-          runName: result.runName,
-          configValues: result.configValues,
-        });
-      });
+    this.onOpenNdpExtensionDialogClicked.emit(extension);
   }
 
   isExtensionRunning(extensionId: string): boolean {

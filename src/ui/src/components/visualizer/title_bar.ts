@@ -25,11 +25,12 @@ import {
   inject,
 } from '@angular/core';
 import {MatButtonModule} from '@angular/material/button';
+import {MatDialog} from '@angular/material/dialog';
 import {MatIconModule} from '@angular/material/icon';
 import {MatSnackBar} from '@angular/material/snack-bar';
 import {MatTooltipModule} from '@angular/material/tooltip';
 
-import {RunNdpExtensionData} from '../../common/types';
+import {ConfigValue, NodeDataProviderExtension} from '../../common/types';
 import {ExtensionService} from '../../services/extension_service';
 import {OpenInNewTabButton} from '../open_in_new_tab_button/open_in_new_tab_button';
 
@@ -40,6 +41,11 @@ import {NewVersionChip} from './new_version_chip';
 import {NodeDataProviderDropdown} from './node_data_provider_dropdown';
 import {NodeDataProviderExtensionService} from './node_data_provider_extension_service';
 import {NodeStyler} from './node_styler';
+import {
+  RunNdpExtensionDialog,
+  RunNdpExtensionDialogData,
+  RunNdpExtensionDialogResult,
+} from './run_ndp_extension_dialog';
 
 let ndpId = 0;
 
@@ -66,6 +72,7 @@ let ndpId = 0;
 export class TitleBar {
   @Output() readonly titleClicked = new EventEmitter<void>();
 
+  private readonly dialog = inject(MatDialog);
   private readonly nodeDataProviderExtensionService = inject(
     NodeDataProviderExtensionService,
   );
@@ -74,7 +81,34 @@ export class TitleBar {
 
   constructor(private readonly appService: AppService) {}
 
-  async handleRunNdpExtension(data: RunNdpExtensionData) {
+  handleOpenNdpExtensionDialogClicked(extension: NodeDataProviderExtension) {
+    // Show run task dialog.
+    const data: RunNdpExtensionDialogData = {
+      extension,
+      extensionService: this.extensionService,
+    };
+    const dialogRef = this.dialog.open(RunNdpExtensionDialog, {
+      width: '400px',
+      data,
+    });
+
+    // Process result.
+    dialogRef
+      .afterClosed()
+      .subscribe((result?: RunNdpExtensionDialogResult) => {
+        if (result == null) {
+          return;
+        }
+
+        this.runNdpExtension(extension, result.runName, result.configValues);
+      });
+  }
+
+  private async runNdpExtension(
+    extension: NodeDataProviderExtension,
+    runName: string,
+    configValues: Record<string, ConfigValue>,
+  ) {
     const modelGraph = this.appService.getModelGraphFromSelectedPane();
     if (modelGraph == null) {
       return;
@@ -82,14 +116,14 @@ export class TitleBar {
     // Kick off ndp run.
     const runId = `ndp_run_${ndpId++}`;
     this.nodeDataProviderExtensionService.setRunStatus(
-      data.extension.id,
+      extension.id,
       runId,
       true,
     );
     const {cmdResp, otherError} = await this.extensionService.runNdpExtension(
-      data.extension /* extension */,
+      extension /* extension */,
       modelGraph.modelPath ?? '' /* model path */,
-      data.configValues /* config */,
+      configValues /* config */,
     );
     // Show error if any.
     const error = cmdResp?.error ?? otherError ?? '';
@@ -103,14 +137,14 @@ export class TitleBar {
     else if (cmdResp?.result != null) {
       this.nodeDataProviderExtensionService.addRun(
         runId,
-        data.runName,
-        data.extension.id,
+        runName,
+        extension.id,
         modelGraph,
         {[modelGraph.id]: cmdResp.result},
       );
     }
     this.nodeDataProviderExtensionService.setRunStatus(
-      data.extension.id,
+      extension.id,
       runId,
       false,
     );

@@ -143,7 +143,7 @@ export declare interface ConfigEditorBase {
   label?: string;
   defaultValue?: ConfigValue;
   required?: boolean;
-  // TODO(do not submit): incorporate help into config editor.
+  description?: string;
   help?: string;
 }
 
@@ -185,6 +185,7 @@ export declare interface ButtonToggleConfigEditor extends ConfigEditorBase {
 /** File upload config editor. */
 export declare interface FileConfigEditor extends ConfigEditorBase {
   type: ConfigEditorType.FILE;
+  fileExts: string[];
 }
 
 /** An option item in a drop down or button toggle config editor. */
@@ -222,11 +223,4 @@ export enum NdpExtensionRunStatus {
   RUNNNING = 'running',
   DONE = 'done',
   ERROR = 'error',
-}
-
-/** The data for a node data provider extension run. */
-export interface RunNdpExtensionData {
-  extension: NodeDataProviderExtension;
-  runName: string;
-  configValues: Record<string, ConfigValue>;
 }

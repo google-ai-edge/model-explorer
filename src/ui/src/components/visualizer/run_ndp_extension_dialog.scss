@@ -17,11 +17,14 @@
 .title {
   font-weight: 500;
   margin-left: -6px;
-  background-color: var(--me-surface-container-low-color);
+  background-color: var(--me-surface-container-high-color);
+  padding-bottom: 16px;
 }
 
 .content {
   padding: 24px;
+  /* stylelint-disable-next-line declaration-no-important -- override MDC */
+  padding-top: 16px !important;
   font-family: 'Google Sans Text', Arial, Helvetica, sans-serif;
   background-color: var(--me-surface-container-low-color);
 
@@ -45,7 +48,7 @@
   .rows {
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 20px;
   }
 
   .row {
@@ -80,6 +83,7 @@
 
     .label {
       line-height: 18px;
+      color: var(--me-on-surface-color);
 
       &.error {
         color: var(--me-error-text-color);
@@ -98,17 +102,24 @@
     mat-spinner {
       margin: 4px 0;
     }
+
+    .description {
+      color: var(--me-on-surface-low-color);
+      font-size: 12px;
+      line-height: 16px;
+      margin-top: 2px;
+    }
   }
 }
 
 .buttons-row {
-  padding: 20px;
+  padding: 12px 20px;
   display: flex;
   align-items: center;
   justify-content: flex-end;
   border-top: 1px solid var(--me-outline-hairline-color);
   box-sizing: border-box;
-  background-color: var(--me-surface-container-low-color);
+  background-color: var(--me-surface-container-high-color);
 
   .buttons-container {
     display: flex;
@@ -215,11 +226,15 @@ select {
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 1px dotted var(--me-outline-variant-color);
+  border: 1px dotted var(--me-outline-color);
   border-radius: 3px;
   height: 64px;
   gap: 6px;
   padding: 0 8px;
+
+  &.ready {
+    line-height: 16px;
+  }
 
   &.drag-over {
     background-color: rgba(26, 115, 232, 0.15);

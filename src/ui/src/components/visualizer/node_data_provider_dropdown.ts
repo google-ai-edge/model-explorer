@@ -29,10 +29,8 @@ import {MatButtonModule} from '@angular/material/button';
 import {MatIconModule} from '@angular/material/icon';
 import {MatProgressSpinnerModule} from '@angular/material/progress-spinner';
 import {MatTooltipModule} from '@angular/material/tooltip';
-
-import {RunNdpExtensionData} from '../../common/types';
+import {NodeDataProviderExtension} from '../../common/types';
 import {BubbleClick} from '../bubble/bubble_click';
-
 import {AppService} from './app_service';
 import {ModelGraph} from './common/model_graph';
 import {NodeDataProviderData} from './common/types';
@@ -61,7 +59,8 @@ import {NodeDataProviderExtensionService} from './node_data_provider_extension_s
 export class NodeDataProviderDropdown {
   @ViewChild(BubbleClick) dropdown?: BubbleClick;
 
-  readonly onRunNdpExtension = output<RunNdpExtensionData>();
+  readonly onOpenNdpExtensionDialogClicked =
+    output<NodeDataProviderExtension>();
 
   loadingExtensions = true;
 
@@ -140,9 +139,9 @@ export class NodeDataProviderDropdown {
     input.value = '';
   }
 
-  handleRunNdpExtension(data: RunNdpExtensionData) {
+  handleOpenNdpExtensionDialogClicked(extension: NodeDataProviderExtension) {
     this.dropdown?.closeDialog();
-    this.onRunNdpExtension.emit(data);
+    this.onOpenNdpExtensionDialogClicked.emit(extension);
   }
 
   private getNodeDataProviderData(str: string, modelGraph: ModelGraph) {

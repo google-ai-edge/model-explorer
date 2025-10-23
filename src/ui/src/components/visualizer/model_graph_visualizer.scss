@@ -135,5 +135,10 @@
     background-color: var(--me-tooltip-bg-color) !important;
     /* stylelint-disable-next-line declaration-no-important -- override MDC */
     color: var(--me-on-surface-inverse-color) !important;
+
+    button {
+      /* stylelint-disable-next-line declaration-no-important -- override MDC */
+      color: var(--me-primary-inverse-color) !important;
+    }
   }
 }

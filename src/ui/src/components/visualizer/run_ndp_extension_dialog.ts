@@ -22,6 +22,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   Inject,
+  inject,
   signal,
 } from '@angular/core';
 import {
@@ -41,6 +42,7 @@ import {MatProgressSpinnerModule} from '@angular/material/progress-spinner';
 import {MatTooltipModule} from '@angular/material/tooltip';
 
 import {MatSlideToggleModule} from '@angular/material/slide-toggle';
+import {MatSnackBar} from '@angular/material/snack-bar';
 import {
   ConfigEditor,
   ConfigEditorType,
@@ -123,6 +125,8 @@ export class RunNdpExtensionDialog {
   >({});
   protected readonly fileDragOver = signal<Record<string, boolean>>({});
 
+  private readonly snackBar = inject(MatSnackBar);
+
   constructor(
     public dialogRef: MatDialogRef<RunNdpExtensionDialog>,
     @Inject(MAT_DIALOG_DATA) public dialogData: RunNdpExtensionDialogData,
@@ -163,6 +167,8 @@ export class RunNdpExtensionDialog {
     const file = files[0];
     await this.uploadFile(file, editor.id);
     input.value = '';
+
+    this.form.get(editor.id)?.markAsTouched();
   }
 
   handleDragOver(event: DragEvent, editorId: string) {
@@ -174,7 +180,8 @@ export class RunNdpExtensionDialog {
     this.setDragOver(editorId, false);
   }
 
-  handleDrop(event: DragEvent, editorId: string) {
+  handleDrop(event: DragEvent, editor: FileConfigEditor) {
+    const editorId = editor.id;
     event.preventDefault();
     this.setDragOver(editorId, false);
 
@@ -196,7 +203,19 @@ export class RunNdpExtensionDialog {
     }
 
     if (files.length > 0) {
-      this.uploadFile(files[0], editorId);
+      const file = files[0];
+      // Check file ext.
+      const fileExt = file.name.split('.').pop() ?? '';
+      if (
+        editor.fileExts.length > 0 &&
+        !editor.fileExts.includes(fileExt.toLowerCase())
+      ) {
+        this.snackBar.open('Unsupported file extension', 'Dismiss', {
+          duration: 5000,
+        });
+        return;
+      }
+      this.uploadFile(file, editorId);
     }
   }
 
@@ -275,6 +294,10 @@ export class RunNdpExtensionDialog {
 
   getFileUploadName(editorId: string): string {
     return this.fileUploadStatus()[editorId]?.fileName ?? '';
+  }
+
+  getFileUploadAccept(editor: FileConfigEditor): string {
+    return editor.fileExts.map((ext) => `.${ext}`).join(',');
   }
 
   isDragOver(editorId: string): boolean {

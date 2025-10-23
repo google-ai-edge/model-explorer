@@ -16,6 +16,7 @@
 
 @mixin light-colors {
   --me-primary-color: #0b57d0;
+  --me-primary-inverse-color: #a8c7fa;
   --me-on-primary-color: #fff;
   --me-surface-container-highest-color: #dde3ea;
   --me-surface-container-high-color: #e9eef6;
@@ -67,6 +68,7 @@
 
 @mixin dark-colors {
   --me-primary-color: #a8c7fa;
+  --me-primary-inverse-color: #0b57d0;
   --me-on-primary-color: #062e6f;
   --me-surface-container-highest-color: #333537;
   --me-surface-container-high-color: #282a2c;

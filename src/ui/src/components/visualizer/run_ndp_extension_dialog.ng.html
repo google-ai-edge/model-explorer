@@ -24,7 +24,7 @@ limitations under the License.
     <div class="loading-container">
       Loading...
     </div>
-  } 
+  }
   @else if (loadingConfigEditorsError()) {
     <div class="error-container">
       {{loadingConfigEditorsError()}}
@@ -112,18 +112,25 @@ limitations under the License.
               @case (ConfigEditorType.FILE) {
                 @switch (getFileUploadStatus(editor.id)) {
                   @case (FileUploadStatusType.READY) {
-                    <div class="file-drop-container"
+                    <div class="file-drop-container ready"
                         [class.drag-over]="isDragOver(editor.id)"
                         (dragover)="handleDragOver($event, editor.id)"
                         (dragleave)="handleDragLeave($event, editor.id)"
-                        (drop)="handleDrop($event, editor.id)">
+                        (drop)="handleDrop($event, editor)">
                       <mat-icon>upload_file</mat-icon>
                       <div>
-                        Drag and drop file here or
-                        <span class="choose-file"
-                            (click)="input.click()">
-                          Choose file
-                        </span>
+                        <div>
+                          Drag and drop file here or
+                          <span class="choose-file"
+                              (click)="input.click()">
+                            Choose file
+                          </span>
+                        </div>
+                        @if (getFileUploadAccept(editor) !== '') {
+                          <div class="file-ext-msg">
+                            Accepts: {{getFileUploadAccept(editor)}}
+                          </div>
+                        }
                       </div>
                     </div>
                   }
@@ -152,8 +159,14 @@ limitations under the License.
                   }
                 }
                 <input class="file-upload-input" type="file" #input
+                    [accept]="getFileUploadAccept(editor)"
                     (change)="handleUploadFile(editor, input)">
               }
+            }
+            @if (editor.description) {
+              <div class="description">
+                {{editor.description}}
+              </div>
             }
           </div>
         }

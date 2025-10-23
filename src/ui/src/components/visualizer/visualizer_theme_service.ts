@@ -25,6 +25,7 @@ import {ElementRef, Injectable, inject} from '@angular/core';
  */
 export enum ColorVariable {
   PRIMARY_COLOR = '--me-primary-color',
+  PRIMARY_INVERSE_COLOR = '--me-primary-inverse-color',
   SURFACE_CONTAINER_HIGHEST_COLOR = '--me-surface-container-highest-color',
   SURFACE_CONTAINER_HIGH_COLOR = '--me-surface-container-high-color',
   SURFACE_CONTAINER_COLOR = '--me-surface-container-color',
