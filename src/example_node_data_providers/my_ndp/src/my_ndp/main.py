@@ -50,10 +50,19 @@ class TestNodeDataProvider(NodeDataProvider):
                   label="Number only",
                   help="must be a number",
                   defaultValue="100",
+                  required=True,
                   number=True,
               ),
               TextAreaConfigEditor(
                   id="text_area_1", label="Text area 1", height=60
+              ),
+              FileConfigEditor(
+                  id="file1",
+                  label="File 1",
+                  description=(
+                      "Here is some useful description about this editor."
+                  ),
+                  fileExts=["json"],
               ),
               SlideToggleConfigEditor(id="toggle", label="A boolean"),
               ColorPickerConfigEditor(id="start_color", label="Start color"),
@@ -89,7 +98,6 @@ class TestNodeDataProvider(NodeDataProvider):
                   ],
                   multiple=True,
               ),
-              FileConfigEditor(id="file1", label="File 1"),
           ],
       )
     else:
