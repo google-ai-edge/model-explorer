@@ -46,12 +46,16 @@ import {
   SETTING_ARTIFACIAL_LAYER_NODE_COUNT_THRESHOLD,
   SETTING_DISALLOW_VERTICAL_EDGE_LABELS,
   SETTING_EDGE_COLOR,
+  SETTING_EDGE_COLOR_DARK_MODE,
   SETTING_EDGE_LABEL_FONT_SIZE,
   SETTING_HIDE_EMPTY_NODE_DATA_ENTRIES,
   SETTING_HIDE_OP_NODES_WITH_LABELS,
   SETTING_HIGHLIGHT_LAYER_NODE_INPUTS_OUTPUTS,
+  SETTING_INFO_PANEL_FONT_SIZE,
   SETTING_KEEP_LAYERS_WITH_A_SINGLE_CHILD,
   SETTING_MAX_CONST_ELEMENT_COUNT_LIMIT,
+  SETTING_OP_NODE_BG_COLOR_DARK_MODE,
+  SETTING_OP_NODE_BG_COLOR_LIGHT_MODE,
   SETTING_SHOW_OP_NODE_OUT_OF_LAYER_EDGES_WITHOUT_SELECTING,
   SETTING_SHOW_SIDE_PANEL_ON_NODE_SELECTION,
   SettingKey,
@@ -62,12 +66,18 @@ import {UrlService} from '../../services/url_service';
 import {ModelSourceInput} from '../model_source_input/model_source_input';
 import {OpenInNewTabButton} from '../open_in_new_tab_button/open_in_new_tab_button';
 import {OpenSourceLibsDialog} from '../open_source_libs_dialog/open_source_libs_dialog';
-import {SettingsDialog} from '../settings_dialog/settings_dialog';
+import {
+  SettingsDialog,
+  SettingsDialogData,
+} from '../settings_dialog/settings_dialog';
 import {
   ModelGraphProcessedEvent,
   SyncNavigationModeChangedEvent,
 } from '../visualizer/common/types';
-import {VisualizerConfig} from '../visualizer/common/visualizer_config';
+import {
+  CONFIG_KEYS_CAN_RERENDER,
+  VisualizerConfig,
+} from '../visualizer/common/visualizer_config';
 import {VisualizerUiState} from '../visualizer/common/visualizer_ui_state';
 import {Logo} from '../visualizer/logo';
 import {ModelGraphVisualizer} from '../visualizer/model_graph_visualizer';
@@ -151,6 +161,7 @@ export class HomePage implements AfterViewInit {
   );
 
   initialUiState?: VisualizerUiState;
+  curUiState?: VisualizerUiState;
   dismissWelcomeCard = false;
   dragOver = false;
   benchmark = false;
@@ -291,8 +302,50 @@ export class HomePage implements AfterViewInit {
     }
   }
 
-  handleClickSettings() {
-    this.dialog.open(SettingsDialog, {});
+  handleClickSettings(inVisualizationPage = false) {
+    const oldVisualizerConfig = this.curConfig;
+    const data: SettingsDialogData = {inVisualizationPage};
+    const dialogRef = this.dialog.open(SettingsDialog, {
+      data,
+    });
+
+    // If the settings dialog is opened from the visualization page, handle
+    // the changes after it's closed. This involves updating the visualizer
+    // config and potentially re-rendering the graph based on which settings
+    // have changed.
+    if (inVisualizationPage) {
+      dialogRef.afterClosed().subscribe(() => {
+        const newVisualizerConfig = this.curConfig;
+        let canRerender = true;
+        for (const key in newVisualizerConfig) {
+          const oldValue = JSON.stringify(
+            // tslint:disable-next-line:no-any Allow arbitrary types.
+            (oldVisualizerConfig as any)[key],
+          );
+          const newValue = JSON.stringify(
+            // tslint:disable-next-line:no-any Allow arbitrary types.
+            (newVisualizerConfig as any)[key],
+          );
+          if (oldValue !== newValue) {
+            if (!CONFIG_KEYS_CAN_RERENDER.has(key)) {
+              canRerender = false;
+              break;
+            }
+          }
+        }
+        this.modelGraphVisualizer?.setVisualizerConfig(newVisualizerConfig);
+        if (canRerender) {
+          this.modelGraphVisualizer?.forceRerenderGraphs();
+        } else {
+          const savedLoadedGraphCollections = this.loadedGraphCollections();
+          this.loadedGraphCollections.set(undefined);
+          this.initialUiState = this.curUiState;
+          setTimeout(() => {
+            this.loadedGraphCollections.set(savedLoadedGraphCollections);
+          });
+        }
+      });
+    }
   }
 
   handleClickDismissWelcomeCard() {
@@ -300,6 +353,7 @@ export class HomePage implements AfterViewInit {
   }
 
   handleUiStateChanged(uiState: VisualizerUiState) {
+    this.curUiState = uiState;
     this.urlService.setUiState(uiState);
   }
 
@@ -382,11 +436,19 @@ export class HomePage implements AfterViewInit {
       edgeLabelFontSize: this.settingsService.getNumberValue(
         SETTING_EDGE_LABEL_FONT_SIZE,
       ),
-      // When the edge color is set to the default value, we don't want to
-      // pass it to the visualizer config, so that the default color from
-      // visualizer theme will be used.
-      edgeColor:
-        edgeColor === SETTING_EDGE_COLOR.defaultValue ? undefined : edgeColor,
+      infoPanelFontSize: this.settingsService.getNumberValue(
+        SETTING_INFO_PANEL_FONT_SIZE,
+      ),
+      edgeColor: this.settingsService.getStringValue(SETTING_EDGE_COLOR),
+      edgeColorDarkMode: this.settingsService.getStringValue(
+        SETTING_EDGE_COLOR_DARK_MODE,
+      ),
+      opNodeBgColorLightMode: this.settingsService.getStringValue(
+        SETTING_OP_NODE_BG_COLOR_LIGHT_MODE,
+      ),
+      opNodeBgColorDarkMode: this.settingsService.getStringValue(
+        SETTING_OP_NODE_BG_COLOR_DARK_MODE,
+      ),
       maxConstValueCount: this.settingsService.getNumberValue(
         SETTING_MAX_CONST_ELEMENT_COUNT_LIMIT,
       ),

@@ -114,6 +114,8 @@ export class AppService {
 
   readonly theme = signal<string>('light');
 
+  readonly reRenderTrigger = new Subject<{}>();
+
   testMode = false;
 
   private groupNodeChildrenCountThresholdFromUrl: string | null = null;

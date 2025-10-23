@@ -18,9 +18,9 @@
 
 import {ConnectedPosition, OverlaySizeConfig} from '@angular/cdk/overlay';
 import {CommonModule} from '@angular/common';
-import {Component} from '@angular/core';
+import {Component, Inject} from '@angular/core';
 import {MatButtonModule} from '@angular/material/button';
-import {MatDialogModule} from '@angular/material/dialog';
+import {MAT_DIALOG_DATA, MatDialogModule} from '@angular/material/dialog';
 import {MatIconModule} from '@angular/material/icon';
 import {MatSlideToggleModule} from '@angular/material/slide-toggle';
 
@@ -31,6 +31,12 @@ import {
   SettingType,
 } from '../../services/settings_service';
 import {Bubble} from '../bubble/bubble';
+
+/** Data for the settings dialog. */
+export interface SettingsDialogData {
+  /** Whether the settings dialog is opened from the visualization page. */
+  inVisualizationPage?: boolean;
+}
 
 /**
  * A dialog showing app level settings.
@@ -68,10 +74,29 @@ export class SettingsDialog {
     },
   ];
 
-  constructor(readonly settingsService: SettingsService) {}
-
   /** All settings. */
-  readonly allSettings: Setting[] = ALL_SETTINGS;
+  readonly allSettings: Array<Setting[]>;
+
+  private readonly data: SettingsDialogData;
+
+  constructor(
+    readonly settingsService: SettingsService,
+    @Inject(MAT_DIALOG_DATA) public dialogData: SettingsDialogData,
+  ) {
+    this.data = dialogData;
+
+    this.allSettings = [];
+    for (const settings of ALL_SETTINGS) {
+      const newSettings: Setting[] = [];
+      for (const setting of settings) {
+        if (setting.hideInVisualizationPage && this.data.inVisualizationPage) {
+          continue;
+        }
+        newSettings.push(setting);
+      }
+      this.allSettings.push(newSettings);
+    }
+  }
 
   handleClickResetToDefaultText(setting: Setting) {
     this.settingsService.saveStringValue(

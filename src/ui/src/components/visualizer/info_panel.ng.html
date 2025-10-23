@@ -16,12 +16,14 @@ limitations under the License.
 ==============================================================================
 -->
 
-<div class="container" [class.graph-info]="showNodeDataProviderSummary">
+<div class="container"
+    [class.graph-info]="showNodeDataProviderSummary"
+    [style.font-size.px]="fontSize">
   @for (section of sections; track section.label) {
     @if (section.items.length > 0) {
       <div class="section" #sectionEle
           [class.collapsed]="isSectionCollapsed(section.label)">
-        <div class="header">
+        <div class="header" [style.font-size.px]="fontSize - 1">
           <button mat-icon-button class="toggle"
               (click)="handleToggleSection(section.label, sectionEle)">
             <mat-icon>{{getSectionToggleIcon(section.label)}}</mat-icon>
@@ -29,7 +31,7 @@ limitations under the License.
           {{getSectionDisplayLabel(section.label)}}
         </div>
         <div class="items-container">
-          <table class="metadata-table info-attrs">
+          <table class="metadata-table info-attrs" [style.font-size.px]="fontSize ">
             @for (item of section.items; track item.id || item.label) {
               <tr [class.search-match]="isSearchMatchedAttrId(item.label)">
                 <td class="key"><hoverable-label [label]="item.label"></hoverable-label></td>
@@ -45,7 +47,12 @@ limitations under the License.
                                 [matTooltip]="locatorTooltip"
                                 matTooltipClass="multiline-tooltip-left"
                                 matTooltipPosition="right">
-                              <mat-icon class="locator-icon">my_location</mat-icon>
+                              <mat-icon class="locator-icon"
+                                  [style.font-size.px]="fontSize"
+                                  [style.height.px]="fontSize"
+                                  [style.width.px]="fontSize">
+                                my_location
+                              </mat-icon>
                             </div>
                           </div>
                         }
@@ -59,7 +66,12 @@ limitations under the License.
                                 [matTooltip]="locatorTooltip"
                                 matTooltipClass="multiline-tooltip-left"
                                 matTooltipPosition="right">
-                              <mat-icon class="locator-icon">my_location</mat-icon>
+                              <mat-icon class="locator-icon"
+                                  [style.font-size.px]="fontSize"
+                                  [style.height.px]="fontSize"
+                                  [style.width.px]="fontSize">
+                                my_location
+                              </mat-icon>
                             </div>
                           </div>
                           @for (attr of node.attrs; track attr.key) {
@@ -95,7 +107,7 @@ limitations under the License.
   <!-- Summary for node data provider extensions -->
   <div class="section" *ngIf="showNodeDataProviderSummary" #ndpSectionEle
        [class.collapsed]="isSectionCollapsed(SectionLabel.NODE_DATA_PROVIDERS)">
-    <div class="header">
+    <div class="header" [style.font-size.px]="fontSize - 1">
       <button mat-icon-button class="toggle"
           (click)="handleToggleSection(SectionLabel.NODE_DATA_PROVIDERS, ndpSectionEle)">
         <mat-icon>{{getSectionToggleIcon(SectionLabel.NODE_DATA_PROVIDERS)}}</mat-icon>
@@ -111,7 +123,7 @@ limitations under the License.
   <!-- Inputs -->
   <div class="section inputs" *ngIf="inputItems.length > 0" #inputsSectionEle
        [class.collapsed]="isSectionCollapsed(SectionLabel.INPUTS)">
-    <div class="header input">
+    <div class="header input" [style.font-size.px]="fontSize - 1">
       <div class="header-label-container">
         <button mat-icon-button class="toggle"
             (click)="handleToggleSection(SectionLabel.INPUTS, inputsSectionEle)">
@@ -132,7 +144,7 @@ limitations under the License.
   <!-- Outputs -->
   <div class="section outputs" *ngIf="outputItems.length > 0" #outputsSectionEle
        [class.collapsed]="isSectionCollapsed(SectionLabel.OUTPUTS)">
-    <div class="header output">
+    <div class="header output" [style.font-size.px]="fontSize - 1">
       <div class="header-label-container">
         <button mat-icon-button class="toggle"
             (click)="handleToggleSection(SectionLabel.OUTPUTS, outputsSectionEle)">
@@ -153,7 +165,7 @@ limitations under the License.
   <!-- Identical groups -->
   <div class="section" *ngIf="identicalGroupsData" #identicalGroupsSectionEle
        [class.collapsed]="isSectionCollapsed(SectionLabel.IDENTICAL_GROUPS)">
-    <div class="header identical-groups">
+    <div class="header identical-groups" [style.font-size.px]="fontSize - 1">
       <div class="header-label-container">
         <button mat-icon-button class="toggle"
             (click)="handleToggleSection(SectionLabel.IDENTICAL_GROUPS, identicalGroupsSectionEle)">
@@ -174,7 +186,7 @@ limitations under the License.
   <!-- Group inputs -->
   <div class="section inputs" *ngIf="groupInputItems.length > 0" #groupInputsSectionEle
         [class.collapsed]="isSectionCollapsed(SectionLabel.GROUP_INPUTS)">
-    <div class="header input">
+    <div class="header input" [style.font-size.px]="fontSize - 1">
       <div class="header-label-container">
         <button mat-icon-button class="toggle"
             (click)="handleToggleSection(SectionLabel.GROUP_INPUTS, groupInputsSectionEle)">
@@ -195,7 +207,7 @@ limitations under the License.
   <!-- Group outputs -->
   <div class="section outputs" *ngIf="groupOutputItems.length > 0" #groupOutputsSectionEle
         [class.collapsed]="isSectionCollapsed(SectionLabel.GROUP_OUTPUTS)">
-    <div class="header output">
+    <div class="header output" [style.font-size.px]="fontSize - 1">
       <div class="header-label-container">
         <button mat-icon-button class="toggle"
             (click)="handleToggleSection(SectionLabel.GROUP_OUTPUTS, groupOutputsSectionEle)">
@@ -241,7 +253,7 @@ limitations under the License.
 <ng-template #inputItemsTmpl let-items="items">
   <div class="flat-items-container">
     @for (item of items; track item.opNode.id; let i = $index) {
-      <div class="flat-item">
+      <div class="flat-item" [style.font-size.px]="fontSize">
         <div class="name-row"
             [class.search-match]="isSearchMatchedInputValue(getInputTensorTag(item)) || isSearchMatchedInputValue(item.opNode.label)">
           <div class="index">{{item.index}}</div>
@@ -249,7 +261,12 @@ limitations under the License.
             <div class="name">{{getInputName(item)}}</div>
             @if (item.targetOpNode) {
               <div class="target-op-container">
-                <mat-icon class="arrow">arrow_forward</mat-icon>
+                <mat-icon class="arrow"
+                    [style.font-size.px]="fontSize"
+                    [style.height.px]="fontSize"
+                    [style.width.px]="fontSize">
+                  arrow_forward
+                </mat-icon>
                 <div class="target-op-node-label">{{item.targetOpNode.label}}</div>
               </div>
             }
@@ -262,11 +279,21 @@ limitations under the License.
                   [matTooltip]="locatorTooltip"
                   matTooltipClass="multiline-tooltip-left"
                   matTooltipPosition="right">
-                <mat-icon class="locator-icon">my_location</mat-icon>
+                <mat-icon class="locator-icon"
+                    [style.font-size.px]="fontSize"
+                    [style.height.px]="fontSize"
+                    [style.width.px]="fontSize">
+                  my_location
+                </mat-icon>
               </div>
               @if (item.targetOpNode) {
                 <div class="target-op-container">
-                  <mat-icon class="arrow">arrow_forward</mat-icon>
+                  <mat-icon class="arrow"
+                      [style.font-size.px]="fontSize"
+                      [style.height.px]="fontSize"
+                      [style.width.px]="fontSize">
+                    arrow_forward
+                  </mat-icon>
                   <div class="target-op-node-label">{{item.targetOpNode.label}}</div>
                 </div>
               }
@@ -285,7 +312,7 @@ limitations under the License.
             </div>
           }
         </div>
-        <table class="metadata-table">
+        <table class="metadata-table" [style.font-size.px]="fontSize">
           @for (metadataItem of item.metadataList; track metadataItem.key) {
             @if (getShowMetadata(metadataItem)) {
               <tr #rowEle
@@ -338,7 +365,7 @@ limitations under the License.
           }
         </div>
         @if (item.metadataList.length > 0) {
-          <table class="metadata-table">
+          <table class="metadata-table" [style.font-size.px]="fontSize">
             @for (metadataItem of item.metadataList; track metadataItem.key) {
               <tr [class.search-match]="isSearchMatchedOutputValue(metadataItem.value)">
                 <td class="key">
@@ -363,7 +390,12 @@ limitations under the License.
                             [matTooltip]="locatorTooltip"
                             matTooltipClass="multiline-tooltip-left"
                             matTooltipPosition="right">
-                          <mat-icon class="locator-icon">my_location</mat-icon>
+                          <mat-icon class="locator-icon"
+                              [style.font-size.px]="fontSize"
+                              [style.height.px]="fontSize"
+                              [style.width.px]="fontSize">
+                            my_location
+                          </mat-icon>
                         </div>
                       </div>
                       <ng-template #namespacePopup>

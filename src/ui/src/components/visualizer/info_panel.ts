@@ -700,6 +700,10 @@ export class InfoPanel {
     return this.visualizerThemeService.getColor(ColorVariable.ON_SURFACE_COLOR);
   }
 
+  get fontSize(): number {
+    return this.appService.config()?.infoPanelFontSize ?? 12;
+  }
+
   private handleNodeSelected(nodeId: string) {
     if (!this.curModelGraph || !nodeId) {
       this.curSelectedNode = undefined;

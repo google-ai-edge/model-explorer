@@ -892,18 +892,20 @@ export class WebglRenderer implements OnInit, OnChanges, OnDestroy {
       }
 
       untracked(() => {
-        this.savedUpdateNodeBgWhenFarProgress = -1;
-        this.webglRendererThreejsService.updateSceneBackground();
-        this.renderGraph();
-        // This has to be placed before updateNodesStyles because it calculates
-        // data needed to update nodes styles correctly.
-        this.webglRendererIoHighlightService.updateIncomingAndOutgoingHighlights();
-        this.webglRendererIdenticalLayerService.updateIdenticalLayerIndicators();
-        this.updateNodesStyles();
-        this.renderDiffHighlights();
-        this.webglRendererThreejsService.render();
+        this.renderAll();
       });
     });
+
+    // Handle re-render trigger.
+    this.appService.reRenderTrigger
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((value) => {
+        if (value == null) {
+          return;
+        }
+
+        this.renderAll();
+      });
   }
 
   ngOnInit() {
@@ -2208,6 +2210,20 @@ export class WebglRenderer implements OnInit, OnChanges, OnDestroy {
     });
   }
 
+  private renderAll() {
+    this.savedUpdateNodeBgWhenFarProgress = -1;
+    this.updateNodesAndEdgesToRender();
+    this.webglRendererThreejsService.updateSceneBackground();
+    this.renderGraph();
+    // This has to be placed before updateNodesStyles because it calculates
+    // data needed to update nodes styles correctly.
+    this.webglRendererIoHighlightService.updateIncomingAndOutgoingHighlights();
+    this.webglRendererIdenticalLayerService.updateIdenticalLayerIndicators();
+    this.updateNodesStyles();
+    this.renderDiffHighlights();
+    this.webglRendererThreejsService.render();
+  }
+
   private renderNodes() {
     this.currentMinX = Number.POSITIVE_INFINITY;
     this.currentMinZ = Number.POSITIVE_INFINITY;
@@ -2222,8 +2238,15 @@ export class WebglRenderer implements OnInit, OnChanges, OnDestroy {
     const subgraphIndicatorRectangles: RoundedRectangleData[] = [];
     const subgraphIndicatorIcons: LabelData[] = [];
     const scale = NODE_LABEL_HEIGHT / this.texts.getFontSize();
+    const opNodeBgColorInConfig =
+      this.appService.theme() === 'light'
+        ? this.appService.config()?.opNodeBgColorLightMode
+        : this.appService.config()?.opNodeBgColorDarkMode;
     const opNodeBgColor = new THREE.Color(
-      this.visualizerThemeService.getColor(ColorVariable.SURFACE_COLOR),
+      opNodeBgColorInConfig ??
+        this.visualizerThemeService.getColor(
+          ColorVariable.SURFACE_CONTAINER_LOWEST_COLOR,
+        ),
     );
     const groupNodeIconBgColor = new THREE.Color(
       this.visualizerThemeService.getColor(ColorVariable.ON_SURFACE_COLOR),
@@ -2585,9 +2608,13 @@ export class WebglRenderer implements OnInit, OnChanges, OnDestroy {
           }
         }
       }
+      const edgeColorInConfig =
+        this.appService.theme() === 'light'
+          ? this.appService.config()?.edgeColor
+          : this.appService.config()?.edgeColorDarkMode;
       this.edges.generateMesh(
         new THREE.Color(
-          this.appService.config()?.edgeColor ??
+          edgeColorInConfig ??
             this.visualizerThemeService.getColor(ColorVariable.EDGE_COLOR),
         ),
         this.edgesToRender,
@@ -2922,6 +2949,10 @@ export class WebglRenderer implements OnInit, OnChanges, OnDestroy {
       } else {
         // For op nodes, only update the ones whose bg color is unchanged (i.e.
         // still the original bg color).
+        const opNodeBgColorInConfig =
+          this.appService.theme() === 'light'
+            ? this.appService.config()?.opNodeBgColorLightMode
+            : this.appService.config()?.opNodeBgColorDarkMode;
         this.nodeBodies.updateBgColor(
           [this.selectedNodeId],
           new THREE.Color(
@@ -2930,7 +2961,10 @@ export class WebglRenderer implements OnInit, OnChanges, OnDestroy {
             ),
           ),
           new THREE.Color(
-            this.visualizerThemeService.getColor(ColorVariable.SURFACE_COLOR),
+            opNodeBgColorInConfig ??
+              this.visualizerThemeService.getColor(
+                ColorVariable.SURFACE_CONTAINER_LOWEST_COLOR,
+              ),
           ),
         );
       }

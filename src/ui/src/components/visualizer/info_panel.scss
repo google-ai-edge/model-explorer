@@ -30,7 +30,6 @@
   border-left: 1px solid var(--me-outline-hairline-color);
   color: var(--me-on-surface-color);
   background-color: var(--me-surface-color);
-  font-size: 12px;
   overflow-y: auto;
   position: relative;
 
@@ -60,7 +59,6 @@
       display: flex;
       flex-direction: column;
       padding: 0 2px 0 12px;
-      font-size: 12px;
 
       .name-row {
         display: flex;
@@ -107,9 +105,6 @@
         font-weight: normal;
 
         mat-icon.arrow {
-          font-size: 12px;
-          height: 12px;
-          width: 12px;
           margin: 0 4px;
         }
       }
@@ -144,7 +139,6 @@
   .header {
     display: flex;
     align-items: center;
-    font-size: 11px;
     font-weight: 700;
     padding: 4px 12px 0;
     text-transform: uppercase;
@@ -195,25 +189,9 @@
     }
   }
 
-  .output-item-container {
-    font-family: Roboto, sans-serif;
-  }
-
-  .output-item-container:not(.last) {
-    margin-top: 8px;
-  }
-
-  .output-item-label {
-    font-size: 13px;
-    padding: 4px 12px;
-    color: var(--me-primary-color);
-    font-weight: 500;
-  }
-
   .metadata-table {
     border-spacing: 0;
     border-collapse: collapse;
-    font-size: 12px;
     margin: 0 12px;
     word-break: break-all;
     max-width: calc(100% - 28px);
@@ -313,59 +291,6 @@
     margin-bottom: 6px;
   }
 
-  .item-container {
-    display: flex;
-    flex-direction: column;
-    padding: 0 12px;
-
-    &.search-match {
-      background-color: var(--me-search-results-highlight-color);
-    }
-
-    .label-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-
-    .label {
-      font-weight: 500;
-      color: var(--me-on-surface-low-color);
-      font-size: 12px;
-      margin-bottom: 1px;
-    }
-
-    .show-on-node-toggle {
-      height: 16px;
-      display: flex;
-      font-size: 11px;
-      align-items: center;
-      justify-content: center;
-      box-sizing: border-box;
-      cursor: pointer;
-      user-select: none;
-      transform: scale(0.7);
-      margin-right: -6px;
-      margin-top: -1px;
-    }
-
-    .value {
-      font-size: 13px;
-      word-break: break-word;
-
-      &.big-text {
-        font-size: 14px;
-        font-weight: 500;
-      }
-
-      &.has-bg-color {
-        padding: 2px 4px;
-        border-radius: 4px;
-        margin-top: 2px;
-      }
-    }
-  }
-
   .locator-icon-container {
     display: flex;
     align-items: center;
@@ -389,9 +314,6 @@
 
     mat-icon {
       color: var(--me-on-surface-variant-color);
-      font-size: 12px;
-      width: 12px;
-      height: 12px;
     }
   }
 

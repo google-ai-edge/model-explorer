@@ -22,7 +22,10 @@ limitations under the License.
         [class.selected]="isRunItemSelected(runItem)"
         (click)="handleClickToggleVisibility(runItem, $event)">
       <div class="index-number-container">
-        <div class="index-number" *ngIf="runItem.done">{{i + 1}}</div>
+        <div class="index-number" *ngIf="runItem.done"
+            [style.font-size.px]="fontSize - 2">
+          {{i + 1}}
+        </div>
         <mat-spinner color="primary" diameter="16" *ngIf="!runItem.done">
         </mat-spinner>
       </div>
@@ -63,7 +66,7 @@ limitations under the License.
         </div>
       </div>
       <table border="0" cellspacing="0" cellpadding="0" *ngIf="showResults">
-        <thead>
+        <thead [style.font-size.px]="fontSize - 1">
           <tr>
             <th class="stats">
               Stat
@@ -71,14 +74,17 @@ limitations under the License.
             <th *ngFor="let runItem of runItems; let i = index"
                 class="value-col"
                 [class.hidden]="runItem.hideInAggregatedStatsTable">
-              <div class="header-content">
-                <div class="index-number">{{i + 1}}</div>
+              <div class="header-content" [style.font-size.px]="fontSize - 1">
+                <div class="index-number"
+                    [style.font-size.px]="fontSize - 2">
+                  {{i + 1}}
+                </div>
                 <div class="stat-label">{{runItem.runName}}</div>
               </div>
             </th>
           </tr>
         </thead>
-        <tbody>
+        <tbody [style.font-size.px]="fontSize - 1">
           <tr *ngFor="let row of curStatRows; trackBy: trackByStat">
             <td>{{row.stat}}</td>
             <td *ngFor="let value of row.values; let i = index"
@@ -113,11 +119,11 @@ limitations under the License.
       </ng-container>
       <table class="children-stats-results" *ngIf="showResults"
           border="0" cellspacing="0" cellpadding="0">
-        <thead>
+        <thead [style.font-size.px]="fontSize - 1">
           <tr>
             <th class="index"
                 (click)="handleClickChildrenStatsHeader(-2)">
-              <div class="header-content">
+              <div class="header-content" [style.font-size.px]="fontSize - 1">
                 #
                 <mat-icon *ngIf="curChildrenStatSortingColIndex === -2" class="sort">
                   {{curChildrenStatSortingDirection === 'asc' ? 'arrow_upward' : 'arrow_downward'}}
@@ -126,7 +132,7 @@ limitations under the License.
             </th>
             <th class="header node-label"
                 (click)="handleClickChildrenStatsHeader(-1)">
-              <div class="header-content">
+              <div class="header-content" [style.font-size.px]="fontSize - 1">
                 Node
                 <mat-icon *ngIf="curChildrenStatSortingColIndex === -1" class="sort">
                   {{curChildrenStatSortingDirection === 'asc' ? 'arrow_upward' : 'arrow_downward'}}
@@ -136,8 +142,11 @@ limitations under the License.
             <th *ngFor="let col of childrenStatsCols" class="value-col"
                 [class.hidden]="col.hideInChildrenStatsTable"
                 (click)="handleClickChildrenStatsHeader(col.colIndex)">
-              <div class="header-content">
-                <div class="index-number">{{col.runIndex + 1}}</div>
+              <div class="header-content" [style.font-size.px]="fontSize - 1">
+                <div class="index-number"
+                    [style.font-size.px]="fontSize - 2">
+                  {{col.runIndex + 1}}
+                </div>
                 <div class="stat-label" [class.multi-line]="col.multiLineHeader">{{col.label}}</div>
                 <mat-icon *ngIf="col.colIndex === curChildrenStatSortingColIndex" class="sort">
                   {{curChildrenStatSortingDirection === 'asc' ? 'arrow_upward' : 'arrow_downward'}}
@@ -146,7 +155,7 @@ limitations under the License.
             </th>
           </tr>
         </thead>
-        <tbody>
+        <tbody [style.font-size.px]="fontSize - 1">
           <tr *ngFor="let row of curPageChildrenStatRows; trackBy: trackByNodeId">
             <td>{{row.index}}</td>
             <td class="node-label"
@@ -183,11 +192,11 @@ limitations under the License.
     </ng-container>
     <table class="results" *ngIf="showResults"
         border="0" cellspacing="0" cellpadding="0">
-      <thead>
+      <thead [style.font-size.px]="fontSize - 1">
         <tr>
           <th class="index"
               (click)="handleClickHeader(-2)">
-            <div class="header-content">
+            <div class="header-content" [style.font-size.px]="fontSize - 1">
               #
               <mat-icon *ngIf="curSortingRunIndex === -2" class="sort">
                 {{curSortingDirection === 'asc' ? 'arrow_upward' : 'arrow_downward'}}
@@ -196,7 +205,7 @@ limitations under the License.
           </th>
           <th class="header node-label"
               (click)="handleClickHeader(-1)">
-            <div class="header-content">
+            <div class="header-content" [style.font-size.px]="fontSize - 1">
               Node
               <mat-icon *ngIf="curSortingRunIndex === -1" class="sort">
                 {{curSortingDirection === 'asc' ? 'arrow_upward' : 'arrow_downward'}}
@@ -206,8 +215,11 @@ limitations under the License.
           <th *ngFor="let runItem of runItems; let i = index"
               class="value-col"
               (click)="handleClickHeader(i)">
-            <div class="header-content">
-              <div class="index-number">{{i + 1}}</div>
+            <div class="header-content" [style.font-size.px]="fontSize - 1">
+              <div class="index-number"
+                  [style.font-size.px]="fontSize - 2">
+                {{i + 1}}
+              </div>
               <div class="stat-label">{{runItem.runName}}</div>
               <div class="icon-container visibility"
                   *ngIf="!runItem.error"
@@ -225,7 +237,7 @@ limitations under the License.
           </th>
         </tr>
       </thead>
-      <tbody>
+      <tbody [style.font-size.px]="fontSize - 1">
         <tr *ngFor="let row of curPageRows; trackBy: trackByNodeId">
           <td>{{row.index}}</td>
           <td class="node-label"

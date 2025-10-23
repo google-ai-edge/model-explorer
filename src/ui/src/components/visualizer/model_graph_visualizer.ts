@@ -711,6 +711,14 @@ export class ModelGraphVisualizer implements OnInit, OnDestroy, OnChanges {
     );
   }
 
+  setVisualizerConfig(config: VisualizerConfig) {
+    this.appService.config.set(config);
+  }
+
+  forceRerenderGraphs() {
+    this.appService.reRenderTrigger.next({});
+  }
+
   get hasNoGraphs(): boolean {
     // Calculate number of graphs in graphCollections and return
     // true if the count is 0.

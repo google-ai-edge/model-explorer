@@ -612,6 +612,10 @@ export class NodeDataProviderSummaryPanel implements OnChanges {
     return !hide;
   }
 
+  get fontSize(): number {
+    return this.appService.config()?.infoPanelFontSize ?? 12;
+  }
+
   private genOrderedNodes() {
     if (!this.curModelGraph) {
       return;

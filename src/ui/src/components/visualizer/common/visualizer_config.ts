@@ -26,6 +26,25 @@ import {
   ViewOnNodeConfig,
 } from './types';
 
+/**
+ * A set of config keys that there changes can be applied by re-rendering the
+ * graph without re-processing it from scratch.
+ */
+export const CONFIG_KEYS_CAN_RERENDER = new Set<string>([
+  'nodeAttrsToHide',
+  'edgeLabelFontSize',
+  'infoPanelFontSize',
+  'edgeColor',
+  'edgeColorDarkMode',
+  'opNodeBgColorLightMode',
+  'opNodeBgColorDarkMode',
+  'disallowVerticalEdgeLabels',
+  'showOpNodeOutOfLayerEdgesWithoutSelecting',
+  'highlightLayerNodeInputsOutputs',
+  'hideEmptyNodeDataEntries',
+  'showSidePanelOnNodeSelection',
+]);
+
 /** Configs for the visualizer. */
 export declare interface VisualizerConfig {
   /**
@@ -41,16 +60,28 @@ export declare interface VisualizerConfig {
    */
   nodeAttrsToHide?: Record<string, string>;
 
-  /** The maximum number of child nodes under a layer node. */
+  /** The maximum number of child nodes under a layer node. Default: 400. */
   artificialLayerNodeCountThreshold?: number;
 
-  /** The font size of the edge label. */
+  /** The font size of the edge label. Default: 7.5. */
   edgeLabelFontSize?: number;
 
-  /** The color of the edges. */
+  /** The font size of the info panel. Default: 12. */
+  infoPanelFontSize?: number;
+
+  /** The color of the edges in light mode. Default: #aaa. */
   edgeColor?: string;
 
-  /** The maximum number of constant values to display. */
+  /** The color of the edges in dark mode. Default: #666. */
+  edgeColorDarkMode?: string;
+
+  /** The background color of op nodes in light mode. Default: #fff. */
+  opNodeBgColorLightMode?: string;
+
+  /** The background color of op nodes in dark mode. Default: #0e0e0e. */
+  opNodeBgColorDarkMode?: string;
+
+  /** The maximum number of constant values to display. Default: 16. */
   maxConstValueCount?: number;
 
   /** Whether to disallow laying out edge labels vertically. */

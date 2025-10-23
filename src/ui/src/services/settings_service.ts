@@ -31,7 +31,11 @@ export enum SettingKey {
   HIDE_OP_NODES_WITH_LABELS = 'hide_op_nodes_with_labels',
   ARTIFICIAL_LAYER_NODE_COUNT_THRESHOLD = 'artificial_layer_node_count_threshold',
   EDGE_LABEL_FONT_SIZE = 'edge_label_font_size',
+  INFO_PANEL_FONT_SIZE = 'info_panel_font_size',
   EDGE_COLOR = 'edge_color',
+  EDGE_COLOR_DARK_MODE = 'edge_color_dark_mode',
+  OP_NODE_BG_COLOR_LIGHT_MODE = 'op_node_bg_color_light_mode',
+  OP_NODE_BG_COLOR_DARK_MODE = 'op_node_bg_color_dark_mode',
   DISALLOW_VERTICAL_EDGE_LABELS = 'disallow_vertical_edge_labels',
   KEEP_LAYERS_WITH_A_SINGLE_CHILD = 'keep_layers_with_a_single_child',
   SHOW_OP_NODE_OUT_OF_LAYER_EDGES_WITHOUT_SELECTING = 'show_op_node_out_of_layer_edges_without_selecting',
@@ -55,6 +59,7 @@ export declare interface Setting {
   type: SettingType;
   defaultValue?: boolean | number | string;
   help?: string;
+  hideInVisualizationPage?: boolean;
 }
 
 /** Interface for saved settings in local storage. */
@@ -80,6 +85,7 @@ export const SETTING_SHOW_WELCOME_CARD: Setting = {
   key: SettingKey.SHOW_WELCOME_CARD,
   type: SettingType.BOOLEAN,
   defaultValue: true,
+  hideInVisualizationPage: true,
 };
 
 /** Setting for hiding op nodes by label. */
@@ -114,12 +120,52 @@ export const SETTING_EDGE_LABEL_FONT_SIZE: Setting = {
   defaultValue: DEFAULT_EDGE_LABEL_FONT_SIZE,
 };
 
+/** Setting for info panel font size. */
+export const SETTING_INFO_PANEL_FONT_SIZE: Setting = {
+  label: 'Info panel font size',
+  key: SettingKey.INFO_PANEL_FONT_SIZE,
+  type: SettingType.NUMBER,
+  defaultValue: 12,
+};
+
 /** Setting for edge color. */
 export const SETTING_EDGE_COLOR: Setting = {
-  label: 'Edge color',
+  label: 'Edge color (light mode)',
   key: SettingKey.EDGE_COLOR,
   type: SettingType.COLOR,
-  defaultValue: '#aaaaaa',
+  // This needs to match --me-edge-color in light-colors mixin in
+  // theme/colors.scss
+  defaultValue: '#aaa',
+};
+
+/** Setting for edge color in dark mode. */
+export const SETTING_EDGE_COLOR_DARK_MODE: Setting = {
+  label: 'Edge color (dark mode)',
+  key: SettingKey.EDGE_COLOR_DARK_MODE,
+  type: SettingType.COLOR,
+  // This needs to match --me-edge-color in dark-colors mixin in
+  // theme/colors.scss
+  defaultValue: '#666',
+};
+
+/** Setting for op node background color in light mode. */
+export const SETTING_OP_NODE_BG_COLOR_LIGHT_MODE: Setting = {
+  label: 'Op node bg color (light mode)',
+  key: SettingKey.OP_NODE_BG_COLOR_LIGHT_MODE,
+  type: SettingType.COLOR,
+  // This needs to match --me-surface-container-lowest-color in light-colors
+  // mixin in theme/colors.scss
+  defaultValue: '#fff',
+};
+
+/** Setting for op node background color in dark mode. */
+export const SETTING_OP_NODE_BG_COLOR_DARK_MODE: Setting = {
+  label: 'Op node bg color (dark mode)',
+  key: SettingKey.OP_NODE_BG_COLOR_DARK_MODE,
+  type: SettingType.COLOR,
+  // This needs to match --me-surface-container-lowest-color in dark-colors
+  // mixin in theme/colors.scss
+  defaultValue: '#0e0e0e',
 };
 
 /** Setting for disabllowing laying out edge labels vertically. */
@@ -193,20 +239,27 @@ export const SETTING_SHOW_SIDE_PANEL_ON_NODE_SELECTION: Setting = {
 
 const SETTINGS_LOCAL_STORAGE_KEY = 'model_explorer_settings';
 
-/** All settings. */
-export const ALL_SETTINGS = [
-  SETTING_MAX_CONST_ELEMENT_COUNT_LIMIT,
-  SETTING_HIDE_OP_NODES_WITH_LABELS,
-  SETTING_ARTIFACIAL_LAYER_NODE_COUNT_THRESHOLD,
-  SETTING_EDGE_LABEL_FONT_SIZE,
-  SETTING_EDGE_COLOR,
-  SETTING_KEEP_LAYERS_WITH_A_SINGLE_CHILD,
-  SETTING_SHOW_WELCOME_CARD,
-  SETTING_DISALLOW_VERTICAL_EDGE_LABELS,
-  SETTING_SHOW_OP_NODE_OUT_OF_LAYER_EDGES_WITHOUT_SELECTING,
-  SETTING_HIGHLIGHT_LAYER_NODE_INPUTS_OUTPUTS,
-  SETTING_HIDE_EMPTY_NODE_DATA_ENTRIES,
-  SETTING_SHOW_SIDE_PANEL_ON_NODE_SELECTION,
+/**
+ * All settings.
+ *
+ * Each element is an array of settings that should be shown on the same row
+ * in the dialog.
+ */
+export const ALL_SETTINGS: Array<Setting[]> = [
+  [SETTING_MAX_CONST_ELEMENT_COUNT_LIMIT],
+  [SETTING_HIDE_OP_NODES_WITH_LABELS],
+  [SETTING_ARTIFACIAL_LAYER_NODE_COUNT_THRESHOLD],
+  [SETTING_EDGE_LABEL_FONT_SIZE],
+  [SETTING_INFO_PANEL_FONT_SIZE],
+  [SETTING_EDGE_COLOR, SETTING_EDGE_COLOR_DARK_MODE],
+  [SETTING_OP_NODE_BG_COLOR_LIGHT_MODE, SETTING_OP_NODE_BG_COLOR_DARK_MODE],
+  [SETTING_KEEP_LAYERS_WITH_A_SINGLE_CHILD],
+  [SETTING_SHOW_WELCOME_CARD],
+  [SETTING_DISALLOW_VERTICAL_EDGE_LABELS],
+  [SETTING_SHOW_OP_NODE_OUT_OF_LAYER_EDGES_WITHOUT_SELECTING],
+  [SETTING_HIGHLIGHT_LAYER_NODE_INPUTS_OUTPUTS],
+  [SETTING_HIDE_EMPTY_NODE_DATA_ENTRIES],
+  [SETTING_SHOW_SIDE_PANEL_ON_NODE_SELECTION],
 ];
 
 /**
@@ -279,22 +332,31 @@ export class SettingsService {
 
   getAllSettingsValues(): SavedSettings {
     const settingsValues: SavedSettings = {};
-    for (const setting of ALL_SETTINGS) {
-      switch (setting.type) {
-        case SettingType.BOOLEAN:
-          settingsValues[setting.key] = this.getBooleanValue(setting);
-          break;
-        case SettingType.NUMBER:
-          settingsValues[setting.key] = this.getNumberValue(setting);
-          break;
-        default:
-          break;
+    for (const settings of ALL_SETTINGS) {
+      for (const setting of settings) {
+        switch (setting.type) {
+          case SettingType.BOOLEAN:
+            settingsValues[setting.key] = this.getBooleanValue(setting);
+            break;
+          case SettingType.NUMBER:
+            settingsValues[setting.key] = this.getNumberValue(setting);
+            break;
+          default:
+            break;
+        }
       }
     }
     return settingsValues;
   }
 
   getSettingByKey(settingKey: SettingKey): Setting | undefined {
-    return ALL_SETTINGS.find((setting) => setting.key === settingKey);
+    for (const settings of ALL_SETTINGS) {
+      for (const setting of settings) {
+        if (setting.key === settingKey) {
+          return setting;
+        }
+      }
+    }
+    return undefined;
   }
 }

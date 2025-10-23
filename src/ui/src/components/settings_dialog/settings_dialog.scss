@@ -21,7 +21,7 @@
 }
 
 .title-container {
-  background-color: var(--me-surface-container-low-color);
+  background-color: var(--me-surface-container-high-color);
   border-bottom: 1px solid var(--me-outline-variant-color);
 }
 
@@ -39,7 +39,7 @@
 
 .dialog-content {
   padding-bottom: 0;
-  background-color: var(--me-surface-container-color);
+  background-color: var(--me-surface-container-low-color);
 }
 
 .settings-container {
@@ -49,11 +49,23 @@
   margin-bottom: 10px;
 }
 
+.settings-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 24px;
+
+  &.hide {
+    display: none;
+  }
+}
+
 .setting-item {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  margin-bottom: 24px;
+  flex-grow: 1;
 
   .setting-label {
     line-height: 16px;
@@ -85,10 +97,10 @@
   input,
   textarea {
     color: var(--me-on-surface-color);
-    background-color: transparent;
     box-sizing: border-box;
     width: 100%;
     border: 1px solid var(--me-outline-color);
+    border-radius: 3px;
   }
 
   // Hide up/down arrows for number input.
@@ -115,10 +127,9 @@
   display: flex;
   align-items: center;
   overflow: hidden;
-  border-radius: 2px;
+  border-radius: 3px;
   border: 1px solid var(--me-outline-color);
   width: 100%;
-  background-color: transparent;
   box-sizing: border-box;
   height: 24px;
   position: relative;
@@ -145,14 +156,13 @@
   input[type='text'] {
     border: none;
     height: 100%;
-    background-color: transparent;
     outline: none;
   }
 }
 
 .buttons-container {
   border-top: 1px solid var(--me-outline-variant-color);
-  background-color: var(--me-surface-container-low-color);
+  background-color: var(--me-surface-container-high-color);
 }
 
 ::ng-deep {

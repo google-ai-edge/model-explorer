@@ -22,7 +22,6 @@
   height: 100%;
 
   .index-number {
-    font-size: 10px;
     width: 16px;
     height: 16px;
     border-radius: 8px;
@@ -237,11 +236,9 @@
     thead {
       height: 24px;
       background-color: var(--me-surface-container-high-color);
-      font-size: 11px;
     }
 
     tbody {
-      font-size: 11px;
       font-family: Arial, Helvetica, sans-serif;
     }
 
@@ -270,7 +267,6 @@
       height: 100%;
       display: flex;
       align-items: center;
-      font-size: 11px;
 
       mat-icon.sort {
         font-size: 12px;
