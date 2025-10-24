@@ -32,8 +32,14 @@ class ConfigEditor:
   # `Id` will be used as fallback label if this field is not specified.
   label: str = ''
 
+  # The description text, shown below the config editor.
+  description: str = ''
+
   # The help text, shown in a popup when a "?" icon is hovered over.
   help: str = ''
+
+  # Whether the config is required or not.
+  required: bool = False
 
   # Default value of the editor.
   defaultValue: Union[str, bool, float, int, None, list[str]] = None
@@ -85,6 +91,8 @@ class DropDownConfigEditor(ConfigEditor):
   """Configuration for a drop down editor."""
 
   type: Literal['drop_down'] = 'drop_down'
+
+  # Drop-down options.
   options: list[OptionItem] = field(default_factory=list)
 
 
@@ -93,7 +101,11 @@ class ButtonToggleConfigEditor(ConfigEditor):
   """Configuration for a button toggle editor."""
 
   type: Literal['button_toggle'] = 'button_toggle'
+
+  # Options for selection.
   options: list[OptionItem] = field(default_factory=list)
+
+  # Whether to support selecting multiple options.
   multiple: bool = False
 
 
@@ -102,3 +114,6 @@ class FileConfigEditor(ConfigEditor):
   """Configuration for a file upload editor."""
 
   type: Literal['file'] = 'file'
+
+  # File extensions allowed, e.g. "json".
+  fileExts: list[str] = field(default_factory=list)

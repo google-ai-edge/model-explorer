@@ -36,8 +36,8 @@ class TestNodeDataProvider(NodeDataProvider):
       # You can have multiiple NodeDataProviderMetadata here.
   ]
 
-  def get_config_editors(self, extension_id: str) -> GetConfigEditorsResult:
-    if extension_id == "test-ndp":
+  def get_config_editors(self, provider_id: str) -> GetConfigEditorsResult:
+    if provider_id == "test-ndp":
       return GetConfigEditorsResult(
           configEditors=[
               TextInputConfigEditor(
@@ -50,10 +50,19 @@ class TestNodeDataProvider(NodeDataProvider):
                   label="Number only",
                   help="must be a number",
                   defaultValue="100",
+                  required=True,
                   number=True,
               ),
               TextAreaConfigEditor(
                   id="text_area_1", label="Text area 1", height=60
+              ),
+              FileConfigEditor(
+                  id="file1",
+                  label="File 1",
+                  description=(
+                      "Here is some useful description about this editor."
+                  ),
+                  fileExts=["json"],
               ),
               SlideToggleConfigEditor(id="toggle", label="A boolean"),
               ColorPickerConfigEditor(id="start_color", label="Start color"),
@@ -89,14 +98,13 @@ class TestNodeDataProvider(NodeDataProvider):
                   ],
                   multiple=True,
               ),
-              FileConfigEditor(id="file1", label="File 1"),
           ],
       )
     else:
-      return GetConfigEditorsResult(error="Unsupported extension id")
+      return GetConfigEditorsResult(error="Unsupported provider id")
 
   def run(
-      self, extension_id: str, model_path: str, config_values: dict
+      self, provider_id: str, model_path: str, config_values: dict
   ) -> NodeDataProviderResult:
     # Print out the config values user specified in the UI.
     print(json.dumps(config_values, indent=2))
@@ -104,7 +112,7 @@ class TestNodeDataProvider(NodeDataProvider):
     # Fake delay.
     time.sleep(3)
 
-    if extension_id == "test-ndp":
+    if provider_id == "test-ndp":
       # Typically you would use `model_path` and `config_values` to calculate
       # node data. Here for demonstration purpose we just populate values for
       # node id 0-121 (the node ids in coco-ssd.json) with a gradient color.

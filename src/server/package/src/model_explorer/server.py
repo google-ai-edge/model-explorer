@@ -51,6 +51,18 @@ from .utils import convert_adapter_response
 server_directive_dispatcher = ServerDirectiveDispatcher()
 
 
+def _print_loaded_extensions(type: str, label: str, all_extensions: list[dict]):
+  filtered_extensions = [ext for ext in all_extensions if ext['type'] == type]
+  num_extensions = len(filtered_extensions)
+  if num_extensions > 0:
+    print(
+        '\nLoaded'
+        f' {num_extensions} {label}{"" if num_extensions == 1 else "s"}:'
+    )
+    for extension in filtered_extensions:
+      print(f' - {extension["name"]}')
+
+
 def _make_json_response(obj):
   body = json.dumps(obj)
   resp = make_response(body)
@@ -261,12 +273,16 @@ def start(
   extension_manager = ExtensionManager(extensions)
   extension_manager.load_extensions()
   extension_metadata_list = extension_manager.get_extensions_metadata()
-  num_extensions = len(extension_metadata_list)
-  print(
-      f'Loaded {num_extensions} extension{"" if num_extensions == 1 else "s"}:'
+
+  # Print loaded extensions by type.
+  _print_loaded_extensions(
+      type='adapter', label='adapter', all_extensions=extension_metadata_list
   )
-  for extension in extension_metadata_list:
-    print(f' - {extension["name"]}')
+  _print_loaded_extensions(
+      type='node_data_provider',
+      label='node data provider',
+      all_extensions=extension_metadata_list,
+  )
 
   @app.route('/api/v1/check_new_version')
   def check_new_version():
