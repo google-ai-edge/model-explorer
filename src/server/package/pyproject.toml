@@ -19,7 +19,7 @@ dependencies = [
   "flask",
   "ipython",
   # Skip on windows.
-  "ai-edge-model-explorer-adapter ~= 0.1.13; sys_platform != 'win32'",
+  "ai-edge-model-explorer-adapter ~= 0.1.14; sys_platform != 'win32'",
   "packaging",
   "portpicker",
   "requests",
