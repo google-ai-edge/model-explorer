@@ -102,7 +102,7 @@ export class WebglRendererAttrsTableService {
     const tableBgRectangles: RoundedRectangleData[] = [];
     const attrTableBgColor = new THREE.Color(
       this.webglRenderer.visualizerThemeService.getColor(
-        ColorVariable.SURFACE_COLOR,
+        ColorVariable.SURFACE_CONTAINER_LOWEST_COLOR,
       ),
     );
     for (const {node, index} of this.webglRenderer.nodesToRender) {
