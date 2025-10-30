@@ -27,7 +27,7 @@ import {
 } from './types';
 
 /**
- * A set of config keys that there changes can be applied by re-rendering the
+ * A set of config keys that their changes can be applied by re-rendering the
  * graph without re-processing it from scratch.
  */
 export const CONFIG_KEYS_CAN_RERENDER = new Set<string>([
@@ -43,6 +43,14 @@ export const CONFIG_KEYS_CAN_RERENDER = new Set<string>([
   'highlightLayerNodeInputsOutputs',
   'hideEmptyNodeDataEntries',
   'showSidePanelOnNodeSelection',
+]);
+
+/**
+ * A set of config keys that their changes must be applied by re-running the
+ * adapters.
+ */
+export const CONFIG_KEYS_SHOULD_RERUN_ADAPTERS = new Set<string>([
+  'maxConstValueCount',
 ]);
 
 /** Configs for the visualizer. */

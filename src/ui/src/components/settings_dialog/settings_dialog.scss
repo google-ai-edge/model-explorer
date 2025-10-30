@@ -147,6 +147,7 @@
     border-radius: 4px;
     cursor: pointer;
     border: 1px solid var(--me-outline-variant-color);
+    flex-shrink: 0;
 
     input {
       visibility: hidden;

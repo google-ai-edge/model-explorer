@@ -76,6 +76,7 @@ import {
 } from '../visualizer/common/types';
 import {
   CONFIG_KEYS_CAN_RERENDER,
+  CONFIG_KEYS_SHOULD_RERUN_ADAPTERS,
   VisualizerConfig,
 } from '../visualizer/common/visualizer_config';
 import {VisualizerUiState} from '../visualizer/common/visualizer_ui_state';
@@ -317,6 +318,7 @@ export class HomePage implements AfterViewInit {
       dialogRef.afterClosed().subscribe(() => {
         const newVisualizerConfig = this.curConfig;
         let canRerender = true;
+        let shouldRerunAdapters = false;
         for (const key in newVisualizerConfig) {
           const oldValue = JSON.stringify(
             // tslint:disable-next-line:no-any Allow arbitrary types.
@@ -329,20 +331,36 @@ export class HomePage implements AfterViewInit {
           if (oldValue !== newValue) {
             if (!CONFIG_KEYS_CAN_RERENDER.has(key)) {
               canRerender = false;
-              break;
+            }
+            if (CONFIG_KEYS_SHOULD_RERUN_ADAPTERS.has(key)) {
+              shouldRerunAdapters = true;
             }
           }
         }
         this.modelGraphVisualizer?.setVisualizerConfig(newVisualizerConfig);
-        if (canRerender) {
-          this.modelGraphVisualizer?.forceRerenderGraphs();
-        } else {
-          const savedLoadedGraphCollections = this.loadedGraphCollections();
+        // If the config changes require re-running the adapters, set the loaded
+        // graph collections to null and re-trigger the model source input to
+        // start processing the model source again.
+        if (shouldRerunAdapters) {
           this.loadedGraphCollections.set(undefined);
           this.initialUiState = this.curUiState;
-          setTimeout(() => {
-            this.loadedGraphCollections.set(savedLoadedGraphCollections);
-          });
+          this.modelSourceInput.handleClickViewSelectedModels();
+        } else {
+          // If the config changes can be applied by re-rendering, re-render
+          // the graphs.
+          if (canRerender) {
+            this.modelGraphVisualizer?.forceRerenderGraphs();
+          }
+          // Otherwise, restore the loaded graph collections with the new
+          // visualizer config and the current ui state.
+          else {
+            const savedLoadedGraphCollections = this.loadedGraphCollections();
+            this.loadedGraphCollections.set(undefined);
+            this.initialUiState = this.curUiState;
+            setTimeout(() => {
+              this.loadedGraphCollections.set(savedLoadedGraphCollections);
+            });
+          }
         }
       });
     }
