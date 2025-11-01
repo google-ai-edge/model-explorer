@@ -295,6 +295,13 @@ export class InfoPanel {
       });
     });
 
+    // Re-generate info data when theme changes.
+    effect(() => {
+      this.appService.theme();
+      this.genInfoData();
+      this.changeDetectorRef.markForCheck();
+    });
+
     // React to commands.
     this.appService.command
       .pipe(takeUntilDestroyed(this.destroyRef))

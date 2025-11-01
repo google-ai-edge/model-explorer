@@ -16,7 +16,14 @@
  * ==============================================================================
  */
 
-import {computed, Injectable, signal} from '@angular/core';
+import {
+  computed,
+  effect,
+  inject,
+  Injectable,
+  signal,
+  untracked,
+} from '@angular/core';
 import {toObservable} from '@angular/core/rxjs-interop';
 
 import {IS_EXTERNAL} from '../../common/flags';
@@ -420,13 +427,16 @@ export class NodeDataProviderExtensionService {
         respResult.bgColor != null
       ) {
         const rgb = this.getRgbFromColor(respResult.bgColor!, '#ffffff');
-        if (rgb != null) {
+        if (rgb != null && respResult.bgColor !== 'transparent') {
           const luminance =
             Math.pow(rgb.r / 255.0, 2.2) * 0.2126 +
             Math.pow(rgb.g / 255.0, 2.2) * 0.7152 +
             Math.pow(rgb.b / 255.0, 2.2) * 0.0722;
           if (luminance < 0.38) {
             respResult.textColor = '#ffffff';
+          } else {
+            // on-surface-color in light mode.
+            respResult.textColor = '#1f1f1f';
           }
         }
       }
@@ -610,6 +620,9 @@ export class NodeDataProviderExtensionService {
       hexColor = defaultColor;
     }
     hexColor = hexColor.replace('#', '');
+    if (hexColor.length === 3) {
+      hexColor = hexColor.repeat(2);
+    }
     return {
       r: this.hexStrToInt(hexColor.substring(0, 2)),
       g: this.hexStrToInt(hexColor.substring(2, 4)),
