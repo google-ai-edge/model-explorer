@@ -25,7 +25,12 @@ import {
   LOCAL_STORAGE_KEY_SHOW_ON_EDGE_ITEM_TYPES_V2,
   LOCAL_STORAGE_KEY_SHOW_ON_NODE_ITEM_TYPES,
 } from './common/consts';
-import {Graph, GraphCollection, GraphWithLevel} from './common/input_graph';
+import {
+  Graph,
+  GraphCollection,
+  GraphSorting,
+  GraphWithLevel,
+} from './common/input_graph';
 import {ModelGraph, ModelNode} from './common/model_graph';
 import {
   AddSnapshotInfo,
@@ -140,9 +145,6 @@ export class AppService {
   addGraphCollections(graphCollections: GraphCollection[]) {
     this.curGraphCollections.update((prevCollections) => {
       const newCollections = [...prevCollections];
-      // For graphs in a collection, sort them by number of nodes in descending
-      // order.
-      //
       // Original graph id to count.
       const graphIdToCount: Record<string, number> = {};
       for (const collection of graphCollections) {
@@ -224,8 +226,22 @@ export class AppService {
           }
           graphs = uniqueGraphs;
 
-          // Sort by node count.
-          graphs.sort((g1, g2) => g2.nodes.length - g1.nodes.length);
+          // Sort graphs by collection.graphSorting.
+          graphs.sort((g1, g2) => {
+            switch (collection.graphSorting) {
+              case GraphSorting.NODE_COUNT_ASC:
+                return g1.nodes.length - g2.nodes.length;
+              case GraphSorting.NODE_COUNT_DESC:
+                return g2.nodes.length - g1.nodes.length;
+              case GraphSorting.NAME_ASC:
+                return g1.id.localeCompare(g2.id);
+              case GraphSorting.NAME_DESC:
+                return g2.id.localeCompare(g1.id);
+              default:
+                // Default to node count desc.
+                return g2.nodes.length - g1.nodes.length;
+            }
+          });
           for (const graph of graphs) {
             dfsOrderedGraphs.push({graph, level});
             visitGraph(graph, level + 1);

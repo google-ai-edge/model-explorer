@@ -36,11 +36,22 @@ export declare interface GraphCollection {
   /** The graphs inside the collection. */
   graphs: Graph[];
 
+  /** The sorting of the graphs. Default to GraphSorting.NODE_COUNT_DESC. */
+  graphSorting?: GraphSorting;
+
   //////////////////////////////////////////////////////////////////////////////
   // The following fields are set by model explorer. Users don't need to set
   // them.
 
   graphsWithLevel?: GraphWithLevel[];
+}
+
+/** The sorting of the graphs in a collection. */
+export enum GraphSorting {
+  NODE_COUNT_ASC = 'node_count_asc',
+  NODE_COUNT_DESC = 'node_count_desc',
+  NAME_ASC = 'name_asc',
+  NAME_DESC = 'name_desc',
 }
 
 /** The collection sent from the built-in adapters. */
