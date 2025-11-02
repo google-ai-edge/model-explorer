@@ -19,14 +19,17 @@
   margin-left: -6px;
   background-color: var(--me-surface-container-high-color);
   padding-bottom: 16px;
+  letter-spacing: normal;
 }
 
 .content {
-  padding: 24px;
+  padding: 0;
   /* stylelint-disable-next-line declaration-no-important -- override MDC */
   padding-top: 16px !important;
+  padding-bottom: 8px;
   font-family: 'Google Sans Text', Arial, Helvetica, sans-serif;
   background-color: var(--me-surface-container-low-color);
+  letter-spacing: normal;
 
   .loading-container {
     height: 200px;
@@ -45,6 +48,87 @@
     color: var(--me-error-text-color);
   }
 
+  .groups {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .group-container {
+    transition: max-height 150ms ease-out;
+
+    &.collapsed {
+      /* stylelint-disable-next-line declaration-no-important -- override element style */
+      max-height: 32px !important;
+      overflow: hidden;
+    }
+
+    &.extra-bottom-padding {
+      margin-bottom: 20px;
+    }
+
+    &.disable-group-toggle-animation {
+      transition: none;
+    }
+  }
+
+  .group-header {
+    display: flex;
+    align-items: center;
+    font-weight: 700;
+    padding: 4px 24px 4px 17px;
+    text-transform: uppercase;
+    position: sticky;
+    top: -16px;
+    z-index: 100;
+    flex-shrink: 0;
+    box-sizing: border-box;
+    background-color: var(--me-surface-container-high-color);
+    color: var(--me-on-surface-color);
+    user-select: none;
+    font-size: 12px;
+
+    button.toggle {
+      padding: 0;
+      width: 24px;
+      height: 24px;
+      margin-left: -8px;
+      margin-right: 2px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      mat-icon {
+        color: inherit;
+        font-size: 20px;
+        width: 20px;
+        height: 20px;
+      }
+
+      &:hover {
+        background-color: var(--me-surface-container-high-color);
+      }
+
+      ::ng-deep .mat-mdc-button-touch-target {
+        display: none;
+      }
+    }
+
+    .group-name {
+      &.error {
+        color: var(--me-error-text-color);
+      }
+    }
+  }
+
+  .group-content {
+    padding-bottom: 20px;
+
+    &.inside-group {
+      padding-top: 12px;
+      padding-left: 12px;
+    }
+  }
+
   .rows {
     display: flex;
     flex-direction: column;
@@ -54,8 +138,9 @@
   .row {
     display: flex;
     flex-direction: column;
-    font-size: 12px;
+    font-size: 13px;
     gap: 2px;
+    padding: 0 24px;
 
     .label-row {
       display: flex;
@@ -105,7 +190,7 @@
 
     .description {
       color: var(--me-on-surface-low-color);
-      font-size: 12px;
+      font-size: 13px;
       line-height: 16px;
       margin-top: 2px;
     }
@@ -284,7 +369,7 @@ select {
   .remove-btn {
     text-decoration: underline;
     cursor: pointer;
-    line-height: 12px;
+    line-height: 13px;
     color: var(--me-link-color);
     opacity: 0.85;
 
@@ -300,7 +385,7 @@ select {
 
 ::ng-deep .model-explorer-ndp-extension-help-popup {
   color: var(--me-on-surface-color);
-  font-size: 12px;
+  font-size: 13px;
   padding: 8px;
   background-color: var(--me-surface-container-low-color);
   line-height: normal;

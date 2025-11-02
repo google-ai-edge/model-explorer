@@ -20,6 +20,7 @@ import {OverlaySizeConfig} from '@angular/cdk/overlay';
 import {CommonModule} from '@angular/common';
 import {
   ChangeDetectionStrategy,
+  ChangeDetectorRef,
   Component,
   Inject,
   inject,
@@ -39,17 +40,17 @@ import {
 } from '@angular/material/dialog';
 import {MatIconModule} from '@angular/material/icon';
 import {MatProgressSpinnerModule} from '@angular/material/progress-spinner';
-import {MatTooltipModule} from '@angular/material/tooltip';
-
 import {MatSlideToggleModule} from '@angular/material/slide-toggle';
 import {MatSnackBar} from '@angular/material/snack-bar';
+import {MatTooltipModule} from '@angular/material/tooltip';
 import {
-  ConfigEditor,
+  ConfigEditorGroup,
   ConfigEditorType,
   ConfigValue,
   FileConfigEditor,
   NodeDataProviderExtension,
 } from '../../common/types';
+import {isConfigEditorGroup} from '../../common/utils';
 import {ExtensionService} from '../../services/extension_service';
 import {Bubble} from '../bubble/bubble';
 
@@ -63,6 +64,7 @@ declare interface UploadResponse {
 export interface RunNdpExtensionDialogData {
   extension: NodeDataProviderExtension;
   extensionService: ExtensionService;
+  disableGroupToggleAnimation?: boolean;
 }
 
 /** Result of the dialog. */
@@ -118,13 +120,14 @@ export class RunNdpExtensionDialog {
 
   protected readonly loadingConfigEditors = signal(true);
   protected readonly loadingConfigEditorsError = signal<string>('');
-  protected configEditors = signal<ConfigEditor[]>([]);
+  protected configEditorGroups = signal<ConfigEditorGroup[]>([]);
   // editor id -> status.
   protected readonly fileUploadStatus = signal<
     Record<string, FileUploadStatus>
   >({});
   protected readonly fileDragOver = signal<Record<string, boolean>>({});
 
+  private readonly changeDetectorRef = inject(ChangeDetectorRef);
   private readonly snackBar = inject(MatSnackBar);
 
   constructor(
@@ -143,15 +146,17 @@ export class RunNdpExtensionDialog {
       configValues: this.form.value,
     };
     // Convert the value of number-only text input from string to number.
-    for (const editor of this.configEditors()) {
-      if (editor.type === ConfigEditorType.TEXT_INPUT && editor.number) {
-        try {
-          const numValue = Number(result.configValues[editor.id]);
-          if (numValue != null && !isNaN(numValue)) {
-            result.configValues[editor.id] = numValue;
+    for (const group of this.configEditorGroups()) {
+      for (const editor of group.configEditors) {
+        if (editor.type === ConfigEditorType.TEXT_INPUT && editor.number) {
+          try {
+            const numValue = Number(result.configValues[editor.id]);
+            if (numValue != null && !isNaN(numValue)) {
+              result.configValues[editor.id] = numValue;
+            }
+          } catch (e) {
+            // Ignore.
           }
-        } catch (e) {
-          // Ignore.
         }
       }
     }
@@ -230,6 +235,32 @@ export class RunNdpExtensionDialog {
     });
   }
 
+  handleToggleGroup(group: ConfigEditorGroup, groupEle: HTMLElement) {
+    const collapsed = group.collapsed;
+
+    if (!collapsed) {
+      groupEle.style.maxHeight = `${groupEle.offsetHeight}px`;
+      groupEle.style.overflow = 'hidden';
+    } else {
+      groupEle.style.maxHeight = `${groupEle.scrollHeight}px`;
+    }
+    this.changeDetectorRef.markForCheck();
+
+    setTimeout(() => {
+      group.collapsed = !collapsed;
+      this.changeDetectorRef.markForCheck();
+
+      setTimeout(() => {
+        if (!group.collapsed) {
+          groupEle.style.overflow = 'visible';
+          groupEle.style.maxHeight = 'fit-content';
+        } else {
+          groupEle.style.overflow = 'hidden';
+        }
+      }, 150);
+    });
+  }
+
   getFormStringValue(formName: string): string {
     return this.form.get(formName)?.value ?? '';
   }
@@ -256,6 +287,15 @@ export class RunNdpExtensionDialog {
       return false;
     }
     return form.invalid && (form.dirty || form.touched);
+  }
+
+  hasFormErrorInGroup(group: ConfigEditorGroup): boolean {
+    for (const editor of group.configEditors) {
+      if (this.hasFormError(editor.id)) {
+        return true;
+      }
+    }
+    return false;
   }
 
   toggleFormStringArrayValue(
@@ -306,12 +346,33 @@ export class RunNdpExtensionDialog {
     return this.fileDragOver()[editorId] ?? false;
   }
 
+  getGroupToggleIcon(group: ConfigEditorGroup): string {
+    return group.collapsed ? 'chevron_right' : 'expand_more';
+  }
+
+  shouldHaveExtraBottomPadding(
+    group: ConfigEditorGroup,
+    index: number,
+  ): boolean {
+    const groups = this.configEditorGroups();
+    return (
+      !group.fake &&
+      group.collapsed &&
+      index < groups.length - 1 &&
+      groups[index + 1].fake === true
+    );
+  }
+
   get extension(): NodeDataProviderExtension {
     return this.data.extension;
   }
 
   get extensionName(): string {
     return this.data.extension.name;
+  }
+
+  get disableGroupToggleAnimation(): boolean {
+    return this.data.disableGroupToggleAnimation ?? false;
   }
 
   private async loadConfigEditors() {
@@ -322,37 +383,69 @@ export class RunNdpExtensionDialog {
     if (error) {
       this.loadingConfigEditorsError.set(error);
     } else {
-      // Add run name.
-      this.configEditors.set([
+      // Add run name, and flatten the config editors from groups.
+      const configEditorGroups: ConfigEditorGroup[] = [
         {
-          type: ConfigEditorType.TEXT_INPUT,
-          id: 'runName',
-          label: 'Run name',
-          required: true,
-          number: false,
-          defaultValue: this.data.extension.id,
-          help: 'The name of the node data returned by this extension run',
+          name: `${Math.random()}`,
+          collapsed: false,
+          configEditors: [
+            {
+              type: ConfigEditorType.TEXT_INPUT,
+              id: 'runName',
+              label: 'Run name',
+              required: true,
+              number: false,
+              defaultValue: this.data.extension.id,
+              help: 'The name of the node data returned by this extension run',
+            },
+          ],
+          fake: true,
         },
-        ...(resp.cmdResp?.configEditors ?? []),
-      ]);
+      ];
+      for (const editorOrGroup of resp.cmdResp?.configEditors ?? []) {
+        if (isConfigEditorGroup(editorOrGroup)) {
+          configEditorGroups.push(editorOrGroup);
+        } else {
+          configEditorGroups.push({
+            name: `${Math.random()}`,
+            collapsed: false,
+            configEditors: [editorOrGroup],
+            fake: true,
+          });
+        }
+      }
+      this.configEditorGroups.set(configEditorGroups);
 
       // Add config editors.
-      for (const configEditor of this.configEditors()) {
-        const validators = [];
-        if (configEditor.required) {
-          validators.push(Validators.required);
-        }
-        switch (configEditor.type) {
-          case ConfigEditorType.TEXT_INPUT:
-            if (configEditor.number) {
-              this.form.addControl(
-                configEditor.id,
-                new FormControl<number>(
-                  (configEditor.defaultValue as number) ?? 0,
-                  validators,
-                ),
-              );
-            } else {
+      for (const group of this.configEditorGroups()) {
+        for (const configEditor of group.configEditors) {
+          const validators = [];
+          if (configEditor.required) {
+            validators.push(Validators.required);
+          }
+          switch (configEditor.type) {
+            case ConfigEditorType.TEXT_INPUT:
+              if (configEditor.number) {
+                this.form.addControl(
+                  configEditor.id,
+                  new FormControl<number>(
+                    (configEditor.defaultValue as number) ?? 0,
+                    validators,
+                  ),
+                );
+              } else {
+                this.form.addControl(
+                  configEditor.id,
+                  new FormControl<string>(
+                    (configEditor.defaultValue as string) ?? '',
+                    validators,
+                  ),
+                );
+              }
+              break;
+            case ConfigEditorType.TEXT_AREA:
+            case ConfigEditorType.DROP_DOWN:
+            case ConfigEditorType.FILE:
               this.form.addControl(
                 configEditor.id,
                 new FormControl<string>(
@@ -360,51 +453,40 @@ export class RunNdpExtensionDialog {
                   validators,
                 ),
               );
-            }
-            break;
-          case ConfigEditorType.TEXT_AREA:
-          case ConfigEditorType.DROP_DOWN:
-          case ConfigEditorType.FILE:
-            this.form.addControl(
-              configEditor.id,
-              new FormControl<string>(
-                (configEditor.defaultValue as string) ?? '',
-                validators,
-              ),
-            );
-            if (configEditor.type === ConfigEditorType.FILE) {
-              this.initFileUploadStatus(configEditor.id);
-            }
-            break;
-          case ConfigEditorType.COLOR_PICKER:
-            this.form.addControl(
-              configEditor.id,
-              new FormControl<string>(
-                (configEditor.defaultValue as string) ?? 'black',
-                validators,
-              ),
-            );
-            break;
-          case ConfigEditorType.SLIDE_TOGGLE:
-            this.form.addControl(
-              configEditor.id,
-              new FormControl<boolean>(
-                (configEditor.defaultValue as boolean) ?? false,
-                validators,
-              ),
-            );
-            break;
-          case ConfigEditorType.BUTTON_TOGGLE:
-            this.form.addControl(
-              configEditor.id,
-              new FormControl<string[]>(
-                (configEditor.defaultValue as string[]) ?? [],
-                validators,
-              ),
-            );
-            break;
-          default:
-            break;
+              if (configEditor.type === ConfigEditorType.FILE) {
+                this.initFileUploadStatus(configEditor.id);
+              }
+              break;
+            case ConfigEditorType.COLOR_PICKER:
+              this.form.addControl(
+                configEditor.id,
+                new FormControl<string>(
+                  (configEditor.defaultValue as string) ?? 'black',
+                  validators,
+                ),
+              );
+              break;
+            case ConfigEditorType.SLIDE_TOGGLE:
+              this.form.addControl(
+                configEditor.id,
+                new FormControl<boolean>(
+                  (configEditor.defaultValue as boolean) ?? false,
+                  validators,
+                ),
+              );
+              break;
+            case ConfigEditorType.BUTTON_TOGGLE:
+              this.form.addControl(
+                configEditor.id,
+                new FormControl<string[]>(
+                  (configEditor.defaultValue as string[]) ?? [],
+                  validators,
+                ),
+              );
+              break;
+            default:
+              break;
+          }
         }
       }
     }

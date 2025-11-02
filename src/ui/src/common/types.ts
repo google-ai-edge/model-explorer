@@ -207,6 +207,16 @@ export type ConfigEditor =
 /** Config value. */
 export type ConfigValue = string | boolean | number | string[];
 
+/** A group of config editors. */
+export declare interface ConfigEditorGroup {
+  name: string;
+  collapsed: boolean;
+  configEditors: ConfigEditor[];
+
+  // Not set by the extension, but used internally for UI.
+  fake?: boolean;
+}
+
 /** An NDP extension run. */
 export interface NdpExtensionRun {
   runId: string;

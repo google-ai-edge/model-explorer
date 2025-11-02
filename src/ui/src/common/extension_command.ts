@@ -21,7 +21,7 @@ import {
   GraphCollection,
 } from '../components/visualizer/common/input_graph';
 import {NodeDataProviderGraphData} from '../components/visualizer/common/types';
-import {ConfigEditor, ConfigValue} from './types';
+import {ConfigEditor, ConfigEditorGroup, ConfigValue} from './types';
 
 /** A command sent to extension. */
 export declare interface ExtensionCommand {
@@ -53,7 +53,7 @@ export declare interface NdpGetConfigEditorsCommand extends ExtensionCommand {
 
 /** Node data provider's "get_config_editors" command response. */
 export declare interface NdpGetConfigEditorsResponse {
-  configEditors?: ConfigEditor[];
+  configEditors?: Array<ConfigEditor | ConfigEditorGroup>;
   error?: string;
 }
 

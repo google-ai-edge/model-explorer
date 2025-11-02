@@ -23,6 +23,7 @@ import {
 } from '../components/visualizer/common/input_graph';
 
 import {loadTfjsModel} from './tfjs';
+import {ConfigEditor, ConfigEditorGroup} from './types';
 
 /** Checks if the current page is running in internal colab. */
 export const INTERNAL_COLAB =
@@ -126,4 +127,11 @@ export function convertGraphCollectionsFromBuiltinAdptersToGraphCollections(
 export function getElectronApi() {
   // tslint:disable-next-line:no-any Allow arbitrary types.
   return (window as any)['meElectronApi'];
+}
+
+/** Checks if the given item is a ConfigEditorGroup. */
+export function isConfigEditorGroup(
+  item: ConfigEditor | ConfigEditorGroup,
+): item is ConfigEditorGroup {
+  return (item as ConfigEditorGroup).configEditors !== undefined;
 }

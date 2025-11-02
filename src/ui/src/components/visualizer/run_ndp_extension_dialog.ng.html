@@ -32,155 +32,178 @@ limitations under the License.
   }
   @else {
     <form [formGroup]="form">
-      <div class="rows">
-        @for (editor of configEditors(); track editor.id) {
-          <div class="row" [attr.data-editor-id]="editor.id">
-            <div class="label-row">
-              <div class="label" [class.error]="hasFormError(editor.id)">
-                {{editor.label || editor.id}}
-                @if (isFormRequired(editor.id)) {
-                  (required)
-                }
+      <div class="groups">
+        @for (group of configEditorGroups(); track group.name; let i = $index) {
+          <div class="group-container" #groupEle
+              [class.collapsed]="group.collapsed"
+              [class.extra-bottom-padding]="shouldHaveExtraBottomPadding(group, i)"
+              [class.disable-group-toggle-animation]="disableGroupToggleAnimation">
+            @if (!group.fake) {
+              <div class="group-header">
+                <button mat-icon-button class="toggle"
+                    (click)="handleToggleGroup(group, groupEle)">
+                  <mat-icon>{{getGroupToggleIcon(group)}}</mat-icon>
+                </button>
+                <div class="group-name" [class.error]="hasFormErrorInGroup(group)">
+                  {{group.name}}
+                </div>
               </div>
-              @if (editor.help) {
-                <div class="icon-container help"
-                    [bubble]="helpPopup"
-                    [overlaySize]="helpPopupSize"
-                    [hoverDelayMs]="100">
-                  <mat-icon>help_outline</mat-icon>
-                </div>
-                <ng-template #helpPopup>
-                  <div class="model-explorer-ndp-extension-help-popup">
-                    {{editor.help}}
-                  </div>
-                </ng-template>
-              }
-            </div>
-            @switch (editor.type) {
-              @case (ConfigEditorType.TEXT_INPUT) {
-                <input class="text-input-editor"
-                    [attr.type]="editor.number ? 'number' : 'text'"
-                    formControlName="{{editor.id}}">
-              }
-              @case (ConfigEditorType.TEXT_AREA) {
-                <textarea class="text-input-editor"
-                    formControlName="{{editor.id}}"
-                    [style.height.px]="editor.height"></textarea>
-              }
-              @case (ConfigEditorType.SLIDE_TOGGLE) {
-                <mat-slide-toggle
-                    color="primary"
-                    formControlName="{{editor.id}}">
-                </mat-slide-toggle>
-              }
-              @case (ConfigEditorType.COLOR_PICKER) {
-                <div class="color-picker-container">
-                  <label [style.background-color]="getFormStringValue(editor.id)">
-                    <input type="color" formControlName="{{editor.id}}">
-                  </label>
-                  <input type="text"
-                      [value]="getFormStringValue(editor.id)"
-                      formControlName="{{editor.id}}">
-                </div>
-              }
-              @case (ConfigEditorType.DROP_DOWN) {
-                <select formControlName="{{editor.id}}">
-                  @for (option of editor.options; track option.value) {
-                    <option [value]="option.value"
-                        [selected]="option.value === getFormStringValue(editor.id)">
-                      {{option.label}}
-                    </option>
-                  }
-                </select>
-              }
-              @case (ConfigEditorType.BUTTON_TOGGLE) {
-                <div class="button-toggle-container">
-                  @for (option of editor.options; track option.value; let last = $last) {
-                    <div class="button-toggle"
-                        [class.selected]="getFormStringArrayValue(editor.id).includes(option.value)"
-                        [class.last]="last"
-                        (click)="toggleFormStringArrayValue(editor.multiple, editor.id, option.value)">
-                      <div class="icon-container"
-                          [class.hide]="!getFormStringArrayValue(editor.id).includes(option.value)" >
-                        <mat-icon [class.hide]="!getFormStringArrayValue(editor.id).includes(option.value)" >check</mat-icon>
-                      </div>
-                      {{option.label}}
-                    </div>
-                  }
-                </div>
-              }
-              @case (ConfigEditorType.FILE) {
-                @switch (getFileUploadStatus(editor.id)) {
-                  @case (FileUploadStatusType.READY) {
-                    <div class="file-drop-container ready"
-                        [class.drag-over]="isDragOver(editor.id)"
-                        (dragover)="handleDragOver($event, editor.id)"
-                        (dragleave)="handleDragLeave($event, editor.id)"
-                        (drop)="handleDrop($event, editor)">
-                      <mat-icon>upload_file</mat-icon>
-                      <div>
-                        <div>
-                          Drag and drop file here or
-                          <span class="choose-file"
-                              (click)="input.click()">
-                            Choose file
-                          </span>
-                        </div>
-                        @if (getFileUploadAccept(editor) !== '') {
-                          <div class="file-ext-msg">
-                            Accepts: {{getFileUploadAccept(editor)}}
-                          </div>
+            }
+            <div class="group-content"
+                [class.inside-group]="group.configEditors.length > 0 && !group.fake">
+              <div class="rows">
+                @for (editor of group.configEditors; track editor.id) {
+                  <div class="row" [attr.data-editor-id]="editor.id">
+                    <div class="label-row">
+                      <div class="label" [class.error]="hasFormError(editor.id)">
+                        {{editor.label || editor.id}}
+                        @if (isFormRequired(editor.id)) {
+                          (required)
                         }
                       </div>
+                      @if (editor.help) {
+                        <div class="icon-container help"
+                            [bubble]="helpPopup"
+                            [overlaySize]="helpPopupSize"
+                            [hoverDelayMs]="100">
+                          <mat-icon>help_outline</mat-icon>
+                        </div>
+                        <ng-template #helpPopup>
+                          <div class="model-explorer-ndp-extension-help-popup">
+                            {{editor.help}}
+                          </div>
+                        </ng-template>
+                      }
                     </div>
-                  }
-                  @case (FileUploadStatusType.UPLOADING) {
-                    <div class="file-drop-container">
-                      <mat-spinner color="primary" diameter="20">
-                      </mat-spinner>
-                      <div class="upload-msg">
-                        Uploading {{getFileUploadName(editor.id)}}...
+                    @switch (editor.type) {
+                      @case (ConfigEditorType.TEXT_INPUT) {
+                        <input class="text-input-editor"
+                            [attr.type]="editor.number ? 'number' : 'text'"
+                            formControlName="{{editor.id}}">
+                      }
+                      @case (ConfigEditorType.TEXT_AREA) {
+                        <textarea class="text-input-editor"
+                            formControlName="{{editor.id}}"
+                            [style.height.px]="editor.height"></textarea>
+                      }
+                      @case (ConfigEditorType.SLIDE_TOGGLE) {
+                        <mat-slide-toggle
+                            color="primary"
+                            formControlName="{{editor.id}}">
+                        </mat-slide-toggle>
+                      }
+                      @case (ConfigEditorType.COLOR_PICKER) {
+                        <div class="color-picker-container">
+                          <label [style.background-color]="getFormStringValue(editor.id)">
+                            <input type="color" formControlName="{{editor.id}}">
+                          </label>
+                          <input type="text"
+                              [value]="getFormStringValue(editor.id)"
+                              formControlName="{{editor.id}}">
+                        </div>
+                      }
+                      @case (ConfigEditorType.DROP_DOWN) {
+                        <select formControlName="{{editor.id}}">
+                          @for (option of editor.options; track option.value) {
+                            <option [value]="option.value"
+                                [selected]="option.value === getFormStringValue(editor.id)">
+                              {{option.label}}
+                            </option>
+                          }
+                        </select>
+                      }
+                      @case (ConfigEditorType.BUTTON_TOGGLE) {
+                        <div class="button-toggle-container">
+                          @for (option of editor.options; track option.value; let last = $last) {
+                            <div class="button-toggle"
+                                [class.selected]="getFormStringArrayValue(editor.id).includes(option.value)"
+                                [class.last]="last"
+                                (click)="toggleFormStringArrayValue(editor.multiple, editor.id, option.value)">
+                              <div class="icon-container"
+                                  [class.hide]="!getFormStringArrayValue(editor.id).includes(option.value)" >
+                                <mat-icon [class.hide]="!getFormStringArrayValue(editor.id).includes(option.value)" >check</mat-icon>
+                              </div>
+                              {{option.label}}
+                            </div>
+                          }
+                        </div>
+                      }
+                      @case (ConfigEditorType.FILE) {
+                        @switch (getFileUploadStatus(editor.id)) {
+                          @case (FileUploadStatusType.READY) {
+                            <div class="file-drop-container ready"
+                                [class.drag-over]="isDragOver(editor.id)"
+                                (dragover)="handleDragOver($event, editor.id)"
+                                (dragleave)="handleDragLeave($event, editor.id)"
+                                (drop)="handleDrop($event, editor)">
+                              <mat-icon>upload_file</mat-icon>
+                              <div>
+                                <div>
+                                  Drag and drop file here or
+                                  <span class="choose-file"
+                                      (click)="input.click()">
+                                    Choose file
+                                  </span>
+                                </div>
+                                @if (getFileUploadAccept(editor) !== '') {
+                                  <div class="file-ext-msg">
+                                    Accepts: {{getFileUploadAccept(editor)}}
+                                  </div>
+                                }
+                              </div>
+                            </div>
+                          }
+                          @case (FileUploadStatusType.UPLOADING) {
+                            <div class="file-drop-container">
+                              <mat-spinner color="primary" diameter="20">
+                              </mat-spinner>
+                              <div class="upload-msg">
+                                Uploading {{getFileUploadName(editor.id)}}...
+                              </div>
+                            </div>
+                          }
+                          @case (FileUploadStatusType.UPLOADED) {
+                            <div class="file-drop-container">
+                              <div class="uploaded-container">
+                                <div class="uploaded-status">
+                                  <mat-icon class="uploaded">check_circle</mat-icon>
+                                  <div class="upload-msg">{{getFileUploadName(editor.id)}}</div>
+                                </div>
+                                <div class="remove-btn"
+                                    (click)="handleClickRemoveUpload(editor.id)">
+                                  Remove
+                                </div>
+                              </div>
+                            </div>
+                          }
+                          @case (FileUploadStatusType.ERROR) {
+                            <div class="file-drop-container error">
+                              <div class="uploaded-container">
+                                <div class="upload-msg error">
+                                  {{getFileUploadError(editor.id)}}
+                                </div>
+                                <div class="remove-btn"
+                                    (click)="handleClickRemoveUpload(editor.id)">
+                                  Reset
+                                </div>
+                              </div>
+                            </div>
+                          }
+                        }
+                        <input class="file-upload-input" type="file" #input
+                            [accept]="getFileUploadAccept(editor)"
+                            (change)="handleUploadFile(editor, input)">
+                      }
+                    }
+                    @if (editor.description) {
+                      <div class="description">
+                        {{editor.description}}
                       </div>
-                    </div>
-                  }
-                  @case (FileUploadStatusType.UPLOADED) {
-                    <div class="file-drop-container">
-                      <div class="uploaded-container">
-                        <div class="uploaded-status">
-                          <mat-icon class="uploaded">check_circle</mat-icon>
-                          <div class="upload-msg">{{getFileUploadName(editor.id)}}</div>
-                        </div>
-                        <div class="remove-btn"
-                            (click)="handleClickRemoveUpload(editor.id)">
-                          Remove
-                        </div>
-                      </div>
-                    </div>
-                  }
-                  @case (FileUploadStatusType.ERROR) {
-                    <div class="file-drop-container error">
-                      <div class="uploaded-container">
-                        <div class="upload-msg error">
-                          {{getFileUploadError(editor.id)}}
-                        </div>
-                        <div class="remove-btn"
-                            (click)="handleClickRemoveUpload(editor.id)">
-                          Reset
-                        </div>
-                      </div>
-                    </div>
-                  }
+                    }
+                  </div>
                 }
-                <input class="file-upload-input" type="file" #input
-                    [accept]="getFileUploadAccept(editor)"
-                    (change)="handleUploadFile(editor, input)">
-              }
-            }
-            @if (editor.description) {
-              <div class="description">
-                {{editor.description}}
               </div>
-            }
+            </div>
           </div>
         }
       </div>
