@@ -18,7 +18,7 @@ from dataclasses import dataclass
 from abc import abstractmethod
 from typing import Union
 
-from .config_editor import ConfigEditor
+from .config_editor import ConfigEditor, ConfigEditorGroup
 from .extension_base import Extension
 from .extension_matadata import ExtensionMetadata
 from .node_data_builder import GraphNodeData
@@ -81,7 +81,9 @@ class GetConfigEditorsResult:
   """The result of the get_config_editors method."""
 
   # Config editors.
-  configEditors: Union[list[ConfigEditor], None] = None
+  configEditors: Union[list[Union[ConfigEditor, ConfigEditorGroup]], None] = (
+      None
+  )
 
   # Error message.
   error: str = ''
@@ -104,7 +106,7 @@ class NodeDataProvider(Extension):
     Extension.__init__(self)
 
   @abstractmethod
-  def get_config_editors(self, provider_id: str) -> list[ConfigEditor]:
+  def get_config_editors(self, provider_id: str) -> GetConfigEditorsResult:
     """Returns the config editors for the given extension.
 
     When user clicks a NDP extension to run, the UI will show a dialog to let
