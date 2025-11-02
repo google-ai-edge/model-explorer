@@ -167,8 +167,6 @@ export class RunNdpExtensionDialog {
     const file = files[0];
     await this.uploadFile(file, editor.id);
     input.value = '';
-
-    this.form.get(editor.id)?.markAsTouched();
   }
 
   handleDragOver(event: DragEvent, editorId: string) {
@@ -180,7 +178,7 @@ export class RunNdpExtensionDialog {
     this.setDragOver(editorId, false);
   }
 
-  handleDrop(event: DragEvent, editor: FileConfigEditor) {
+  async handleDrop(event: DragEvent, editor: FileConfigEditor) {
     const editorId = editor.id;
     event.preventDefault();
     this.setDragOver(editorId, false);
@@ -215,7 +213,7 @@ export class RunNdpExtensionDialog {
         });
         return;
       }
-      this.uploadFile(file, editorId);
+      await this.uploadFile(file, editorId);
     }
   }
 
@@ -290,6 +288,10 @@ export class RunNdpExtensionDialog {
 
   getFileUploadStatus(editorId: string): FileUploadStatusType {
     return this.fileUploadStatus()[editorId]?.status;
+  }
+
+  getFileUploadError(editorId: string): string {
+    return this.fileUploadStatus()[editorId]?.error ?? 'Unknown error';
   }
 
   getFileUploadName(editorId: string): string {
@@ -425,16 +427,17 @@ export class RunNdpExtensionDialog {
     if (!uploadResp.ok) {
       const error = await uploadResp.text();
       this.setFileUploadError(editorId, fileName, error);
-    } else {
-      const path = (JSON.parse(await uploadResp.text()) as UploadResponse).path;
-      this.setFormStringValue(editorId, path);
+      return;
     }
-    await new Promise((resolve) => setTimeout(resolve, 3000));
+
+    const path = (JSON.parse(await uploadResp.text()) as UploadResponse).path;
+    this.setFormStringValue(editorId, path);
     this.setFileUploadingStatus(
       editorId,
       fileName,
       FileUploadStatusType.UPLOADED,
     );
+    this.form.get(editorId)?.markAsTouched();
   }
 
   private setFileUploadError(
@@ -445,6 +448,7 @@ export class RunNdpExtensionDialog {
     this.fileUploadStatus.update((status) => {
       if (status[editorId]) {
         status[editorId].error = error;
+        status[editorId].status = FileUploadStatusType.ERROR;
       } else {
         status[editorId] = {
           fileName,

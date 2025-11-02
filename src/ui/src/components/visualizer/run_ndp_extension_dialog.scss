@@ -256,6 +256,10 @@ select {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+
+    &.error {
+      color: var(--me-error-text-color);
+    }
   }
 
   .uploaded-container {

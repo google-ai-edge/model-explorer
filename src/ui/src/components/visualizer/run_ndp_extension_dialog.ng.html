@@ -34,7 +34,7 @@ limitations under the License.
     <form [formGroup]="form">
       <div class="rows">
         @for (editor of configEditors(); track editor.id) {
-          <div class="row">
+          <div class="row" [attr.data-editor-id]="editor.id">
             <div class="label-row">
               <div class="label" [class.error]="hasFormError(editor.id)">
                 {{editor.label || editor.id}}
@@ -43,7 +43,7 @@ limitations under the License.
                 }
               </div>
               @if (editor.help) {
-                <div class="icon-container"
+                <div class="icon-container help"
                     [bubble]="helpPopup"
                     [overlaySize]="helpPopupSize"
                     [hoverDelayMs]="100">
@@ -157,6 +157,19 @@ limitations under the License.
                       </div>
                     </div>
                   }
+                  @case (FileUploadStatusType.ERROR) {
+                    <div class="file-drop-container error">
+                      <div class="uploaded-container">
+                        <div class="upload-msg error">
+                          {{getFileUploadError(editor.id)}}
+                        </div>
+                        <div class="remove-btn"
+                            (click)="handleClickRemoveUpload(editor.id)">
+                          Reset
+                        </div>
+                      </div>
+                    </div>
+                  }
                 }
                 <input class="file-upload-input" type="file" #input
                     [accept]="getFileUploadAccept(editor)"
@@ -180,6 +193,7 @@ limitations under the License.
       Cancel
     </button>
     <button mat-flat-button color="primary"
+        class="btn-run"
         [disabled]="form.invalid || loadingConfigEditors() || loadingConfigEditorsError() !== ''"
         (click)="handleClickRun()">
       Run
