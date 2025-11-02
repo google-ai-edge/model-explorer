@@ -45,6 +45,22 @@ class ConfigEditor:
   defaultValue: Union[str, bool, float, int, None, list[str]] = None
 
 
+@dataclass
+class ConfigEditorGroup:
+  """A group of config editors. Collapsable in UI."""
+
+  # The name of the group. For display purpose.
+  name: str
+
+  # Whether the group is collapsed by default or not.
+  #
+  # Default to collapsed.
+  collapsed: bool = True
+
+  # The config editors in this group.
+  configEditors: list[ConfigEditor] = field(default_factory=list)
+
+
 # --- Specialized Editor Configs ---
 
 

@@ -13,7 +13,7 @@
 # limitations under the License.
 # ==============================================================================
 
-from model_explorer.config_editor import TextInputConfigEditor, TextAreaConfigEditor, SlideToggleConfigEditor, ColorPickerConfigEditor, OptionItem, DropDownConfigEditor, ButtonToggleConfigEditor, FileConfigEditor
+from model_explorer.config_editor import TextInputConfigEditor, TextAreaConfigEditor, SlideToggleConfigEditor, ColorPickerConfigEditor, OptionItem, DropDownConfigEditor, ButtonToggleConfigEditor, FileConfigEditor, ConfigEditorGroup
 from model_explorer import NodeDataProvider, NodeDataProviderMetadata, NodeDataProviderResult, GetConfigEditorsResult
 from model_explorer.node_data_builder import GraphNodeData, NodeDataResult, GradientItem
 import time
@@ -65,8 +65,6 @@ class TestNodeDataProvider(NodeDataProvider):
                   fileExts=["json"],
               ),
               SlideToggleConfigEditor(id="toggle", label="A boolean"),
-              ColorPickerConfigEditor(id="start_color", label="Start color"),
-              ColorPickerConfigEditor(id="end_color", label="End color"),
               DropDownConfigEditor(
                   id="drop_down",
                   label="A dropdown",
@@ -77,26 +75,47 @@ class TestNodeDataProvider(NodeDataProvider):
                       OptionItem(label="Option 3", value="option_3"),
                   ],
               ),
-              ButtonToggleConfigEditor(
-                  id="button_toggle",
-                  label="A button toggle",
-                  defaultValue=["gpu"],
-                  options=[
-                      OptionItem(label="CPU", value="cpu"),
-                      OptionItem(label="GPU", value="gpu"),
-                      OptionItem(label="NPU", value="npu"),
+              # A group (expanded by default) that has two color editors.
+              ConfigEditorGroup(
+                  name="Colors",
+                  collapsed=False,
+                  configEditors=[
+                      ColorPickerConfigEditor(
+                          id="start_color", label="Start color"
+                      ),
+                      ColorPickerConfigEditor(
+                          id="end_color", label="End color"
+                      ),
                   ],
               ),
-              ButtonToggleConfigEditor(
-                  id="button_toggle_multiple",
-                  label="A button toggle (multiple)",
-                  defaultValue=["left", "right"],
-                  options=[
-                      OptionItem(label="Left", value="left"),
-                      OptionItem(label="Middle", value="middle"),
-                      OptionItem(label="Right", value="right"),
+              # A group (collapsed by default) that has two button toggle
+              # editors.
+              ConfigEditorGroup(
+                  name="Button toggles",
+                  collapsed=True,
+                  configEditors=[
+                      ButtonToggleConfigEditor(
+                          id="button_toggle",
+                          label="A button toggle",
+                          defaultValue=["gpu"],
+                          options=[
+                              OptionItem(label="CPU", value="cpu"),
+                              OptionItem(label="GPU", value="gpu"),
+                              OptionItem(label="NPU", value="npu"),
+                          ],
+                      ),
+                      ButtonToggleConfigEditor(
+                          id="button_toggle_multiple",
+                          label="A button toggle (multiple)",
+                          defaultValue=["left", "right"],
+                          options=[
+                              OptionItem(label="Left", value="left"),
+                              OptionItem(label="Middle", value="middle"),
+                              OptionItem(label="Right", value="right"),
+                          ],
+                          multiple=True,
+                      ),
                   ],
-                  multiple=True,
               ),
           ],
       )
