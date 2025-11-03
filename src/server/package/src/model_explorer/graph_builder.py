@@ -255,11 +255,6 @@ class GroupNodeConfig:
   # 1: left-right
   layoutDirection: Union[int, None] = None
 
-  # The sorting of the graphs.
-  graphSorting: Literal[
-      'node_count_asc', 'node_count_desc', 'name_asc', 'name_desc'
-  ] = 'node_count_desc'
-
 
 class LayoutDirection:
   """Defines the possible layout directions for visualization."""
@@ -278,6 +273,11 @@ class GraphCollection:
 
   # A list of graphs in this collection.
   graphs: list[Graph] = field(default_factory=list)
+
+  # The sorting of the graphs.
+  graphSorting: Literal[
+      'node_count_asc', 'node_count_desc', 'name_asc', 'name_desc'
+  ] = 'node_count_desc'
 
 
 @dataclass
