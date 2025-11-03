@@ -64,7 +64,7 @@ declare interface UploadResponse {
 export interface RunNdpExtensionDialogData {
   extension: NodeDataProviderExtension;
   extensionService: ExtensionService;
-  disableGroupToggleAnimation?: boolean;
+  disableAnimation?: boolean;
 }
 
 /** Result of the dialog. */
@@ -371,8 +371,8 @@ export class RunNdpExtensionDialog {
     return this.data.extension.name;
   }
 
-  get disableGroupToggleAnimation(): boolean {
-    return this.data.disableGroupToggleAnimation ?? false;
+  get disableAnimation(): boolean {
+    return this.data.disableAnimation ?? false;
   }
 
   private async loadConfigEditors() {

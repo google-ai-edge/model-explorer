@@ -37,7 +37,7 @@ limitations under the License.
           <div class="group-container" #groupEle
               [class.collapsed]="group.collapsed"
               [class.extra-bottom-padding]="shouldHaveExtraBottomPadding(group, i)"
-              [class.disable-group-toggle-animation]="disableGroupToggleAnimation">
+              [class.disable-animation]="disableAnimation">
             @if (!group.fake) {
               <div class="group-header">
                 <button mat-icon-button class="toggle"
