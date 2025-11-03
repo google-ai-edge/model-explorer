@@ -14,7 +14,7 @@
 # ==============================================================================
 
 from dataclasses import dataclass, field
-from typing import Dict, Union
+from typing import Dict, Literal, Union
 
 
 @dataclass
@@ -254,6 +254,11 @@ class GroupNodeConfig:
   # 0: top-bottom (default)
   # 1: left-right
   layoutDirection: Union[int, None] = None
+
+  # The sorting of the graphs.
+  graphSorting: Literal[
+      'node_count_asc', 'node_count_desc', 'name_asc', 'name_desc'
+  ] = 'node_count_desc'
 
 
 class LayoutDirection:
