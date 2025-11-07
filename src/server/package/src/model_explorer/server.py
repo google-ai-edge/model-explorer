@@ -35,6 +35,7 @@ from flask import Flask, Response, make_response, request, send_from_directory
 from IPython import display
 from packaging.version import parse
 from termcolor import colored, cprint
+from watchdog.observers import Observer
 
 from .config import ModelExplorerConfig
 from .consts import (
@@ -44,11 +45,17 @@ from .consts import (
     PACKAGE_NAME,
 )
 from .extension_manager import ExtensionManager
+from .file_change_handler import FileChangeHandler
 from .server_directive_dispatcher import ServerDirectiveDispatcher
 from .server_director import ServerDirector
 from .utils import convert_adapter_response
 
 server_directive_dispatcher = ServerDirectiveDispatcher()
+
+# For watching model file changes.
+observer: Union[Any, None] = None
+observer_started: bool = False
+observed_file_paths: set[str] = set()
 
 
 def _print_loaded_extensions(type: str, label: str, all_extensions: list[dict]):
@@ -190,6 +197,11 @@ def _is_internal_colab() -> bool:
   )
 
 
+def _refresh_app_callback(host: str, port: int):
+  server_address = f'http://{host}:{port}'
+  requests.post(f'{server_address}/apipost/v1/refresh_page')
+
+
 def start(
     host=DEFAULT_HOST,
     port=DEFAULT_PORT,
@@ -199,6 +211,7 @@ def start(
     colab_height: int = DEFAULT_COLAB_HEIGHT,
     cors_host: Union[str, None] = None,
     skip_health_check: bool = False,
+    watch: bool = False,
 ):
   """Starts the local server that serves the web app.
 
@@ -283,6 +296,12 @@ def start(
       label='node data provider',
       all_extensions=extension_metadata_list,
   )
+
+  # The handler when a file change is detected.
+  _file_change_event_handler = FileChangeHandler(
+      host=host,
+      port=port,
+      callback=_refresh_app_callback)
 
   @app.route('/api/v1/check_new_version')
   def check_new_version():
@@ -392,6 +411,27 @@ def start(
 
     return ''
 
+  @app.route('/apipost/v1/refresh_page', methods=['POST'])
+  def refresh_page():
+    # Ask UI to refresh page with the new url.
+    server_directive_dispatcher.broadcast(
+        json.dumps({
+            'name': 'refreshPage',
+            'url': '',
+        })
+    )
+
+    return ''
+
+  @app.route('/api/v1/notify_user_provided_model_path')
+  def notify_user_provided_model_path():
+    if watch:
+      path = request.args.get('path')
+      if path:
+        abs_path = os.path.abspath(os.path.expanduser(path))
+        _watch_file_changes(file_path=abs_path)
+    return _make_json_response({'status': 'ok'})
+
   @app.route('/apistream/server_director')
   def server_director_stream():
     def stream():
@@ -445,6 +485,21 @@ def start(
       response.headers['Access-Control-Allow-Headers'] = 'Content-Type'
     return response
 
+  def _watch_file_changes(file_path: str):
+    if file_path in observed_file_paths:
+      return
+
+    print(f'Watching file changes for "{file_path}"...')
+    observed_file_paths.add(file_path)
+    dir_path = os.path.dirname(file_path)
+    _file_change_event_handler.add_target_file_path(file_path)
+    if observer:
+      observer.schedule(_file_change_event_handler, dir_path, recursive=False)
+      global observer_started
+      if not observer_started:
+        observer.start()
+        observer_started = True
+
   def start_server():
     """Starts the server in non-colab environment."""
     app_thread = threading.Thread(target=lambda: app.run(host=host, port=port))
@@ -480,6 +535,18 @@ def start(
     # Check installed version vs published version.
     threading.Thread(target=lambda: _check_new_version()).start()
 
+    # Watch changes to model files when `--watch` is specified.
+    if config is not None and watch:
+      print('\nCreating observer for file changes...')
+      global observer
+      observer = Observer()
+      model_files = [x['url']
+                     for x in config.model_sources if x['url'].startswith(os.sep)]
+
+      for model_file in model_files:
+        _watch_file_changes(file_path=model_file)
+
+    # Keep server alive.
     try:
       while app_thread.is_alive():
         sleep(1)

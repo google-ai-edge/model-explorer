@@ -16,10 +16,12 @@
 import logging
 import model_explorer
 import re
+import subprocess
 import tempfile
 import time
 import torch
 import torchvision
+import shutil
 from playwright.sync_api import Page, expect
 from PIL import Image, ImageChops
 from pathlib import Path
@@ -47,7 +49,8 @@ def matched_images(
     return False
   diff = ImageChops.difference(actual_image, expected_image)
   diff_list = list(diff.getdata())
-  mismatch_ratio = sum(pixel != 0 for pixel in diff_list) * 1.0 / len(diff_list)
+  mismatch_ratio = sum(pixel != 0 for pixel in diff_list) * \
+      1.0 / len(diff_list)
   if mismatch_ratio > threshold:
     DEBUG_SCREENSHOT_DIR.mkdir(parents=True, exist_ok=True)
     diff.save(DEBUG_SCREENSHOT_DIR / actual_image_path.name)
@@ -296,3 +299,80 @@ def test_reuse_server_two_pytorch_models(page: Page):
 
   # The screenshot should show "V3" in the center node.
   take_and_compare_screenshot(page, "reuse_server_two_pytorch_models.png")
+
+
+def test_hot_reload_from_command_line(page: Page):
+  # Prepare the original model graph.
+  shutil.copyfile(str(TEST_FILES_DIR / "test_graph_original.json"),
+                  str(TEST_FILES_DIR / "test_graph1.json"))
+
+  # Start a server on port 8081.
+  command = ["model-explorer", "--host=127.0.0.1", "--port=8081",
+             "--no_open_in_browser",
+             "--watch",
+             str(TEST_FILES_DIR / "test_graph.json")]
+  subprocess.Popen(command)
+
+  # Wait for server starting.
+  time.sleep(3)
+
+  # Show the graph.
+  page.goto(
+      'http://127.0.0.1:8081/?data={"models":[{"url":"' + str(TEST_FILES_DIR / "test_graph1.json") + '","adapterId":"builtin_json"}]}')
+
+  # Wait for animation.
+  time.sleep(2)
+
+  # Expand root3 layer.
+  page.locator("canvas").first.click(position={"x": 453, "y": 392})
+  page.locator("canvas").first.dblclick(position={"x": 452, "y": 391})
+
+  # Modify the graph by copying a new graph over it.
+  shutil.copyfile(str(TEST_FILES_DIR / "test_graph_modified.json"),
+                  str(TEST_FILES_DIR / "test_graph1.json"))
+
+  # Wait for refresh.
+  time.sleep(2)
+
+  # The screenshot should show graph with update label on root3_n1.
+  # The graph states should persist (root3 layer is expanded).
+  take_and_compare_screenshot(page, "hot_reload_from_command_line")
+
+
+def test_hot_reload_from_ui(page: Page):
+  # Prepare the original model graph.
+  shutil.copyfile(str(TEST_FILES_DIR / "test_graph_original.json"),
+                  str(TEST_FILES_DIR / "test_graph2.json"))
+
+  # Start a server on port 8082.
+  command = ["model-explorer", "--host=127.0.0.1", "--port=8082",
+             "--no_open_in_browser",
+             "--watch"]
+  subprocess.Popen(command)
+
+  # Wait for server starting.
+  time.sleep(3)
+
+  # Show the graph.
+  page.goto('http://127.0.0.1:8082/')
+
+  # Fill in absolute model path.
+  page.get_by_placeholder("Absolute file paths (").fill(
+      str(TEST_FILES_DIR / "test_graph2.json"))
+  page.get_by_role("button", name="Add").click()
+  delay_view_model(page)
+
+  # Expand root3 layer.
+  page.locator("canvas").first.click(position={"x": 453, "y": 392})
+  page.locator("canvas").first.dblclick(position={"x": 452, "y": 391})
+
+  # Modify the graph by copying a new graph over it.
+  shutil.copyfile(str(TEST_FILES_DIR / "test_graph_modified.json"),
+                  str(TEST_FILES_DIR / "test_graph2.json"))
+
+  # Wait for refresh.
+  time.sleep(2)
+
+  # The screenshot should show graph with update label on root3_n1.
+  # The graph states should persist (root3 layer is expanded).
+  take_and_compare_screenshot(page, "hot_reload_from_ui")

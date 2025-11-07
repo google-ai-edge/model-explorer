@@ -1,0 +1,151 @@
+ {
+  "label": "collection1",
+  "graphs": [
+    {
+      "id": "graph1",
+      "nodes": [
+        {
+          "id": "root1",
+          "label": "root1",
+          "namespace": ""
+        },
+        {
+          "id": "root2",
+          "label": "root2",
+          "namespace": "",
+          "incomingEdges": [
+            {
+              "sourceNodeId": "root1",
+              "sourceNodeOutputId": "0",
+              "targetNodeInputId": "0"
+            },
+            {
+              "sourceNodeId": "root2_input_const",
+              "sourceNodeOutputId": "0",
+              "targetNodeInputId": "1"
+            }
+          ]
+        },
+        {
+          "id": "root3_n1",
+          "label": "root3_n1",
+          "namespace": "root3",
+          "incomingEdges": [
+            {
+              "sourceNodeId": "root2",
+              "sourceNodeOutputId": "0",
+              "targetNodeInputId": "0"
+            }
+          ]
+        },
+        {
+          "id": "root3_n2",
+          "label": "root3_n2",
+          "namespace": "root3",
+          "incomingEdges": [
+            {
+              "sourceNodeId": "root2",
+              "sourceNodeOutputId": "1",
+              "targetNodeInputId": "0"
+            },
+            {
+              "sourceNodeId": "root3_n1",
+              "sourceNodeOutputId": "0",
+              "targetNodeInputId": "0"
+            }
+          ]
+        },
+        {
+          "id": "root3_layer1_n1",
+          "label": "root3_layer1_n1",
+          "namespace": "root3/layer1",
+          "incomingEdges": [
+            {
+              "sourceNodeId": "root3_n2",
+              "sourceNodeOutputId": "0",
+              "targetNodeInputId": "0"
+            }
+          ]
+        },
+        {
+          "id": "root3_layer1_n2",
+          "label": "root3_layer1_n2",
+          "namespace": "root3/layer1",
+          "incomingEdges": [
+            {
+              "sourceNodeId": "root3_layer1_n1",
+              "sourceNodeOutputId": "0",
+              "targetNodeInputId": "0"
+            }
+          ]
+        },
+        {
+          "id": "root3_layer1_n3",
+          "label": "root3_layer1_n3",
+          "namespace": "root3/layer1",
+          "incomingEdges": [
+            {
+              "sourceNodeId": "root3_layer1_n1",
+              "sourceNodeOutputId": "0",
+              "targetNodeInputId": "0"
+            }
+          ]
+        },
+        {
+          "id": "root3_layer2_n1",
+          "label": "root3_layer2_n1",
+          "namespace": "root3/layer2",
+          "incomingEdges": [
+            {
+              "sourceNodeId": "root3_n1",
+              "sourceNodeOutputId": "0",
+              "targetNodeInputId": "0"
+            }
+          ]
+        },
+        {
+          "id": "root3_layer2_n2",
+          "label": "root3_layer2_n2",
+          "namespace": "root3/layer2",
+          "incomingEdges": [
+            {
+              "sourceNodeId": "root3_layer2_n1",
+              "sourceNodeOutputId": "0",
+              "targetNodeInputId": "0"
+            }
+          ]
+        },
+        {
+          "id": "root4_n1",
+          "label": "root4_n1",
+          "namespace": "root4",
+          "incomingEdges": [
+            {
+              "sourceNodeId": "root3_layer2_n2",
+              "sourceNodeOutputId": "0",
+              "targetNodeInputId": "0"
+            }
+          ]
+        },
+        {
+          "id": "root4_n2",
+          "label": "root4_n2",
+          "namespace": "root4",
+          "incomingEdges": [
+            {
+              "sourceNodeId": "root4_n1",
+              "sourceNodeOutputId": "0",
+              "targetNodeInputId": "0"
+            }
+          ]
+        },
+        {
+          "id": "root2_input_const",
+          "label": "pseudo_const",
+          "namespace": ""
+        }
+      ],
+      "collectionLabel": "collection1"
+    }
+  ]
+}

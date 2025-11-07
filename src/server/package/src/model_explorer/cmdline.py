@@ -70,6 +70,11 @@ parser.add_argument(
         'to 8099'
     ),
 )
+parser.add_argument(
+    '--watch',
+    action='store_true',
+    help='Whether to watch changes to the model file and automatically reload the visualizer',
+)
 args = parser.parse_args()
 
 
@@ -108,4 +113,5 @@ def main():
       cors_host=args.cors_host,
       no_open_in_browser=args.no_open_in_browser,
       skip_health_check=args.skip_health_check,
+      watch=args.watch,
   )
