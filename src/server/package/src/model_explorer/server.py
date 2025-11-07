@@ -56,6 +56,8 @@ server_directive_dispatcher = ServerDirectiveDispatcher()
 observer: Union[Any, None] = None
 observer_started: bool = False
 observed_file_paths: set[str] = set()
+observed_dir_paths: set[str] = set()
+_observer_lock = threading.Lock()
 
 
 def _print_loaded_extensions(type: str, label: str, all_extensions: list[dict]):
@@ -485,22 +487,44 @@ def start(
     return response
 
   def _watch_file_changes(file_path: str):
-    if file_path in observed_file_paths:
-      return
+    global observer_started
+    global observer
 
-    print(f'Watching file changes for "{file_path}"...')
-    observed_file_paths.add(file_path)
-    dir_path = os.path.dirname(file_path)
-    _file_change_event_handler.add_target_file_path(file_path)
-    if observer:
-      observer.schedule(_file_change_event_handler, dir_path, recursive=False)
-      global observer_started
-      if not observer_started:
-        observer.start()
-        observer_started = True
+    with _observer_lock:
+      if file_path in observed_file_paths:
+        return
+
+      print(f'Watching file changes for "{file_path}"...')
+      observed_file_paths.add(file_path)
+      _file_change_event_handler.add_target_file_path(file_path)
+      dir_path = os.path.dirname(file_path)
+
+      if dir_path in observed_dir_paths:
+        return
+      observed_dir_paths.add(dir_path)
+
+      if observer:
+        observer.schedule(_file_change_event_handler, dir_path, recursive=False)
+        if not observer_started:
+          observer.start()
+          observer_started = True
 
   def start_server():
     """Starts the server in non-colab environment."""
+
+    # Watch changes to model files when `--watch` is specified.
+    if config is not None and watch:
+      print('\nCreating observer for file changes...')
+
+      global observer
+      observer = Observer()
+      model_files = [
+          x['url'] for x in config.model_sources if x['url'].startswith(os.sep)
+      ]
+
+      for model_file in model_files:
+        _watch_file_changes(file_path=model_file)
+
     app_thread = threading.Thread(target=lambda: app.run(host=host, port=port))
     app_thread.daemon = True
     app_thread.start()
@@ -533,18 +557,6 @@ def start(
 
     # Check installed version vs published version.
     threading.Thread(target=lambda: _check_new_version()).start()
-
-    # Watch changes to model files when `--watch` is specified.
-    if config is not None and watch:
-      print('\nCreating observer for file changes...')
-      global observer
-      observer = Observer()
-      model_files = [
-          x['url'] for x in config.model_sources if x['url'].startswith(os.sep)
-      ]
-
-      for model_file in model_files:
-        _watch_file_changes(file_path=model_file)
 
     # Keep server alive.
     try:
