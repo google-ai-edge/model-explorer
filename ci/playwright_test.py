@@ -346,7 +346,7 @@ def test_hot_reload_from_command_line(page: Page):
 
   # The screenshot should show graph with update label on root3_n1.
   # The graph states should persist (root3 layer is expanded).
-  take_and_compare_screenshot(page, "hot_reload_from_command_line")
+  take_and_compare_screenshot(page, "hot_reload_from_command_line.png")
 
 
 def test_hot_reload_from_ui(page: Page):
@@ -394,4 +394,4 @@ def test_hot_reload_from_ui(page: Page):
 
   # The screenshot should show graph with update label on root3_n1.
   # The graph states should persist (root3 layer is expanded).
-  take_and_compare_screenshot(page, "hot_reload_from_ui")
+  take_and_compare_screenshot(page, "hot_reload_from_ui.png")
