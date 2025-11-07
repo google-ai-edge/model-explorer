@@ -2324,19 +2324,40 @@
    * tree.
    */
   function tightTree(t, g) {
-    function dfs(v) {
+    // The following code would throw "maximum call stack size exceeded" error
+    // when handling large graphs. Change it to using an iterative version.
+    //
+    // function dfs(v) {
+    //   g.nodeEdges(v).forEach(e => {
+    //     var edgeV = e.v,
+    //       w = (v === edgeV) ? e.w : edgeV;
+    //     if (!t.hasNode(w) && !slack(g, e)) {
+    //       t.setNode(w, {});
+    //       t.setEdge(v, w, {});
+    //       dfs(w);
+    //     }
+    //   });
+    // }
+  
+    // t.nodes().forEach(dfs);
+    // return t.nodeCount();
+
+    var stack = [];
+    t.nodes().forEach(v => stack.push(v));
+
+    while (stack.length > 0) {
+      var v = stack.pop();
       g.nodeEdges(v).forEach(e => {
         var edgeV = e.v,
           w = (v === edgeV) ? e.w : edgeV;
         if (!t.hasNode(w) && !slack(g, e)) {
           t.setNode(w, {});
           t.setEdge(v, w, {});
-          dfs(w);
+          stack.push(w);
         }
       });
     }
-  
-    t.nodes().forEach(dfs);
+
     return t.nodeCount();
   }
   
