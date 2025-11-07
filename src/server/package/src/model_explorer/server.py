@@ -299,9 +299,8 @@ def start(
 
   # The handler when a file change is detected.
   _file_change_event_handler = FileChangeHandler(
-      host=host,
-      port=port,
-      callback=_refresh_app_callback)
+      host=host, port=port, callback=_refresh_app_callback
+  )
 
   @app.route('/api/v1/check_new_version')
   def check_new_version():
@@ -540,8 +539,9 @@ def start(
       print('\nCreating observer for file changes...')
       global observer
       observer = Observer()
-      model_files = [x['url']
-                     for x in config.model_sources if x['url'].startswith(os.sep)]
+      model_files = [
+          x['url'] for x in config.model_sources if x['url'].startswith(os.sep)
+      ]
 
       for model_file in model_files:
         _watch_file_changes(file_path=model_file)

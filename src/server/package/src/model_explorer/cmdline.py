@@ -73,7 +73,10 @@ parser.add_argument(
 parser.add_argument(
     '--watch',
     action='store_true',
-    help='Whether to watch changes to the model file and automatically reload the visualizer',
+    help=(
+        'Whether to watch changes to the model file and automatically reload'
+        ' the visualizer'
+    ),
 )
 args = parser.parse_args()
 

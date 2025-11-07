@@ -22,9 +22,9 @@ from watchdog.events import DirModifiedEvent, FileModifiedEvent, FileSystemEvent
 class FileChangeHandler(FileSystemEventHandler):
   """Handles file system events to detect changes in specified files."""
 
-  def __init__(self,
-               host: str, port: int,
-               callback: Callable[[str, int], None]):
+  def __init__(
+      self, host: str, port: int, callback: Callable[[str, int], None]
+  ):
     super().__init__()
     self.host = host
     self.port = port
