@@ -55,10 +55,14 @@ export class ServerDirectorService {
         switch (directive.name) {
           // Refresh page with the given url.
           case DirectiveName.RefreshPage:
-            setLocationHref(
-              window.location,
-              directive.url,
-            );
+            if (directive.url !== '') {
+              setLocationHref(
+                window.location,
+                directive.url,
+              );
+            } else {
+              window.location.reload();
+            }
 
             break;
           default:

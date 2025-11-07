@@ -43,6 +43,8 @@ import {SettingsService} from './settings_service';
 const UPLOAD_API_PATH = '/apipost/v1/upload';
 const LOAD_GRAPHS_JSON_API_PATH = '/api/v1/load_graphs_json';
 const READ_TEXT_FILE_API_PATH = '/api/v1/read_text_file';
+const NOTIFY_USER_PROVIDED_MODEL_PATH =
+  '/api/v1/notify_user_provided_model_path';
 
 declare interface UploadResponse {
   path: string;
@@ -108,6 +110,16 @@ export class ModelLoaderService implements ModelLoaderServiceInterface {
 
     // User-entered file path.
     if (modelItem.type === ModelItemType.FILE_PATH) {
+      // Send the model path to server for watching its changes if specified.
+      try {
+        await fetch(
+          `${NOTIFY_USER_PROVIDED_MODEL_PATH}?path=${encodeURIComponent(modelItem.path)}`,
+        );
+      } catch (e) {
+        // Ignore.
+        console.error(e);
+      }
+
       switch (modelItem.selectedAdapter?.id) {
         // Built-in json adapter.
         case InternalAdapterExtId.JSON_LOADER:

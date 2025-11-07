@@ -487,22 +487,26 @@ export class WebglRendererThreejsService {
     } else {
       setTimeout(() => {
         const node = modelGraph.nodesById[nodeId];
-        this.zoomFit(
-          {
-            x: this.webglRenderer.getNodeX(node),
-            y: this.webglRenderer.getNodeY(node),
-            width: this.webglRenderer.getNodeWidth(node),
-            height: this.webglRenderer.getNodeHeight(node),
-          },
-          0.9,
-          transitionDuration,
-          false,
-          true,
-          // Cap min scale when zooming on a node.
-          true,
-          // Extra zoom factor.
-          this.webglRenderer.appService.config()?.extraZoomFactorOnNode ?? 1,
-        );
+        if (!node) {
+          this.zoomFitGraph(0.9, transitionDuration);
+        } else {
+          this.zoomFit(
+            {
+              x: this.webglRenderer.getNodeX(node),
+              y: this.webglRenderer.getNodeY(node),
+              width: this.webglRenderer.getNodeWidth(node),
+              height: this.webglRenderer.getNodeHeight(node),
+            },
+            0.9,
+            transitionDuration,
+            false,
+            true,
+            // Cap min scale when zooming on a node.
+            true,
+            // Extra zoom factor.
+            this.webglRenderer.appService.config()?.extraZoomFactorOnNode ?? 1,
+          );
+        }
       }, 0);
     }
   }
