@@ -22,19 +22,15 @@ from watchdog.events import DirModifiedEvent, FileModifiedEvent, FileSystemEvent
 class FileChangeHandler(FileSystemEventHandler):
   """Handles file system events to detect changes in specified files."""
 
-  def __init__(
-      self, host: str, port: int, callback: Callable[[str, int], None]
-  ):
+  def __init__(self, callback: Callable[[], None]):
     super().__init__()
-    self.host = host
-    self.port = port
     self.target_file_paths = []
     self.callback = callback
 
   def on_modified(self, event: DirModifiedEvent | FileModifiedEvent) -> None:
     if not event.is_directory:
       if os.path.abspath(event.src_path) in self.target_file_paths:
-        self.callback(self.host, self.port)
+        self.callback()
 
   def add_target_file_path(self, file_path: str):
     self.target_file_paths.append(file_path)

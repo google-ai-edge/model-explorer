@@ -199,9 +199,14 @@ def _is_internal_colab() -> bool:
   )
 
 
-def _refresh_app_callback(host: str, port: int):
-  server_address = f'http://{host}:{port}'
-  requests.post(f'{server_address}/apipost/v1/refresh_page')
+def _refresh_app_callback():
+  # Ask UI to refresh page (by setting url to empty string).
+  server_directive_dispatcher.broadcast(
+      json.dumps({
+          'name': 'refreshPage',
+          'url': '',
+      })
+  )
 
 
 def start(
@@ -300,9 +305,7 @@ def start(
   )
 
   # The handler when a file change is detected.
-  _file_change_event_handler = FileChangeHandler(
-      host=host, port=port, callback=_refresh_app_callback
-  )
+  _file_change_event_handler = FileChangeHandler(callback=_refresh_app_callback)
 
   @app.route('/api/v1/check_new_version')
   def check_new_version():
