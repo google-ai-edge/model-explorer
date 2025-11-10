@@ -21,6 +21,7 @@ from typing import Union
 from .config_editor import ConfigEditor, ConfigEditorGroup
 from .extension_base import Extension
 from .extension_matadata import ExtensionMetadata
+from .graph_builder import Graph
 from .node_data_builder import GraphNodeData
 
 
@@ -122,7 +123,12 @@ class NodeDataProvider(Extension):
 
   @abstractmethod
   def run(
-      self, provider_id: str, model_path: str, config_values: dict
+      self,
+      provider_id: str,
+      model_path: str,
+      graph_id: str,
+      config_values: dict,
+      graph: Union[Graph, None],
   ) -> NodeDataProviderResult:
     """Calculates the node data.
 
@@ -130,7 +136,10 @@ class NodeDataProvider(Extension):
       provider_id: The id of the provider, matching the id specified in the
           corresponding `NodeDataProviderMetadata` defined in `metadata`.
       model_path: The path to the model file.
+      graph_id: The id of the graph where the extension should be applied.
       config_values: key-value pairs for the config values that users entered in
           the UI.
+      graph: The Model Explorer graph. This is not available in Google internal
+          colab.
     """
     pass

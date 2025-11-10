@@ -567,7 +567,7 @@ def start(
         sleep(1)
     except KeyboardInterrupt:
       print('Stopping server...')
-      pass
+      extension_manager.delete_uploaded_model_dirs()
 
   def embed_in_colab():
     """Embeds the UI in a colab cell."""

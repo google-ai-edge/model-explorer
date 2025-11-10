@@ -60,6 +60,7 @@ class ExtensionManager(object, metaclass=Singleton):
     self.extensions: list[RegisteredExtension] = []
     self.adapter_runner: AdapterRunner = AdapterRunner()
     self.ndp_runner: NdpRunner = NdpRunner()
+    self.uploaded_model_dirs_to_delete: list[str] = []
 
   def load_extensions(self) -> None:
     """Loads all extensions."""
@@ -109,12 +110,17 @@ class ExtensionManager(object, metaclass=Singleton):
     if extension is not None:
       # Adapter
       if extension.type == 'adapter':
-        # Delete the file if it is marked "deleteAfterConversion".
+        # Store the file marked to be deleted. We will delete them when the
+        # server is stopped.
         adapter_cmd: AdapterCommand = cmd
         if adapter_cmd['deleteAfterConversion']:
           model_path = adapter_cmd['modelPath']
           model_dir = os.path.dirname(model_path)
-          shutil.rmtree(model_dir, ignore_errors=True)
+          self.uploaded_model_dirs_to_delete.append(model_dir)
+
+  def delete_uploaded_model_dirs(self):
+    for model_dir in self.uploaded_model_dirs_to_delete:
+      shutil.rmtree(model_dir, ignore_errors=True)
 
   def _import_extensions(self):
     # Built-in pywrapped c++ extensions + custom extensions.

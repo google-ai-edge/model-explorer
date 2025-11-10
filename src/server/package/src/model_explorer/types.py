@@ -41,7 +41,9 @@ NdpCommand = TypedDict(
     {
         'cmdId': str,
         'modelPath': str,
+        'graphId': str,
         'configValues': Dict,
+        'graph': NotRequired[Dict],
     },
 )
 
