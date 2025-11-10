@@ -51,14 +51,14 @@ class NdpRunner:
         graph = from_dict(data_class=Graph, data=graph_json)
       return asdict(
           fn(
-              extension.metadata.id,
-              model_path,
-              graph_id,
-              cmd['configValues'],
-              graph,
+              provider_id=extension.metadata.id,
+              model_path=model_path,
+              graph_id=graph_id,
+              config_values=cmd['configValues'],
+              graph=graph,
           )
       )
     elif cmd_id == 'get_config_editors':
-      return asdict(fn(extension.metadata.id))
+      return asdict(fn(provider_ids=extension.metadata.id))
     else:
       return {}
