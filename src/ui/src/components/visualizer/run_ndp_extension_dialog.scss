@@ -42,9 +42,11 @@
 
   .error-container {
     height: 200px;
-    font-size: 13px;
+    box-sizing: border-box;
+    padding: 0 24px;    font-size: 13px;
     display: flex;
-    align-items: center;
+    align-items: flex-start;
+    line-height: normal;
     color: var(--me-error-text-color);
   }
 
