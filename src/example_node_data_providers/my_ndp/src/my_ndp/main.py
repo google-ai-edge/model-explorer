@@ -13,8 +13,9 @@
 # limitations under the License.
 # ==============================================================================
 
-from model_explorer.config_editor import TextInputConfigEditor, TextAreaConfigEditor, SlideToggleConfigEditor, ColorPickerConfigEditor, OptionItem, DropDownConfigEditor, ButtonToggleConfigEditor, FileConfigEditor, ConfigEditorGroup
 from model_explorer import NodeDataProvider, NodeDataProviderMetadata, NodeDataProviderResult, GetConfigEditorsResult
+from model_explorer.config_editor import TextInputConfigEditor, TextAreaConfigEditor, SlideToggleConfigEditor, ColorPickerConfigEditor, OptionItem, DropDownConfigEditor, ButtonToggleConfigEditor, FileConfigEditor, ConfigEditorGroup
+from model_explorer.graph_builder import Graph
 from model_explorer.node_data_builder import GraphNodeData, NodeDataResult, GradientItem
 import time
 import json
@@ -123,10 +124,20 @@ class TestNodeDataProvider(NodeDataProvider):
       return GetConfigEditorsResult(error="Unsupported provider id")
 
   def run(
-      self, provider_id: str, model_path: str, config_values: dict
+      self,
+      provider_id: str,
+      model_path: str,
+      graph_id: str,
+      config_values: dict,
+      graph: Graph,
   ) -> NodeDataProviderResult:
     # Print out the config values user specified in the UI.
     print(json.dumps(config_values, indent=2))
+
+    # Print out other data.
+    print(f"model_path: {model_path}")
+    print(f"graph_id: {graph_id}")
+    print(f"Number of nodes in graph {len(graph.nodes)}")
 
     # Fake delay.
     time.sleep(3)

@@ -16,9 +16,12 @@
 import os
 from .types import NdpCommand
 
+from .graph_builder import Graph
 from .registered_extension import RegisteredExtension
 from .utils import get_instance_method
+from dacite import from_dict
 from dataclasses import asdict
+from typing import Union
 
 
 class NdpRunner:
@@ -40,8 +43,21 @@ class NdpRunner:
 
     # Run it.
     if cmd_id == 'run':
-      modelPath = os.path.expanduser(cmd['modelPath'])
-      return asdict(fn(extension.metadata.id, modelPath, cmd['configValues']))
+      model_path = os.path.expanduser(cmd['modelPath'])
+      graph_id = cmd['graphId']
+      graph: Union[Graph, None] = None
+      if 'graph' in cmd:
+        graph_json = cmd['graph']
+        graph = from_dict(data_class=Graph, data=graph_json)
+      return asdict(
+          fn(
+              extension.metadata.id,
+              model_path,
+              graph_id,
+              cmd['configValues'],
+              graph,
+          )
+      )
     elif cmd_id == 'get_config_editors':
       return asdict(fn(extension.metadata.id))
     else:

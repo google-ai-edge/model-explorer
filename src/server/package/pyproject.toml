@@ -20,6 +20,7 @@ dependencies = [
   "ipython",
   # Skip on windows.
   "ai-edge-model-explorer-adapter ~= 0.1.14; sys_platform != 'win32'",
+  "dacite",
   "packaging",
   "portpicker",
   "requests",
