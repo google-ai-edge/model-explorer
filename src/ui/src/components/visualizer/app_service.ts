@@ -121,6 +121,11 @@ export class AppService {
 
   readonly reRenderTrigger = new Subject<{}>();
 
+  // The message to be shown next to the title logo with a loading spinner.
+  //
+  // Set it to empty string to hide the message.
+  readonly processing = signal<string>('');
+
   testMode = false;
 
   private groupNodeChildrenCountThresholdFromUrl: string | null = null;
@@ -1036,6 +1041,53 @@ export class AppService {
     }
   }
 
+  replaceGraph(graph: Graph) {
+    this.processing.set('Processing...');
+
+    this.workerService.worker.postMessage({eventType: WorkerEventType.CLEANUP});
+    this.curInitialUiState.set(this.uiStateService.curUiState());
+
+    const paneId = this.selectedPaneId();
+    const curPane = this.getPaneById(paneId);
+
+    // Update graph collections.
+    const newGraphCollections: GraphCollection[] = [];
+    for (const collection of this.curGraphCollections()) {
+      const newGraphs: Graph[] = [];
+      for (const curGraph of collection.graphs) {
+        if (curGraph.id === graph.id) {
+          newGraphs.push(graph);
+        } else {
+          newGraphs.push(curGraph);
+        }
+      }
+      const newCollection: GraphCollection = {
+        ...collection,
+        graphs: newGraphs,
+      };
+      newGraphCollections.push(newCollection);
+    }
+    this.curGraphCollections.set([]);
+    this.addGraphCollections(newGraphCollections);
+
+    // Kick off graph processing.
+    const processGraphReq: ProcessGraphRequest = {
+      eventType: WorkerEventType.PROCESS_GRAPH_REQ,
+      graph,
+      showOnNodeItemTypes: this.getShowOnNodeItemTypes(paneId, paneId),
+      nodeDataProviderRuns: {},
+      config: this.config ? this.config() : undefined,
+      paneId,
+      groupNodeChildrenCountThreshold:
+        this.getGroupNodeChildrenCountThreshold(),
+      flattenLayers: curPane?.flattenLayers ?? false,
+      keepLayersWithASingleChild: this.config()?.keepLayersWithASingleChild,
+      initialLayout: true,
+      replace: true,
+    };
+    this.workerService.worker.postMessage(processGraphReq);
+  }
+
   reset() {
     this.workerService.worker.postMessage({eventType: WorkerEventType.CLEANUP});
 
@@ -1060,7 +1112,11 @@ export class AppService {
       switch (workerEvent.eventType) {
         // A `Graph` is processed into a `ModelGraph`.
         case WorkerEventType.PROCESS_GRAPH_RESP:
-          this.handleGraphProcessed(workerEvent.modelGraph, workerEvent.paneId);
+          this.handleGraphProcessed(
+            workerEvent.modelGraph,
+            workerEvent.paneId,
+            workerEvent.replace === true,
+          );
           break;
         default:
           break;
@@ -1092,20 +1148,39 @@ export class AppService {
     }
   }
 
-  private handleGraphProcessed(modelGraph: ModelGraph, paneId: string) {
-    this.panes.update((panes) => {
-      for (const pane of panes) {
-        if (pane.id === paneId) {
-          pane.modelGraph = modelGraph;
-          break;
+  private handleGraphProcessed(
+    modelGraph: ModelGraph,
+    paneId: string,
+    replace: boolean,
+  ) {
+    if (!replace) {
+      this.panes.update((panes) => {
+        for (const pane of panes) {
+          if (pane.id === paneId) {
+            pane.modelGraph = modelGraph;
+            break;
+          }
         }
-      }
-      return [...panes];
-    });
-    this.modelGraphProcessed$.next({
-      paneIndex: this.getPaneIndexById(paneId),
-      modelGraph,
-    });
+        return [...panes];
+      });
+      this.modelGraphProcessed$.next({
+        paneIndex: this.getPaneIndexById(paneId),
+        modelGraph,
+      });
+    } else {
+      // Replace the processed model graph in the corresponding pane,
+      this.panes.update((panes) => {
+        for (const pane of panes) {
+          if (pane.modelGraph?.id === modelGraph.id) {
+            pane.modelGraph = modelGraph;
+            pane.snapshots = undefined;
+            this.updateCurrentModelGraph(pane.id, modelGraph);
+          }
+        }
+        return [...panes];
+      });
+      this.processing.set('');
+    }
   }
 
   private setPaneLoading(paneId: string) {

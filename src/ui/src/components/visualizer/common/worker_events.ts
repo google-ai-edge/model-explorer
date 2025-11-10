@@ -62,6 +62,8 @@ export declare interface ProcessGraphRequest extends WorkerEventBase {
   flattenLayers?: boolean;
   keepLayersWithASingleChild?: boolean;
   initialLayout?: boolean;
+  // Whether to replace the current graph.
+  replace?: boolean;
 }
 
 /** The response for processing an input graph. */
@@ -69,6 +71,7 @@ export declare interface ProcessGraphResponse extends WorkerEventBase {
   eventType: WorkerEventType.PROCESS_GRAPH_RESP;
   modelGraph: ModelGraph;
   paneId: string;
+  replace?: boolean;
 }
 
 /** The request for expanding/collapsing a group node. */

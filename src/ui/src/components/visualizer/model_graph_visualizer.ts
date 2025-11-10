@@ -700,6 +700,23 @@ export class ModelGraphVisualizer implements OnInit, OnDestroy, OnChanges {
     });
   }
 
+  /**
+   * Replaces the existing graphs in the visualizer with the given graph,
+   * matching by graph id.
+   */
+  replaceGraph(graph: Graph) {
+    this.appService.replaceGraph(graph);
+  }
+
+  /**
+   * Sets the message to be shown next to the title logo with a loading spinner.
+   *
+   * Set it to empty string to hide the message.
+   */
+  setProcessing(msg: string) {
+    this.appService.processing.set(msg);
+  }
+
   async loadRemoteNodeDataPaths(paths: string[], modelGraph: ModelGraph) {
     await Promise.all(
       paths.map((path) =>

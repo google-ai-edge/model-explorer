@@ -73,6 +73,7 @@ self.addEventListener('message', (event: Event) => {
         eventType: WorkerEventType.PROCESS_GRAPH_RESP,
         modelGraph,
         paneId: workerEvent.paneId,
+        replace: workerEvent.replace,
       };
       postMessage(resp);
       break;

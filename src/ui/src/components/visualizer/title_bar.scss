@@ -43,6 +43,14 @@
     new-version-chip {
       margin-left: 16px;
     }
+
+    .processing-container {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      color: var(--me-on-surface-variant-color);
+    }
   }
 
   .right-container {

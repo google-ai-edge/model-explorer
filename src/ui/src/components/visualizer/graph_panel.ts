@@ -119,8 +119,10 @@ export class GraphPanel implements OnInit, OnChanges, AfterViewInit, OnDestroy {
       this.subgraphSelectionService.clearSelection();
       this.showRenderer = false;
       this.changeDetectorRef.detectChanges();
-      this.showRenderer = true;
-      this.changeDetectorRef.detectChanges();
+      setTimeout(() => {
+        this.showRenderer = true;
+        this.changeDetectorRef.detectChanges();
+      });
     }
   }
 

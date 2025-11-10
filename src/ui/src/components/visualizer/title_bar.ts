@@ -27,6 +27,7 @@ import {
 import {MatButtonModule} from '@angular/material/button';
 import {MatDialog} from '@angular/material/dialog';
 import {MatIconModule} from '@angular/material/icon';
+import {MatProgressSpinnerModule} from '@angular/material/progress-spinner';
 import {MatSnackBar} from '@angular/material/snack-bar';
 import {MatTooltipModule} from '@angular/material/tooltip';
 
@@ -60,6 +61,7 @@ let ndpId = 0;
     MatButtonModule,
     MatIconModule,
     MatTooltipModule,
+    MatProgressSpinnerModule,
     NewVersionChip,
     NodeDataProviderDropdown,
     NodeStyler,
@@ -72,6 +74,7 @@ let ndpId = 0;
 export class TitleBar {
   @Output() readonly titleClicked = new EventEmitter<void>();
 
+  private readonly appService = inject(AppService);
   private readonly dialog = inject(MatDialog);
   private readonly nodeDataProviderExtensionService = inject(
     NodeDataProviderExtensionService,
@@ -79,7 +82,7 @@ export class TitleBar {
   private readonly extensionService = inject(ExtensionService);
   private readonly snackBar = inject(MatSnackBar);
 
-  constructor(private readonly appService: AppService) {}
+  readonly processing = this.appService.processing;
 
   handleOpenNdpExtensionDialogClicked(extension: NodeDataProviderExtension) {
     // Show run task dialog.
