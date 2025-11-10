@@ -31,6 +31,7 @@ import {
   NodeDataProviderExtension,
 } from '../common/types';
 import {INTERNAL_COLAB} from '../common/utils';
+import {Graph} from '../components/visualizer/common/input_graph';
 
 const EXTERNAL_GET_EXTENSIONS_API_PATH = '/api/v1/get_extensions';
 const EXTERNAL_SEND_CMD_GET_API_PATH = '/api/v1/send_command';
@@ -108,7 +109,9 @@ export class ExtensionService {
   async runNdpExtension(
     extension: NodeDataProviderExtension,
     modelPath: string,
+    graphId: string,
     configValues: Record<string, ConfigValue>,
+    graph?: Graph,
   ): Promise<{
     cmdResp?: NdpRunResponse;
     otherError?: string;
@@ -117,8 +120,12 @@ export class ExtensionService {
       cmdId: 'run',
       extensionId: extension.id,
       modelPath,
+      graphId,
       configValues,
     };
+    if (!this.internalColab) {
+      cmd.graph = graph;
+    }
     const resp = await this.sendCommandToExtension<NdpRunResponse>(cmd);
     return {
       cmdResp: resp.cmdResp,

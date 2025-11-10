@@ -126,7 +126,9 @@ export class TitleBar {
     const {cmdResp, otherError} = await this.extensionService.runNdpExtension(
       extension /* extension */,
       modelGraph.modelPath ?? '' /* model path */,
+      modelGraph.id /* graph id */,
       configValues /* config */,
+      this.appService.getGraphById(modelGraph.id) /* graph */,
     );
     // Show error if any.
     const error = cmdResp?.error ?? otherError ?? '';

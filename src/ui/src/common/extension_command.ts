@@ -61,7 +61,9 @@ export declare interface NdpGetConfigEditorsResponse {
 export declare interface NdpRunCommand extends ExtensionCommand {
   cmdId: 'run';
   modelPath: string;
+  graphId: string;
   configValues: Record<string, ConfigValue>;
+  graph?: Graph;
 }
 
 /** Node data provider's "run" command response. */
