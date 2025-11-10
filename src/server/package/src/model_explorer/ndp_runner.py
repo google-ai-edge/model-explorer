@@ -59,6 +59,6 @@ class NdpRunner:
           )
       )
     elif cmd_id == 'get_config_editors':
-      return asdict(fn(provider_ids=extension.metadata.id))
+      return asdict(fn(provider_id=extension.metadata.id))
     else:
       return {}
