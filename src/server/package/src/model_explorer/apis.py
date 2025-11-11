@@ -83,7 +83,8 @@ def visualize(
     reuse_server_host: the host of the server to reuse. Default to localhost.
     reuse_server_port: the port of the server to reuse. If unspecified, it will
         try to find a running server from port 8080 to 8099.
-    watch: Whether to watch changes to model files.
+    watch: Whether to watch for changes in model files. If `True`, the page will
+        automatically refresh when changes are detected.
   """
   # Construct config.
   cur_config = config()
@@ -186,7 +187,8 @@ def visualize_from_config(
       won't be present if it is None.
     no_open_in_browser: Don't open the web app in browser after server starts.
     colab_height: The height of the embedded iFrame when running in colab.
-    watch: Whether to watch changes to model files.
+    watch: Whether to watch for changes in model files. If `True`, the page will
+        automatically refresh when changes are detected.
   """
   # Start server.
   server.start(
