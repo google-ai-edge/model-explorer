@@ -232,6 +232,7 @@ def start(
     cors_host: The value of the Access-Control-Allow-Origin header. The header
         won't be present if it is None.
     skip_health_check: Whether to skip the health check after server starts.
+    watch: Whether to watch changes to model files.
   """
 
   # Don't start the server if user wants to reuse an existing server.

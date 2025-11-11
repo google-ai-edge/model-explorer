@@ -67,6 +67,7 @@ def visualize(
     reuse_server: bool = False,
     reuse_server_host: str = DEFAULT_HOST,
     reuse_server_port: Union[int, None] = None,
+    watch: bool = False,
 ) -> None:
   """Starts the ME local server and visualizes the models by the given paths.
 
@@ -82,6 +83,7 @@ def visualize(
     reuse_server_host: the host of the server to reuse. Default to localhost.
     reuse_server_port: the port of the server to reuse. If unspecified, it will
         try to find a running server from port 8080 to 8099.
+    watch: Whether to watch changes to model files.
   """
   # Construct config.
   cur_config = config()
@@ -106,6 +108,7 @@ def visualize(
       config=cur_config,
       colab_height=colab_height,
       extensions=extensions,
+      watch=watch,
   )
 
 
@@ -170,6 +173,7 @@ def visualize_from_config(
     cors_host: Union[str, None] = None,
     no_open_in_browser: bool = False,
     colab_height=DEFAULT_COLAB_HEIGHT,
+    watch: bool = False,
 ) -> None:
   """Visualizes with a config.
 
@@ -182,6 +186,7 @@ def visualize_from_config(
       won't be present if it is None.
     no_open_in_browser: Don't open the web app in browser after server starts.
     colab_height: The height of the embedded iFrame when running in colab.
+    watch: Whether to watch changes to model files.
   """
   # Start server.
   server.start(
@@ -192,6 +197,7 @@ def visualize_from_config(
       cors_host=cors_host,
       no_open_in_browser=no_open_in_browser,
       colab_height=colab_height,
+      watch=watch,
   )
 
 
