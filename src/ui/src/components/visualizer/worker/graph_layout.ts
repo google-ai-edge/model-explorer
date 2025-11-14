@@ -161,7 +161,10 @@ export class GraphLayout {
     // Set nodes/edges to dagre.
     for (const id of Object.keys(layoutGraph.nodes)) {
       const dagreNode = layoutGraph.nodes[id];
-      if (dagreNode.config?.pinToGroupTop) {
+      if (
+        dagreNode.config?.pinToGroupTop ||
+        dagreNode.config?.pinToGroupBottom
+      ) {
         continue;
       }
       this.dagreGraph.setNode(id, dagreNode);
@@ -194,9 +197,12 @@ export class GraphLayout {
       node.localOffsetX = 0;
       node.localOffsetY = 0;
 
-      // Don't consider the bound of the node if it's pinned to the top of the
-      // group.
-      if (!dagreNode.config?.pinToGroupTop) {
+      // Don't consider the bound of the node if it's pinned to the top or bottom
+      // of the group.
+      if (
+        !dagreNode.config?.pinToGroupTop &&
+        !dagreNode.config?.pinToGroupBottom
+      ) {
         minX = Math.min(minX, node.x);
         minY = Math.min(minY, node.y);
         maxX = Math.max(maxX, node.x + node.width);
@@ -300,6 +306,20 @@ export class GraphLayout {
           LAYOUT_MARGIN_X * 2;
         parentNodeWidth = Math.max(parentNodeWidth, pinToTopNodeWidth);
       }
+      if (rootNode.pinToBottomOpNode) {
+        const pinToBottomNodeWidth =
+          getNodeWidth(
+            rootNode.pinToBottomOpNode,
+            this.modelGraph,
+            this.showOnNodeItemTypes,
+            this.nodeDataProviderRuns,
+            this.selectedNodeDataProviderRunId,
+            this.testMode,
+            this.config,
+          ) +
+          LAYOUT_MARGIN_X * 2;
+        parentNodeWidth = Math.max(parentNodeWidth, pinToBottomNodeWidth);
+      }
       if (subgraphFullWidth < parentNodeWidth) {
         const extraOffsetX = (parentNodeWidth - subgraphFullWidth) / 2;
         for (const node of nodes) {
@@ -317,7 +337,7 @@ export class GraphLayout {
     if (
       nodes.length === 1 &&
       isOpNode(nodes[0]) &&
-      (nodes[0] as OpNode).config?.pinToGroupTop
+      (nodes[0].config?.pinToGroupTop || nodes[0].config?.pinToGroupBottom)
     ) {
       minX = 0;
       minY = 0;
@@ -715,6 +735,12 @@ export function getLayoutGraph(
         continue;
       }
       if (toNode && isOpNode(toNode) && toNode.config?.pinToGroupTop) {
+        continue;
+      }
+      if (fromNode && isOpNode(fromNode) && fromNode.config?.pinToGroupBottom) {
+        continue;
+      }
+      if (toNode && isOpNode(toNode) && toNode.config?.pinToGroupBottom) {
         continue;
       }
       addLayoutGraphEdge(layoutGraph, fromNodeId, toNodeId);

@@ -2382,6 +2382,29 @@ export class WebglRenderer implements OnInit, OnChanges, OnDestroy {
         });
       }
 
+      // Render separator between the pinned node and the rest of the nodes.
+      if (isGroupNode(node) && node.expanded && node.pinToBottomOpNode) {
+        nodeBodyRectangles.push({
+          id: `${node.id}_pin_to_bottom_separator`,
+          index: nodeBodyRectangles.length,
+          bound: {
+            x: x + width / 2,
+            y:
+              (node.pinToBottomOpNode.globalY || 0) -
+              (node.pinToBottomOpNode.height || 0) / 2 -
+              12.5,
+            width: width - LAYOUT_MARGIN_X * 2,
+            height: 1,
+          },
+          yOffset: WEBGL_ELEMENT_Y_FACTOR * nodeIndex + 0.1,
+          isRounded: true,
+          borderColor: groupNodePinToTopSeparatorColor,
+          bgColor: groupNodePinToTopSeparatorColor,
+          borderWidth: 1,
+          opacity: 1,
+        });
+      }
+
       // Subgraph indicators.
       if (isOpNode(node) && node.subgraphIds) {
         const indicatorWidth = SUBGRAPH_INDICATOR_SIZE;

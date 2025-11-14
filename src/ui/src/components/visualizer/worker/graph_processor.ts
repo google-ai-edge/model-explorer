@@ -335,6 +335,9 @@ export class GraphProcessor {
           if (isOpNode(node) && node.config?.pinToGroupTop) {
             parentGroupNode.pinToTopOpNode = node;
           }
+          if (isOpNode(node) && node.config?.pinToGroupBottom) {
+            parentGroupNode.pinToBottomOpNode = node;
+          }
         }
       }
     }

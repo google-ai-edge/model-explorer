@@ -216,6 +216,8 @@ export declare interface GraphNodeStyle {
 export declare interface GraphNodeConfig {
   /** Whether to pin the node to the top of the group it belongs to. */
   pinToGroupTop?: boolean;
+  /** Whether to pin the node to the bottom of the group it belongs to. */
+  pinToGroupBottom?: boolean;
 }
 
 /** Data to pass along when clicking "open in popup" on a group node. */

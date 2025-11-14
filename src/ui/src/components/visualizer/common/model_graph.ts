@@ -277,6 +277,9 @@ export declare interface GroupNode extends ModelNodeBase {
 
   /** The op node that should be pinned to the top of the group. */
   pinToTopOpNode?: OpNode;
+
+  /** The op node that should be pinned to the bottom of the group. */
+  pinToBottomOpNode?: OpNode;
 }
 
 /** A node in a model graph. */

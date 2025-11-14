@@ -474,6 +474,21 @@ export class GraphExpander {
             (node.height || 0) / 2 +
             10;
         }
+
+        // For the pinned-to-bottom node, move it to the bottom-middle of the
+        // group node.
+        if (groupNode.pinToBottomOpNode?.id === node.id) {
+          node.globalX =
+            (groupNode.x || 0) +
+            (groupNode.globalX || 0) +
+            (groupNode.width || 0) / 2;
+          node.globalY =
+            (groupNode.y || 0) +
+            (groupNode.globalY || 0) +
+            (groupNode.height || 0) -
+            (node.height || 0) / 2 -
+            10;
+        }
       }
       if (isGroupNode(node)) {
         this.updateNodeOffset(node);
@@ -524,6 +539,11 @@ export class GraphExpander {
     if (groupNode.pinToTopOpNode) {
       targetHeight += this.getPinToTopNodeVerticalSpace(
         groupNode.pinToTopOpNode,
+      );
+    }
+    if (groupNode.pinToBottomOpNode) {
+      targetHeight += this.getPinToTopNodeVerticalSpace(
+        groupNode.pinToBottomOpNode,
       );
     }
     return targetHeight;
