@@ -145,23 +145,21 @@ class ExtensionManager(object, metaclass=Singleton):
           print()
           continue
 
-        if ExtensionClassProcessor.extension_class is not None:
-          metadata = ExtensionClassProcessor.extension_class.metadata
-          metadata_list = []
-          if isinstance(metadata, list):
-            metadata_list = metadata
-          else:
-            metadata_list = [metadata]
-          for metadata in metadata_list:
-            extension = RegisteredExtension(
-                metadata=metadata,
-                type=ExtensionClassProcessor.extension_type,
-                ext_class=ExtensionClassProcessor.extension_class,
-            )
-            self.extensions.append(extension)
-            ExtensionManager.CACHED_REGISTERED_EXTENSIONS[module_full_name] = (
-                extension
-            )
+    for ext in ExtensionClassProcessor.get_registry().values():
+      metadata = ext['metadata']
+      metadata_list = []
+      if isinstance(metadata, list):
+        metadata_list = metadata
+      else:
+        metadata_list = [metadata]
+      for metadata in metadata_list:
+        extension = RegisteredExtension(
+            metadata=metadata, type=ext['type'], ext_class=ext['cls']
+        )
+        self.extensions.append(extension)
+        ExtensionManager.CACHED_REGISTERED_EXTENSIONS[module_full_name] = (
+            extension
+        )
 
   def _get_extension_by_id(self, id: str) -> Union[RegisteredExtension, None]:
     matches = [ext for ext in self.extensions if ext.metadata.id == id]
