@@ -13,7 +13,7 @@
 # limitations under the License.
 # ==============================================================================
 
-from typing import Union, Dict, List, TypedDict, Any
+from typing import Union, Dict, TypedDict, Any
 
 from .types import ExtensionClassType
 
