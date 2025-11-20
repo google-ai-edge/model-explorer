@@ -13,9 +13,17 @@
 # limitations under the License.
 # ==============================================================================
 
-from typing import Union
+from typing import Union, Dict, TypedDict, Any
 
 from .types import ExtensionClassType
+
+
+class ExtensionInfo(TypedDict):
+  """Information about a registered extension."""
+
+  type: str
+  cls: ExtensionClassType
+  metadata: Dict[str, Any]
 
 
 class ExtensionClassProcessor(type):
@@ -33,22 +41,41 @@ class ExtensionClassProcessor(type):
   # 3. Add a if branch in __init__ below.
   IGNORE_CLASS_NAMES = ['Extension', 'Adapter', 'NodeDataProvider']
 
-  extension_class: Union[ExtensionClassType, None] = None
-  extension_type: str = ''
+  extension_registry: Dict[str, ExtensionInfo] = {}
 
   def __init__(cls, name, bases, attrs):
     super().__init__(cls)
 
+    extension_id = f'{cls.__module__}.{name}'
+
     if name not in ExtensionClassProcessor.IGNORE_CLASS_NAMES:
       # Get the extension type by checking its base class.
+      ext_type = ''
       for base in bases:
         base_name = base.__name__
         if base_name == 'Adapter':
-          ExtensionClassProcessor.extension_type = 'adapter'
+          ext_type = 'adapter'
           break
         elif base_name == 'NodeDataProvider':
-          ExtensionClassProcessor.extension_type = 'node_data_provider'
+          ext_type = 'node_data_provider'
           break
+      if not ext_type:
+        ext_type = 'unknown'
 
-      # Store its class.
-      ExtensionClassProcessor.extension_class = cls
+      if ExtensionClassProcessor.has_extension(extension_id):
+        raise Exception(
+            f'Extension with id "{extension_id}" has already been registered.'
+        )
+      ExtensionClassProcessor.extension_registry[extension_id] = {
+          'type': ext_type,
+          'cls': cls,
+          'metadata': cls.metadata,
+      }
+
+  @classmethod
+  def get_registry(cls) -> Dict[str, ExtensionInfo]:
+    return cls.extension_registry
+
+  @classmethod
+  def has_extension(cls, extension_id: str) -> bool:
+    return extension_id in cls.extension_registry
