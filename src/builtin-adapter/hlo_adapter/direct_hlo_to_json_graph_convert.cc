@@ -33,6 +33,7 @@
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_join.h"
 #include "absl/strings/string_view.h"
+#include "llvm/ADT/StringRef.h"
 #include "llvm/Support/FormatVariadic.h"
 #include "llvm/Support/JSON.h"
 #include "llvm/Support/raw_ostream.h"
@@ -44,6 +45,7 @@
 #include "xla/hlo/ir/hlo_instruction.h"
 #include "xla/hlo/ir/hlo_instructions.h"
 #include "xla/hlo/ir/hlo_opcode.h"
+#include "xla/hlo/ir/hlo_print_options.h"
 #include "xla/shape_util.h"
 #include "tensorflow/core/profiler/utils/hlo_module_utils.h"
 
@@ -58,6 +60,9 @@ constexpr absl::string_view kSourceFile = "source_file";
 constexpr absl::string_view kSourceLine = "source_line";
 constexpr absl::string_view kSourceStack = "source_stack";
 constexpr absl::string_view kOpcode = "opcode";
+constexpr absl::string_view kAddress = "address";
+constexpr absl::string_view kBackendConfig = "backend_config";
+constexpr absl::string_view kExtraAttributes = "extra_attributes";
 constexpr absl::string_view kGetTupleElementIndex = "get_tuple_element_index";
 constexpr absl::string_view kUsers = "users";
 constexpr absl::string_view kOperands = "operands";
@@ -66,12 +71,46 @@ constexpr absl::string_view kHide = "hide_node";
 constexpr absl::string_view kAcfComputationName = "async_collective_fusion";
 constexpr absl::string_view kAcsInstructionName = "AsyncCollectiveStart";
 constexpr absl::string_view kAcdInstructionName = "AsyncCollectiveDone";
+constexpr absl::string_view kFusionComputation = "fusion_computation";
 
 constexpr int kMaxUsersToRender = 16;
+constexpr int kMaxShapeLen = 64;
 
 // OutputEdges is a map from source instruction id to a list of its users.
 using OutputEdges =
     absl::flat_hash_map<std::string, std::vector<const xla::HloInstruction*>>;
+
+// Returns true if value is considered empty.
+bool IsEmpty(const llvm::json::Value& value) {
+  if (const auto* obj = value.getAsObject()) {
+    return obj->empty();
+  }
+  if (const auto* arr = value.getAsArray()) {
+    return arr->empty();
+  }
+  return false;
+}
+
+// Recursively removes empty fields from objects.
+void RemoveEmptyFields(llvm::json::Value& value) {
+  if (auto* obj = value.getAsObject()) {
+    std::vector<llvm::StringRef> keys_to_remove;
+    for (auto& it : *obj) {
+      llvm::json::Value& child = it.second;
+      RemoveEmptyFields(child);
+      if (IsEmpty(child)) {
+        keys_to_remove.push_back(it.first);
+      }
+    }
+    for (const llvm::StringRef& key : keys_to_remove) {
+      obj->erase(key);
+    }
+  } else if (auto* arr = value.getAsArray()) {
+    for (llvm::json::Value& item : *arr) {
+      RemoveEmptyFields(item);
+    }
+  }
+}
 
 // TODO(b/402148725) Move utility functions to a separate file.
 // Detect if an instruction is an AsyncCollectiveFusion parameter that is
@@ -195,6 +234,19 @@ bool IsGetTupleElement(const HloAdapterOption& options,
          instruction->opcode() == xla::HloOpcode::kGetTupleElement;
 }
 
+// Gets the shape string with layout for the given instruction. The shape is
+// truncated to a max length of kMaxShapeLen to prevent excessively long strings
+// in the visualization.
+std::string GetTruncatedShapeString(const xla::HloInstruction* instruction) {
+  std::string instruction_shape =
+      xla::ShapeUtil::HumanStringWithLayout(instruction->shape());
+  // Truncate the shape if it's too long.
+  if (instruction_shape.size() > kMaxShapeLen) {
+    instruction_shape = instruction_shape.substr(0, kMaxShapeLen) + "...";
+  }
+  return instruction_shape;
+}
+
 absl::Status AddHloInstructionIncomingEdges(
     const xla::HloInstruction* instruction, const HloAdapterOption& options,
     GraphNodeBuilder& builder, OutputEdges& output_edges,
@@ -274,18 +326,17 @@ void SetInstructionNodeAttributes(const xla::HloInstruction* instruction,
                                   const HloAdapterOption& options,
                                   GraphNodeBuilder& builder) {
   // Instruction opcode.
-  std::string opcode = absl::StrCat(HloOpcodeString(instruction->opcode()));
+  std::string opcode = std::string(HloOpcodeString(instruction->opcode()));
+
+  // Adds fusion kind to the opcode for fusion instructions.
+  if (instruction->opcode() == xla::HloOpcode::kFusion) {
+    absl::StrAppend(&opcode, ":", xla::ToString(instruction->fusion_kind()));
+  }
   builder.AppendNodeAttribute(kOpcode, opcode);
 
   // Instruction shape with layout.
-  std::string instruction_shape =
-      xla::ShapeUtil::HumanStringWithLayout(instruction->shape());
-  // Truncate the shape if it's too long.
-  constexpr int kMaxShapeLen = 64;
-  if (instruction_shape.size() > kMaxShapeLen) {
-    instruction_shape = instruction_shape.substr(0, kMaxShapeLen) + "...";
-  }
-  builder.AppendNodeAttribute(kShapeWithLayout, instruction_shape);
+  builder.AppendNodeAttribute(kShapeWithLayout,
+                              GetTruncatedShapeString(instruction));
 
   // Add instruction users if the users are omitted with max threshold.
   // If within threshold, users are the same as inputs shown in the graph.
@@ -330,26 +381,74 @@ void SetInstructionNodeAttributes(const xla::HloInstruction* instruction,
         tensorflow::profiler::GetSourceInfo(*instruction).stack_frame);
   }
 
+  // Instruction address.
+  builder.AppendNodeAttribute(kAddress, absl::StrFormat("%p", instruction));
+
+  // Instruction backend config.
+  if (instruction->has_backend_config()) {
+    std::string backend_config_str = instruction->raw_backend_config_string();
+    llvm::Expected<llvm::json::Value> backend_config_json =
+        llvm::json::parse(backend_config_str);
+    if (backend_config_json) {
+      if (llvm::json::Object* obj = backend_config_json->getAsObject()) {
+        // Removes custom_call_config as it's a binary string of a serialized
+        // MLIR module, unreadable without deserialization. It will be
+        // visualized separately.
+        obj->erase("custom_call_config");
+        // Removes any fields that are empty lists or objects to reduce clutter.
+        RemoveEmptyFields(*backend_config_json);
+        // If the backend config is not empty after removing empty fields,
+        // then add it as a node attribute.
+        if (!IsEmpty(*backend_config_json)) {
+          std::string result;
+          llvm::raw_string_ostream os(result);
+          os << *backend_config_json;
+          builder.AppendNodeAttribute(kBackendConfig, os.str());
+        }
+      } else {
+        builder.AppendNodeAttribute(kBackendConfig, backend_config_str);
+      }
+    } else {
+      // If backend config is not valid JSON, append it as is.
+      builder.AppendNodeAttribute(kBackendConfig, backend_config_str);
+    }
+  }
+
+  // Instruction extra attributes.
+  const std::vector<std::string>& extra_attributes =
+      instruction->ExtraAttributesToString(xla::HloPrintOptions::Default());
+  if (!extra_attributes.empty()) {
+    builder.AppendNodeAttribute(kExtraAttributes,
+                                absl::StrJoin(extra_attributes, "\n"));
+  }
+
   // Attach get-tuple-element index if its define is a GTE and folded.
   if (options.get_tuple_element_folding) {
-    absl::flat_hash_map<std::string, std::vector<std::string>>
-        tuple_indexes_by_operand;
-    for (const xla::HloInstruction* operand : instruction->operands()) {
+    std::vector<std::string> tuple_elements;
+    for (int i = 0; i < instruction->operand_count(); ++i) {
+      const xla::HloInstruction* operand = instruction->operand(i);
       if (IsGetTupleElement(options, operand)) {
-        tuple_indexes_by_operand[operand->operand(0)->name()].push_back(
-            absl::StrCat(operand->tuple_index()));
+        tuple_elements.push_back(absl::StrFormat(
+            "operand %d: tuple-element %d of %s %s", i, operand->tuple_index(),
+            operand->operand(0)->name(), GetTruncatedShapeString(operand)));
       }
     }
-    std::string tuple_indexes_string;
-    for (const auto& [operand_name, tuple_indexes] : tuple_indexes_by_operand) {
-      if (!tuple_indexes_string.empty()) {
-        absl::StrAppend(&tuple_indexes_string, ";");
+    if (instruction->opcode() == xla::HloOpcode::kParameter &&
+        instruction->IsFused()) {
+      const xla::HloInstruction* param_input =
+          instruction->parent()->FusionInstruction()->operand(
+              instruction->parameter_number());
+      if (param_input->opcode() == xla::HloOpcode::kGetTupleElement) {
+        tuple_elements.push_back(absl::StrFormat(
+            "parameter: tuple-element %d of %s %s", param_input->tuple_index(),
+            param_input->operand(0)->name(),
+            GetTruncatedShapeString(param_input)));
       }
-      absl::StrAppend(&tuple_indexes_string, absl::StrJoin(tuple_indexes, ","),
-                      " of ", operand_name);
     }
-    if (!tuple_indexes_string.empty()) {
-      builder.AppendNodeAttribute(kGetTupleElementIndex, tuple_indexes_string);
+
+    if (!tuple_elements.empty()) {
+      builder.AppendNodeAttribute(kGetTupleElementIndex,
+                                  absl::StrJoin(tuple_elements, "; "));
     }
   }
 
@@ -394,7 +493,7 @@ void PopulateOutputsMetadata(
     const std::vector<const xla::HloInstruction*>& output_nodes) {
   for (int i = 0; i < output_nodes.size(); ++i) {
     builder.AppendAttrToMetadata(EdgeType::kOutput, i, kShapeWithLayout,
-                                 builder.GetNodeAttribute(kShapeWithLayout));
+                                 GetTruncatedShapeString(output_nodes[i]));
   }
 }
 
@@ -437,7 +536,7 @@ absl::Status HloComputationToGraphImpl(
                                             options, computation_stack, builder,
                                             output_edges, computation_expand));
     builder.SetNodeLabel(GetInstructionId(computation.FusionInstruction()));
-    builder.AppendNodeAttribute("Fusion Computation", computation.name());
+    builder.AppendNodeAttribute(kFusionComputation, computation.name());
   } else {
     // Build the pinned node representing the computation.
     builder.SetNodeId(GetComputationId(&computation));
