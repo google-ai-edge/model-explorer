@@ -92,7 +92,8 @@ limitations under the License.
                     <expandable-info-text
                         [text]="item.value" [type]="item.label"
                         [bgColor]="item.bgColor || 'transparent'"
-                        [textColor]="item.textColor || onSurfaceColor">
+                        [textColor]="item.textColor || onSurfaceColor"
+                        [initialExpanded]="expandInfoPanelValuesByDefault">
                     </expandable-info-text>
                   }
                 </td>
@@ -326,7 +327,8 @@ limitations under the License.
                 <td class="value">
                   <expandable-info-text
                       [text]="metadataItem.value"
-                      [type]="metadataItem.key">
+                      [type]="metadataItem.key"
+                      [initialExpanded]="expandInfoPanelValuesByDefault">
                   </expandable-info-text>
                 </td>
               </tr>

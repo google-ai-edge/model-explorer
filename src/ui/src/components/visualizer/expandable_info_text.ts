@@ -29,6 +29,9 @@ import {
   OnDestroy,
   SimpleChanges,
   ViewChild,
+  effect,
+  input,
+  signal,
 } from '@angular/core';
 import {MatIconModule} from '@angular/material/icon';
 import {MatTooltipModule} from '@angular/material/tooltip';
@@ -59,10 +62,11 @@ export class ExpandableInfoText implements AfterViewInit, OnDestroy, OnChanges {
   @Input() type = '';
   @Input() bgColor = 'transparent';
   @Input() textColor = 'inherit';
+  readonly initialExpanded = input<boolean>(false);
   @ViewChild('container') container?: ElementRef<HTMLElement>;
   @ViewChild('oneLineText') oneLineText?: ElementRef<HTMLElement>;
 
-  expanded = false;
+  readonly expanded = signal<boolean>(false);
   urlInfo?: UrlInfo;
 
   private hasOverflowInternal = false;
@@ -71,10 +75,14 @@ export class ExpandableInfoText implements AfterViewInit, OnDestroy, OnChanges {
   constructor(
     private readonly appService: AppService,
     private readonly changeDetectorRef: ChangeDetectorRef,
-  ) {}
+  ) {
+    effect(() => {
+      this.expanded.set(this.initialExpanded());
+    });
+  }
 
   @HostBinding('class.expanded') get hostExpanded() {
-    return this.expanded;
+    return this.expanded();
   }
 
   ngAfterViewInit() {
@@ -118,10 +126,10 @@ export class ExpandableInfoText implements AfterViewInit, OnDestroy, OnChanges {
 
     // Don't allow clicking on the expanded text to collapse it because users
     // might want to copy the content.
-    if (fromExpandedText && this.expanded) {
+    if (fromExpandedText && this.expanded()) {
       return;
     }
-    this.expanded = !this.expanded;
+    this.expanded.set(!this.expanded());
   }
 
   getMaxConstValueCount(): number {
@@ -138,7 +146,7 @@ export class ExpandableInfoText implements AfterViewInit, OnDestroy, OnChanges {
   }
 
   get iconName(): string {
-    return this.expanded ? 'unfold_less' : 'unfold_more';
+    return this.expanded() ? 'unfold_less' : 'unfold_more';
   }
 
   get hasBgColor(): boolean {
@@ -172,7 +180,7 @@ export class ExpandableInfoText implements AfterViewInit, OnDestroy, OnChanges {
       this.oneLineText.nativeElement.scrollWidth >
       this.oneLineText.nativeElement.offsetWidth;
     if (
-      this.expanded &&
+      this.expanded() &&
       (this.type === 'namespace' || this.type === 'values')
     ) {
       this.hasOverflowInternal = true;

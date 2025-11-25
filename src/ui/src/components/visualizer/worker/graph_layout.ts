@@ -17,18 +17,18 @@
  */
 
 import {
+  DEFAULT_NODE_ATTRS_TABLE_FONT_SIZE,
   EXPANDED_NODE_DATA_PROVIDER_SUMMARY_BOTTOM_PADDING,
   EXPANDED_NODE_DATA_PROVIDER_SUMMARY_ROW_HEIGHT,
   EXPANDED_NODE_DATA_PROVIDER_SUMMARY_TOP_PADDING,
   EXPANDED_NODE_DATA_PROVIDER_SYUMMARY_FONT_SIZE,
   LAYOUT_MARGIN_X,
   MAX_IO_ROWS_IN_ATTRS_TABLE,
-  NODE_ATTRS_TABLE_FONT_SIZE,
+  NODE_ATTRS_TABLE_FONT_SIZE_TO_HEIGHT_RATIO,
   NODE_ATTRS_TABLE_LABEL_VALUE_PADDING,
   NODE_ATTRS_TABLE_LEFT_RIGHT_PADDING,
   NODE_ATTRS_TABLE_MARGIN_TOP,
-  NODE_ATTRS_TABLE_ROW_HEIGHT,
-  NODE_ATTRS_TABLE_VALUE_MAX_WIDTH,
+  NODE_ATTRS_TABLE_VALUE_MAX_CHAR_COUNT,
   NODE_DATA_PROVIDER_SHOW_ON_NODE_TYPE_PREFIX,
 } from '../common/consts';
 import {
@@ -113,6 +113,9 @@ interface LayoutGraph {
 export class GraphLayout {
   dagreGraph!: DagreGraphInstance;
 
+  private attrsTableRowHeight: number;
+  private attrsTableFontSize: number;
+
   constructor(
     private readonly modelGraph: ModelGraph,
     private readonly dagre: Dagre,
@@ -126,6 +129,10 @@ export class GraphLayout {
     private readonly config?: VisualizerConfig,
   ) {
     this.dagreGraph = new this.dagre.graphlib.Graph();
+    this.attrsTableFontSize =
+      config?.nodeAttrsTableFontSize ?? DEFAULT_NODE_ATTRS_TABLE_FONT_SIZE;
+    this.attrsTableRowHeight =
+      this.attrsTableFontSize * NODE_ATTRS_TABLE_FONT_SIZE_TO_HEIGHT_RATIO;
   }
 
   /** Lays out the model graph rooted from the given root node.  */
@@ -352,7 +359,7 @@ export class GraphLayout {
         this.showOnNodeItemTypes,
       );
       if (attrsRowCount > 0) {
-        const localOffsetY = attrsRowCount * NODE_ATTRS_TABLE_ROW_HEIGHT + 16;
+        const localOffsetY = attrsRowCount * this.attrsTableRowHeight + 16;
         for (const node of nodes) {
           node.localOffsetY = localOffsetY;
         }
@@ -412,6 +419,11 @@ export function getNodeWidth(
     return NODE_WIDTH_FOR_TEST;
   }
 
+  const fontSize =
+    config?.nodeAttrsTableFontSize ?? DEFAULT_NODE_ATTRS_TABLE_FONT_SIZE;
+  const nodeAttrsTableValueMaxWidth =
+    fontSize * NODE_ATTRS_TABLE_VALUE_MAX_CHAR_COUNT;
+
   const label = node.label;
   const lines = splitLabel(label);
   let labelWidth = 0;
@@ -441,17 +453,9 @@ export function getNodeWidth(
       getOpNodeFieldLabelsFromShowOnNodeItemTypes(showOnNodeItemTypes);
     // Calculate width.
     for (const fieldId of fieldIds) {
-      const attrLabelWidth = getLabelWidth(
-        `${fieldId}:`,
-        NODE_ATTRS_TABLE_FONT_SIZE,
-        true,
-      );
+      const attrLabelWidth = getLabelWidth(`${fieldId}:`, fontSize, true);
       const value = getNodeInfoFieldValue(node, fieldId);
-      const attrValueWidth = getLabelWidth(
-        value,
-        NODE_ATTRS_TABLE_FONT_SIZE,
-        false,
-      );
+      const attrValueWidth = getLabelWidth(value, fontSize, false);
       maxAttrLabelWidth = Math.max(maxAttrLabelWidth, attrLabelWidth);
       maxAttrValueWidth = Math.max(maxAttrValueWidth, attrValueWidth);
     }
@@ -462,7 +466,7 @@ export function getNodeWidth(
         node,
         showOnNodeItemTypes[ShowOnNodeItemType.OP_ATTRS]?.filterRegex || '',
       );
-      const widths = getMaxAttrLabelAndValueWidth(keyValuePairs);
+      const widths = getMaxAttrLabelAndValueWidth(keyValuePairs, fontSize);
       maxAttrLabelWidth = Math.max(maxAttrLabelWidth, widths.maxAttrLabelWidth);
       maxAttrValueWidth = Math.max(maxAttrValueWidth, widths.maxAttrValueWidth);
     }
@@ -473,7 +477,7 @@ export function getNodeWidth(
         node,
         modelGraph,
       );
-      const widths = getMaxAttrLabelAndValueWidth(keyValuePairs);
+      const widths = getMaxAttrLabelAndValueWidth(keyValuePairs, fontSize);
       maxAttrLabelWidth = Math.max(maxAttrLabelWidth, widths.maxAttrLabelWidth);
       maxAttrValueWidth = Math.max(maxAttrValueWidth, widths.maxAttrValueWidth);
     }
@@ -481,7 +485,7 @@ export function getNodeWidth(
     // Outputs
     if (showOnNodeItemTypes[ShowOnNodeItemType.OP_OUTPUTS]?.selected) {
       const keyValuePairs = getOpNodeOutputsKeyValuePairsForAttrsTable(node);
-      const widths = getMaxAttrLabelAndValueWidth(keyValuePairs);
+      const widths = getMaxAttrLabelAndValueWidth(keyValuePairs, fontSize);
       maxAttrLabelWidth = Math.max(maxAttrLabelWidth, widths.maxAttrLabelWidth);
       maxAttrValueWidth = Math.max(maxAttrValueWidth, widths.maxAttrValueWidth);
     }
@@ -497,6 +501,7 @@ export function getNodeWidth(
       );
     const nodeDataProviderWidths = getMaxAttrLabelAndValueWidth(
       nodeDataProviderKeyValuePairs,
+      fontSize,
     );
     maxAttrLabelWidth = Math.max(
       maxAttrLabelWidth,
@@ -514,17 +519,9 @@ export function getNodeWidth(
       getGroupNodeFieldLabelsFromShowOnNodeItemTypes(showOnNodeItemTypes);
     // Calculate width.
     for (const fieldId of basicInfoFieldIds) {
-      const attrLabelWidth = getLabelWidth(
-        `${fieldId}:`,
-        NODE_ATTRS_TABLE_FONT_SIZE,
-        true,
-      );
+      const attrLabelWidth = getLabelWidth(`${fieldId}:`, fontSize, true);
       const value = getNodeInfoFieldValue(node, fieldId);
-      const attrValueWidth = getLabelWidth(
-        value,
-        NODE_ATTRS_TABLE_FONT_SIZE,
-        false,
-      );
+      const attrValueWidth = getLabelWidth(value, fontSize, false);
       maxAttrLabelWidth = Math.max(maxAttrLabelWidth, attrLabelWidth);
       maxAttrValueWidth = Math.max(maxAttrValueWidth, attrValueWidth);
     }
@@ -537,7 +534,7 @@ export function getNodeWidth(
         showOnNodeItemTypes[ShowOnNodeItemType.LAYER_NODE_ATTRS]?.filterRegex ||
           '',
       );
-      const widths = getMaxAttrLabelAndValueWidth(keyValuePairs);
+      const widths = getMaxAttrLabelAndValueWidth(keyValuePairs, fontSize);
       maxAttrLabelWidth = Math.max(maxAttrLabelWidth, widths.maxAttrLabelWidth);
       maxAttrValueWidth = Math.max(maxAttrValueWidth, widths.maxAttrValueWidth);
     }
@@ -574,10 +571,7 @@ export function getNodeWidth(
       }
     }
   }
-  maxAttrValueWidth = Math.min(
-    maxAttrValueWidth,
-    NODE_ATTRS_TABLE_VALUE_MAX_WIDTH,
-  );
+  maxAttrValueWidth = Math.min(maxAttrValueWidth, nodeAttrsTableValueMaxWidth);
   let attrsTableWidth =
     maxAttrLabelWidth +
     maxAttrValueWidth +
@@ -610,6 +604,10 @@ export function getNodeHeight(
   if (node.height != null && !forceRecalculate) {
     return node.height;
   }
+
+  const fontSize =
+    config?.nodeAttrsTableFontSize ?? DEFAULT_NODE_ATTRS_TABLE_FONT_SIZE;
+  const rowHeight = fontSize * NODE_ATTRS_TABLE_FONT_SIZE_TO_HEIGHT_RATIO;
 
   // Extra height for multi-line label.
   const extraMultiLineLabelHeight = getMultiLineLabelExtraHeight(node.label);
@@ -657,7 +655,7 @@ export function getNodeHeight(
   return (
     DEFAULT_NODE_HEIGHT +
     extraMultiLineLabelHeight +
-    attrsTableRowCount * NODE_ATTRS_TABLE_ROW_HEIGHT +
+    attrsTableRowCount * rowHeight +
     (attrsTableRowCount > 0 ? NODE_ATTRS_TABLE_MARGIN_TOP - 4 : 0) +
     expandedNodeDataProviderRowCount *
       EXPANDED_NODE_DATA_PROVIDER_SUMMARY_ROW_HEIGHT +
@@ -855,20 +853,19 @@ function addLayoutGraphEdge(
   layoutGraph.incomingEdges[toNodeId].push(fromNodeId);
 }
 
-function getMaxAttrLabelAndValueWidth(keyValuePairs: KeyValueList): {
+function getMaxAttrLabelAndValueWidth(
+  keyValuePairs: KeyValueList,
+  fontSize: number,
+): {
   maxAttrLabelWidth: number;
   maxAttrValueWidth: number;
 } {
   let maxAttrLabelWidth = 0;
   let maxAttrValueWidth = 0;
   for (const {key, value} of keyValuePairs) {
-    const attrLabelWidth = getLabelWidth(key, NODE_ATTRS_TABLE_FONT_SIZE, true);
+    const attrLabelWidth = getLabelWidth(key, fontSize, true);
     maxAttrLabelWidth = Math.max(maxAttrLabelWidth, attrLabelWidth);
-    const attrValueWidth = getLabelWidth(
-      value,
-      NODE_ATTRS_TABLE_FONT_SIZE,
-      false,
-    );
+    const attrValueWidth = getLabelWidth(value, fontSize, false);
     maxAttrValueWidth = Math.max(maxAttrValueWidth, attrValueWidth);
   }
   return {maxAttrLabelWidth, maxAttrValueWidth};

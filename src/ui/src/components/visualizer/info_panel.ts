@@ -711,6 +711,10 @@ export class InfoPanel {
     return this.appService.config()?.infoPanelFontSize ?? 12;
   }
 
+  get expandInfoPanelValuesByDefault(): boolean {
+    return this.appService.config()?.expandInfoPanelValuesByDefault ?? false;
+  }
+
   private handleNodeSelected(nodeId: string) {
     if (!this.curModelGraph || !nodeId) {
       this.curSelectedNode = undefined;

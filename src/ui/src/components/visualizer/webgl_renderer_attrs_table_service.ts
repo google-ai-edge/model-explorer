@@ -20,10 +20,11 @@ import {inject, Injectable} from '@angular/core';
 import * as three from 'three';
 
 import {
+  DEFAULT_NODE_ATTRS_TABLE_FONT_SIZE,
+  NODE_ATTRS_TABLE_FONT_SIZE_TO_HEIGHT_RATIO,
   NODE_ATTRS_TABLE_LABEL_VALUE_PADDING,
   NODE_ATTRS_TABLE_MARGIN_TOP,
-  NODE_ATTRS_TABLE_ROW_HEIGHT,
-  NODE_ATTRS_TABLE_VALUE_MAX_WIDTH,
+  NODE_ATTRS_TABLE_VALUE_MAX_CHAR_COUNT,
   WEBGL_ELEMENT_Y_FACTOR,
 } from './common/consts';
 import {ModelNode} from './common/model_graph';
@@ -96,9 +97,13 @@ export class WebglRendererAttrsTableService {
       return;
     }
 
+    const fontSize =
+      this.webglRenderer.appService.config()?.nodeAttrsTableFontSize ??
+      DEFAULT_NODE_ATTRS_TABLE_FONT_SIZE;
+    const rowHeight = fontSize * NODE_ATTRS_TABLE_FONT_SIZE_TO_HEIGHT_RATIO;
     const labels: LabelData[] = [];
-    const fontSize = this.attrsTableTexts.getFontSize();
-    const scale = 9 / fontSize;
+    const webglTextsFontSize = this.attrsTableTexts.getFontSize();
+    const scale = fontSize / webglTextsFontSize;
     const tableBgRectangles: RoundedRectangleData[] = [];
     const attrTableBgColor = new THREE.Color(
       this.webglRenderer.visualizerThemeService.getColor(
@@ -226,7 +231,7 @@ export class WebglRendererAttrsTableService {
           keyLabelData,
           valueLabelData,
         });
-        curZ += NODE_ATTRS_TABLE_ROW_HEIGHT;
+        curZ += rowHeight;
       }
 
       // Adjust positions.
@@ -249,16 +254,13 @@ export class WebglRendererAttrsTableService {
       if (rows.length > 0 && isOpNode(node)) {
         const padding = 16;
         const width = this.webglRenderer.getNodeWidth(node) - padding;
-        const height = rows.length * NODE_ATTRS_TABLE_ROW_HEIGHT;
+        const height = rows.length * rowHeight;
         tableBgRectangles.push({
           id: node.id,
           index: tableBgRectangles.length,
           bound: {
             x: this.webglRenderer.getNodeX(node) + padding / 2 + width / 2,
-            y:
-              rows[0].keyLabelData.z +
-              height / 2 -
-              NODE_ATTRS_TABLE_ROW_HEIGHT / 2,
+            y: rows[0].keyLabelData.z + height / 2 - rowHeight / 2,
             width,
             height,
           },
@@ -294,6 +296,11 @@ export class WebglRendererAttrsTableService {
     zOffset: number,
     scale: number,
   ) {
+    const fontSize =
+      this.webglRenderer.appService.config()?.nodeAttrsTableFontSize ??
+      DEFAULT_NODE_ATTRS_TABLE_FONT_SIZE;
+    const nodeAttrsTableValueMaxWidth =
+      fontSize * NODE_ATTRS_TABLE_VALUE_MAX_CHAR_COUNT;
     const attrTableKeyColor = new THREE.Color(
       this.webglRenderer.visualizerThemeService.getColor(
         ColorVariable.ON_SURFACE_VARIANT_COLOR,
@@ -308,7 +315,7 @@ export class WebglRendererAttrsTableService {
       id: `${node.id}_attrs_table_${key}_key`,
       nodeId: node.id,
       label: `${key}:`,
-      height: 9,
+      height: fontSize,
       hAlign: 'right',
       vAlign: 'center',
       weight: FontWeight.MEDIUM,
@@ -328,7 +335,7 @@ export class WebglRendererAttrsTableService {
       id: `${node.id}_attrs_table_${key}_value`,
       nodeId: node.id,
       label: value,
-      height: 9,
+      height: fontSize,
       hAlign: 'left',
       vAlign: 'center',
       weight: FontWeight.REGULAR,
@@ -336,7 +343,7 @@ export class WebglRendererAttrsTableService {
       y: index * WEBGL_ELEMENT_Y_FACTOR + ATTRS_TABLE_TEXT_Y_OFFSET,
       z: this.webglRenderer.getNodeY(node) + zOffset,
       color: attrTableTextColor,
-      maxWidth: NODE_ATTRS_TABLE_VALUE_MAX_WIDTH,
+      maxWidth: nodeAttrsTableValueMaxWidth,
     };
     const {sizes: valueLabelSizes, updatedLabel} =
       this.attrsTableTexts.getLabelSizes(

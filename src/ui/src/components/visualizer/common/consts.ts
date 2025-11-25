@@ -29,17 +29,17 @@ export const NODE_ATTRS_TABLE_LABEL_VALUE_PADDING = 4;
 /** The padding of the left and right of the attrs table. */
 export const NODE_ATTRS_TABLE_LEFT_RIGHT_PADDING = 4;
 
-/** The font size of the attrs table. */
-export const NODE_ATTRS_TABLE_FONT_SIZE = 9;
+/** The default font size of the attrs table. */
+export const DEFAULT_NODE_ATTRS_TABLE_FONT_SIZE = 9;
+
+/** The ratio of the attrs table height to the font size. */
+export const NODE_ATTRS_TABLE_FONT_SIZE_TO_HEIGHT_RATIO = 1.33;
 
 /** The top margin above node's attrs table. */
 export const NODE_ATTRS_TABLE_MARGIN_TOP = 16;
 
-/** The max width of the node's attrs table values. */
-export const NODE_ATTRS_TABLE_VALUE_MAX_WIDTH = 200;
-
-/** The height of attrs table row. */
-export const NODE_ATTRS_TABLE_ROW_HEIGHT = 12;
+/** The maximum number of characters in a value in the attrs table. */
+export const NODE_ATTRS_TABLE_VALUE_MAX_CHAR_COUNT = 25;
 
 /** The height of the summary row in node data provider. */
 export const EXPANDED_NODE_DATA_PROVIDER_SUMMARY_ROW_HEIGHT = 14;

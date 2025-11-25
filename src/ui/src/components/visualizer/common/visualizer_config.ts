@@ -77,6 +77,9 @@ export declare interface VisualizerConfig {
   /** The font size of the info panel. Default: 12. */
   infoPanelFontSize?: number;
 
+  /** The font size of the node attributes table. Default: 9. */
+  nodeAttrsTableFontSize?: number;
+
   /** The color of the edges in light mode. Default: #aaa. */
   edgeColor?: string;
 
@@ -235,4 +238,9 @@ export declare interface VisualizerConfig {
    * If set, this factor will be applied to the zoom-fit scale on node.
    */
   extraZoomFactorOnNode?: number;
+
+  /**
+   * If set, expand the values in the info panel by default.
+   */
+  expandInfoPanelValuesByDefault?: boolean;
 }

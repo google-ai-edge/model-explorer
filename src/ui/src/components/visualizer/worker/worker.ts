@@ -261,6 +261,8 @@ function handleProcessGraph(
       showItemOnNodeTypes,
       nodeDataProviderRuns,
       undefined,
+      false,
+      config,
     );
     try {
       layout.layout();
