@@ -59,6 +59,9 @@ class GraphNodeData:
   # - The node id specified in `GraphNode`. See graph_builder.py for more info.
   results: dict[str, 'NodeDataResult']
 
+  # The name of the node data.
+  name: Union[None, str] = None
+
   # Thresholds that define various ranges and the corresponding node styles
   # (e.g. node bg color) to be applied for that range.
   #

@@ -71,7 +71,7 @@ class NodeDataProviderResult:
 
   # The UI will consider a node data provider run is in progress when this field
   # is None (and the error field below is empty).
-  result: Union[GraphNodeData, None] = None
+  result: Union[GraphNodeData, list[GraphNodeData], None] = None
 
   # Error message.
   error: str = ''

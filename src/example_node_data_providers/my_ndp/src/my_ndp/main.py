@@ -154,13 +154,24 @@ class TestNodeDataProvider(NodeDataProvider):
       for i in range(122):
         results[str(i)] = NodeDataResult(value=i)
       return NodeDataProviderResult(
-          result=GraphNodeData(
-              results=results,
-              gradient=[
-                  GradientItem(stop=0, bgColor=gradient_from_color),
-                  GradientItem(stop=1, bgColor=gradient_to_color),
-              ],
-          )
+          result=[
+              GraphNodeData(
+                  name="result 1",
+                  results=results,
+                  gradient=[
+                      GradientItem(stop=0, bgColor=gradient_from_color),
+                      GradientItem(stop=1, bgColor=gradient_to_color),
+                  ],
+              ),
+              GraphNodeData(
+                  name="result 2",
+                  results=results,
+                  gradient=[
+                      GradientItem(stop=0, bgColor=gradient_to_color),
+                      GradientItem(stop=1, bgColor=gradient_from_color),
+                  ],
+              ),
+          ]
       )
     else:
       return NodeDataProviderResult(error="Some error message")
