@@ -68,6 +68,6 @@ export declare interface NdpRunCommand extends ExtensionCommand {
 
 /** Node data provider's "run" command response. */
 export declare interface NdpRunResponse {
-  result?: NodeDataProviderGraphData;
+  result?: NodeDataProviderGraphData | NodeDataProviderGraphData[];
   error?: string;
 }

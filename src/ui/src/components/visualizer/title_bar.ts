@@ -36,6 +36,7 @@ import {ExtensionService} from '../../services/extension_service';
 import {OpenInNewTabButton} from '../open_in_new_tab_button/open_in_new_tab_button';
 
 import {AppService} from './app_service';
+import {NodeDataProviderGraphData} from './common/types';
 import {GraphSelector} from './graph_selector';
 import {Logo} from './logo';
 import {NewVersionChip} from './new_version_chip';
@@ -140,13 +141,23 @@ export class TitleBar {
     }
     // Add ndp if no error.
     else if (cmdResp?.result != null) {
-      this.nodeDataProviderExtensionService.addRun(
-        runId,
-        runName,
-        extension.id,
-        modelGraph,
-        {[modelGraph.id]: cmdResp.result},
-      );
+      const dataList: NodeDataProviderGraphData[] = Array.isArray(
+        cmdResp.result,
+      )
+        ? cmdResp.result
+        : [cmdResp.result];
+      for (let i = 0; i < dataList.length; i++) {
+        const data = dataList[i];
+        const defaultRunName =
+          dataList.length == 1 ? runName : `${runName}_${i}`;
+        this.nodeDataProviderExtensionService.addRun(
+          `${runId}_${i}`,
+          data.name ?? defaultRunName,
+          extension.id,
+          modelGraph,
+          {[modelGraph.id]: data},
+        );
+      }
     }
     this.nodeDataProviderExtensionService.setRunStatus(
       extension.id,
