@@ -243,9 +243,9 @@ limitations under the License.
     Namespace hierarchy
   </div>
   <div class="namespace-content">
-    @for(ns of value.split('/'); track $index) {
+    @for(ns of splitNamespace(value); track $index) {
       <div class="namespace-row">
-        {{ns}}
+        {{unEscapeString(ns)}}
       </div>
     }
   </div>

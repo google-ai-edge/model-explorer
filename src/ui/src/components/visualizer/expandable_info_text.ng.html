@@ -56,7 +56,7 @@ limitations under the License.
         @for(ns of namespaceComponents; let i = $index; track $index) {
           <div class="namespace-row">
             <div class="index">{{i}}</div>
-            <div class="namespace">{{ns}}</div>
+            <div class="namespace">{{unEscapeString(ns)}}</div>
           </div>
         }
       </div>
@@ -78,7 +78,7 @@ limitations under the License.
         {{urlInfo.anchorText}}
       </a>
     } @else {
-      {{text}}
+      {{unEscapeString(text)}}
     }
   </div>
   <div class="icon-container toggle" (click)="handleToggleExpand($event)">

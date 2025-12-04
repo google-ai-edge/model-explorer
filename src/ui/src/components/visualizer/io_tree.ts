@@ -55,7 +55,7 @@ import {
   SearchMatchOutputMetadata,
   SearchMatchType,
 } from './common/types';
-import {isOpNode} from './common/utils';
+import {isOpNode, splitNamespace, unEscapeString} from './common/utils';
 import {MENU_ANIMATIONS} from './ui_utils';
 
 /** Holds data for a node in the tree. */
@@ -396,7 +396,9 @@ function populateTreeStructureFromNamespace(
   namespace: string,
   rootNode: TreeNode,
 ): TreeNode | undefined {
-  const nsParts = !namespace ? ['<root>'] : ['<root>', ...namespace.split('/')];
+  const nsParts = !namespace
+    ? ['<root>']
+    : ['<root>', ...splitNamespace(namespace)];
   let curTreeNode: TreeNode | undefined;
   const curNsParts: string[] = [];
   for (const nsPart of nsParts) {
@@ -416,7 +418,7 @@ function populateTreeStructureFromNamespace(
 
       if (targetNode == null) {
         const treeNode: TreeNode = {
-          label: nsPart,
+          label: unEscapeString(nsPart),
           children: [],
           type: rootNode.type,
           isGroupNode: true,

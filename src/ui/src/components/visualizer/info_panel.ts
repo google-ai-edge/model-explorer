@@ -67,6 +67,8 @@ import {
   getRunName,
   isGroupNode,
   isOpNode,
+  splitNamespace,
+  unEscapeString,
 } from './common/utils';
 import {ExpandableInfoText} from './expandable_info_text';
 import {HoverableLabel} from './hoverable_label';
@@ -168,6 +170,8 @@ export class InfoPanel {
   inputValueContents = new QueryList<ElementRef<HTMLElement>>();
 
   readonly NodeAttributeValueType = NodeAttributeValueType;
+  readonly splitNamespace = splitNamespace;
+  readonly unEscapeString = unEscapeString;
 
   private curModelGraph?: ModelGraph;
   private curSelectedNode?: ModelNode;

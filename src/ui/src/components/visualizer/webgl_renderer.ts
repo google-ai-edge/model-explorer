@@ -97,6 +97,7 @@ import {
   matchNodeForQueries,
   processNodeStylerRules,
   splitLabel,
+  splitNamespace,
 } from './common/utils';
 import {
   ExpandOrCollapseGroupNodeRequest,
@@ -3262,7 +3263,7 @@ export class WebglRenderer implements OnInit, OnChanges, OnDestroy {
 
   private getGroupNodeBgColor(groupNode: GroupNode): WebglColor {
     const ns = groupNode.namespace || '';
-    const level = ns.split('/').filter((part) => part !== '').length;
+    const level = splitNamespace(ns).length;
     const colorVariable =
       this.GROUP_NODE_BG_COLORS[
         Math.min(this.GROUP_NODE_BG_COLORS.length - 1, level)

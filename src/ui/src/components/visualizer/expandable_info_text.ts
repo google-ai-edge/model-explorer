@@ -36,6 +36,7 @@ import {
 import {MatIconModule} from '@angular/material/icon';
 import {MatTooltipModule} from '@angular/material/tooltip';
 import {AppService} from './app_service';
+import {splitNamespace, unEscapeString} from './common/utils';
 
 interface UrlInfo {
   anchorText: string;
@@ -66,6 +67,7 @@ export class ExpandableInfoText implements AfterViewInit, OnDestroy, OnChanges {
   @ViewChild('container') container?: ElementRef<HTMLElement>;
   @ViewChild('oneLineText') oneLineText?: ElementRef<HTMLElement>;
 
+  readonly unEscapeString = unEscapeString;
   readonly expanded = signal<boolean>(false);
   urlInfo?: UrlInfo;
 
@@ -154,7 +156,7 @@ export class ExpandableInfoText implements AfterViewInit, OnDestroy, OnChanges {
   }
 
   get namespaceComponents(): string[] {
-    const components = this.text.split('/');
+    const components = splitNamespace(this.text);
     if (this.text !== '<root>') {
       components.unshift('<root>');
     }

@@ -42,6 +42,8 @@ import {
   getNextLevelNsPart,
   isGroupNode,
   isOpNode,
+  splitNamespace,
+  unEscapeString,
 } from '../common/utils';
 import {VisualizerConfig} from '../common/visualizer_config';
 import {ProcessingLabel} from '../common/worker_events';
@@ -137,7 +139,7 @@ export class GraphProcessor {
         savedNamespace: graphNode.namespace,
         fullNamespace: graphNode.namespace,
         label: graphNode.label,
-        level: this.getNonEmptyNamespaceComponents(graphNode.namespace).length,
+        level: splitNamespace(graphNode.namespace).length,
       };
       if (graphNode.subgraphIds && graphNode.subgraphIds.length > 0) {
         opNode.subgraphIds = graphNode.subgraphIds;
@@ -220,9 +222,9 @@ export class GraphProcessor {
           }
           seenNamespaces.add(ns);
 
-          const components = ns.split('/');
+          const components = splitNamespace(ns);
           // Use the last component of the namespace as its display label.
-          const label = components.splice(-1)[0];
+          const label = unEscapeString(components.splice(-1)[0]);
           // Group node's namespace doesn't contain the last component.
           const namespace = components.join('/');
           const groupNode: GroupNode = {
@@ -367,7 +369,7 @@ export class GraphProcessor {
 
               // Move op node up one level in namespace.
               const ns = opNode.namespace;
-              const parts = this.getNonEmptyNamespaceComponents(ns);
+              const parts = splitNamespace(ns);
               parts.pop();
               opNode.namespace = parts.join('/');
               opNode.savedNamespace = opNode.namespace;
@@ -602,8 +604,7 @@ export class GraphProcessor {
             id: newGroupNodeId,
             label: newGroupNodeLabel,
             namespace: newGroupNodeNamespace,
-            level: newGroupNodeNamespace.split('/').filter((c) => c !== '')
-              .length,
+            level: splitNamespace(newGroupNodeNamespace).length,
             nsParentId: curGroupNode?.id,
             nsChildrenIds: nodes.map((node) => node.id),
             expanded: false,
@@ -641,9 +642,7 @@ export class GraphProcessor {
                 );
               }
             }
-            node.level = node.namespace
-              .split('/')
-              .filter((c) => c !== '').length;
+            node.level = splitNamespace(node.namespace).length;
             if (isGroupNode(node)) {
               // Update group node id since its namespace has been changed.
               const oldNodeId = node.id;
@@ -765,17 +764,13 @@ export class GraphProcessor {
 
   private getAncestorNamespaces(ns: string): string[] {
     // The returned namespaces include `ns` as well.
-    const components = this.getNonEmptyNamespaceComponents(ns);
+    const components = splitNamespace(ns);
     const namespaces: string[] = [];
     while (components.length > 0) {
       namespaces.push(components.join('/'));
       components.pop();
     }
     return namespaces;
-  }
-
-  private getNonEmptyNamespaceComponents(ns: string): string[] {
-    return ns.split('/').filter((component) => component !== '');
   }
 
   private getGroupNodeIdFromNamespace(ns: string): string {

@@ -582,8 +582,8 @@ export function getOpNodeDataProviderKeyValuePairsForAttrsTable(
  * prefix, e.g. a/b.
  */
 export function findCommonNamespace(ns1: string, ns2: string): string {
-  const ns1Parts = ns1.split('/');
-  const ns2Parts = ns2.split('/');
+  const ns1Parts = splitNamespace(ns1);
+  const ns2Parts = splitNamespace(ns2);
   let commonPrefix = '';
   for (let i = Math.min(ns1Parts.length, ns2Parts.length); i > 0; i--) {
     const ns1Prefix = ns1Parts.slice(0, i).join('/');
@@ -601,8 +601,8 @@ export function getNextLevelNsPart(baseNs: string, fullNs: string): string {
   if (baseNs === fullNs) {
     return '';
   }
-  const baseNsParts = baseNs.split('/').filter((part) => part !== '');
-  const fullNsParts = fullNs.split('/').filter((part) => part !== '');
+  const baseNsParts = splitNamespace(baseNs);
+  const fullNsParts = splitNamespace(fullNs);
   if (fullNsParts.length === 0) {
     return '';
   }
@@ -1247,4 +1247,25 @@ export function getLayoutDirection(
     }
   }
   return LayoutDirection.TOP_BOTTOM;
+}
+
+/**
+ * Splits a namespace string by the "/" separator into components.
+ *
+ * "/" can be escaped by a double backslash, in which case it is not
+ * considered as a separator.
+ */
+export function splitNamespace(namespace: string): string[] {
+  return namespace
+    .replace(/\\\//g, '___escaped_slash___')
+    .split('/')
+    .filter((part) => part !== '')
+    .map((part) => part.replace(/___escaped_slash___/g, '\\/'));
+}
+
+/**
+ * Unescapes a string by replacing "\\/" with "/".
+ */
+export function unEscapeString(str: string): string {
+  return str.replace(/\\\//g, '/');
 }
