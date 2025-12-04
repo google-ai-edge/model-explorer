@@ -424,24 +424,31 @@ void SetInstructionNodeAttributes(const xla::HloInstruction* instruction,
 
   // Attach get-tuple-element index if its define is a GTE and folded.
   if (options.get_tuple_element_folding) {
-    absl::flat_hash_map<std::string, std::vector<std::string>>
-        tuple_indexes_by_operand;
-    for (const xla::HloInstruction* operand : instruction->operands()) {
+    std::vector<std::string> tuple_elements;
+    for (int i = 0; i < instruction->operand_count(); ++i) {
+      const xla::HloInstruction* operand = instruction->operand(i);
       if (IsGetTupleElement(options, operand)) {
-        tuple_indexes_by_operand[operand->operand(0)->name()].push_back(
-            absl::StrCat(operand->tuple_index()));
+        tuple_elements.push_back(absl::StrFormat(
+            "operand %d: tuple-element %d of %s %s", i, operand->tuple_index(),
+            operand->operand(0)->name(), GetTruncatedShapeString(operand)));
       }
     }
-    std::string tuple_indexes_string;
-    for (const auto& [operand_name, tuple_indexes] : tuple_indexes_by_operand) {
-      if (!tuple_indexes_string.empty()) {
-        absl::StrAppend(&tuple_indexes_string, ";");
+    if (instruction->opcode() == xla::HloOpcode::kParameter &&
+        instruction->IsFused()) {
+      const xla::HloInstruction* param_input =
+          instruction->parent()->FusionInstruction()->operand(
+              instruction->parameter_number());
+      if (param_input->opcode() == xla::HloOpcode::kGetTupleElement) {
+        tuple_elements.push_back(absl::StrFormat(
+            "tuple-element %d of %s %s", param_input->tuple_index(),
+            param_input->operand(0)->name(),
+            GetTruncatedShapeString(param_input)));
       }
-      absl::StrAppend(&tuple_indexes_string, absl::StrJoin(tuple_indexes, ","),
-                      " of ", operand_name);
     }
-    if (!tuple_indexes_string.empty()) {
-      builder.AppendNodeAttribute(kGetTupleElementIndex, tuple_indexes_string);
+
+    if (!tuple_elements.empty()) {
+      builder.AppendNodeAttribute(kGetTupleElementIndex,
+                                  absl::StrJoin(tuple_elements, "\n"));
     }
   }
 
