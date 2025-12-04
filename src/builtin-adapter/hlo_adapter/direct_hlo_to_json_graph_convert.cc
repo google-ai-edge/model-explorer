@@ -74,6 +74,7 @@ constexpr absl::string_view kAcdInstructionName = "AsyncCollectiveDone";
 constexpr absl::string_view kFusionComputation = "fusion_computation";
 
 constexpr int kMaxUsersToRender = 16;
+constexpr int kMaxShapeLen = 64;
 
 // OutputEdges is a map from source instruction id to a list of its users.
 using OutputEdges =
@@ -233,6 +234,19 @@ bool IsGetTupleElement(const HloAdapterOption& options,
          instruction->opcode() == xla::HloOpcode::kGetTupleElement;
 }
 
+// Gets the shape string with layout for the given instruction. The shape is
+// truncated to a max length of kMaxShapeLen to prevent excessively long strings
+// in the visualization.
+std::string GetTruncatedShapeString(const xla::HloInstruction* instruction) {
+  std::string instruction_shape =
+      xla::ShapeUtil::HumanStringWithLayout(instruction->shape());
+  // Truncate the shape if it's too long.
+  if (instruction_shape.size() > kMaxShapeLen) {
+    instruction_shape = instruction_shape.substr(0, kMaxShapeLen) + "...";
+  }
+  return instruction_shape;
+}
+
 absl::Status AddHloInstructionIncomingEdges(
     const xla::HloInstruction* instruction, const HloAdapterOption& options,
     GraphNodeBuilder& builder, OutputEdges& output_edges,
@@ -321,14 +335,8 @@ void SetInstructionNodeAttributes(const xla::HloInstruction* instruction,
   builder.AppendNodeAttribute(kOpcode, opcode);
 
   // Instruction shape with layout.
-  std::string instruction_shape =
-      xla::ShapeUtil::HumanStringWithLayout(instruction->shape());
-  // Truncate the shape if it's too long.
-  constexpr int kMaxShapeLen = 64;
-  if (instruction_shape.size() > kMaxShapeLen) {
-    instruction_shape = instruction_shape.substr(0, kMaxShapeLen) + "...";
-  }
-  builder.AppendNodeAttribute(kShapeWithLayout, instruction_shape);
+  builder.AppendNodeAttribute(kShapeWithLayout,
+                              GetTruncatedShapeString(instruction));
 
   // Add instruction users if the users are omitted with max threshold.
   // If within threshold, users are the same as inputs shown in the graph.
