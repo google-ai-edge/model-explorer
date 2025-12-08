@@ -164,6 +164,20 @@ export declare interface GroupNodeConfig {
 
   /** The layout direction of the matching group nodes. */
   layoutDirection?: LayoutDirection;
+
+  /**
+   * The background color of the group node.
+   *
+   * It should be in css format.
+   */
+  backgroundColor?: string;
+
+  /**
+   * The border color of the group node.
+   *
+   * It should be in css format.
+   */
+  borderColor?: string;
 }
 
 /** Layout direction for group nodes. */

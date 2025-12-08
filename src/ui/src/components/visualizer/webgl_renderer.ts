@@ -2273,14 +2273,11 @@ export class WebglRenderer implements OnInit, OnChanges, OnDestroy {
       const isGroup = isGroupNode(node);
       let borderWidth = NODE_BORDER_WIDTH;
       let bgColor = isGroup ? this.getGroupNodeBgColor(node) : opNodeBgColor;
-      let borderColor = new THREE.Color(
-        isGroup
-          ? this.visualizerThemeService.getColor(
-              // Use the default edge color as the group node border color.
-              ColorVariable.EDGE_COLOR,
-            )
-          : this.visualizerThemeService.getColor(ColorVariable.OUTLINE_COLOR),
-      );
+      let borderColor = isGroup
+        ? this.getGroupNodeBorderColor(node)
+        : new THREE.Color(
+            this.visualizerThemeService.getColor(ColorVariable.OUTLINE_COLOR),
+          );
       if (isOpNode(node) && node.style) {
         if (node.style.backgroundColor) {
           bgColor = new THREE.Color(node.style.backgroundColor);
@@ -3262,6 +3259,30 @@ export class WebglRenderer implements OnInit, OnChanges, OnDestroy {
   }
 
   private getGroupNodeBgColor(groupNode: GroupNode): WebglColor {
+    // Get background color from groupNodeConfigs if matched.
+    if (this.curModelGraph.groupNodeConfigs != null) {
+      const groupNodeId = groupNode.id;
+      const namespaceName = groupNodeId.replace('___group___', '');
+      for (const config of this.curModelGraph.groupNodeConfigs || []) {
+        if (config.backgroundColor == null) {
+          continue;
+        }
+        try {
+          const regex = new RegExp(config.namespaceRegex);
+          if (regex.test(namespaceName)) {
+            return new THREE.Color(config.backgroundColor);
+          }
+        } catch (e) {
+          console.warn(
+            'Invalid regex in groupNodeConfigs',
+            config.namespaceRegex,
+            e,
+          );
+        }
+      }
+    }
+
+    // Fallback to default color.
     const ns = groupNode.namespace || '';
     const level = splitNamespace(ns).length;
     const colorVariable =
@@ -3269,6 +3290,37 @@ export class WebglRenderer implements OnInit, OnChanges, OnDestroy {
         Math.min(this.GROUP_NODE_BG_COLORS.length - 1, level)
       ];
     return new THREE.Color(this.visualizerThemeService.getColor(colorVariable));
+  }
+
+  private getGroupNodeBorderColor(groupNode: GroupNode): WebglColor {
+    // Get border color from groupNodeConfigs if matched.
+    if (this.curModelGraph.groupNodeConfigs != null) {
+      const groupNodeId = groupNode.id;
+      const namespaceName = groupNodeId.replace('___group___', '');
+      var color: WebglColor | undefined = undefined;
+      for (const config of this.curModelGraph.groupNodeConfigs || []) {
+        if (config.borderColor == null) {
+          continue;
+        }
+        try {
+          const regex = new RegExp(config.namespaceRegex);
+          if (regex.test(namespaceName)) {
+            return new THREE.Color(config.borderColor);
+          }
+        } catch (e) {
+          console.warn(
+            'Invalid regex in groupNodeConfigs',
+            config.namespaceRegex,
+            e,
+          );
+        }
+      }
+    }
+
+    // Use the default edge color as the group node border color.
+    return new THREE.Color(
+      this.visualizerThemeService.getColor(ColorVariable.EDGE_COLOR),
+    );
   }
 
   private startBenchmark() {
