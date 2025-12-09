@@ -16,6 +16,7 @@
  * ==============================================================================
  */
 
+import {IS_EXTERNAL} from '../common/flags';
 import {
   AdapterExtension,
   ExtensionType,
@@ -32,11 +33,12 @@ const tfliteMlirAdapterExtension: AdapterExtension = {
 };
 const tfliteFlatbufferAdapterExtension: AdapterExtension = {
   type: ExtensionType.ADAPTER,
-  fileExts: ['tflite'],
+  fileExts: IS_EXTERNAL ? ['tflite'] : ['tflite', 'litertlm'],
   id: InternalAdapterExtId.TFLITE_FLATBUFFER,
   name: 'TFLite adapter (Flatbuffer)',
-  description:
-    'A built-in adapter that converts a TFLite model to Model Explorer format by directly parsing the flatbuffer.',
+  description: IS_EXTERNAL
+    ? 'A built-in adapter that converts a TFLite model to Model Explorer format by directly parsing the flatbuffer.'
+    : 'A built-in adapter that converts a TFLite or LiteRT-LM model to Model Explorer format by directly parsing the flatbuffer.',
 };
 const tfMlirAdapterExtension: AdapterExtension = {
   type: ExtensionType.ADAPTER,
