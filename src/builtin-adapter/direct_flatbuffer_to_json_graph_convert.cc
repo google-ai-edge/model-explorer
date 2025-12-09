@@ -50,6 +50,8 @@
 #include "mlir/IR/BuiltinTypes.h"
 #include "mlir/IR/MLIRContext.h"
 #include "mlir/Support/LLVM.h"
+#include "third_party/odml/litert_lm/schema/core/litertlm_header_schema_generated.h"
+#include "third_party/odml/litert_lm/schema/core/litertlm_read.h"
 #include "stablehlo/dialect/StablehloOps.h"
 #include "stablehlo/dialect/VhloOps.h"
 #include "tensorflow/compiler/mlir/lite/core/absl_error_model_builder.h"
@@ -160,8 +162,8 @@ class FlatbufferToJsonConverter {
   FlatbufferToJsonConverter& operator=(const FlatbufferToJsonConverter&) =
       delete;
 
-  // Converts the Flatbuffer model content to JSON string.
-  absl::StatusOr<std::string> Convert();
+  // Builds a graph from the flatbuffer model.
+  absl::StatusOr<Graph> BuildGraph();
 
  private:
   // Gets the buffer data of the given tensor.
@@ -824,6 +826,7 @@ absl::Status FlatbufferToJsonConverter::AddTensorTags(
     const OperatorT& op, SubgraphBuildContext& context,
     GraphNodeBuilder& builder) {
   const std::string op_label = builder.GetNodeLabel();
+  // TODO - b/466671567: Make the error reporting less verbose.
   if (!op_defs_.contains(op_label)) {
     return absl::InvalidArgumentError(
         absl::StrCat("No op def found for op: ", op_label));
@@ -984,16 +987,24 @@ FlatbufferToJsonConverter::FlatbufferToJsonConverter(
   }
 }
 
-absl::StatusOr<std::string> FlatbufferToJsonConverter::Convert() {
+absl::StatusOr<Graph> FlatbufferToJsonConverter::BuildGraph() {
   Graph graph;
   for (int index = 0; index < model_->subgraphs.size(); ++index) {
     RETURN_IF_ERROR(AddSubgraph(index, graph));
   }
+  return graph;
+}
 
-  GraphCollection collection;
-  collection.graphs.push_back(std::move(graph));
-  llvm::json::Value json_result(collection.Json());
-  return llvm::formatv("{0:2}", json_result);
+absl::StatusOr<Graph> BuildGraphFromContent(const VisualizeConfig& config,
+                                            absl::string_view model_content) {
+  std::unique_ptr<FlatBufferModelAbslError> model_ptr =
+      FlatBufferModelAbslError::VerifyAndBuildFromBuffer(model_content.data(),
+                                                         model_content.size());
+  if (model_ptr == nullptr) {
+    return absl::InvalidArgumentError("Failed to build model from buffer.");
+  }
+  FlatbufferToJsonConverter converter(config, std::move(model_ptr));
+  return converter.BuildGraph();
 }
 
 }  // namespace
@@ -1029,19 +1040,55 @@ void CustomOptionsToAttributes(
 
 absl::StatusOr<std::string> ConvertFlatbufferDirectlyToJson(
     const VisualizeConfig& config, absl::string_view model_path) {
-  std::string model_content;
-  RETURN_IF_ERROR(tsl::ReadFileToString(
-      tsl::Env::Default(), std::string(model_path), &model_content));
+  GraphCollection collection;
 
-  std::unique_ptr<FlatBufferModelAbslError> model_ptr =
-      FlatBufferModelAbslError::VerifyAndBuildFromBuffer(
-          model_content.data(), model_content.length());
-  if (model_ptr == nullptr) {
-    return absl::InvalidArgumentError("Failed to build model from buffer.");
+  // Handles .tflite file.
+  if (!absl::EndsWith(model_path, ".litertlm")) {
+    std::string model_content;
+    RETURN_IF_ERROR(tsl::ReadFileToString(
+        tsl::Env::Default(), std::string(model_path), &model_content));
+    ASSIGN_OR_RETURN(Graph graph, BuildGraphFromContent(config, model_content));
+    collection.graphs.push_back(std::move(graph));
+    llvm::json::Value json_result(collection.Json());
+    return llvm::formatv("{0:2}", json_result);
   }
 
-  FlatbufferToJsonConverter converter(config, std::move(model_ptr));
-  return converter.Convert();
+  // Handles .litertlm file.
+  std::string litertlm_content;
+  RETURN_IF_ERROR(tsl::ReadFileToString(
+      tsl::Env::Default(), std::string(model_path), &litertlm_content));
+
+  litert::lm::schema::LitertlmHeader header;
+  RETURN_IF_ERROR(litert::lm::schema::ReadHeaderFromLiteRTLM(
+      litertlm_content.data(), litertlm_content.length(), &header));
+
+  if (!header.metadata || !header.metadata->section_metadata() ||
+      !header.metadata->section_metadata()->objects()) {
+    return absl::InvalidArgumentError(
+        "LiteRTLM metadata, section_metadata, or objects is null.");
+  }
+  auto section_objects = header.metadata->section_metadata()->objects();
+
+  for (size_t i = 0; i < section_objects->size(); ++i) {
+    auto sec_obj = section_objects->Get(i);
+    if (sec_obj->data_type() ==
+        litert::lm::schema::AnySectionDataType_TFLiteModel) {
+      absl::string_view model_content(
+          litertlm_content.data() + sec_obj->begin_offset(),
+          sec_obj->end_offset() - sec_obj->begin_offset());
+      absl::StatusOr<Graph> graph =
+          BuildGraphFromContent(config, model_content);
+      if (!graph.ok()) {
+        return absl::InvalidArgumentError(
+            absl::StrCat("Failed to build model from buffer for section ", i,
+                         " in litertlm file: ", graph.status().ToString()));
+      }
+      collection.graphs.push_back(std::move(*graph));
+    }
+  }
+
+  llvm::json::Value json_result(collection.Json());
+  return llvm::formatv("{0:2}", json_result);
 }
 
 }  // namespace visualization_client

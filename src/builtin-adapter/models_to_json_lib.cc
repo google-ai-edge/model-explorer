@@ -28,7 +28,6 @@
 #include "model_json_graph_convert.h"
 #include "status_macros.h"
 #include "visualize_config.h"
-#include "tensorflow/core/platform/logging.h"
 #include "tsl/platform/path.h"
 
 namespace tooling {
@@ -64,6 +63,10 @@ absl::StatusOr<ModelFormat> GetModelFormat(absl::string_view input_file,
     } else {
       return kFlatbuffer;
     }
+  }
+  if (extension == "litertlm") {
+    // Only supports direct conversion for LitertLM for now.
+    return kFlatbufferDirect;
   }
   if (extension == "mlirbc" || extension == "mlir") {
     // StableHLO module represented using MLIR textual or bytecode format.
