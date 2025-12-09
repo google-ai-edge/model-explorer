@@ -178,6 +178,13 @@ export declare interface GroupNodeConfig {
    * It should be in css format.
    */
   borderColor?: string;
+
+  /**
+   * The text color of the node.
+   *
+   * It should be in css format.
+   */
+  textColor?: string;
 }
 
 /** Layout direction for group nodes. */
