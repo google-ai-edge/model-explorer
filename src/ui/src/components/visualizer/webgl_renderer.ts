@@ -2289,11 +2289,13 @@ export class WebglRenderer implements OnInit, OnChanges, OnDestroy {
           borderWidth = node.style.borderWidth;
         }
       }
-      let groupNodeIconColor = new THREE.Color(
-        this.visualizerThemeService.getColor(
-          ColorVariable.ON_SURFACE_VARIANT_COLOR,
-        ),
-      );
+      let groupNodeIconColor = isGroupNode(node)
+        ? this.getGroupNodeTextColor(node)
+        : new THREE.Color(
+            this.visualizerThemeService.getColor(
+              ColorVariable.ON_SURFACE_VARIANT_COLOR,
+            ),
+          );
 
       // Node styler.
       for (const rule of this.curProcessedNodeStylerRules) {
@@ -2650,9 +2652,13 @@ export class WebglRenderer implements OnInit, OnChanges, OnDestroy {
     const labels: LabelData[] = [];
     // Node labels.
     for (const {node, index} of this.nodesToRender) {
-      let color = new THREE.Color(
-        this.visualizerThemeService.getColor(ColorVariable.ON_SURFACE_COLOR),
-      );
+      let color = isGroupNode(node)
+        ? this.getGroupNodeTextColor(node)
+        : new THREE.Color(
+            this.visualizerThemeService.getColor(
+              ColorVariable.ON_SURFACE_COLOR,
+            ),
+          );
       if (isOpNode(node) && node.style?.textColor) {
         color = new THREE.Color(node.style.textColor);
       }
@@ -2961,11 +2967,12 @@ export class WebglRenderer implements OnInit, OnChanges, OnDestroy {
       if (!isOpNode(node)) {
         this.nodeBodies.updateBgColor(
           [this.selectedNodeId],
-          new THREE.Color(
-            this.visualizerThemeService.getColor(
-              ColorVariable.SECONDARY_CONTAINER_COLOR,
+          (this.getGroupNodeBgColor(node) as three.Color) ??
+            new THREE.Color(
+              this.visualizerThemeService.getColor(
+                ColorVariable.SECONDARY_CONTAINER_COLOR,
+              ),
             ),
-          ),
         );
       } else {
         // For op nodes, only update the ones whose bg color is unchanged (i.e.
@@ -3263,13 +3270,14 @@ export class WebglRenderer implements OnInit, OnChanges, OnDestroy {
     if (this.curModelGraph.groupNodeConfigs != null) {
       const groupNodeId = groupNode.id;
       const namespaceName = groupNodeId.replace('___group___', '');
+      const unescapedNamespaceName = namespaceName.replace(/\\\//g, '/');
       for (const config of this.curModelGraph.groupNodeConfigs || []) {
         if (config.backgroundColor == null) {
           continue;
         }
         try {
           const regex = new RegExp(config.namespaceRegex);
-          if (regex.test(namespaceName)) {
+          if (regex.test(unescapedNamespaceName)) {
             return new THREE.Color(config.backgroundColor);
           }
         } catch (e) {
@@ -3297,6 +3305,7 @@ export class WebglRenderer implements OnInit, OnChanges, OnDestroy {
     if (this.curModelGraph.groupNodeConfigs != null) {
       const groupNodeId = groupNode.id;
       const namespaceName = groupNodeId.replace('___group___', '');
+      const unescapedNamespaceName = namespaceName.replace(/\\\//g, '/');
       var color: WebglColor | undefined = undefined;
       for (const config of this.curModelGraph.groupNodeConfigs || []) {
         if (config.borderColor == null) {
@@ -3304,7 +3313,7 @@ export class WebglRenderer implements OnInit, OnChanges, OnDestroy {
         }
         try {
           const regex = new RegExp(config.namespaceRegex);
-          if (regex.test(namespaceName)) {
+          if (regex.test(unescapedNamespaceName)) {
             return new THREE.Color(config.borderColor);
           }
         } catch (e) {
@@ -3320,6 +3329,35 @@ export class WebglRenderer implements OnInit, OnChanges, OnDestroy {
     // Use the default edge color as the group node border color.
     return new THREE.Color(
       this.visualizerThemeService.getColor(ColorVariable.EDGE_COLOR),
+    );
+  }
+
+  private getGroupNodeTextColor(groupNode: GroupNode): WebglColor {
+    // Get text color from groupNodeConfigs if matched.
+    if (this.curModelGraph.groupNodeConfigs != null) {
+      const groupNodeId = groupNode.id;
+      const namespaceName = groupNodeId.replace('___group___', '');
+      const unescapedNamespaceName = namespaceName.replace(/\\\//g, '/');
+      for (const config of this.curModelGraph.groupNodeConfigs || []) {
+        if (config.textColor == null) {
+          continue;
+        }
+        try {
+          const regex = new RegExp(config.namespaceRegex);
+          if (regex.test(unescapedNamespaceName)) {
+            return new THREE.Color(config.textColor);
+          }
+        } catch (e) {
+          console.warn(
+            'Invalid regex in groupNodeConfigs',
+            config.namespaceRegex,
+            e,
+          );
+        }
+      }
+    }
+    return new THREE.Color(
+      this.visualizerThemeService.getColor(ColorVariable.ON_SURFACE_COLOR),
     );
   }
 
