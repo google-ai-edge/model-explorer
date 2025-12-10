@@ -1042,8 +1042,10 @@ absl::StatusOr<std::string> ConvertFlatbufferDirectlyToJson(
     const VisualizeConfig& config, absl::string_view model_path) {
   GraphCollection collection;
 
+  ASSIGN_OR_RETURN(bool is_litertlm_file,
+                   litert::lm::schema::IsLiteRTLMFile(std::string(model_path)));
   // Handles .tflite file.
-  if (!absl::EndsWith(model_path, ".litertlm")) {
+  if (!is_litertlm_file) {
     std::string model_content;
     RETURN_IF_ERROR(tsl::ReadFileToString(
         tsl::Env::Default(), std::string(model_path), &model_content));
