@@ -1042,13 +1042,14 @@ absl::StatusOr<std::string> ConvertFlatbufferDirectlyToJson(
     const VisualizeConfig& config, absl::string_view model_path) {
   GraphCollection collection;
 
-  ASSIGN_OR_RETURN(bool is_litertlm_file,
-                   litert::lm::schema::IsLiteRTLMFile(std::string(model_path)));
+  std::string content;
+  RETURN_IF_ERROR(tsl::ReadFileToString(tsl::Env::Default(),
+                                        std::string(model_path), &content));
+  bool is_litertlm_file = litert::lm::schema::IsLiteRTLMFile(content);
+
   // Handles .tflite file.
   if (!is_litertlm_file) {
-    std::string model_content;
-    RETURN_IF_ERROR(tsl::ReadFileToString(
-        tsl::Env::Default(), std::string(model_path), &model_content));
+    std::string model_content = std::move(content);
     ASSIGN_OR_RETURN(Graph graph, BuildGraphFromContent(config, model_content));
     collection.graphs.push_back(std::move(graph));
     llvm::json::Value json_result(collection.Json());
@@ -1056,9 +1057,7 @@ absl::StatusOr<std::string> ConvertFlatbufferDirectlyToJson(
   }
 
   // Handles .litertlm file.
-  std::string litertlm_content;
-  RETURN_IF_ERROR(tsl::ReadFileToString(
-      tsl::Env::Default(), std::string(model_path), &litertlm_content));
+  std::string litertlm_content = std::move(content);
 
   litert::lm::schema::LitertlmHeader header;
   RETURN_IF_ERROR(litert::lm::schema::ReadHeaderFromLiteRTLM(
