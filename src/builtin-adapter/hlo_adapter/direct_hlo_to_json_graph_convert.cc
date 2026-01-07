@@ -74,7 +74,6 @@ constexpr absl::string_view kAcdInstructionName = "AsyncCollectiveDone";
 constexpr absl::string_view kFusionComputation = "fusion_computation";
 
 constexpr int kMaxUsersToRender = 16;
-constexpr int kMaxShapeLen = 64;
 
 // OutputEdges is a map from source instruction id to a list of its users.
 using OutputEdges =
@@ -234,17 +233,9 @@ bool IsGetTupleElement(const HloAdapterOption& options,
          instruction->opcode() == xla::HloOpcode::kGetTupleElement;
 }
 
-// Gets the shape string with layout for the given instruction. The shape is
-// truncated to a max length of kMaxShapeLen to prevent excessively long strings
-// in the visualization.
-std::string GetTruncatedShapeString(const xla::HloInstruction* instruction) {
-  std::string instruction_shape =
-      xla::ShapeUtil::HumanStringWithLayout(instruction->shape());
-  // Truncate the shape if it's too long.
-  if (instruction_shape.size() > kMaxShapeLen) {
-    instruction_shape = instruction_shape.substr(0, kMaxShapeLen) + "...";
-  }
-  return instruction_shape;
+// Gets the shape string with layout for the given instruction.
+std::string GetShapeString(const xla::HloInstruction* instruction) {
+  return xla::ShapeUtil::HumanStringWithLayout(instruction->shape());
 }
 
 absl::Status AddHloInstructionIncomingEdges(
@@ -335,8 +326,7 @@ void SetInstructionNodeAttributes(const xla::HloInstruction* instruction,
   builder.AppendNodeAttribute(kOpcode, opcode);
 
   // Instruction shape with layout.
-  builder.AppendNodeAttribute(kShapeWithLayout,
-                              GetTruncatedShapeString(instruction));
+  builder.AppendNodeAttribute(kShapeWithLayout, GetShapeString(instruction));
 
   // Add instruction users if the users are omitted with max threshold.
   // If within threshold, users are the same as inputs shown in the graph.
@@ -430,7 +420,7 @@ void SetInstructionNodeAttributes(const xla::HloInstruction* instruction,
       if (IsGetTupleElement(options, operand)) {
         tuple_elements.push_back(absl::StrFormat(
             "operand %d: tuple-element %d of %s %s", i, operand->tuple_index(),
-            operand->operand(0)->name(), GetTruncatedShapeString(operand)));
+            operand->operand(0)->name(), GetShapeString(operand)));
       }
     }
     if (instruction->opcode() == xla::HloOpcode::kParameter &&
@@ -441,8 +431,7 @@ void SetInstructionNodeAttributes(const xla::HloInstruction* instruction,
       if (param_input->opcode() == xla::HloOpcode::kGetTupleElement) {
         tuple_elements.push_back(absl::StrFormat(
             "tuple-element %d of %s %s", param_input->tuple_index(),
-            param_input->operand(0)->name(),
-            GetTruncatedShapeString(param_input)));
+            param_input->operand(0)->name(), GetShapeString(param_input)));
       }
     }
 
