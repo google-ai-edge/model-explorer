@@ -21,6 +21,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/container/flat_hash_map.h"
 #include "llvm/Support/JSON.h"
 
 namespace tooling {
@@ -241,6 +242,10 @@ struct Subgraph {
   std::optional<TasksData> tasks_data;
   /// Custom configs for group nodes.
   std::vector<GroupNodeConfig> group_node_configs;
+  /// Attributes for group nodes.
+  absl::flat_hash_map<std::string,
+                      absl::flat_hash_map<std::string, std::string>>
+      group_node_attributes;
 
   llvm::json::Object Json() const;
 
@@ -249,6 +254,7 @@ struct Subgraph {
   static const char kNodes[];
   static const char kTasksData[];
   static const char kGroupNodeConfigs[];
+  static const char kGroupNodeAttributes[];
 };
 
 /// A logical grouping of subgraphs with a shared label.

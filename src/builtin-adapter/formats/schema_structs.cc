@@ -17,6 +17,7 @@
 
 #include <optional>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "llvm/Support/JSON.h"
@@ -196,6 +197,7 @@ const char Subgraph::kSubgraphId[] = "id";
 const char Subgraph::kNodes[] = "nodes";
 const char Subgraph::kTasksData[] = "tasksData";
 const char Subgraph::kGroupNodeConfigs[] = "groupNodeConfigs";
+const char Subgraph::kGroupNodeAttributes[] = "groupNodeAttributes";
 
 llvm::json::Object Subgraph::Json() const {
   llvm::json::Object json_subgraph;
@@ -206,6 +208,17 @@ llvm::json::Object Subgraph::Json() const {
   }
   if (!group_node_configs.empty()) {
     json_subgraph[kGroupNodeConfigs] = ToJsonArray(group_node_configs);
+  }
+  if (!group_node_attributes.empty()) {
+    llvm::json::Object json_attributes;
+    for (const auto& [ns, attrs] : group_node_attributes) {
+      llvm::json::Object json_attrs;
+      for (const auto& [key, value] : attrs) {
+        json_attrs[key] = value;
+      }
+      json_attributes[ns] = std::move(json_attrs);
+    }
+    json_subgraph[kGroupNodeAttributes] = std::move(json_attributes);
   }
   return json_subgraph;
 }
