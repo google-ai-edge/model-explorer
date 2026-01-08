@@ -18,6 +18,7 @@
 
 #include <string>
 #include <utility>
+#include <vector>
 
 #include "absl/strings/string_view.h"
 #include "formats/schema_structs.h"
@@ -67,6 +68,11 @@ class GraphNodeBuilder {
 
   // Get the attribute value for the given key.
   absl::string_view GetNodeAttribute(absl::string_view key);
+
+  // Returns all the attributes.
+  const std::vector<Attribute>& GetNodeAttributes() const {
+    return node_.node_attrs;
+  }
 
   // Appends the attribute to the input or output metadata list. If the metadata
   // already exists, we append the attribute to that metadata. If it doesn't

@@ -79,6 +79,12 @@ constexpr int kMaxUsersToRender = 16;
 using OutputEdges =
     absl::flat_hash_map<std::string, std::vector<const xla::HloInstruction*>>;
 
+// GroupNodeAttributes is a map from group namespace to a map of attribute key
+// to attribute value.
+using GroupNodeAttributes =
+    absl::flat_hash_map<std::string,
+                        absl::flat_hash_map<std::string, std::string>>;
+
 // Returns true if value is considered empty.
 bool IsEmpty(const llvm::json::Value& value) {
   if (const auto* obj = value.getAsObject()) {
@@ -503,6 +509,8 @@ void PopulateOutputsMetadata(
 // `computation_expand`: decide which computation to expand.
 //
 // `output_edges`: record all the edges from the instruction to its users.
+//
+// `group_node_attributes`: record all the attributes from the group node.
 absl::Status HloComputationToGraphImpl(
     const xla::HloComputation& computation, const NodeFilter& node_filter,
     const ComputationExpand& computation_expand,
@@ -510,7 +518,7 @@ absl::Status HloComputationToGraphImpl(
     absl::flat_hash_set<const xla::HloComputation*>& built_computations,
     std::vector<std::string>& computation_stack,
     std::vector<GraphNodeBuilder>& instruction_node_builders,
-    OutputEdges& output_edges) {
+    OutputEdges& output_edges, GroupNodeAttributes& group_node_attributes) {
   if (built_computations.contains(&computation)) {
     return absl::OkStatus();
   }
@@ -526,6 +534,12 @@ absl::Status HloComputationToGraphImpl(
                                             output_edges, computation_expand));
     builder.SetNodeLabel(GetInstructionId(computation.FusionInstruction()));
     builder.AppendNodeAttribute(kFusionComputation, computation.name());
+
+    // Populate group node attributes from the pinned node.
+    const std::string& group_name = builder.GetNodeName();
+    for (const auto& attr : builder.GetNodeAttributes()) {
+      group_node_attributes[group_name][attr.key] = attr.value;
+    }
   } else {
     // Build the pinned node representing the computation.
     builder.SetNodeId(GetComputationId(&computation));
@@ -554,7 +568,7 @@ absl::Status HloComputationToGraphImpl(
       RETURN_IF_ERROR(HloComputationToGraphImpl(
           *(instruction->fused_instructions_computation()), node_filter,
           computation_expand, options, built_computations, computation_stack,
-          instruction_node_builders, output_edges));
+          instruction_node_builders, output_edges, group_node_attributes));
       computation_stack.pop_back();
     } else if (IsGetTupleElement(options, instruction)) {
       continue;
@@ -576,7 +590,7 @@ absl::Status HloComputationToGraphImpl(
         RETURN_IF_ERROR(HloComputationToGraphImpl(
             *subcomputation, node_filter, computation_expand, options,
             built_computations, computation_stack, instruction_node_builders,
-            output_edges));
+            output_edges, group_node_attributes));
         int cur_node_count = instruction_node_builders.size();
         computation_stack.pop_back();
 
@@ -633,7 +647,8 @@ absl::StatusOr<GraphCollection> HloToGraph(
 
   RETURN_IF_ERROR(HloComputationToGraphImpl(
       computation, node_filter, computation_expand, options, built_computations,
-      computation_stack, instruction_node_builders, output_edges));
+      computation_stack, instruction_node_builders, output_edges,
+      graph.subgraphs.back().group_node_attributes));
 
   for (GraphNodeBuilder& builder : instruction_node_builders) {
     if (const auto& it = output_edges.find(builder.GetNodeId());
