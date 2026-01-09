@@ -212,6 +212,7 @@ cc_library(
         "@org_tensorflow//tensorflow/compiler/mlir/tensorflow:tensorflow_types",
         "@org_tensorflow//tensorflow/core:lib",
         "@org_tensorflow//tensorflow/core:protos_all_cc",
+        "//util/task:status",
     ],
 )
 
