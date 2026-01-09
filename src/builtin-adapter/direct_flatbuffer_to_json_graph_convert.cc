@@ -73,6 +73,7 @@
 #include "tensorflow/compiler/mlir/tensorflow/ir/tf_types.h"
 #include "xla/tsl/platform/env.h"
 #include "tensorflow/core/framework/tensor.pb.h"
+#include "util/task/status_macros.h"
 
 namespace tooling {
 namespace visualization_client {
@@ -1040,52 +1041,51 @@ void CustomOptionsToAttributes(
 
 absl::StatusOr<std::string> ConvertFlatbufferDirectlyToJson(
     const VisualizeConfig& config, absl::string_view model_path) {
+  std::string model_content;
+  RETURN_IF_ERROR(tsl::ReadFileToString(
+      tsl::Env::Default(), std::string(model_path), &model_content));
+
+  return ConvertFlatbufferDirectlyToJsonFromContent(config, model_content);
+}
+
+absl::StatusOr<std::string> ConvertFlatbufferDirectlyToJsonFromContent(
+    const VisualizeConfig& config, absl::string_view model_content) {
   GraphCollection collection;
+  bool is_litertlm = litert::lm::schema::IsLiteRTLMFile(model_content);
+  if (is_litertlm) {
+    // Handles litertlm case.
+    litert::lm::schema::LitertlmHeader header;
+    RETURN_IF_ERROR(litert::lm::schema::ReadHeaderFromLiteRTLM(
+        const_cast<char*>(model_content.data()), model_content.length(),
+        &header));
+    if (!header.metadata || !header.metadata->section_metadata() ||
+        !header.metadata->section_metadata()->objects()) {
+      return absl::InvalidArgumentError(
+          "LiteRTLM metadata, section_metadata, or objects is null.");
+    }
+    auto section_objects = header.metadata->section_metadata()->objects();
 
-  std::string content;
-  RETURN_IF_ERROR(tsl::ReadFileToString(tsl::Env::Default(),
-                                        std::string(model_path), &content));
-  bool is_litertlm_file = litert::lm::schema::IsLiteRTLMFile(content);
-
-  // Handles .tflite file.
-  if (!is_litertlm_file) {
-    std::string model_content = std::move(content);
+    for (size_t i = 0; i < section_objects->size(); ++i) {
+      auto sec_obj = section_objects->Get(i);
+      if (sec_obj->data_type() ==
+          litert::lm::schema::AnySectionDataType_TFLiteModel) {
+        absl::string_view internal_model_content(
+            model_content.data() + sec_obj->begin_offset(),
+            sec_obj->end_offset() - sec_obj->begin_offset());
+        absl::StatusOr<Graph> graph =
+            BuildGraphFromContent(config, internal_model_content);
+        if (!graph.ok()) {
+          return absl::InvalidArgumentError(
+              absl::StrCat("Failed to build model from buffer for section ", i,
+                           " in litertlm file: ", graph.status().ToString()));
+        }
+        collection.graphs.push_back(std::move(*graph));
+      }
+    }
+  } else {
+    // Fallback to regular .tflite content.
     ASSIGN_OR_RETURN(Graph graph, BuildGraphFromContent(config, model_content));
     collection.graphs.push_back(std::move(graph));
-    llvm::json::Value json_result(collection.Json());
-    return llvm::formatv("{0:2}", json_result);
-  }
-
-  // Handles .litertlm file.
-  std::string litertlm_content = std::move(content);
-
-  litert::lm::schema::LitertlmHeader header;
-  RETURN_IF_ERROR(litert::lm::schema::ReadHeaderFromLiteRTLM(
-      litertlm_content.data(), litertlm_content.length(), &header));
-
-  if (!header.metadata || !header.metadata->section_metadata() ||
-      !header.metadata->section_metadata()->objects()) {
-    return absl::InvalidArgumentError(
-        "LiteRTLM metadata, section_metadata, or objects is null.");
-  }
-  auto section_objects = header.metadata->section_metadata()->objects();
-
-  for (size_t i = 0; i < section_objects->size(); ++i) {
-    auto sec_obj = section_objects->Get(i);
-    if (sec_obj->data_type() ==
-        litert::lm::schema::AnySectionDataType_TFLiteModel) {
-      absl::string_view model_content(
-          litertlm_content.data() + sec_obj->begin_offset(),
-          sec_obj->end_offset() - sec_obj->begin_offset());
-      absl::StatusOr<Graph> graph =
-          BuildGraphFromContent(config, model_content);
-      if (!graph.ok()) {
-        return absl::InvalidArgumentError(
-            absl::StrCat("Failed to build model from buffer for section ", i,
-                         " in litertlm file: ", graph.status().ToString()));
-      }
-      collection.graphs.push_back(std::move(*graph));
-    }
   }
 
   llvm::json::Value json_result(collection.Json());
