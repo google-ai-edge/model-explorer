@@ -35,6 +35,11 @@ namespace visualization_client {
 absl::StatusOr<std::string> ConvertFlatbufferDirectlyToJson(
     const VisualizeConfig& config, absl::string_view model_path);
 
+// Converts a Flatbuffer content to visualizer JSON string. This process entails
+// neither converting to MLIR nor preparing the model for execution.
+absl::StatusOr<std::string> ConvertFlatbufferDirectlyToJsonFromContent(
+    const VisualizeConfig& config, absl::string_view model_content);
+
 // Converts custom options to attributes.
 // Logic referred from `CustomOptionsToAttributes` in
 // tensorflow/compiler/mlir/lite/flatbuffer_operator.cc.
