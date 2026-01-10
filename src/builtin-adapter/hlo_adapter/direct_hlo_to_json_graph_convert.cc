@@ -46,6 +46,7 @@
 #include "xla/hlo/ir/hlo_instructions.h"
 #include "xla/hlo/ir/hlo_opcode.h"
 #include "xla/hlo/ir/hlo_print_options.h"
+#include "xla/service/pattern_matcher.h"
 #include "xla/shape_util.h"
 #include "tensorflow/core/profiler/utils/hlo_module_utils.h"
 
@@ -72,6 +73,7 @@ constexpr absl::string_view kAcfComputationName = "async_collective_fusion";
 constexpr absl::string_view kAcsInstructionName = "AsyncCollectiveStart";
 constexpr absl::string_view kAcdInstructionName = "AsyncCollectiveDone";
 constexpr absl::string_view kFusionComputation = "fusion_computation";
+constexpr absl::string_view kInlinedOperands = "inlined_operands";
 
 constexpr int kMaxUsersToRender = 16;
 
@@ -115,6 +117,42 @@ void RemoveEmptyFields(llvm::json::Value& value) {
       RemoveEmptyFields(item);
     }
   }
+}
+
+std::string StringifyConstant(const xla::HloConstantInstruction* constant,
+                              const xla::Shape& shape) {
+  if (xla::ShapeUtil::IsZeroElementArray(shape)) {
+    return absl::StrFormat("{} (%s)",
+                           xla::ShapeUtil::HumanString(constant->shape()));
+  }
+
+  std::optional<int64_t> elem_count;
+  if (shape.IsArray()) {
+    elem_count = xla::ShapeUtil::ElementsIn(constant->shape());
+  }
+  if (elem_count.has_value() && *elem_count <= 8 && constant->HasLiteral()) {
+    std::string literal_str = constant->literal().ToStringWithoutShape();
+    if (literal_str.size() <= 64) {
+      return absl::StrFormat(
+          "%s %s", xla::ShapeUtil::HumanStringWithLayout(shape), literal_str);
+    }
+  }
+
+  std::string constant_name;
+  if (absl::StartsWith(constant->name(), "constant")) {
+    constant_name = std::string(constant->name());
+  } else {
+    constant_name = absl::StrCat("constant ", constant->name());
+  }
+  return absl::StrFormat("%s %s", constant_name,
+                         xla::ShapeUtil::HumanString(shape));
+}
+
+bool IsFusedBroadcastOfConstantEffectiveScalar(
+    const xla::HloInstruction* instr) {
+  namespace m = xla::match;
+  return instr->parent()->IsFusionComputation() &&
+         Match(instr, m::Broadcast(m::ConstantEffectiveScalar()));
 }
 
 // TODO(b/402148725) Move utility functions to a separate file.
@@ -274,6 +312,13 @@ absl::Status AddHloInstructionIncomingEdges(
 
   int input_id = 0;
   for (const xla::HloInstruction* operand : operands) {
+    if (options.constant_folding &&
+        (operand->opcode() == xla::HloOpcode::kConstant ||
+         IsFusedBroadcastOfConstantEffectiveScalar(operand)) &&
+        operand != operand->parent()->root_instruction()) {
+      continue;
+    }
+
     std::string src_instruction_id;
     if (IsGetTupleElement(options, operand)) {
       // Skip the GTE operand, and connect the user to the tuple directly.
@@ -418,6 +463,37 @@ void SetInstructionNodeAttributes(const xla::HloInstruction* instruction,
                                 absl::StrJoin(extra_attributes, "\n"));
   }
 
+  if (options.constant_folding) {
+    std::vector<std::string> inlined_operands;
+    for (int i = 0; i < instruction->operand_count(); ++i) {
+      const xla::HloInstruction* operand = instruction->operand(i);
+      std::string operand_str;
+      if (operand->opcode() == xla::HloOpcode::kConstant &&
+          operand != operand->parent()->root_instruction()) {
+        operand_str = StringifyConstant(
+            xla::Cast<xla::HloConstantInstruction>(operand), operand->shape());
+      } else if (IsFusedBroadcastOfConstantEffectiveScalar(operand) &&
+                 operand != operand->parent()->root_instruction()) {
+        operand_str = StringifyConstant(
+            xla::Cast<xla::HloConstantInstruction>(operand->operand(0)),
+            operand->shape());
+      }
+      if (!operand_str.empty()) {
+        if (instruction->operand_count() > 1) {
+          inlined_operands.push_back(
+              absl::StrFormat("operand %d = %s", i, operand_str));
+        } else {
+          inlined_operands.push_back(
+              absl::StrFormat("operand = %s", operand_str));
+        }
+      }
+    }
+    if (!inlined_operands.empty()) {
+      builder.AppendNodeAttribute(kInlinedOperands,
+                                  absl::StrJoin(inlined_operands, "\n"));
+    }
+  }
+
   // Attach get-tuple-element index if its define is a GTE and folded.
   if (options.get_tuple_element_folding) {
     std::vector<std::string> tuple_elements;
@@ -552,6 +628,13 @@ absl::Status HloComputationToGraphImpl(
   for (const xla::HloInstruction* instruction :
        computation.MakeInstructionPostOrder()) {
     if (!node_filter(instruction)) {
+      continue;
+    }
+
+    if (options.constant_folding &&
+        (instruction->opcode() == xla::HloOpcode::kConstant ||
+         IsFusedBroadcastOfConstantEffectiveScalar(instruction)) &&
+        instruction != instruction->parent()->root_instruction()) {
       continue;
     }
 

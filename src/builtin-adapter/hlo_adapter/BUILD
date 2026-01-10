@@ -25,6 +25,7 @@ cc_library(
         "//formats:schema_structs",
         "@local_xla//xla:shape_util",
         "@local_xla//xla/hlo/ir:hlo",
+        "@local_xla//xla/service:pattern_matcher",
         "@org_tensorflow//tensorflow/core/profiler/utils:hlo_module_utils",
     ],
 )
