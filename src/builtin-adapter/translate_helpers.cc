@@ -300,7 +300,7 @@ void AddJaxNodeNameAndAttribute(Operation& operation,
   // Splits the loc string into two, first part is op function call, second
   // half is node attribute. If JAX op doesn't have attribute, then there will
   // be only function call (hierarchical info).
-  loc_info.split(loc_vec, '[', /*MaxSplit=*/1, /*KeepEmpty=*/false);
+  loc_info.split(loc_vec, '[', /*MaxSplit=*/1, /*KeepEmpty=*/true);
   builder.SetNodeName(/*node_name=*/loc_vec[0]);
 
   if (loc_vec.size() > 1) {
