@@ -831,8 +831,7 @@ export class GraphProcessor {
             .replace('tensor<', '')
             .replace('>', '')
             .replace('*', '∗')
-            .split('x')
-            .join(' x ');
+            .replace(/(\d|\?)x/g, '$1 x ');
         }
         attrs[key] = value;
       }
