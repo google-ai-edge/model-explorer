@@ -30,6 +30,8 @@ export enum SettingKey {
   SHOW_WELCOME_CARD = 'show_welcome_card',
   HIDE_OP_NODES_WITH_LABELS = 'hide_op_nodes_with_labels',
   ARTIFICIAL_LAYER_NODE_COUNT_THRESHOLD = 'artificial_layer_node_count_threshold',
+  OP_NODE_LABEL_FONT_SIZE = 'op_node_label_font_size',
+  LAYER_NODE_LABEL_FONT_SIZE = 'layer_node_label_font_size',
   EDGE_LABEL_FONT_SIZE = 'edge_label_font_size',
   INFO_PANEL_FONT_SIZE = 'info_panel_font_size',
   EDGE_COLOR = 'edge_color',
@@ -110,6 +112,22 @@ export const SETTING_ARTIFACIAL_LAYER_NODE_COUNT_THRESHOLD: Setting = {
     'under a layer. When the number of child nodes exceeds this limit, ' +
     'Model Explorer automatically groups them into smaller, more manageable ' +
     'artificial layers to improve layout performance and readability.',
+};
+
+/** Setting for op node label font size. */
+export const SETTING_OP_NODE_LABEL_FONT_SIZE: Setting = {
+  label: 'Op node label font size',
+  key: SettingKey.OP_NODE_LABEL_FONT_SIZE,
+  type: SettingType.NUMBER,
+  defaultValue: 11,
+};
+
+/** Setting for layer node label font size. */
+export const SETTING_LAYER_NODE_LABEL_FONT_SIZE: Setting = {
+  label: 'Layer node label font size',
+  key: SettingKey.LAYER_NODE_LABEL_FONT_SIZE,
+  type: SettingType.NUMBER,
+  defaultValue: 11,
 };
 
 /** Setting for edge label font size. */
@@ -249,6 +267,8 @@ export const ALL_SETTINGS: Array<Setting[]> = [
   [SETTING_MAX_CONST_ELEMENT_COUNT_LIMIT],
   [SETTING_HIDE_OP_NODES_WITH_LABELS],
   [SETTING_ARTIFACIAL_LAYER_NODE_COUNT_THRESHOLD],
+  [SETTING_OP_NODE_LABEL_FONT_SIZE],
+  [SETTING_LAYER_NODE_LABEL_FONT_SIZE],
   [SETTING_EDGE_LABEL_FONT_SIZE],
   [SETTING_INFO_PANEL_FONT_SIZE],
   [SETTING_EDGE_COLOR, SETTING_EDGE_COLOR_DARK_MODE],

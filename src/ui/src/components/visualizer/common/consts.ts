@@ -19,7 +19,7 @@
 import {IS_EXTERNAL} from '../../../common/flags';
 
 /** The height of the node label. */
-export const NODE_LABEL_HEIGHT = 11;
+export const DEFAULT_NODE_LABEL_HEIGHT = 11;
 
 /**
  * The padding between the label and the value in node's attrs table.
@@ -263,6 +263,3 @@ export const EXPORT_TO_RESOURCE_CMD = 'model-explorer-export-to-resource';
 
 /** The command to export selected nodes. */
 export const EXPORT_SELECTED_NODES_CMD = 'model-explorer-export-selected-nodes';
-
-/** The line height of node label. */
-export const NODE_LABEL_LINE_HEIGHT = 14;

@@ -20,10 +20,10 @@ import {TrustedResourceUrl} from 'safevalues';
 
 import {
   CATMULLROM_CURVE_TENSION,
+  DEFAULT_NODE_LABEL_HEIGHT,
   EXPORT_TO_RESOURCE_CMD,
   MAX_IO_ROWS_IN_ATTRS_TABLE,
   NODE_DATA_PROVIDER_SHOW_ON_NODE_TYPE_PREFIX,
-  NODE_LABEL_LINE_HEIGHT,
   TENSOR_TAG_METADATA_KEY,
   TENSOR_VALUES_KEY,
   WEBGL_CURVE_SEGMENTS,
@@ -1039,8 +1039,13 @@ export function splitLabel(label: string): string[] {
 }
 
 /** Get the extra height for multi-line label. */
-export function getMultiLineLabelExtraHeight(label: string): number {
-  return (splitLabel(label).length - 1) * NODE_LABEL_LINE_HEIGHT;
+export function getMultiLineLabelExtraHeight(
+  node: ModelNode,
+  config?: VisualizerConfig,
+): number {
+  return (
+    (splitLabel(node.label).length - 1) * getNodeLabelLineHeight(node, config)
+  );
 }
 
 /**
@@ -1268,4 +1273,83 @@ export function splitNamespace(namespace: string): string[] {
  */
 export function unEscapeString(str: string): string {
   return str.replace(/\\\//g, '/');
+}
+
+/**
+ * Gets the height of the node label.
+ */
+export function getNodeLabelHeight(
+  node: ModelNode,
+  config?: VisualizerConfig,
+): number {
+  if (isOpNode(node)) {
+    return config?.opNodeLabelFontSize ?? DEFAULT_NODE_LABEL_HEIGHT;
+  } else if (isGroupNode(node)) {
+    return config?.groupNodeLabelFontSize ?? DEFAULT_NODE_LABEL_HEIGHT;
+  }
+  return 0;
+}
+
+/**
+ * Gets the padding of the node label.
+ */
+export function getNodeLabelYPadding(
+  node: ModelNode,
+  config?: VisualizerConfig,
+): number {
+  if (isOpNode(node)) {
+    return 7.5;
+  } else if (isGroupNode(node)) {
+    const nodeLabelHeight = getNodeLabelHeight(node, config);
+    return nodeLabelHeight / 2 + 2;
+  }
+  return 0;
+}
+
+/**
+ * Gets the line height of the node label.
+ */
+export function getNodeLabelLineHeight(
+  node: ModelNode,
+  config?: VisualizerConfig,
+): number {
+  const labelHeight = getNodeLabelHeight(node, config);
+  if (labelHeight === 11) {
+    return 14;
+  } else {
+    return labelHeight * 1.27;
+  }
+}
+
+/**
+ * Gets the top margin of the dagre layout.
+ */
+export function getLayoutMarginTop(
+  node: ModelNode,
+  config?: VisualizerConfig,
+): number {
+  const nodeLabelHeight = getNodeLabelHeight(node, config);
+  if (nodeLabelHeight === 11) {
+    return 36;
+  }
+  const nodeLabelYPadding = getNodeLabelYPadding(node, config);
+  return nodeLabelYPadding + nodeLabelHeight + 16;
+}
+
+/**
+ * Gets the top retraction of the attributes table.
+ *
+ * The attrs table by default sits below the default height of the node label.
+ * To make it look better, we want to retract it a little bit into the node
+ * label's vertical space.
+ */
+export function getAttrsTableTopRetraction(
+  node: ModelNode,
+  config?: VisualizerConfig,
+): number {
+  const nodeLabelHeight = getNodeLabelHeight(node, config);
+  if (nodeLabelHeight === 11) {
+    return 4;
+  }
+  return nodeLabelHeight / 2;
 }

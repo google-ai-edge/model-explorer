@@ -53,9 +53,11 @@ import {
   SETTING_HIGHLIGHT_LAYER_NODE_INPUTS_OUTPUTS,
   SETTING_INFO_PANEL_FONT_SIZE,
   SETTING_KEEP_LAYERS_WITH_A_SINGLE_CHILD,
+  SETTING_LAYER_NODE_LABEL_FONT_SIZE,
   SETTING_MAX_CONST_ELEMENT_COUNT_LIMIT,
   SETTING_OP_NODE_BG_COLOR_DARK_MODE,
   SETTING_OP_NODE_BG_COLOR_LIGHT_MODE,
+  SETTING_OP_NODE_LABEL_FONT_SIZE,
   SETTING_SHOW_OP_NODE_OUT_OF_LAYER_EDGES_WITHOUT_SELECTING,
   SETTING_SHOW_SIDE_PANEL_ON_NODE_SELECTION,
   SettingKey,
@@ -450,6 +452,12 @@ export class HomePage implements AfterViewInit {
         ),
       artificialLayerNodeCountThreshold: this.settingsService.getNumberValue(
         SETTING_ARTIFACIAL_LAYER_NODE_COUNT_THRESHOLD,
+      ),
+      opNodeLabelFontSize: this.settingsService.getNumberValue(
+        SETTING_OP_NODE_LABEL_FONT_SIZE,
+      ),
+      groupNodeLabelFontSize: this.settingsService.getNumberValue(
+        SETTING_LAYER_NODE_LABEL_FONT_SIZE,
       ),
       edgeLabelFontSize: this.settingsService.getNumberValue(
         SETTING_EDGE_LABEL_FONT_SIZE,

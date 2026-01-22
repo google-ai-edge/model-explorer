@@ -51,12 +51,16 @@ import {
 import {
   genSortedValueInfos,
   generateCurvePoints,
+  getAttrsTableTopRetraction,
   getGroupNodeAttrsKeyValuePairsForAttrsTable,
   getGroupNodeFieldLabelsFromShowOnNodeItemTypes,
   getLabelWidth,
   getLayoutDirection,
+  getLayoutMarginTop,
   getMultiLineLabelExtraHeight,
   getNodeInfoFieldValue,
+  getNodeLabelHeight,
+  getNodeLabelYPadding,
   getOpNodeAttrsKeyValuePairsForAttrsTable,
   getOpNodeDataProviderKeyValuePairsForAttrsTable,
   getOpNodeFieldLabelsFromShowOnNodeItemTypes,
@@ -71,14 +75,11 @@ import {VisualizerConfig} from '../common/visualizer_config';
 
 import {Dagre, DagreGraphInstance} from './dagre_types';
 
-/** The margin for the top and bottom side of the layout. */
-export const LAYOUT_MARGIN_TOP = 36;
+/** Node height for test cases. */
+export const NODE_HEIGHT_FOR_TEST = 26;
 
 /** The margin for the bottom side of the layout */
 export const LAYOUT_MARGIN_BOTTOM = 16;
-
-/** The default height of a node. */
-export const DEFAULT_NODE_HEIGHT = 26;
 
 /** Node width for test cases. */
 export const NODE_WIDTH_FOR_TEST = 50;
@@ -150,7 +151,7 @@ export class GraphLayout {
     }
 
     // Init.
-    this.configLayout(this.dagreGraph, rootNodeId);
+    this.configLayout(this.dagreGraph, rootNode);
 
     // Get layout graph.
     const layoutGraph = getLayoutGraph(
@@ -375,8 +376,11 @@ export class GraphLayout {
     };
   }
 
-  private configLayout(dagreGraph: DagreGraphInstance, rootNodeId?: string) {
-    let layoutDirection = getLayoutDirection(this.modelGraph, rootNodeId ?? '');
+  private configLayout(dagreGraph: DagreGraphInstance, rootNode?: GroupNode) {
+    const layoutDirection = getLayoutDirection(
+      this.modelGraph,
+      rootNode?.id ?? '',
+    );
     let rankdir = '';
     switch (layoutDirection) {
       case LayoutDirection.TOP_BOTTOM:
@@ -397,7 +401,7 @@ export class GraphLayout {
       ranksep: this.modelGraph.layoutConfigs?.rankSep ?? 50,
       edgesep: this.modelGraph.layoutConfigs?.edgeSep ?? 20,
       marginx: LAYOUT_MARGIN_X,
-      marginy: LAYOUT_MARGIN_TOP,
+      marginy: rootNode ? getLayoutMarginTop(rootNode, this.config) : 36,
     });
     // No edge labels.
     dagreGraph.setDefaultEdgeLabel(() => ({}));
@@ -429,7 +433,8 @@ export function getNodeWidth(
   let labelWidth = 0;
   for (const line of lines) {
     labelWidth = Math.max(
-      getLabelWidth(line, 11, isGroupNode(node)) + LABEL_PADDING,
+      getLabelWidth(line, getNodeLabelHeight(node, config), isGroupNode(node)) +
+        LABEL_PADDING,
       labelWidth,
     );
   }
@@ -598,7 +603,7 @@ export function getNodeHeight(
   config?: VisualizerConfig,
 ) {
   if (testMode) {
-    return DEFAULT_NODE_HEIGHT;
+    return NODE_HEIGHT_FOR_TEST;
   }
 
   if (node.height != null && !forceRecalculate) {
@@ -610,7 +615,7 @@ export function getNodeHeight(
   const rowHeight = fontSize * NODE_ATTRS_TABLE_FONT_SIZE_TO_HEIGHT_RATIO;
 
   // Extra height for multi-line label.
-  const extraMultiLineLabelHeight = getMultiLineLabelExtraHeight(node.label);
+  const extraMultiLineLabelHeight = getMultiLineLabelExtraHeight(node, config);
 
   // Count how many rows will be in the attrs table.
   let attrsTableRowCount = 0;
@@ -653,10 +658,13 @@ export function getNodeHeight(
   }
 
   return (
-    DEFAULT_NODE_HEIGHT +
+    getNodeLabelHeight(node, config) +
     extraMultiLineLabelHeight +
+    getNodeLabelYPadding(node, config) * 2 +
     attrsTableRowCount * rowHeight +
-    (attrsTableRowCount > 0 ? NODE_ATTRS_TABLE_MARGIN_TOP - 4 : 0) +
+    (attrsTableRowCount > 0
+      ? NODE_ATTRS_TABLE_MARGIN_TOP - getAttrsTableTopRetraction(node, config)
+      : 0) +
     expandedNodeDataProviderRowCount *
       EXPANDED_NODE_DATA_PROVIDER_SUMMARY_ROW_HEIGHT +
     (expandedNodeDataProviderRowCount > 0

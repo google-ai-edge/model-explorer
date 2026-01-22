@@ -80,6 +80,12 @@ export declare interface VisualizerConfig {
   /** The font size of the node attributes table. Default: 9. */
   nodeAttrsTableFontSize?: number;
 
+  /** The font size of the op node label. Default: 11. */
+  opNodeLabelFontSize?: number;
+
+  /** The font size of the group node label. Default: 11. */
+  groupNodeLabelFontSize?: number;
+
   /** The color of the edges in light mode. Default: #aaa. */
   edgeColor?: string;
 

@@ -16,7 +16,7 @@
  * ==============================================================================
  */
 
-import {LAYOUT_MARGIN_X, NODE_LABEL_LINE_HEIGHT} from '../common/consts';
+import {LAYOUT_MARGIN_X} from '../common/consts';
 import {GroupNode, ModelGraph, OpNode} from '../common/model_graph';
 import {
   NodeDataProviderRunData,
@@ -25,7 +25,10 @@ import {
 } from '../common/types';
 import {
   getDeepestExpandedGroupNodeIds,
+  getLayoutMarginTop,
   getMultiLineLabelExtraHeight,
+  getNodeLabelHeight,
+  getNodeLabelLineHeight,
   isGroupNode,
   splitLabel,
 } from '../common/utils';
@@ -35,7 +38,6 @@ import {Dagre, DagreGraphInstance} from './dagre_types';
 import {
   GraphLayout,
   LAYOUT_MARGIN_BOTTOM,
-  LAYOUT_MARGIN_TOP,
   getNodeHeight,
   getNodeWidth,
 } from './graph_layout';
@@ -254,6 +256,8 @@ export class GraphExpander {
       this.showOnNodeItemTypes,
       this.nodeDataProviderRuns,
       this.selectedNodeDataProviderRunId,
+      this.testMode,
+      this.config,
     );
     groupNode.height = getNodeHeight(
       groupNode,
@@ -443,7 +447,8 @@ export class GraphExpander {
 
         // Move the node down to make space for multi-line node label.
         const extraLabelHeight =
-          (splitLabel(groupNode.label).length - 1) * NODE_LABEL_LINE_HEIGHT;
+          (splitLabel(groupNode.label).length - 1) *
+          getNodeLabelLineHeight(groupNode, this.config);
         if (extraLabelHeight > 0) {
           node.globalY += extraLabelHeight;
         }
@@ -524,16 +529,17 @@ export class GraphExpander {
   }
 
   private getPinToTopNodeVerticalSpace(node: OpNode): number {
-    return (node.height || 0) + 20;
+    return (node.height || 0) + (getNodeLabelHeight(node, this.config) * 2 - 2);
   }
 
   private getTargetGroupNodeHeight(rect: Rect, groupNode: GroupNode): number {
     const extraMultiLineLabelHeight = getMultiLineLabelExtraHeight(
-      groupNode.label,
+      groupNode,
+      this.config,
     );
     let targetHeight =
       rect.height +
-      LAYOUT_MARGIN_TOP +
+      getLayoutMarginTop(groupNode, this.config) +
       LAYOUT_MARGIN_BOTTOM +
       extraMultiLineLabelHeight;
     if (groupNode.pinToTopOpNode) {

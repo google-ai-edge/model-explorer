@@ -30,10 +30,13 @@ import {
 import {ModelNode} from './common/model_graph';
 import {FontWeight, ShowOnNodeItemType} from './common/types';
 import {
+  getAttrsTableTopRetraction,
   getGroupNodeAttrsKeyValuePairsForAttrsTable,
   getGroupNodeFieldLabelsFromShowOnNodeItemTypes,
   getMultiLineLabelExtraHeight,
   getNodeInfoFieldValue,
+  getNodeLabelHeight,
+  getNodeLabelYPadding,
   getOpNodeAttrsKeyValuePairsForAttrsTable,
   getOpNodeDataProviderKeyValuePairsForAttrsTable,
   getOpNodeFieldLabelsFromShowOnNodeItemTypes,
@@ -54,7 +57,6 @@ import {
   WebglRoundedRectangles,
 } from './webgl_rounded_rectangles';
 import {LabelData, WebglTexts} from './webgl_texts';
-import {DEFAULT_NODE_HEIGHT} from './worker/graph_layout';
 
 const ATTRS_TABLE_BG_Y_OFFSET = WEBGL_ELEMENT_Y_FACTOR * 0.2;
 const ATTRS_TABLE_TEXT_Y_OFFSET = WEBGL_ELEMENT_Y_FACTOR * 0.4;
@@ -116,10 +118,17 @@ export class WebglRendererAttrsTableService {
         valueLabelData: LabelData;
       }> = [];
       let curZ =
-        DEFAULT_NODE_HEIGHT +
+        getNodeLabelHeight(node, this.webglRenderer.appService.config()) +
+        getNodeLabelYPadding(node, this.webglRenderer.appService.config()) * 2 +
         NODE_ATTRS_TABLE_MARGIN_TOP -
-        4 +
-        getMultiLineLabelExtraHeight(node.label);
+        getAttrsTableTopRetraction(
+          node,
+          this.webglRenderer.appService.config(),
+        ) +
+        getMultiLineLabelExtraHeight(
+          node,
+          this.webglRenderer.appService.config(),
+        );
       let maxKeyWidth = 0;
       let maxValueWidth = 0;
       const keyValuePairs: Array<{key: string; value: string}> = [];

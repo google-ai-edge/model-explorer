@@ -54,8 +54,6 @@ import {AppService} from './app_service';
 import {
   GLOBAL_KEY,
   LAYOUT_MARGIN_X,
-  NODE_LABEL_HEIGHT,
-  NODE_LABEL_LINE_HEIGHT,
   WEBGL_ELEMENT_Y_FACTOR,
 } from './common/consts';
 import {Graph, GraphNode} from './common/input_graph';
@@ -88,6 +86,9 @@ import {
   genUid,
   getDeepestExpandedGroupNodeIds,
   getHighQualityPixelRatio,
+  getNodeLabelHeight,
+  getNodeLabelLineHeight,
+  getNodeLabelYPadding,
   getNodeStyleValue,
   getShowOnEdgeInputOutputMetadataKeys,
   hasNonEmptyQueries,
@@ -1317,12 +1318,16 @@ export class WebglRenderer implements OnInit, OnChanges, OnDestroy {
     const x = this.getNodeX(groupNode);
     const width = this.getNodeWidth(groupNode);
     if (groupNode.expanded) {
+      const groupNodeLabelSize = getNodeLabelHeight(
+        groupNode,
+        this.appService.config(),
+      );
       const labelSize = this.texts.getLabelSizes(
         this.getNodeLabel(groupNode),
         FontWeight.BOLD,
-        NODE_LABEL_HEIGHT,
+        groupNodeLabelSize,
       ).sizes;
-      const scale = NODE_LABEL_HEIGHT / this.texts.getFontSize();
+      const scale = groupNodeLabelSize / this.texts.getFontSize();
       const labelWidth = (labelSize.maxX - labelSize.minX) * scale;
       const labelRight = x + width / 2 + labelWidth / 2;
       popupX = this.webglRendererThreejsService.convertScenePosToScreen(
@@ -1731,11 +1736,15 @@ export class WebglRenderer implements OnInit, OnChanges, OnDestroy {
   }
 
   getNodeLabelRelativeY(node: ModelNode): number {
-    return 14;
+    const labelHeight = getNodeLabelHeight(node, this.appService.config());
+    return (
+      getNodeLabelYPadding(node, this.appService.config()) + labelHeight / 2 + 1
+    );
   }
 
   getNodeLabelSizes(node: ModelNode) {
-    const scale = NODE_LABEL_HEIGHT / this.texts.getFontSize();
+    const nodeLabelHeight = getNodeLabelHeight(node, this.appService.config());
+    const scale = nodeLabelHeight / this.texts.getFontSize();
     let minX = Number.POSITIVE_INFINITY;
     let maxX = Number.NEGATIVE_INFINITY;
     let firstLineLabelHeight = 0;
@@ -1745,7 +1754,7 @@ export class WebglRenderer implements OnInit, OnChanges, OnDestroy {
       const labelSize = this.texts.getLabelSizes(
         line,
         FontWeight.BOLD,
-        NODE_LABEL_HEIGHT,
+        nodeLabelHeight,
       ).sizes;
       minX = Math.min(minX, labelSize.minX);
       maxX = Math.max(maxX, labelSize.maxX);
@@ -1792,7 +1801,9 @@ export class WebglRenderer implements OnInit, OnChanges, OnDestroy {
     const y = this.getNodeY(node);
     const width = this.getNodeWidth(node);
     const {minX, maxX} = this.getNodeLabelSizes(node);
-    const scale = NODE_LABEL_HEIGHT / this.texts.getFontSize();
+    const scale =
+      getNodeLabelHeight(node, this.appService.config()) /
+      this.texts.getFontSize();
     const labelWidth = (maxX - minX) * scale;
     const labelLeft = x + width / 2 - labelWidth / 2;
     const iconX = node.expanded ? labelLeft - 13 : (x + labelLeft + 1) / 2 + 1;
@@ -1815,7 +1826,9 @@ export class WebglRenderer implements OnInit, OnChanges, OnDestroy {
     const y = this.getNodeY(node);
     const width = this.getNodeWidth(node);
     const {minX, maxX} = this.getNodeLabelSizes(node);
-    const scale = NODE_LABEL_HEIGHT / this.texts.getFontSize();
+    const scale =
+      getNodeLabelHeight(node, this.appService.config()) /
+      this.texts.getFontSize();
     const labelWidth = (maxX - minX) * scale;
     const labelRight = x + width / 2 + labelWidth / 2;
     const iconX = node.expanded
@@ -2238,7 +2251,6 @@ export class WebglRenderer implements OnInit, OnChanges, OnDestroy {
     const groupNodeIconBgs: RoundedRectangleData[] = [];
     const subgraphIndicatorRectangles: RoundedRectangleData[] = [];
     const subgraphIndicatorIcons: LabelData[] = [];
-    const scale = NODE_LABEL_HEIGHT / this.texts.getFontSize();
     const opNodeBgColorInConfig =
       this.appService.theme() === 'light'
         ? this.appService.config()?.opNodeBgColorLightMode
@@ -2460,14 +2472,16 @@ export class WebglRenderer implements OnInit, OnChanges, OnDestroy {
       // Group node label icons.
       if (isGroupNode(node)) {
         // Get current node label width.
-        const {minX, maxX, firstLineLabelHeight} = this.getNodeLabelSizes(node);
+        const scale =
+          getNodeLabelHeight(node, this.appService.config()) /
+          this.texts.getFontSize();
+        const {minX, maxX} = this.getNodeLabelSizes(node);
         const labelWidth = (maxX - minX) * scale;
         const labelLeft = x + width / 2 - labelWidth / 2;
         const labelRight = x + width / 2 + labelWidth / 2;
 
         // Expand icon.
-        const iconZ =
-          y + this.getNodeLabelRelativeY(node) + firstLineLabelHeight + 7.5;
+        const iconZ = y + this.getNodeLabelRelativeY(node) + 18.5;
         const leftIconX = node.expanded
           ? labelLeft - 13
           : (x + labelLeft + 1) / 2 + 1;
@@ -2655,6 +2669,7 @@ export class WebglRenderer implements OnInit, OnChanges, OnDestroy {
     const labels: LabelData[] = [];
     // Node labels.
     for (const {node, index} of this.nodesToRender) {
+      // Color.
       let color = isGroupNode(node)
         ? this.getGroupNodeTextColor(node, ColorVariable.ON_SURFACE_COLOR)
         : new THREE.Color(
@@ -2687,6 +2702,8 @@ export class WebglRenderer implements OnInit, OnChanges, OnDestroy {
         }
       }
 
+      // Font size.
+      const labelHeight = getNodeLabelHeight(node, this.appService.config());
       const lines = splitLabel(this.getNodeLabel(node));
       for (let i = 0; i < lines.length; i++) {
         const curLineLabel = lines[i];
@@ -2694,7 +2711,7 @@ export class WebglRenderer implements OnInit, OnChanges, OnDestroy {
           id: `${node.id}_label_line${i}`,
           nodeId: node.id,
           label: curLineLabel,
-          height: NODE_LABEL_HEIGHT,
+          height: labelHeight,
           hAlign: 'center',
           vAlign: 'center',
           weight: isOpNode(node) ? FontWeight.MEDIUM : FontWeight.BOLD,
@@ -2703,7 +2720,7 @@ export class WebglRenderer implements OnInit, OnChanges, OnDestroy {
           z:
             this.getNodeY(node) +
             this.getNodeLabelRelativeY(node) +
-            NODE_LABEL_LINE_HEIGHT * i,
+            getNodeLabelLineHeight(node, this.appService.config()) * i,
           color,
         });
       }

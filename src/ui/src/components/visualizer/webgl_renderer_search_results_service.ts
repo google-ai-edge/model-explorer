@@ -20,14 +20,15 @@ import {effect, inject, Injectable} from '@angular/core';
 import * as three from 'three';
 
 import {AppService} from './app_service';
-import {
-  NODE_LABEL_HEIGHT,
-  NODE_LABEL_LINE_HEIGHT,
-  WEBGL_ELEMENT_Y_FACTOR,
-} from './common/consts';
+import {WEBGL_ELEMENT_Y_FACTOR} from './common/consts';
 import {ModelNode} from './common/model_graph';
 import {FontWeight, SearchMatchType, SearchResults} from './common/types';
-import {isGroupNode, splitLabel} from './common/utils';
+import {
+  getNodeLabelHeight,
+  getNodeLabelLineHeight,
+  isGroupNode,
+  splitLabel,
+} from './common/utils';
 import {
   ColorVariable,
   VisualizerThemeService,
@@ -154,7 +155,6 @@ export class WebglRendererSearchResultsService {
     );
     // Render bgs for matched node labels.
     const bgRectangles: RoundedRectangleData[] = [];
-    const scale = NODE_LABEL_HEIGHT / this.webglRenderer.texts.getFontSize();
     for (const nodeId of Object.keys(this.curSearchResults.results)) {
       if (!this.webglRenderer.isNodeRendered(nodeId)) {
         continue;
@@ -163,6 +163,12 @@ export class WebglRendererSearchResultsService {
       for (const match of matches) {
         if (match.type === SearchMatchType.NODE_LABEL) {
           const node = this.webglRenderer.curModelGraph.nodesById[nodeId];
+          const nodeLabelHeight = getNodeLabelHeight(
+            node,
+            this.webglRenderer.appService.config(),
+          );
+          const scale =
+            nodeLabelHeight / this.webglRenderer.texts.getFontSize();
           const nodeIndex = this.webglRenderer.nodesToRenderMap[nodeId].index;
           // Center.
           const x =
@@ -176,7 +182,7 @@ export class WebglRendererSearchResultsService {
             const labelSizes = this.webglRenderer.texts.getLabelSizes(
               node.label,
               isGroupNode(node) ? FontWeight.BOLD : FontWeight.MEDIUM,
-              NODE_LABEL_HEIGHT,
+              nodeLabelHeight,
             ).sizes;
             width = (labelSizes.maxX - labelSizes.minX) * scale + 4;
             height = (labelSizes.maxZ - labelSizes.minZ) * scale + 4;
@@ -187,7 +193,13 @@ export class WebglRendererSearchResultsService {
           } else {
             const {minX, maxX} = this.webglRenderer.getNodeLabelSizes(node);
             width = (maxX - minX) * scale + 4;
-            height = lines.length * NODE_LABEL_LINE_HEIGHT + 4;
+            height =
+              lines.length *
+                getNodeLabelLineHeight(
+                  node,
+                  this.webglRenderer.appService.config(),
+                ) +
+              4;
             y =
               this.webglRenderer.getNodeY(node) + height / 2 + 4.5 - 2 * scale;
           }
