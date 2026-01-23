@@ -40,9 +40,9 @@ rules_shell_toolchains()
 # b) get the sha256 hash of the commit by running:
 #    curl -L https://github.com/tensorflow/tensorflow/archive/<COMMIT_HASH>.tar.gz | sha256sum
 #    and update TENSORFLOW_SHA256 with the result.
-TENSORFLOW_COMMIT = "b5129aa315c850cf35b185e2b50f7b8e6f34bc34"
+TENSORFLOW_COMMIT = "04f70dca46784a7827dc53b38ac2f3626a448808"
 
-TENSORFLOW_SHA256 = "f3e33a0c53eff0befeefc332bc577d37a1252f6b669cf710e2e8411cdc92e626"
+TENSORFLOW_SHA256 = "7350a523293b90234f830cb5831c4da561c15f73436760501532278273eb3ed8"
 
 http_archive(
     name = "org_tensorflow",
@@ -80,11 +80,11 @@ load(
 cc_toolchain_deps()
 
 # Initialize hermetic Python
-load("@local_xla//third_party/py:python_init_rules.bzl", "python_init_rules")
+load("@xla//third_party/py:python_init_rules.bzl", "python_init_rules")
 
 python_init_rules()
 
-load("@local_xla//third_party/py:python_init_repositories.bzl", "python_init_repositories")
+load("@xla//third_party/py:python_init_repositories.bzl", "python_init_repositories")
 
 python_init_repositories(
     default_python_version = "system",
@@ -95,7 +95,6 @@ python_init_repositories(
     ],
     local_wheel_workspaces = ["@org_tensorflow//:WORKSPACE"],
     requirements = {
-        "3.9": "@org_tensorflow//:requirements_lock_3_9.txt",
         "3.10": "@org_tensorflow//:requirements_lock_3_10.txt",
         "3.11": "@org_tensorflow//:requirements_lock_3_11.txt",
         "3.12": "@org_tensorflow//:requirements_lock_3_12.txt",
@@ -103,11 +102,11 @@ python_init_repositories(
     },
 )
 
-load("@local_xla//third_party/py:python_init_toolchains.bzl", "python_init_toolchains")
+load("@xla//third_party/py:python_init_toolchains.bzl", "python_init_toolchains")
 
 python_init_toolchains()
 
-load("@local_xla//third_party/py:python_init_pip.bzl", "python_init_pip")
+load("@xla//third_party/py:python_init_pip.bzl", "python_init_pip")
 
 python_init_pip()
 
@@ -129,7 +128,7 @@ load("@org_tensorflow//tensorflow:workspace0.bzl", "tf_workspace0")
 tf_workspace0()
 
 load(
-    "@local_xla//third_party/py:python_wheel.bzl",
+    "@xla//third_party/py:python_wheel.bzl",
     "python_wheel_version_suffix_repository",
 )
 
