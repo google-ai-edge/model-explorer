@@ -16,7 +16,7 @@
  * ==============================================================================
  */
 
-import {GroupNode, ModelGraph, ModelNode} from './model_graph';
+import {GroupNode, ModelEdge, ModelGraph, ModelNode} from './model_graph';
 import {SyncNavigationMode} from './sync_navigation';
 
 /** A type for key-value pairs. */
@@ -1018,3 +1018,26 @@ export type Command =
   | CollapseInfoPanelCommand
   | ShowInfoPanelCommand
   | SetViewOnEdgeCommand;
+
+/** The type of the element to render. */
+export enum RenderElementType {
+  NODE,
+  EDGE,
+}
+
+/** A node element to render. */
+export interface RenderElementNode {
+  type: RenderElementType.NODE;
+  id: string;
+  node: ModelNode;
+}
+
+/** An edge element to render. */
+export interface RenderElementEdge {
+  type: RenderElementType.EDGE;
+  id: string;
+  edge: ModelEdge;
+}
+
+/** Union type of node and edge element to render. */
+export type RenderElement = RenderElementNode | RenderElementEdge;

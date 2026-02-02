@@ -54,6 +54,7 @@ import {AppService} from './app_service';
 import {
   GLOBAL_KEY,
   LAYOUT_MARGIN_X,
+  NODE_ANIMATION_DURATION,
   WEBGL_ELEMENT_Y_FACTOR,
 } from './common/consts';
 import {Graph, GraphNode} from './common/input_graph';
@@ -76,6 +77,9 @@ import {
   PopupPanelData,
   ProcessedNodeStylerRule,
   Rect,
+  RenderElement,
+  RenderElementNode,
+  RenderElementType,
   RendererInfo,
   SelectedNodeInfo,
   ShowOnEdgeItemData,
@@ -114,6 +118,7 @@ import {NodeDataProviderExtensionService} from './node_data_provider_extension_s
 import {NodeStylerService} from './node_styler_service';
 import {SplitPaneService} from './split_pane_service';
 import {SubgraphSelectionService} from './subgraph_selection_service';
+import {SvgTextRendererService} from './svg_text_renderer_service';
 import {SyncNavigationService} from './sync_navigation_service';
 import {ThreejsService} from './threejs_service';
 import {UiStateService} from './ui_state_service';
@@ -157,11 +162,11 @@ import {WorkerService} from './worker_service';
 const NODE_BORDER_WIDTH = 1.2;
 const SELECTED_NODE_BORDER_WIDTH = 2;
 const IO_HIGHLIGHT_BORDER_WIDTH = 1.5;
-const NODE_ANIMATION_DURATION = 200;
 const ZOOM_FIT_ON_NODE_DURATION = 400;
 const EDGE_WIDTH = 1.0;
 const SUBGRAPH_INDICATOR_SIZE = 14;
 const MAX_PNG_SIZE = 5000;
+const MAX_SHAKE_DISTANCE = 6;
 
 // The following offsets define the rendering order of the elements on top of
 // the node body. They should be between 0 and WEBGL_ELEMENT_Y_FACTOR.
@@ -182,34 +187,12 @@ interface TriggerData {
   tooltip?: string;
 }
 
-/** The type of the element to render. */
-enum RenderElementType {
-  NODE,
-  EDGE,
-}
-
-/** A node element to render. */
-interface RenderElementNode {
-  type: RenderElementType.NODE;
-  id: string;
-  node: ModelNode;
-}
-
-/** An edge element to render. */
-interface RenderElementEdge {
-  type: RenderElementType.EDGE;
-  id: string;
-  edge: ModelEdge;
-}
-
 /** Options for rendering the graph. */
 interface RenderGraphOptions {
   skipReRenderEdges?: boolean;
   skipReRenderEdgeTexts?: boolean;
+  forceDisableSvgTextRenderer?: boolean;
 }
-
-/** Union type of node and edge element to render. */
-type RenderElement = RenderElementNode | RenderElementEdge;
 
 /** A graph renderer that uses threejs/webgl for high-performance rendering */
 @Component({
@@ -223,6 +206,7 @@ type RenderElement = RenderElementNode | RenderElementEdge;
     MatTooltipModule,
   ],
   providers: [
+    SvgTextRendererService,
     WebglRendererAttrsTableService,
     WebglRendererEdgeTextsService,
     WebglRendererEdgeOverlaysService,
@@ -281,6 +265,8 @@ export class WebglRenderer implements OnInit, OnChanges, OnDestroy {
   rangeZoomDragArea!: DragArea;
   @ViewChild('dragToSelectDragArea', {static: true})
   dragToSelectDragArea!: DragArea;
+  @ViewChild('svgZoomTarget', {static: true})
+  svgZoomTarget!: ElementRef<SVGAElement>;
 
   readonly appService: AppService = inject(AppService);
   private readonly threejsService: ThreejsService = inject(ThreejsService);
@@ -337,7 +323,8 @@ export class WebglRenderer implements OnInit, OnChanges, OnDestroy {
   curHiddenInputOpNodeIds: Record<string, boolean> = {};
   curHiddenOutputIds: Record<string, boolean> = {};
 
-  private elementsToRender: RenderElement[] = [];
+  elementsToRender: RenderElement[] = [];
+
   private updateNodesStylesSavedSelectedNodeId = '';
   private updateNodesStylesSavedIoTracingData?: IoTracingData;
   private curSelectedRenderer?: RendererInfo;
@@ -478,10 +465,11 @@ export class WebglRenderer implements OnInit, OnChanges, OnDestroy {
     private readonly snackBar: MatSnackBar,
     private readonly splitPaneService: SplitPaneService,
     private readonly subgraphSelectionService: SubgraphSelectionService,
+    readonly svgTextRendererService: SvgTextRendererService,
     readonly syncNavigationService: SyncNavigationService,
     private readonly uiStateService: UiStateService,
     private readonly viewContainerRef: ViewContainerRef,
-    private readonly webglRendererAttrsTableService: WebglRendererAttrsTableService,
+    readonly webglRendererAttrsTableService: WebglRendererAttrsTableService,
     readonly webglRendererEdgeTextsService: WebglRendererEdgeTextsService,
     private readonly webglRendererEdgeOverlaysService: WebglRendererEdgeOverlaysService,
     private readonly webglRendererIdenticalLayerService: WebglRendererIdenticalLayerService,
@@ -494,6 +482,7 @@ export class WebglRenderer implements OnInit, OnChanges, OnDestroy {
     readonly webglRendererThreejsService: WebglRendererThreejsService,
     private readonly workerService: WorkerService,
   ) {
+    this.svgTextRendererService.init(this);
     this.webglRendererAttrsTableService.init(this);
     this.webglRendererEdgeTextsService.init(this);
     this.webglRendererEdgeOverlaysService.init(this);
@@ -924,6 +913,7 @@ export class WebglRenderer implements OnInit, OnChanges, OnDestroy {
 
     this.webglRendererThreejsService.setupZoomAndPan(
       this.container.nativeElement,
+      this.svgZoomTarget.nativeElement,
       0.0001,
       20,
     );
@@ -1692,6 +1682,9 @@ export class WebglRenderer implements OnInit, OnChanges, OnDestroy {
       ),
       progress / 3,
     );
+    if (this.appService.config()?.svgTextRenderer === true) {
+      this.setSvgTextsVisible(progress === 0);
+    }
   }
 
   showIoTree(
@@ -1710,20 +1703,40 @@ export class WebglRenderer implements OnInit, OnChanges, OnDestroy {
     });
   }
 
-  getNodeX(node: ModelNode): number {
-    return (node.x || 0) + (node.globalX || 0);
+  getNodeX(node: ModelNode, forSvgTextRenderer = false): number {
+    const x = (node.x || 0) + (node.globalX || 0);
+    if (forSvgTextRenderer) {
+      return this.webglRendererThreejsService.convertXFromSceneToScreen(-x);
+    }
+    return x;
   }
 
-  getNodeY(node: ModelNode): number {
-    return (node.y || 0) + (node.globalY || 0);
+  getNodeY(node: ModelNode, forSvgTextRenderer = false): number {
+    const y = (node.y || 0) + (node.globalY || 0);
+    if (forSvgTextRenderer) {
+      return this.webglRendererThreejsService.convertZFromSceneToScreen(y);
+    }
+    return y;
   }
 
-  getNodeWidth(node: ModelNode): number {
-    return node.width || 0;
+  getNodeWidth(node: ModelNode, forSvgTextRenderer = false): number {
+    const width = node.width || 0;
+    if (forSvgTextRenderer) {
+      return Math.abs(
+        this.webglRendererThreejsService.convertXFromSceneToScreen(width),
+      );
+    }
+    return width;
   }
 
-  getNodeHeight(node: ModelNode): number {
-    return node.height || 0;
+  getNodeHeight(node: ModelNode, forSvgTextRenderer = false): number {
+    const height = node.height || 0;
+    if (forSvgTextRenderer) {
+      return Math.abs(
+        this.webglRendererThreejsService.convertZFromSceneToScreen(height),
+      );
+    }
+    return height;
   }
 
   getNodeRect(node: ModelNode): Rect {
@@ -1735,11 +1748,18 @@ export class WebglRenderer implements OnInit, OnChanges, OnDestroy {
     };
   }
 
-  getNodeLabelRelativeY(node: ModelNode): number {
+  getNodeLabelRelativeY(node: ModelNode, forSvgTextRenderer = false): number {
     const labelHeight = getNodeLabelHeight(node, this.appService.config());
-    return (
-      getNodeLabelYPadding(node, this.appService.config()) + labelHeight / 2 + 1
-    );
+    const relativeY =
+      getNodeLabelYPadding(node, this.appService.config()) +
+      labelHeight / 2 +
+      1;
+    if (forSvgTextRenderer) {
+      return this.webglRendererThreejsService.convertZFromSceneToScreen(
+        relativeY,
+      );
+    }
+    return relativeY;
   }
 
   getNodeLabelSizes(node: ModelNode) {
@@ -1763,6 +1783,40 @@ export class WebglRenderer implements OnInit, OnChanges, OnDestroy {
       }
     }
     return {minX, maxX, firstLineLabelHeight};
+  }
+
+  getNodeLabelColor(node: ModelNode): WebglColor {
+    let color = isGroupNode(node)
+      ? this.getGroupNodeTextColor(node, ColorVariable.ON_SURFACE_COLOR)
+      : new THREE.Color(
+          this.visualizerThemeService.getColor(ColorVariable.ON_SURFACE_COLOR),
+        );
+    if (isOpNode(node) && node.style?.textColor) {
+      color = new THREE.Color(node.style.textColor);
+    }
+
+    // Node styler.
+    for (const rule of this.curProcessedNodeStylerRules) {
+      if (
+        matchNodeForQueries(
+          node,
+          rule.queries,
+          this.curModelGraph,
+          this.appService.config(),
+        )
+      ) {
+        const nodeStylerTextColor = getNodeStyleValue(
+          rule,
+          NodeStyleId.NODE_TEXT_COLOR,
+        );
+        if (nodeStylerTextColor !== '') {
+          color = new THREE.Color(nodeStylerTextColor);
+        }
+        break;
+      }
+    }
+
+    return color;
   }
 
   // Used by tests only.
@@ -2170,6 +2224,9 @@ export class WebglRenderer implements OnInit, OnChanges, OnDestroy {
   }
 
   private renderGraph(options?: RenderGraphOptions) {
+    const useSvgTextRenderer =
+      this.appService.config()?.svgTextRenderer === true &&
+      !options?.forceDisableSvgTextRenderer;
     const extraMeshesToSkip: three.Object3D[] = [];
     if (options?.skipReRenderEdgeTexts) {
       const edgeTextsMesh = this.webglRendererEdgeTextsService.edgeTexts.mesh;
@@ -2192,7 +2249,11 @@ export class WebglRenderer implements OnInit, OnChanges, OnDestroy {
     if (!options?.skipReRenderEdges) {
       this.renderEdges();
     }
-    this.renderTexts();
+    if (useSvgTextRenderer) {
+      this.renderSvgTexts();
+    } else {
+      this.renderTexts();
+    }
 
     const keys = getShowOnEdgeInputOutputMetadataKeys(this.curShowOnEdgeItem);
     if (!options?.skipReRenderEdgeTexts) {
@@ -2211,7 +2272,9 @@ export class WebglRenderer implements OnInit, OnChanges, OnDestroy {
       }
     }
 
-    this.webglRendererAttrsTableService.renderAttrsTable();
+    if (!useSvgTextRenderer) {
+      this.webglRendererAttrsTableService.renderAttrsTable();
+    }
     this.renderNodes();
     this.webglRendererNdpService.renderNodeDataProviderDistributionBars();
     this.renderArtificialGroupBorders();
@@ -2224,16 +2287,16 @@ export class WebglRenderer implements OnInit, OnChanges, OnDestroy {
     });
   }
 
-  private renderAll() {
+  renderAll(options?: RenderGraphOptions) {
     this.savedUpdateNodeBgWhenFarProgress = -1;
     this.updateNodesAndEdgesToRender();
     this.webglRendererThreejsService.updateSceneBackground();
-    this.renderGraph();
+    this.renderGraph(options);
     // This has to be placed before updateNodesStyles because it calculates
     // data needed to update nodes styles correctly.
     this.webglRendererIoHighlightService.updateIncomingAndOutgoingHighlights();
     this.webglRendererIdenticalLayerService.updateIdenticalLayerIndicators();
-    this.updateNodesStyles();
+    this.updateNodesStyles(options);
     this.renderDiffHighlights();
     this.webglRendererThreejsService.render();
   }
@@ -2665,42 +2728,52 @@ export class WebglRenderer implements OnInit, OnChanges, OnDestroy {
     }
   }
 
+  renderSvgTexts(clearAllFirst = false) {
+    this.svgTextRendererService.render(
+      this.svgZoomTarget.nativeElement,
+      clearAllFirst,
+    );
+  }
+
+  private setSvgTextsVisible(visible: boolean) {
+    this.svgTextRendererService.setTextsVisible(
+      this.svgZoomTarget.nativeElement,
+      visible,
+    );
+  }
+
+  private setSvgTextsOpacity(nodeIds: string[], opacity: number) {
+    this.svgTextRendererService.setTextsOpacity(
+      this.svgZoomTarget.nativeElement,
+      nodeIds,
+      opacity,
+    );
+  }
+
+  private restoreSvgTextsOpacity() {
+    this.svgTextRendererService.restoreTextsOpacity(
+      this.svgZoomTarget.nativeElement,
+    );
+  }
+
+  private updateSvgTextsColor(nodeIds: string[], color: string) {
+    this.svgTextRendererService.updateColorInNode(
+      this.svgZoomTarget.nativeElement,
+      nodeIds,
+      color,
+    );
+  }
+
+  private restoreSvgTextsColors() {
+    this.svgTextRendererService.restoreColors(this.svgZoomTarget.nativeElement);
+  }
+
   private renderTexts() {
     const labels: LabelData[] = [];
     // Node labels.
     for (const {node, index} of this.nodesToRender) {
       // Color.
-      let color = isGroupNode(node)
-        ? this.getGroupNodeTextColor(node, ColorVariable.ON_SURFACE_COLOR)
-        : new THREE.Color(
-            this.visualizerThemeService.getColor(
-              ColorVariable.ON_SURFACE_COLOR,
-            ),
-          );
-      if (isOpNode(node) && node.style?.textColor) {
-        color = new THREE.Color(node.style.textColor);
-      }
-
-      // Node styler.
-      for (const rule of this.curProcessedNodeStylerRules) {
-        if (
-          matchNodeForQueries(
-            node,
-            rule.queries,
-            this.curModelGraph,
-            this.appService.config(),
-          )
-        ) {
-          const nodeStylerTextColor = getNodeStyleValue(
-            rule,
-            NodeStyleId.NODE_TEXT_COLOR,
-          );
-          if (nodeStylerTextColor !== '') {
-            color = new THREE.Color(nodeStylerTextColor);
-          }
-          break;
-        }
-      }
+      const color = this.getNodeLabelColor(node);
 
       // Font size.
       const labelHeight = getNodeLabelHeight(node, this.appService.config());
@@ -2897,7 +2970,10 @@ export class WebglRenderer implements OnInit, OnChanges, OnDestroy {
     this.changeDetectorRef.detectChanges();
   }
 
-  private updateNodesStyles() {
+  private updateNodesStyles(options?: RenderGraphOptions) {
+    const useSvgTextRenderer =
+      this.appService.config()?.svgTextRenderer === true &&
+      !options?.forceDisableSvgTextRenderer;
     let selectedNodeIdChanged = false;
     if (this.selectedNodeId !== this.updateNodesStylesSavedSelectedNodeId) {
       this.updateNodesStylesSavedSelectedNodeId = this.selectedNodeId;
@@ -2919,8 +2995,13 @@ export class WebglRenderer implements OnInit, OnChanges, OnDestroy {
     this.nodeBodies.restoreBorderWidths();
     this.nodeBodies.restoreOpacities();
     this.groupNodeIconBgs.restoreOpacities();
-    this.texts.restoreOpacities();
-    this.texts.restoreColors();
+    if (useSvgTextRenderer) {
+      this.restoreSvgTextsOpacity();
+      this.restoreSvgTextsColors();
+    } else {
+      this.texts.restoreOpacities();
+      this.texts.restoreColors();
+    }
     this.webglRendererEdgeTextsService.edgeTexts.restoreOpacities();
     this.groupNodeIcons.restoreOpacities();
     this.webglRendererAttrsTableService.attrsTableTexts.restoreOpacities();
@@ -3079,7 +3160,11 @@ export class WebglRenderer implements OnInit, OnChanges, OnDestroy {
       }
       const textColor = nodeDataProviderResults[nodeId].textColor;
       if (textColor) {
-        this.texts.updateColorInNode([nodeId], new THREE.Color(textColor));
+        if (useSvgTextRenderer) {
+          this.updateSvgTextsColor([nodeId], textColor);
+        } else {
+          this.texts.updateColorInNode([nodeId], new THREE.Color(textColor));
+        }
       }
     }
 
@@ -3092,7 +3177,11 @@ export class WebglRenderer implements OnInit, OnChanges, OnDestroy {
           ) && this.isNodeRendered(id),
       );
       this.nodeBodies.updateOpacity(nodeIds, 0.2);
-      this.texts.updateOpacityInNode(nodeIds, 0.3);
+      if (useSvgTextRenderer) {
+        this.setSvgTextsOpacity(nodeIds, 0.3);
+      } else {
+        this.texts.updateOpacityInNode(nodeIds, 0.3);
+      }
       this.groupNodeIcons.updateOpacityInNode(nodeIds, 0.3);
       this.webglRendererAttrsTableService.attrsTableTexts.updateOpacityInNode(
         nodeIds,
@@ -3130,6 +3219,7 @@ export class WebglRenderer implements OnInit, OnChanges, OnDestroy {
 
     // Animate
     const startTs = Date.now();
+    const node = this.curModelGraph.nodesById[nodeId];
     const animate = () => {
       const elapsed = Date.now() - startTs;
       let t = Math.min(1, elapsed / 1100);
@@ -3137,9 +3227,11 @@ export class WebglRenderer implements OnInit, OnChanges, OnDestroy {
       // ease in out sine.
       t = -(Math.cos(Math.PI * t) - 1) / 2;
 
+      const nodeWidth = this.getNodeWidth(node);
       const angle =
         Math.sin(t * Math.PI * 9 /* Number of shakes */) *
-        8; /* Max shake angle in degree */
+        ((Math.atan((MAX_SHAKE_DISTANCE / nodeWidth) * 2) / Math.PI) *
+          180); /* Max shake angle in degree */
       this.nodeBodies.updateAngle(nodeId, angle);
       this.webglRendererSearchResultsService.searchResultsHighlightBorders.updateAngle(
         nodeId,
@@ -3607,7 +3699,7 @@ export class WebglRenderer implements OnInit, OnChanges, OnDestroy {
     );
   }
 
-  private getNodeLabel(node: ModelNode): string {
+  getNodeLabel(node: ModelNode): string {
     if (isOpNode(node)) {
       // Special handling for placeholders.
       if (node.label === 'Placeholder') {

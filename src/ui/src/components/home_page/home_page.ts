@@ -60,6 +60,7 @@ import {
   SETTING_OP_NODE_LABEL_FONT_SIZE,
   SETTING_SHOW_OP_NODE_OUT_OF_LAYER_EDGES_WITHOUT_SELECTING,
   SETTING_SHOW_SIDE_PANEL_ON_NODE_SELECTION,
+  SETTING_USE_SVG_TEXT_RENDERER,
   SettingKey,
   SettingsService,
 } from '../../services/settings_service';
@@ -503,6 +504,9 @@ export class HomePage implements AfterViewInit {
       ),
       showSidePanelOnNodeSelection: this.settingsService.getBooleanValue(
         SETTING_SHOW_SIDE_PANEL_ON_NODE_SELECTION,
+      ),
+      svgTextRenderer: this.settingsService.getBooleanValue(
+        SETTING_USE_SVG_TEXT_RENDERER,
       ),
       nodeAttrsToHide: this.urlService.nodeAttributesToHide,
     };

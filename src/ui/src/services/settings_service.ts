@@ -44,6 +44,7 @@ export enum SettingKey {
   HIGHLIGHT_LAYER_NODE_INPUTS_OUTPUTS = 'highlight_layer_node_inputs_outputs',
   HIDE_EMPTY_NODE_DATA_ENTRIES = 'hide_empty_node_data_entries',
   SHOW_SIDE_PANEL_ON_NODE_SELECTION = 'show_side_panel_on_node_selection',
+  USE_SVG_TEXT_RENDERER = 'use_svg_text_renderer',
 }
 
 /** Setting types. */
@@ -255,6 +256,19 @@ export const SETTING_SHOW_SIDE_PANEL_ON_NODE_SELECTION: Setting = {
   defaultValue: false,
 };
 
+/** Setting for using svg text renderer. */
+export const SETTING_USE_SVG_TEXT_RENDERER: Setting = {
+  label: 'Use SVG text renderer',
+  key: SettingKey.USE_SVG_TEXT_RENDERER,
+  type: SettingType.BOOLEAN,
+  defaultValue: false,
+  help:
+    'Enable this to render node label and on-node attribute texts ' +
+    'using SVG for improved clarity, especially at smaller font sizes. ' +
+    'It also supports rendering non-ASCII characters. ' +
+    '⚠️ Note: This may impact performance when rendering large models.',
+};
+
 const SETTINGS_LOCAL_STORAGE_KEY = 'model_explorer_settings';
 
 /**
@@ -280,6 +294,7 @@ export const ALL_SETTINGS: Array<Setting[]> = [
   [SETTING_HIGHLIGHT_LAYER_NODE_INPUTS_OUTPUTS],
   [SETTING_HIDE_EMPTY_NODE_DATA_ENTRIES],
   [SETTING_SHOW_SIDE_PANEL_ON_NODE_SELECTION],
+  [SETTING_USE_SVG_TEXT_RENDERER],
 ];
 
 /**

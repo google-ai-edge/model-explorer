@@ -1335,21 +1335,3 @@ export function getLayoutMarginTop(
   const nodeLabelYPadding = getNodeLabelYPadding(node, config);
   return nodeLabelYPadding + nodeLabelHeight + 16;
 }
-
-/**
- * Gets the top retraction of the attributes table.
- *
- * The attrs table by default sits below the default height of the node label.
- * To make it look better, we want to retract it a little bit into the node
- * label's vertical space.
- */
-export function getAttrsTableTopRetraction(
-  node: ModelNode,
-  config?: VisualizerConfig,
-): number {
-  const nodeLabelHeight = getNodeLabelHeight(node, config);
-  if (nodeLabelHeight === 11) {
-    return 4;
-  }
-  return nodeLabelHeight / 2;
-}

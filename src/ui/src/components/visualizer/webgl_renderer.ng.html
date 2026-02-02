@@ -24,6 +24,10 @@ limitations under the License.
   </canvas>
   <canvas class="snapshot" #snapshotCanvas></canvas>
   <canvas class="download-png" #pngDownloaderCanvas></canvas>
+  <svg xmlns="http://www.w3.org/2000/svg"
+      class="model-graph-vis-svg-text-renderer">
+    <g class="zoom-target" #svgZoomTarget></g>
+  </svg>
 
   <div class="group-node-icon"
       [style.top.px]="groupNodeIcon.top"

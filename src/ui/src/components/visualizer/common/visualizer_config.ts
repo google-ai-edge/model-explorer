@@ -166,6 +166,11 @@ export declare interface VisualizerConfig {
   defaultRenderer?: RendererType;
 
   /**
+   * Whether to use the SVG text renderer.
+   */
+  svgTextRenderer?: boolean;
+
+  /**
    * Whether to hide the title bar.
    */
   hideTitleBar?: boolean;

@@ -27,7 +27,7 @@ import {
   NODE_ATTRS_TABLE_FONT_SIZE_TO_HEIGHT_RATIO,
   NODE_ATTRS_TABLE_LABEL_VALUE_PADDING,
   NODE_ATTRS_TABLE_LEFT_RIGHT_PADDING,
-  NODE_ATTRS_TABLE_MARGIN_TOP,
+  NODE_ATTRS_TABLE_MARGIN_TOP_FACTOR,
   NODE_ATTRS_TABLE_VALUE_MAX_CHAR_COUNT,
   NODE_DATA_PROVIDER_SHOW_ON_NODE_TYPE_PREFIX,
 } from '../common/consts';
@@ -51,7 +51,6 @@ import {
 import {
   genSortedValueInfos,
   generateCurvePoints,
-  getAttrsTableTopRetraction,
   getGroupNodeAttrsKeyValuePairsForAttrsTable,
   getGroupNodeFieldLabelsFromShowOnNodeItemTypes,
   getLabelWidth,
@@ -582,7 +581,7 @@ export function getNodeWidth(
     maxAttrValueWidth +
     NODE_ATTRS_TABLE_LEFT_RIGHT_PADDING * 2 +
     NODE_ATTRS_TABLE_LABEL_VALUE_PADDING;
-  if (attrsTableWidth !== NODE_ATTRS_TABLE_LABEL_VALUE_PADDING) {
+  if (maxAttrLabelWidth > 0 || maxAttrValueWidth > 0) {
     attrsTableWidth += ATTRS_TABLE_MARGIN_X * 2;
   }
   return Math.max(
@@ -658,19 +657,30 @@ export function getNodeHeight(
   }
 
   return (
+    // Node label top padding.
+    getNodeLabelYPadding(node, config) +
+    // Node label height.
     getNodeLabelHeight(node, config) +
+    // Extra height for multi-line label.
     extraMultiLineLabelHeight +
-    getNodeLabelYPadding(node, config) * 2 +
+    // Attrs table height.
     attrsTableRowCount * rowHeight +
+    // The distance between the bottom of node label and attrs table.
     (attrsTableRowCount > 0
-      ? NODE_ATTRS_TABLE_MARGIN_TOP - getAttrsTableTopRetraction(node, config)
+      ? getNodeLabelYPadding(node, config) * NODE_ATTRS_TABLE_MARGIN_TOP_FACTOR
       : 0) +
+    // Expanded node data provider summary table height.
     expandedNodeDataProviderRowCount *
       EXPANDED_NODE_DATA_PROVIDER_SUMMARY_ROW_HEIGHT +
     (expandedNodeDataProviderRowCount > 0
       ? EXPANDED_NODE_DATA_PROVIDER_SUMMARY_TOP_PADDING +
         EXPANDED_NODE_DATA_PROVIDER_SUMMARY_BOTTOM_PADDING
-      : 0)
+      : 0) +
+    // Node bottom padding.
+    (((isGroupNode(node) && !node.expanded) || isOpNode(node)) &&
+    attrsTableRowCount > 0
+      ? rowHeight / 2
+      : getNodeLabelYPadding(node, config))
   );
 }
 
@@ -873,7 +883,12 @@ function getMaxAttrLabelAndValueWidth(
   for (const {key, value} of keyValuePairs) {
     const attrLabelWidth = getLabelWidth(key, fontSize, true);
     maxAttrLabelWidth = Math.max(maxAttrLabelWidth, attrLabelWidth);
-    const attrValueWidth = getLabelWidth(value, fontSize, false);
+    let trimmedValue = value;
+    if (value.length > NODE_ATTRS_TABLE_VALUE_MAX_CHAR_COUNT) {
+      trimmedValue =
+        value.substring(0, NODE_ATTRS_TABLE_VALUE_MAX_CHAR_COUNT - 3) + '...';
+    }
+    const attrValueWidth = getLabelWidth(trimmedValue, fontSize, false);
     maxAttrValueWidth = Math.max(maxAttrValueWidth, attrValueWidth);
   }
   return {maxAttrLabelWidth, maxAttrValueWidth};

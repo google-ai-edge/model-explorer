@@ -43,6 +43,44 @@
     display: none;
   }
 
+  svg {
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    overflow: hidden;
+    font-size: 11px;
+    user-select: none;
+    position: absolute;
+    pointer-events: none;
+    transform: translateZ(0);
+    backface-visibility: hidden;
+
+    ::ng-deep {
+      text.node-label {
+        text-anchor: middle;
+        dominant-baseline: middle;
+        text-rendering: optimizeSpeed;
+      }
+
+      g.node-attrs-table {
+        text-rendering: optimizeSpeed;
+        font-weight: 400;
+        letter-spacing: -0.005em;
+
+        tspan.key-label {
+          text-anchor: end;
+          dominant-baseline: middle;
+        }
+
+        tspan.key-value {
+          text-anchor: start;
+          dominant-baseline: middle;
+        }
+      }
+    }
+  }
+
   .io-picker,
   .group-node-icon,
   .subgraph-indicator {

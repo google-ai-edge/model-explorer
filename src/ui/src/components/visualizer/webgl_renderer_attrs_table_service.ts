@@ -23,14 +23,13 @@ import {
   DEFAULT_NODE_ATTRS_TABLE_FONT_SIZE,
   NODE_ATTRS_TABLE_FONT_SIZE_TO_HEIGHT_RATIO,
   NODE_ATTRS_TABLE_LABEL_VALUE_PADDING,
-  NODE_ATTRS_TABLE_MARGIN_TOP,
+  NODE_ATTRS_TABLE_MARGIN_TOP_FACTOR,
   NODE_ATTRS_TABLE_VALUE_MAX_CHAR_COUNT,
   WEBGL_ELEMENT_Y_FACTOR,
 } from './common/consts';
 import {ModelNode} from './common/model_graph';
 import {FontWeight, ShowOnNodeItemType} from './common/types';
 import {
-  getAttrsTableTopRetraction,
   getGroupNodeAttrsKeyValuePairsForAttrsTable,
   getGroupNodeFieldLabelsFromShowOnNodeItemTypes,
   getMultiLineLabelExtraHeight,
@@ -104,7 +103,8 @@ export class WebglRendererAttrsTableService {
       DEFAULT_NODE_ATTRS_TABLE_FONT_SIZE;
     const rowHeight = fontSize * NODE_ATTRS_TABLE_FONT_SIZE_TO_HEIGHT_RATIO;
     const labels: LabelData[] = [];
-    const webglTextsFontSize = this.attrsTableTexts.getFontSize();
+    const webglTextsFontSize = this.getWebglTextsFontSize();
+    this.attrsTableTexts.getFontSize();
     const scale = fontSize / webglTextsFontSize;
     const tableBgRectangles: RoundedRectangleData[] = [];
     const attrTableBgColor = new THREE.Color(
@@ -113,151 +113,14 @@ export class WebglRendererAttrsTableService {
       ),
     );
     for (const {node, index} of this.webglRenderer.nodesToRender) {
-      const rows: Array<{
-        keyLabelData: LabelData;
-        valueLabelData: LabelData;
-      }> = [];
-      let curZ =
-        getNodeLabelHeight(node, this.webglRenderer.appService.config()) +
-        getNodeLabelYPadding(node, this.webglRenderer.appService.config()) * 2 +
-        NODE_ATTRS_TABLE_MARGIN_TOP -
-        getAttrsTableTopRetraction(
-          node,
-          this.webglRenderer.appService.config(),
-        ) +
-        getMultiLineLabelExtraHeight(
-          node,
-          this.webglRenderer.appService.config(),
-        );
-      let maxKeyWidth = 0;
-      let maxValueWidth = 0;
-      const keyValuePairs: Array<{key: string; value: string}> = [];
-
-      if (isOpNode(node)) {
-        const fieldIds = getOpNodeFieldLabelsFromShowOnNodeItemTypes(
-          this.webglRenderer.curShowOnNodeItemTypes,
-        );
-        // Node info.
-        for (const fieldId of fieldIds) {
-          const value = getNodeInfoFieldValue(node, fieldId);
-          keyValuePairs.push({key: fieldId, value});
-        }
-
-        // Attrs.
-        if (
-          this.webglRenderer.curShowOnNodeItemTypes[ShowOnNodeItemType.OP_ATTRS]
-            ?.selected
-        ) {
-          keyValuePairs.push(
-            ...getOpNodeAttrsKeyValuePairsForAttrsTable(
-              node,
-              this.webglRenderer.curShowOnNodeItemTypes[
-                ShowOnNodeItemType.OP_ATTRS
-              ]?.filterRegex || '',
-            ),
-          );
-        }
-
-        // Inputs.
-        if (
-          this.webglRenderer.curShowOnNodeItemTypes[
-            ShowOnNodeItemType.OP_INPUTS
-          ]?.selected
-        ) {
-          keyValuePairs.push(
-            ...getOpNodeInputsKeyValuePairsForAttrsTable(
-              node,
-              this.webglRenderer.curModelGraph,
-            ),
-          );
-        }
-
-        // Outputs.
-        if (
-          this.webglRenderer.curShowOnNodeItemTypes[
-            ShowOnNodeItemType.OP_OUTPUTS
-          ]?.selected
-        ) {
-          keyValuePairs.push(
-            ...getOpNodeOutputsKeyValuePairsForAttrsTable(node),
-          );
-        }
-
-        // Node data provider.
-        keyValuePairs.push(
-          ...getOpNodeDataProviderKeyValuePairsForAttrsTable(
-            node,
-            this.webglRenderer.curModelGraph.id,
-            this.webglRenderer.curShowOnNodeItemTypes,
-            this.webglRenderer.curNodeDataProviderRuns,
-            this.webglRenderer.appService.config(),
-          ),
-        );
-      } else if (isGroupNode(node)) {
-        const fieldIds = getGroupNodeFieldLabelsFromShowOnNodeItemTypes(
-          this.webglRenderer.curShowOnNodeItemTypes,
-        );
-        // Node info.
-        for (const fieldId of fieldIds) {
-          const value = getNodeInfoFieldValue(node, fieldId);
-          keyValuePairs.push({key: fieldId, value});
-        }
-
-        // Attrs.
-        if (
-          this.webglRenderer.curShowOnNodeItemTypes[
-            ShowOnNodeItemType.LAYER_NODE_ATTRS
-          ]?.selected
-        ) {
-          keyValuePairs.push(
-            ...getGroupNodeAttrsKeyValuePairsForAttrsTable(
-              node,
-              this.webglRenderer.curModelGraph,
-              this.webglRenderer.curShowOnNodeItemTypes[
-                ShowOnNodeItemType.LAYER_NODE_ATTRS
-              ]?.filterRegex || '',
-            ),
-          );
-        }
-      }
-
-      // Generate rows.
-      for (const {key, value} of keyValuePairs) {
-        const {keyLabelData, keyLabelWidth, valueLabelData, valueLabelWidth} =
-          this.createAttrsTableKeyValueLabels(
-            node,
-            index,
-            key,
-            value,
-            curZ,
-            scale,
-          );
-        labels.push(keyLabelData, valueLabelData);
-        maxKeyWidth = Math.max(keyLabelWidth, maxKeyWidth);
-        maxValueWidth = Math.max(valueLabelWidth, maxValueWidth);
-
-        rows.push({
-          keyLabelData,
-          valueLabelData,
-        });
-        curZ += rowHeight;
-      }
-
-      // Adjust positions.
-      const maxRowWidth =
-        maxKeyWidth + maxValueWidth + NODE_ATTRS_TABLE_LABEL_VALUE_PADDING;
-      const tableOffsetX =
-        (this.webglRenderer.getNodeWidth(node) - maxRowWidth) / 2;
-      for (const row of rows) {
-        row.keyLabelData.x = this.webglRenderer.getNodeX(node) + maxKeyWidth;
-        row.valueLabelData.x =
-          this.webglRenderer.getNodeX(node) +
-          maxKeyWidth +
-          NODE_ATTRS_TABLE_LABEL_VALUE_PADDING;
-
-        row.keyLabelData.x += tableOffsetX;
-        row.valueLabelData.x += tableOffsetX;
-      }
+      const {rows, nodeLabels} = this.generateAttrsTableDataForNode(
+        node,
+        index,
+        fontSize,
+        scale,
+        rowHeight,
+      );
+      labels.push(...nodeLabels);
 
       // Create table bg rectangle (only for op nodes).
       if (rows.length > 0 && isOpNode(node)) {
@@ -292,9 +155,170 @@ export class WebglRendererAttrsTableService {
     }
   }
 
+  generateAttrsTableDataForNode(
+    node: ModelNode,
+    index: number,
+    fontSize: number,
+    scale: number,
+    rowHeight: number,
+  ): {
+    rows: Array<{keyLabelData: LabelData; valueLabelData: LabelData}>;
+    nodeLabels: LabelData[];
+  } {
+    const rows: Array<{
+      keyLabelData: LabelData;
+      valueLabelData: LabelData;
+    }> = [];
+    const nodeLabels: LabelData[] = [];
+    const config = this.webglRenderer.appService.config();
+    // When curZ is 0, the vertical center of the first row label is aligned
+    // with the top edge of the node body.
+    let curZ =
+      // Node label top padding.
+      getNodeLabelYPadding(node, config) +
+      // Node label height
+      getNodeLabelHeight(node, config) +
+      // Extra height for multi-line node label.
+      getMultiLineLabelExtraHeight(node, config) +
+      // Distance between node label and attrs table.
+      getNodeLabelYPadding(node, config) * NODE_ATTRS_TABLE_MARGIN_TOP_FACTOR +
+      // Make the top of row align with the bottom of node label + padding.
+      rowHeight / 2;
+    let maxKeyWidth = 0;
+    let maxValueWidth = 0;
+    const keyValuePairs: Array<{key: string; value: string}> = [];
+
+    if (isOpNode(node)) {
+      const fieldIds = getOpNodeFieldLabelsFromShowOnNodeItemTypes(
+        this.webglRenderer.curShowOnNodeItemTypes,
+      );
+      // Node info.
+      for (const fieldId of fieldIds) {
+        const value = getNodeInfoFieldValue(node, fieldId);
+        keyValuePairs.push({key: fieldId, value});
+      }
+
+      // Attrs.
+      if (
+        this.webglRenderer.curShowOnNodeItemTypes[ShowOnNodeItemType.OP_ATTRS]
+          ?.selected
+      ) {
+        keyValuePairs.push(
+          ...getOpNodeAttrsKeyValuePairsForAttrsTable(
+            node,
+            this.webglRenderer.curShowOnNodeItemTypes[
+              ShowOnNodeItemType.OP_ATTRS
+            ]?.filterRegex || '',
+          ),
+        );
+      }
+
+      // Inputs.
+      if (
+        this.webglRenderer.curShowOnNodeItemTypes[ShowOnNodeItemType.OP_INPUTS]
+          ?.selected
+      ) {
+        keyValuePairs.push(
+          ...getOpNodeInputsKeyValuePairsForAttrsTable(
+            node,
+            this.webglRenderer.curModelGraph,
+          ),
+        );
+      }
+
+      // Outputs.
+      if (
+        this.webglRenderer.curShowOnNodeItemTypes[ShowOnNodeItemType.OP_OUTPUTS]
+          ?.selected
+      ) {
+        keyValuePairs.push(...getOpNodeOutputsKeyValuePairsForAttrsTable(node));
+      }
+
+      // Node data provider.
+      keyValuePairs.push(
+        ...getOpNodeDataProviderKeyValuePairsForAttrsTable(
+          node,
+          this.webglRenderer.curModelGraph.id,
+          this.webglRenderer.curShowOnNodeItemTypes,
+          this.webglRenderer.curNodeDataProviderRuns,
+          this.webglRenderer.appService.config(),
+        ),
+      );
+    } else if (isGroupNode(node)) {
+      const fieldIds = getGroupNodeFieldLabelsFromShowOnNodeItemTypes(
+        this.webglRenderer.curShowOnNodeItemTypes,
+      );
+      // Node info.
+      for (const fieldId of fieldIds) {
+        const value = getNodeInfoFieldValue(node, fieldId);
+        keyValuePairs.push({key: fieldId, value});
+      }
+
+      // Attrs.
+      if (
+        this.webglRenderer.curShowOnNodeItemTypes[
+          ShowOnNodeItemType.LAYER_NODE_ATTRS
+        ]?.selected
+      ) {
+        keyValuePairs.push(
+          ...getGroupNodeAttrsKeyValuePairsForAttrsTable(
+            node,
+            this.webglRenderer.curModelGraph,
+            this.webglRenderer.curShowOnNodeItemTypes[
+              ShowOnNodeItemType.LAYER_NODE_ATTRS
+            ]?.filterRegex || '',
+          ),
+        );
+      }
+    }
+
+    // Generate rows.
+    for (const {key, value} of keyValuePairs) {
+      const {keyLabelData, keyLabelWidth, valueLabelData, valueLabelWidth} =
+        this.createAttrsTableKeyValueLabels(
+          node,
+          index,
+          key,
+          value,
+          curZ,
+          scale,
+        );
+      nodeLabels.push(keyLabelData, valueLabelData);
+      maxKeyWidth = Math.max(keyLabelWidth, maxKeyWidth);
+      maxValueWidth = Math.max(valueLabelWidth, maxValueWidth);
+
+      rows.push({
+        keyLabelData,
+        valueLabelData,
+      });
+      curZ += rowHeight;
+    }
+
+    // Adjust positions.
+    const maxRowWidth =
+      maxKeyWidth + maxValueWidth + NODE_ATTRS_TABLE_LABEL_VALUE_PADDING;
+    const tableOffsetX =
+      (this.webglRenderer.getNodeWidth(node) - maxRowWidth) / 2;
+    for (const row of rows) {
+      row.keyLabelData.x = this.webglRenderer.getNodeX(node) + maxKeyWidth;
+      row.valueLabelData.x =
+        this.webglRenderer.getNodeX(node) +
+        maxKeyWidth +
+        NODE_ATTRS_TABLE_LABEL_VALUE_PADDING;
+
+      row.keyLabelData.x += tableOffsetX;
+      row.valueLabelData.x += tableOffsetX;
+    }
+    return {rows, nodeLabels};
+  }
+
   updateAnimationProgress(t: number) {
     this.attrsTableTexts.updateAnimationProgress(t);
     this.attrsTableBgs.updateAnimationProgress(t);
+  }
+
+  getWebglTextsFontSize(): number {
+    return this.attrsTableTexts.getFontSize();
   }
 
   private createAttrsTableKeyValueLabels(
@@ -308,8 +332,6 @@ export class WebglRendererAttrsTableService {
     const fontSize =
       this.webglRenderer.appService.config()?.nodeAttrsTableFontSize ??
       DEFAULT_NODE_ATTRS_TABLE_FONT_SIZE;
-    const nodeAttrsTableValueMaxWidth =
-      fontSize * NODE_ATTRS_TABLE_VALUE_MAX_CHAR_COUNT;
     const attrTableKeyColor = new THREE.Color(
       this.webglRenderer.visualizerThemeService.getColor(
         ColorVariable.ON_SURFACE_VARIANT_COLOR,
@@ -340,26 +362,29 @@ export class WebglRendererAttrsTableService {
     ).sizes;
     const keyLabelWidth = (keyLabelSizes.maxX - keyLabelSizes.minX) * scale;
 
+    let trimmedValue = value;
+    if (value.length > NODE_ATTRS_TABLE_VALUE_MAX_CHAR_COUNT) {
+      trimmedValue =
+        value.substring(0, NODE_ATTRS_TABLE_VALUE_MAX_CHAR_COUNT - 3) + '...';
+    }
     const valueLabelData: LabelData = {
       id: `${node.id}_attrs_table_${key}_value`,
       nodeId: node.id,
-      label: value,
+      label: trimmedValue,
       height: fontSize,
       hAlign: 'left',
       vAlign: 'center',
-      weight: FontWeight.REGULAR,
+      weight: FontWeight.MEDIUM,
       x: this.webglRenderer.getNodeX(node),
       y: index * WEBGL_ELEMENT_Y_FACTOR + ATTRS_TABLE_TEXT_Y_OFFSET,
       z: this.webglRenderer.getNodeY(node) + zOffset,
       color: attrTableTextColor,
-      maxWidth: nodeAttrsTableValueMaxWidth,
     };
     const {sizes: valueLabelSizes, updatedLabel} =
       this.attrsTableTexts.getLabelSizes(
         valueLabelData.label,
         valueLabelData.weight,
         valueLabelData.height,
-        valueLabelData.maxWidth,
       );
     if (updatedLabel != null) {
       valueLabelData.label = updatedLabel;

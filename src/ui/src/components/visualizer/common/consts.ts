@@ -35,11 +35,14 @@ export const DEFAULT_NODE_ATTRS_TABLE_FONT_SIZE = 9;
 /** The ratio of the attrs table height to the font size. */
 export const NODE_ATTRS_TABLE_FONT_SIZE_TO_HEIGHT_RATIO = 1.33;
 
-/** The top margin above node's attrs table. */
-export const NODE_ATTRS_TABLE_MARGIN_TOP = 16;
+/** The margin top factor of the attrs table to the node label. */
+export const NODE_ATTRS_TABLE_MARGIN_TOP_FACTOR = 1.5;
 
 /** The maximum number of characters in a value in the attrs table. */
-export const NODE_ATTRS_TABLE_VALUE_MAX_CHAR_COUNT = 25;
+export const NODE_ATTRS_TABLE_VALUE_MAX_CHAR_COUNT = 60;
+
+/** The duration of the node animation. */
+export const NODE_ANIMATION_DURATION = 200;
 
 /** The height of the summary row in node data provider. */
 export const EXPANDED_NODE_DATA_PROVIDER_SUMMARY_ROW_HEIGHT = 14;
