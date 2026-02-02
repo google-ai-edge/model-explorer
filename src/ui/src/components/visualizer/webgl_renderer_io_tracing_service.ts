@@ -18,12 +18,11 @@
 
 import {Injectable} from '@angular/core';
 import {OpNode} from './common/model_graph';
-import {isOpNode} from './common/utils';
+import {isGroupNode, isOpNode} from './common/utils';
 import {WebglRenderer} from './webgl_renderer';
 
 /** IO tracing related data. */
 export interface IoTracingData {
-  tracedNodeId: string;
   visibleNodeIds: Set<string>;
 }
 
@@ -39,14 +38,30 @@ export class WebglRendererIoTracingService {
   }
 
   genTracingData() {
-    if (
-      !this.webglRenderer.selectedNodeId ||
-      !isOpNode(
-        this.webglRenderer.curModelGraph.nodesById[
-          this.webglRenderer.selectedNodeId
-        ],
-      )
-    ) {
+    if (!this.webglRenderer.selectedNodeId) {
+      return;
+    }
+
+    const selectedNode =
+      this.webglRenderer.curModelGraph.nodesById[
+        this.webglRenderer.selectedNodeId
+      ];
+    if (!selectedNode) {
+      return;
+    }
+
+    const seedNodeIds: string[] = [];
+    if (isOpNode(selectedNode)) {
+      seedNodeIds.push(selectedNode.id);
+    } else if (isGroupNode(selectedNode)) {
+      seedNodeIds.push(
+        ...(selectedNode.descendantsOpNodeIds || []).filter((id) => {
+          const node = this.webglRenderer.curModelGraph.nodesById[id];
+          return node != null && isOpNode(node) && !node.hideInLayout;
+        }),
+      );
+    }
+    if (seedNodeIds.length === 0) {
       return;
     }
 
@@ -54,7 +69,7 @@ export class WebglRendererIoTracingService {
 
     // Find all ancestor op nodes.
     const seenAncestorNodeIds = new Set<string>();
-    let queue: string[] = [this.webglRenderer.selectedNodeId];
+    let queue: string[] = [...seedNodeIds];
     while (queue.length > 0) {
       const curNodeId = queue.shift()!;
       if (seenAncestorNodeIds.has(curNodeId)) {
@@ -74,7 +89,7 @@ export class WebglRendererIoTracingService {
 
     // Find all descendant op nodes.
     const seenDescendantNodeIds = new Set<string>();
-    queue = [this.webglRenderer.selectedNodeId];
+    queue = [...seedNodeIds];
     while (queue.length > 0) {
       const curNodeId = queue.shift()!;
       if (seenDescendantNodeIds.has(curNodeId)) {
@@ -106,7 +121,6 @@ export class WebglRendererIoTracingService {
     }
 
     this.curIoTracingData = {
-      tracedNodeId: this.webglRenderer.selectedNodeId,
       visibleNodeIds,
     };
   }

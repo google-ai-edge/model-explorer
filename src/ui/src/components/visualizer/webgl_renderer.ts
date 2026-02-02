@@ -628,10 +628,7 @@ export class WebglRenderer implements OnInit, OnChanges, OnDestroy {
       this.selectedNodeId = selectedNodeId;
 
       if (this.tracing) {
-        if (
-          this.selectedNodeId &&
-          isOpNode(this.curModelGraph.nodesById[this.selectedNodeId])
-        ) {
+        if (this.selectedNodeId) {
           this.webglRendererIoTracingService.genTracingData();
         } else {
           this.webglRendererIoTracingService.clearTracingData();
@@ -765,12 +762,22 @@ export class WebglRenderer implements OnInit, OnChanges, OnDestroy {
 
     // Handle input/output highlight visibility changes.
     effect(() => {
-      this.curHiddenInputOpNodeIds =
+      // Only update if the hidden input or output IDs have changed.
+      const newHiddenInputOpNodeIds =
         this.splitPaneService.hiddenInputOpNodeIds();
-      this.curHiddenOutputIds = this.splitPaneService.hiddenOutputIds();
-      this.webglRendererIoHighlightService.updateIncomingAndOutgoingHighlights();
-      this.updateNodesStyles();
-      this.webglRendererThreejsService.render();
+      const newHiddenOutputIds = this.splitPaneService.hiddenOutputIds();
+      if (
+        JSON.stringify(this.curHiddenInputOpNodeIds) !==
+          JSON.stringify(newHiddenInputOpNodeIds) ||
+        JSON.stringify(this.curHiddenOutputIds) !==
+          JSON.stringify(newHiddenOutputIds)
+      ) {
+        this.curHiddenInputOpNodeIds = {...newHiddenInputOpNodeIds};
+        this.curHiddenOutputIds = {...newHiddenOutputIds};
+        this.webglRendererIoHighlightService.updateIncomingAndOutgoingHighlights();
+        this.updateNodesStyles();
+        this.webglRendererThreejsService.render();
+      }
     });
 
     // Handle navigation sync source changes.
@@ -3007,6 +3014,7 @@ export class WebglRenderer implements OnInit, OnChanges, OnDestroy {
     this.webglRendererAttrsTableService.attrsTableTexts.restoreOpacities();
     if (selectedNodeIdChanged || ioTracingDataChanged) {
       this.edges.restoreColors();
+      this.webglRendererIdenticalLayerService.restoreOpacity();
     }
     this.edges.restoreYOffsets();
 
@@ -3191,6 +3199,7 @@ export class WebglRenderer implements OnInit, OnChanges, OnDestroy {
         nodeIds,
         0.3,
       );
+      this.webglRendererIdenticalLayerService.updateOpacity(nodeIds, 0.3);
 
       const edgeIdsToDim = this.edgesToRender
         .filter(

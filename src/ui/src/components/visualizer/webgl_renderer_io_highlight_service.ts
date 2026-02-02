@@ -493,7 +493,7 @@ export class WebglRendererIoHighlightService {
           continue;
         }
 
-        if (seenIncomingNodesIds.has(sourceNode.id)) {
+        if (seenIncomingNodesIds.has(sourceNode.id) && isOpNode(selectedNode)) {
           continue;
         }
         seenIncomingNodesIds.add(sourceNode.id);
@@ -606,7 +606,12 @@ export class WebglRendererIoHighlightService {
 
           // Add a point from the selected node that connects to the last point of
           // the rendered edge.
-          if (renderedEdge.toNodeId !== opNode?.id && isOpNode(selectedNode)) {
+          if (
+            renderedEdge.toNodeId !== opNode?.id &&
+            (isOpNode(selectedNode) ||
+              (isGroupNode(selectedNode) &&
+                this.webglRenderer.isNodeRendered(opNode.id)))
+          ) {
             const renderedEdgeLastX =
               renderedEdge.points[renderedEdge.points.length - 1].x +
               (renderedEdgeFromNode.globalX || 0);
@@ -743,7 +748,7 @@ export class WebglRendererIoHighlightService {
           continue;
         }
 
-        if (seenOutgoingNodesIds.has(targetNode.id)) {
+        if (seenOutgoingNodesIds.has(targetNode.id) && isOpNode(selectedNode)) {
           continue;
         }
         seenOutgoingNodesIds.add(targetNode.id);
@@ -800,7 +805,11 @@ export class WebglRendererIoHighlightService {
 
           // Add a point from the selected node that connects to the first point
           // of the rendered edge.
-          if (isOpNode(selectedNode)) {
+          if (
+            isOpNode(selectedNode) ||
+            (isGroupNode(selectedNode) &&
+              this.webglRenderer.isNodeRendered(opNode.id))
+          ) {
             if (renderedEdge.fromNodeId !== opNode?.id) {
               const renderedEdgeStartX =
                 renderedEdge.points[0].x + (renderedEdgeFromNode.globalX || 0);

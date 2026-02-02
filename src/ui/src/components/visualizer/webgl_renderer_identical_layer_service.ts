@@ -148,6 +148,7 @@ export class WebglRendererIdenticalLayerService {
         });
         identicalGroupLabels.push({
           id: node.id,
+          nodeId: node.id,
           label: 'Identical layer',
           height: 8,
           hAlign: 'center',
@@ -185,6 +186,16 @@ export class WebglRendererIdenticalLayerService {
       this.identicalLayerIndicatorBgs.updateAnimationProgress(t);
       this.identicalLayerIndicatorTexts.updateAnimationProgress(t);
     });
+  }
+
+  updateOpacity(nodeIds: string[], opacity: number) {
+    this.identicalLayerIndicatorBgs.updateOpacity(nodeIds, opacity);
+    this.identicalLayerIndicatorTexts.updateOpacityInNode(nodeIds, opacity);
+  }
+
+  restoreOpacity() {
+    this.identicalLayerIndicatorBgs.restoreOpacities();
+    this.identicalLayerIndicatorTexts.restoreOpacities();
   }
 
   private clearIdenticalLayerIndicators() {
