@@ -55,6 +55,7 @@ import {
   SETTING_KEEP_LAYERS_WITH_A_SINGLE_CHILD,
   SETTING_LAYER_NODE_LABEL_FONT_SIZE,
   SETTING_MAX_CONST_ELEMENT_COUNT_LIMIT,
+  SETTING_MAX_EDGE_LABEL_CHAR_COUNT,
   SETTING_OP_NODE_BG_COLOR_DARK_MODE,
   SETTING_OP_NODE_BG_COLOR_LIGHT_MODE,
   SETTING_OP_NODE_LABEL_FONT_SIZE,
@@ -465,6 +466,9 @@ export class HomePage implements AfterViewInit {
       ),
       infoPanelFontSize: this.settingsService.getNumberValue(
         SETTING_INFO_PANEL_FONT_SIZE,
+      ),
+      maxEdgeLabelCharCount: this.settingsService.getNumberValue(
+        SETTING_MAX_EDGE_LABEL_CHAR_COUNT,
       ),
       edgeColor: this.settingsService.getStringValue(SETTING_EDGE_COLOR),
       edgeColorDarkMode: this.settingsService.getStringValue(

@@ -43,6 +43,7 @@ export const CONFIG_KEYS_CAN_RERENDER = new Set<string>([
   'highlightLayerNodeInputsOutputs',
   'hideEmptyNodeDataEntries',
   'showSidePanelOnNodeSelection',
+  'maxEdgeLabelCharCount',
 ]);
 
 /**
@@ -100,6 +101,13 @@ export declare interface VisualizerConfig {
 
   /** The maximum number of constant values to display. Default: 16. */
   maxConstValueCount?: number;
+
+  /**
+   * The maximum number of characters to display for an edge label.
+   *
+   * Default: unlimited (unset).
+   */
+  maxEdgeLabelCharCount?: number;
 
   /** Whether to disallow laying out edge labels vertically. */
   disallowVerticalEdgeLabels?: boolean;

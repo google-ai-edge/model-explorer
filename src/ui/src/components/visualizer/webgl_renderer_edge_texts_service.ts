@@ -85,12 +85,11 @@ export class WebglRendererEdgeTextsService {
     sourceNodeAttrKey?: string,
     targetNodeAttrKey?: string,
   ): LabelData[] {
+    const config = this.appService.config();
     const edgeLabelFontSize =
-      fontSize ??
-      this.appService.config()?.edgeLabelFontSize ??
-      DEFAULT_EDGE_LABEL_FONT_SIZE;
+      fontSize ?? config?.edgeLabelFontSize ?? DEFAULT_EDGE_LABEL_FONT_SIZE;
     const disallowVerticalEdgeLabels =
-      this.appService.config()?.disallowVerticalEdgeLabels || false;
+      config?.disallowVerticalEdgeLabels || false;
     const labels: LabelData[] = [];
     const borderColor = new THREE.Color(
       this.webglRenderer.visualizerThemeService.getColor(
@@ -159,6 +158,28 @@ export class WebglRendererEdgeTextsService {
         edgeLabel = getNodeAttrStringValue(fromNode, sourceNodeAttrKey) || '?';
       } else if (targetNodeAttrKey != null) {
         edgeLabel = getNodeAttrStringValue(toNode, targetNodeAttrKey) || '?';
+      }
+
+      // Trim the edge label.
+      if (
+        config?.maxEdgeLabelCharCount != null &&
+        config.maxEdgeLabelCharCount > 0
+      ) {
+        const maxCharCount = config.maxEdgeLabelCharCount;
+        if (edgeLabel.length > maxCharCount) {
+          if (maxCharCount >= 3) {
+            const charsToShow = maxCharCount - 3;
+            const firstHalf = Math.floor(charsToShow / 2);
+            const secondHalf = Math.ceil(charsToShow / 2);
+            edgeLabel =
+              edgeLabel.substring(0, firstHalf) +
+              '...' +
+              edgeLabel.substring(edgeLabel.length - secondHalf);
+          } else {
+            // If maxCharCount is less than 3, just show "..."
+            edgeLabel = '...';
+          }
+        }
       }
 
       const curvePoints = edge.curvePoints || [];

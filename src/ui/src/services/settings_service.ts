@@ -34,6 +34,7 @@ export enum SettingKey {
   LAYER_NODE_LABEL_FONT_SIZE = 'layer_node_label_font_size',
   EDGE_LABEL_FONT_SIZE = 'edge_label_font_size',
   INFO_PANEL_FONT_SIZE = 'info_panel_font_size',
+  MAX_EDGE_LABEL_CHAR_COUNT = 'max_edge_label_char_count',
   EDGE_COLOR = 'edge_color',
   EDGE_COLOR_DARK_MODE = 'edge_color_dark_mode',
   OP_NODE_BG_COLOR_LIGHT_MODE = 'op_node_bg_color_light_mode',
@@ -145,6 +146,14 @@ export const SETTING_INFO_PANEL_FONT_SIZE: Setting = {
   key: SettingKey.INFO_PANEL_FONT_SIZE,
   type: SettingType.NUMBER,
   defaultValue: 12,
+};
+
+/** Setting for max edge label char count. */
+export const SETTING_MAX_EDGE_LABEL_CHAR_COUNT: Setting = {
+  label: 'Maximum number of characters to display for an edge label',
+  key: SettingKey.MAX_EDGE_LABEL_CHAR_COUNT,
+  type: SettingType.NUMBER,
+  defaultValue: 0,
 };
 
 /** Setting for edge color. */
@@ -285,6 +294,7 @@ export const ALL_SETTINGS: Array<Setting[]> = [
   [SETTING_LAYER_NODE_LABEL_FONT_SIZE],
   [SETTING_EDGE_LABEL_FONT_SIZE],
   [SETTING_INFO_PANEL_FONT_SIZE],
+  [SETTING_MAX_EDGE_LABEL_CHAR_COUNT],
   [SETTING_EDGE_COLOR, SETTING_EDGE_COLOR_DARK_MODE],
   [SETTING_OP_NODE_BG_COLOR_LIGHT_MODE, SETTING_OP_NODE_BG_COLOR_DARK_MODE],
   [SETTING_KEEP_LAYERS_WITH_A_SINGLE_CHILD],
