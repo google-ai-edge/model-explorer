@@ -73,6 +73,25 @@ limitations under the License.
         </tr>
       }
     </ng-container>
+    <!-- Custom legend items -->
+    @for (item of customLegendItems; track item) {
+      <tr>
+        <td>
+          <div class="key custom-key"
+              [style.background-color]="item.backgroundColor ?? 'transparent'"
+              [style.border-width.px]="item.borderWidth ?? 0"
+              [style.border-color]="item.borderColor ?? 'transparent'"
+              [style.border-style]="item.borderStyle ?? 'solid'"
+              [style.border-radius.px]="item.borderRadius ?? 0">
+          </div>
+        </td>
+        <td>
+          <div class="label">
+            {{item.label}}
+          </div>
+        </td>
+      </tr>
+    }
     @if (!hideShortcuts) {
       @if (showDivider()) {
         <tr><td colspan="2"><div class="divider"></div></td></tr>

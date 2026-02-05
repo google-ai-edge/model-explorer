@@ -29,6 +29,7 @@ import {
 import {MatIconModule} from '@angular/material/icon';
 
 import {AppService} from './app_service';
+import {CustomLegendItem} from './common/types';
 
 /**
  * The panel that shows the lengends.
@@ -147,5 +148,9 @@ export class LegendsPanel {
 
   get hideShortcuts(): boolean {
     return this.appService.config()?.legendConfig?.hideShortcuts ?? false;
+  }
+
+  get customLegendItems(): CustomLegendItem[] {
+    return this.appService.config()?.legendConfig?.customLegendItems ?? [];
   }
 }

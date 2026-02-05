@@ -912,6 +912,43 @@ export declare interface LegendConfig {
    * If set, rename the "outputs" label to this string.
    */
   renameOutputsTo?: string;
+
+  /**
+   * If set, add custom legend items to the legend panel.
+   *
+   * Each item has a color block and a label.
+   */
+  customLegendItems?: CustomLegendItem[];
+}
+
+/** A custom legend item. */
+export declare interface CustomLegendItem {
+  label: string;
+
+  /**
+   * The background color of the color block. Default is transparent.
+   */
+  backgroundColor?: string;
+
+  /**
+   * The border width of the color block. Default is 0.
+   */
+  borderWidth?: number;
+
+  /**
+   * The border color of the color block. Default is transparent.
+   */
+  borderColor?: string;
+
+  /**
+   * The border style of the color block. Default is solid.
+   */
+  borderStyle?: string;
+
+  /**
+   * The border radius of the color block. Default is 0.
+   */
+  borderRadius?: number;
 }
 
 /** Config for "View on node" menu. */

@@ -94,6 +94,12 @@ $block_height: 14px;
       border: 2px solid var(--me-outgoing-edge-color);
     }
 
+    .custom-key {
+      width: $block_height;
+      height: $block_height;
+      margin-left: auto;
+    }
+
     .shortcut {
       color: var(--me-on-surface-variant-color);
       font-size: 10px;
