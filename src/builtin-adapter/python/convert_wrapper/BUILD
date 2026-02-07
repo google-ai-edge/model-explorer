@@ -1,3 +1,4 @@
+load("//third_party/bazel_rules/rules_python/python:py_test.bzl", "py_test")
 load("@org_tensorflow//tensorflow:tensorflow.default.bzl", "pybind_extension")
 
 package(
