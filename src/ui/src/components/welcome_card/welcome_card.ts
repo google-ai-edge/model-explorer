@@ -17,14 +17,14 @@
  */
 
 import {CommonModule} from '@angular/common';
-import {Component} from '@angular/core';
+import {Component, ChangeDetectionStrategy} from '@angular/core';
 import {MatIconModule} from '@angular/material/icon';
 
 /**
  * The welcome card on homepage.
  */
 @Component({
-  selector: 'welcome-card',
+  changeDetection: ChangeDetectionStrategy.Eager,selector: 'welcome-card',
   standalone: true,
   imports: [CommonModule, MatIconModule],
   templateUrl: './welcome_card.ng.html',

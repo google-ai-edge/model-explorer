@@ -17,13 +17,13 @@
  */
 
 import {CommonModule} from '@angular/common';
-import {Component} from '@angular/core';
+import {Component, ChangeDetectionStrategy} from '@angular/core';
 import {MatButtonModule} from '@angular/material/button';
 import {MatIconModule} from '@angular/material/icon';
 
 /** A button to open model explorer (in colab) into a new tab. */
 @Component({
-  standalone: true,
+  changeDetection: ChangeDetectionStrategy.Eager,standalone: true,
   selector: 'open-in-new-tab-button',
   imports: [CommonModule, MatButtonModule, MatIconModule],
   template: `

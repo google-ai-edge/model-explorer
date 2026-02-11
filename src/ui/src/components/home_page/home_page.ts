@@ -27,7 +27,7 @@ import {
   inject,
   Signal,
   signal,
-  ViewChild,
+  ViewChild, ChangeDetectionStrategy,
 } from '@angular/core';
 import {MatButtonModule} from '@angular/material/button';
 import {MatDialog, MatDialogModule} from '@angular/material/dialog';
@@ -97,7 +97,7 @@ import {WelcomeCard} from '../welcome_card/welcome_card';
  * The component for the home page.
  */
 @Component({
-  selector: 'home-page',
+  changeDetection: ChangeDetectionStrategy.Eager,selector: 'home-page',
   standalone: true,
   imports: [
     CommonModule,

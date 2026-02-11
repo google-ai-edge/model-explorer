@@ -16,7 +16,7 @@
  * ==============================================================================
  */
 import {CommonModule} from '@angular/common';
-import {Component, Injectable, signal} from '@angular/core';
+import {Component, Injectable, signal, ChangeDetectionStrategy} from '@angular/core';
 import {MatIconModule} from '@angular/material/icon';
 
 import {IS_EXTERNAL} from '../../common/flags';
@@ -71,7 +71,7 @@ export class NewVersionService {
  * Only for external version.
  */
 @Component({
-  standalone: true,
+  changeDetection: ChangeDetectionStrategy.Eager,standalone: true,
   selector: 'new-version-chip',
   imports: [Bubble, CommonModule, MatIconModule],
   template: `

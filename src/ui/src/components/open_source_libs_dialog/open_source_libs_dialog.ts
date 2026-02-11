@@ -17,7 +17,7 @@
  */
 
 import {CommonModule} from '@angular/common';
-import {Component} from '@angular/core';
+import {Component, ChangeDetectionStrategy} from '@angular/core';
 import {MatButtonModule} from '@angular/material/button';
 import {MatDialogModule} from '@angular/material/dialog';
 import {MatIconModule} from '@angular/material/icon';
@@ -33,7 +33,7 @@ interface Lib {
  * A dialog showing info for all open source libraries used in the app.
  */
 @Component({
-  selector: 'open-source-libs-dialog',
+  changeDetection: ChangeDetectionStrategy.Eager,selector: 'open-source-libs-dialog',
   standalone: true,
   imports: [CommonModule, MatButtonModule, MatDialogModule, MatIconModule],
   templateUrl: './open_source_libs_dialog.ng.html',
