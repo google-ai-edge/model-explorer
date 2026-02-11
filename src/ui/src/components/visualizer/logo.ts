@@ -16,11 +16,11 @@
  * ==============================================================================
  */
 
-import {Component} from '@angular/core';
+import {Component, ChangeDetectionStrategy} from '@angular/core';
 
 /** A component showing the app logo */
 @Component({
-  standalone: true,
+  changeDetection: ChangeDetectionStrategy.Eager,standalone: true,
   selector: 'me-logo',
   template: `<svg width="24" height="24" viewBox="0 0 256 256" fill="none" xmlns="http://www.w3.org/2000/svg">
   <rect width="256" height="256" fill="none"/>

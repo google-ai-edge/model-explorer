@@ -25,7 +25,7 @@ import {
   ViewEncapsulation,
   input,
   output,
-  viewChild,
+  viewChild, ChangeDetectionStrategy,
 } from '@angular/core';
 import {ModelGraphVisualizer} from '../components/visualizer/model_graph_visualizer';
 import {
@@ -52,7 +52,7 @@ declare global {
  * A wrapper component for the model explorer visualizer.
  */
 @Component({
-  selector: 'custom-element-wrapper',
+  changeDetection: ChangeDetectionStrategy.Eager,selector: 'custom-element-wrapper',
   standalone: true,
   imports: [CommonModule, ModelGraphVisualizer],
   templateUrl: './wrapper.ng.html',
