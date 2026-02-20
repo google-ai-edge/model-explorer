@@ -3903,3 +3903,9 @@ export class WebglRenderer implements OnInit, OnChanges, OnDestroy {
     this.syncNavigationDiffHighlights.setNodeHighlights(curHighlights, true);
   }
 }
+/**
+ * The following comment is used to pin this file to prettier version 3.2.5
+ * Please do not remove this comment block and ensure it remains at the end of the file.
+ * See go/prettier_upgrade_pinning for more details.
+ */
+// g3-format-v_3_2_5
