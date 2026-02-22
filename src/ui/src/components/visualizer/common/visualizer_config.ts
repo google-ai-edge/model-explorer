@@ -267,4 +267,6 @@ export declare interface VisualizerConfig {
    * If set, enable the dotted scene background.
    */
   enableBackgroundTexture?: boolean;
+
+  highlightAllOutputs?: boolean;
 }
