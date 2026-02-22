@@ -493,7 +493,7 @@ export class WebglRenderer implements OnInit, OnChanges, OnDestroy {
     this.webglRendererSearchResultsService.init(this);
     this.webglRendererSnapshotService.init(this);
     this.webglRendererSubgraphSelectionService.init(this);
-    this.webglRendererThreejsService.init(this);
+    this.webglRendererThreejsService.init(this, this.appService.config());
     this.syncNavigationRelatedNodesHighlights =
       new WebglRendererHighlightNodesService(
         this,
@@ -768,9 +768,9 @@ export class WebglRenderer implements OnInit, OnChanges, OnDestroy {
       const newHiddenOutputIds = this.splitPaneService.hiddenOutputIds();
       if (
         JSON.stringify(this.curHiddenInputOpNodeIds) !==
-          JSON.stringify(newHiddenInputOpNodeIds) ||
+        JSON.stringify(newHiddenInputOpNodeIds) ||
         JSON.stringify(this.curHiddenOutputIds) !==
-          JSON.stringify(newHiddenOutputIds)
+        JSON.stringify(newHiddenOutputIds)
       ) {
         this.curHiddenInputOpNodeIds = {...newHiddenInputOpNodeIds};
         this.curHiddenOutputIds = {...newHiddenOutputIds};
@@ -857,7 +857,7 @@ export class WebglRenderer implements OnInit, OnChanges, OnDestroy {
         curMode === this.savedSyncNavigationMode &&
         curData === this.savedSyncNavigationData &&
         curShowDiffHighlightsInMatchNodeIdMode ===
-          this.savedShowDiffHighlightsInMatchNodeIdMode
+        this.savedShowDiffHighlightsInMatchNodeIdMode
       ) {
         return;
       }
@@ -1796,8 +1796,8 @@ export class WebglRenderer implements OnInit, OnChanges, OnDestroy {
     let color = isGroupNode(node)
       ? this.getGroupNodeTextColor(node, ColorVariable.ON_SURFACE_COLOR)
       : new THREE.Color(
-          this.visualizerThemeService.getColor(ColorVariable.ON_SURFACE_COLOR),
-        );
+        this.visualizerThemeService.getColor(ColorVariable.ON_SURFACE_COLOR),
+      );
     if (isOpNode(node) && node.style?.textColor) {
       color = new THREE.Color(node.style.textColor);
     }
@@ -1947,7 +1947,7 @@ export class WebglRenderer implements OnInit, OnChanges, OnDestroy {
     if (node != null && isGroupNode(node)) {
       return `${
         node.expanded ? 'Collapse layer' : 'Expand layer'
-      }\n(shortcut: double click on layer)`;
+        }\n(shortcut: double click on layer)`;
     }
     return '';
   }
@@ -2327,9 +2327,9 @@ export class WebglRenderer implements OnInit, OnChanges, OnDestroy {
         : this.appService.config()?.opNodeBgColorDarkMode;
     const opNodeBgColor = new THREE.Color(
       opNodeBgColorInConfig ??
-        this.visualizerThemeService.getColor(
-          ColorVariable.SURFACE_CONTAINER_LOWEST_COLOR,
-        ),
+      this.visualizerThemeService.getColor(
+        ColorVariable.SURFACE_CONTAINER_LOWEST_COLOR,
+      ),
     );
     const groupNodeIconBgColor = new THREE.Color(
       this.visualizerThemeService.getColor(ColorVariable.ON_SURFACE_COLOR),
@@ -2358,8 +2358,8 @@ export class WebglRenderer implements OnInit, OnChanges, OnDestroy {
       let borderColor = isGroup
         ? this.getGroupNodeBorderColor(node)
         : new THREE.Color(
-            this.visualizerThemeService.getColor(ColorVariable.OUTLINE_COLOR),
-          );
+          this.visualizerThemeService.getColor(ColorVariable.OUTLINE_COLOR),
+        );
       if (isOpNode(node) && node.style) {
         if (node.style.backgroundColor) {
           bgColor = new THREE.Color(node.style.backgroundColor);
@@ -2373,14 +2373,14 @@ export class WebglRenderer implements OnInit, OnChanges, OnDestroy {
       }
       let groupNodeIconColor = isGroupNode(node)
         ? this.getGroupNodeTextColor(
-            node,
-            ColorVariable.ON_SURFACE_VARIANT_COLOR,
-          )
+          node,
+          ColorVariable.ON_SURFACE_VARIANT_COLOR,
+        )
         : new THREE.Color(
-            this.visualizerThemeService.getColor(
-              ColorVariable.ON_SURFACE_VARIANT_COLOR,
-            ),
-          );
+          this.visualizerThemeService.getColor(
+            ColorVariable.ON_SURFACE_VARIANT_COLOR,
+          ),
+        );
 
       // Node styler.
       for (const rule of this.curProcessedNodeStylerRules) {
@@ -2725,7 +2725,7 @@ export class WebglRenderer implements OnInit, OnChanges, OnDestroy {
       this.edges.generateMesh(
         new THREE.Color(
           edgeColorInConfig ??
-            this.visualizerThemeService.getColor(ColorVariable.EDGE_COLOR),
+          this.visualizerThemeService.getColor(ColorVariable.EDGE_COLOR),
         ),
         this.edgesToRender,
         this.curModelGraph,
@@ -2948,7 +2948,7 @@ export class WebglRenderer implements OnInit, OnChanges, OnDestroy {
       this.ioPickerHeight = bottom - y;
       this.ioPickerTooltip = `Click to reveal ${
         isInput ? 'input' : 'output'
-      } node(s)`;
+        } node(s)`;
     }
     this.changeDetectorRef.detectChanges();
   }
@@ -3098,9 +3098,9 @@ export class WebglRenderer implements OnInit, OnChanges, OnDestroy {
           ),
           new THREE.Color(
             opNodeBgColorInConfig ??
-              this.visualizerThemeService.getColor(
-                ColorVariable.SURFACE_CONTAINER_LOWEST_COLOR,
-              ),
+            this.visualizerThemeService.getColor(
+              ColorVariable.SURFACE_CONTAINER_LOWEST_COLOR,
+            ),
           ),
         );
       }
@@ -3415,7 +3415,7 @@ export class WebglRenderer implements OnInit, OnChanges, OnDestroy {
     const level = splitNamespace(ns).length;
     const colorVariable =
       this.GROUP_NODE_BG_COLORS[
-        Math.min(this.GROUP_NODE_BG_COLORS.length - 1, level)
+      Math.min(this.GROUP_NODE_BG_COLORS.length - 1, level)
       ];
     return new THREE.Color(this.visualizerThemeService.getColor(colorVariable));
   }
@@ -3886,15 +3886,15 @@ export class WebglRenderer implements OnInit, OnChanges, OnDestroy {
               borderWidth:
                 paneIndex === 0
                   ? curSyncNavigationData?.deletedNodesBorderWidth ??
-                    DEFAULT_HIGHLIGHT_NODES_BORDER_WIDTH
+                  DEFAULT_HIGHLIGHT_NODES_BORDER_WIDTH
                   : curSyncNavigationData?.newNodesBorderWidth ??
-                    DEFAULT_HIGHLIGHT_NODES_BORDER_WIDTH,
+                  DEFAULT_HIGHLIGHT_NODES_BORDER_WIDTH,
               borderColor:
                 paneIndex === 0
                   ? curSyncNavigationData?.deletedNodesBorderColor ??
-                    DEFAULT_DELETE_NODES_BORDER_COLOR
+                  DEFAULT_DELETE_NODES_BORDER_COLOR
                   : curSyncNavigationData?.newNodesBorderColor ??
-                    DEFAULT_NEW_NODES_BORDER_COLOR,
+                  DEFAULT_NEW_NODES_BORDER_COLOR,
             };
           }
         }

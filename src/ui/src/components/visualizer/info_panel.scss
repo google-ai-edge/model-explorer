@@ -378,8 +378,8 @@
   position: absolute;
   right: 100%;
   bottom: 2px;
-  width: 16px;
-  height: 20px;
+  width: 24px;
+  height: 30px;
   border: 1px solid var(--me-outline-variant-color);
   border-right: none;
   box-sizing: border-box;
@@ -394,9 +394,9 @@
   }
 
   mat-icon {
-    width: 18px;
-    height: 18px;
-    font-size: 18px;
+    width: 24px;
+    height: 24px;
+    font-size: 24px;
     color: var(--me-on-surface-variant-color);
   }
 }

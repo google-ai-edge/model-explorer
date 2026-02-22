@@ -25,6 +25,7 @@ import {Point, Rect} from './common/types';
 import {getHighQualityPixelRatio, IS_MAC} from './common/utils';
 import {ColorVariable} from './visualizer_theme_service';
 import {WebglRenderer} from './webgl_renderer';
+import {VisualizerConfig} from './common/visualizer_config';
 
 const DEFAULT_FRUSTUM_SIZE = 500;
 const DEFAULT_CAMERA_Y = 200;
@@ -55,9 +56,11 @@ export class WebglRendererThreejsService {
   private resizeTimeoutRef = -1;
   private fpsStartTime = -1;
   private frames = 0;
+  private config?: VisualizerConfig;
 
-  init(webglRenderer: WebglRenderer) {
+  init(webglRenderer: WebglRenderer, config?: VisualizerConfig) {
     this.webglRenderer = webglRenderer;
+    this.config = config;
   }
 
   setupZoomAndPan(
@@ -285,11 +288,13 @@ export class WebglRendererThreejsService {
   }
 
   updateSceneBackground() {
-    this.scene.background = new THREE.Color(
-      this.webglRenderer.visualizerThemeService.getColor(
-        ColorVariable.SURFACE_COLOR,
-      ),
-    );
+    if (!this.config?.enableBackgroundTexture) {
+      this.scene.background = new THREE.Color(
+        this.webglRenderer.visualizerThemeService.getColor(
+          ColorVariable.SURFACE_COLOR,
+        ),
+      );
+    }
   }
 
   clearScene(objsToSkip: Array<three.Object3D | undefined> = []) {
@@ -461,10 +466,10 @@ export class WebglRendererThreejsService {
     let scale = useCurScale
       ? this.curScale
       : Math.abs(
-          rectAspect > containerAspect
-            ? this.convertXFromScreenToScene(containerWidth) / rect.width
-            : this.convertZFromScreenToScene(containerHeight) / rect.height,
-        );
+        rectAspect > containerAspect
+          ? this.convertXFromScreenToScene(containerWidth) / rect.width
+          : this.convertZFromScreenToScene(containerHeight) / rect.height,
+      );
     const targetMidX = rect.x + rect.width / 2;
     let targetMidZ = rect.y + rect.height / 2;
 
@@ -554,13 +559,13 @@ export class WebglRendererThreejsService {
             maxX = Math.max(
               maxX,
               this.webglRenderer.getNodeX(node) +
-                this.webglRenderer.getNodeWidth(node),
+              this.webglRenderer.getNodeWidth(node),
             );
             minY = Math.min(minY, this.webglRenderer.getNodeY(node));
             maxY = Math.max(
               maxY,
               this.webglRenderer.getNodeY(node) +
-                this.webglRenderer.getNodeHeight(node),
+              this.webglRenderer.getNodeHeight(node),
             );
           }
         }

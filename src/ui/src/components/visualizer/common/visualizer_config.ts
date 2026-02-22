@@ -16,8 +16,8 @@
  * ==============================================================================
  */
 
-import {EdgeOverlaysData} from './edge_overlays';
-import {SyncNavigationData} from './sync_navigation';
+import { EdgeOverlaysData } from './edge_overlays';
+import { SyncNavigationData } from './sync_navigation';
 import {
   LegendConfig,
   NodeStylerRule,
@@ -262,4 +262,9 @@ export declare interface VisualizerConfig {
    * If set, expand the values in the info panel by default.
    */
   expandInfoPanelValuesByDefault?: boolean;
+
+  /**
+   * If set, enable the dotted scene background.
+   */
+  enableBackgroundTexture?: boolean;
 }
