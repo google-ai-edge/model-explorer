@@ -27,7 +27,9 @@ import {
   getNodeLabelHeight,
   getNodeLabelLineHeight,
   isGroupNode,
+  isOpNode,
   splitLabel,
+  wrapLabel,
 } from './common/utils';
 import {
   ColorVariable,
@@ -177,8 +179,19 @@ export class WebglRendererSearchResultsService {
           let y = 0;
           let height = 0;
           let width = 0;
-          const lines = splitLabel(node.label);
-          if (lines.length === 1) {
+          const config = this.webglRenderer.appService.config();
+          let lines: string[] = [];
+          if (config?.nodeLabelWidth) {
+            lines = wrapLabel(
+              node.label,
+              config.nodeLabelWidth,
+              nodeLabelHeight,
+              !isOpNode(node),
+            );
+          } else {
+            lines = splitLabel(node.label);
+          }
+          if (lines.length === 1 && !config?.nodeLabelWidth) {
             const labelSizes = this.webglRenderer.texts.getLabelSizes(
               node.label,
               isGroupNode(node) ? FontWeight.BOLD : FontWeight.MEDIUM,
@@ -191,8 +204,19 @@ export class WebglRendererSearchResultsService {
               this.webglRenderer.getNodeLabelRelativeY(node) -
               2 * scale;
           } else {
-            const {minX, maxX} = this.webglRenderer.getNodeLabelSizes(node);
-            width = (maxX - minX) * scale + 4;
+            let maxLineWidth = 0;
+            for (const line of lines) {
+              const labelSizes = this.webglRenderer.texts.getLabelSizes(
+                line,
+                isGroupNode(node) ? FontWeight.BOLD : FontWeight.MEDIUM,
+                nodeLabelHeight,
+              ).sizes;
+              maxLineWidth = Math.max(
+                maxLineWidth,
+                labelSizes.maxX - labelSizes.minX,
+              );
+            }
+            width = maxLineWidth * scale + 4;
             height =
               lines.length *
                 getNodeLabelLineHeight(
