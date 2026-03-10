@@ -72,6 +72,14 @@ export declare interface VisualizerConfig {
   /** The maximum number of child nodes under a layer node. Default: 400. */
   artificialLayerNodeCountThreshold?: number;
 
+  /**
+   * The maximum width for node labels.
+   *
+   * If set, node labels will be wrapped to this width.
+   * If unset (default), the node labels will have a default maximum width.
+   */
+  nodeLabelWidth?: number;
+
   /** The font size of the edge label. Default: 7.5. */
   edgeLabelFontSize?: number;
 

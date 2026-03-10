@@ -22,6 +22,7 @@ import {
   EXPANDED_NODE_DATA_PROVIDER_SUMMARY_ROW_HEIGHT,
   EXPANDED_NODE_DATA_PROVIDER_SUMMARY_TOP_PADDING,
   EXPANDED_NODE_DATA_PROVIDER_SYUMMARY_FONT_SIZE,
+  LABEL_PADDING,
   LAYOUT_MARGIN_X,
   MAX_IO_ROWS_IN_ATTRS_TABLE,
   NODE_ATTRS_TABLE_FONT_SIZE_TO_HEIGHT_RATIO,
@@ -69,6 +70,7 @@ import {
   isGroupNode,
   isOpNode,
   splitLabel,
+  wrapLabel,
 } from '../common/utils';
 import {VisualizerConfig} from '../common/visualizer_config';
 
@@ -82,8 +84,6 @@ export const LAYOUT_MARGIN_BOTTOM = 16;
 
 /** Node width for test cases. */
 export const NODE_WIDTH_FOR_TEST = 50;
-
-const LABEL_PADDING = 24;
 
 const MIN_NODE_WIDTH = 80;
 
@@ -417,8 +417,8 @@ export function getNodeWidth(
   testMode = false,
   config?: VisualizerConfig,
 ) {
-  // Always return 32 in test mode.
-  if (testMode) {
+  // Always return 32 in test mode, unless nodeLabelWidth is set.
+  if (testMode && !config?.nodeLabelWidth) {
     return NODE_WIDTH_FOR_TEST;
   }
 
@@ -428,7 +428,17 @@ export function getNodeWidth(
     fontSize * NODE_ATTRS_TABLE_VALUE_MAX_CHAR_COUNT;
 
   const label = node.label;
-  const lines = splitLabel(label);
+  let lines: string[] = [];
+  if (config?.nodeLabelWidth) {
+    lines = wrapLabel(
+      label,
+      config.nodeLabelWidth,
+      getNodeLabelHeight(node, config),
+      isGroupNode(node),
+    );
+  } else {
+    lines = splitLabel(label);
+  }
   let labelWidth = 0;
   for (const line of lines) {
     labelWidth = Math.max(
@@ -601,7 +611,7 @@ export function getNodeHeight(
   forceRecalculate = false,
   config?: VisualizerConfig,
 ) {
-  if (testMode) {
+  if (testMode && !config?.nodeLabelWidth) {
     return NODE_HEIGHT_FOR_TEST;
   }
 

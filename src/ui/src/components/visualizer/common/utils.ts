@@ -1038,14 +1038,99 @@ export function splitLabel(label: string): string[] {
     .filter((line) => line !== '');
 }
 
+/** Wraps the label based on the given max width. */
+export function wrapLabel(
+  label: string,
+  maxWidth: number,
+  fontSize: number,
+  bold = false,
+): string[] {
+  const sections = label.split('\n');
+  const allLines: string[] = [];
+
+  for (const section of sections) {
+    if (section === '') {
+      allLines.push('');
+      continue;
+    }
+
+    const words = section.split(' ');
+    const lines: string[] = [];
+    let currentLine = words[0];
+
+    for (let i = 1; i < words.length; i++) {
+      const word = words[i];
+      const width = getLabelWidth(currentLine + ' ' + word, fontSize, bold);
+      if (width < maxWidth) {
+        currentLine += ' ' + word;
+      } else {
+        lines.push(currentLine);
+        currentLine = word;
+      }
+    }
+    lines.push(currentLine);
+
+    // Post-process to split any lines that are still too long (single words).
+    const finalLines: string[] = [];
+    for (const line of lines) {
+      if (getLabelWidth(line, fontSize, bold) <= maxWidth) {
+        finalLines.push(line);
+        continue;
+      }
+      // Split long word.
+      let curLine = line;
+      while (getLabelWidth(curLine, fontSize, bold) > maxWidth) {
+        // Find split point.
+        let low = 0;
+        let high = curLine.length;
+        let splitIndex = 0;
+        while (low <= high) {
+          const mid = Math.floor((low + high) / 2);
+          const sub = curLine.substring(0, mid);
+          if (getLabelWidth(sub, fontSize, bold) <= maxWidth) {
+            splitIndex = mid;
+            low = mid + 1;
+          } else {
+            high = mid - 1;
+          }
+        }
+        if (splitIndex === 0) {
+          // If even one char is too wide, just take one char (shouldn't happen with reasonable width).
+          splitIndex = 1;
+        }
+        finalLines.push(curLine.substring(0, splitIndex));
+        curLine = curLine.substring(splitIndex);
+      }
+      if (curLine.length > 0) {
+        finalLines.push(curLine);
+      }
+    }
+    allLines.push(...finalLines);
+  }
+
+  return allLines;
+}
+
 /** Get the extra height for multi-line label. */
 export function getMultiLineLabelExtraHeight(
   node: ModelNode,
   config?: VisualizerConfig,
 ): number {
-  return (
-    (splitLabel(node.label).length - 1) * getNodeLabelLineHeight(node, config)
-  );
+  let lineCount = 0;
+  if (config?.nodeLabelWidth) {
+    const lines = wrapLabel(
+      node.label,
+      config.nodeLabelWidth,
+      getNodeLabelHeight(node, config),
+      !isOpNode(node),
+    );
+    if (lines.length >= 1) {
+      return (lines.length - 1) * getNodeLabelLineHeight(node, config);
+    }
+  } else {
+    lineCount = splitLabel(node.label).length;
+  }
+  return (lineCount - 1) * getNodeLabelLineHeight(node, config);
 }
 
 /**
@@ -1329,9 +1414,14 @@ export function getLayoutMarginTop(
   config?: VisualizerConfig,
 ): number {
   const nodeLabelHeight = getNodeLabelHeight(node, config);
+  let extraHeight = 0;
+  if (config?.nodeLabelWidth) {
+    extraHeight = getMultiLineLabelExtraHeight(node, config);
+  }
+
   if (nodeLabelHeight === 11) {
-    return 36;
+    return 36 + extraHeight;
   }
   const nodeLabelYPadding = getNodeLabelYPadding(node, config);
-  return nodeLabelYPadding + nodeLabelHeight + 16;
+  return nodeLabelYPadding + nodeLabelHeight + extraHeight + 16;
 }

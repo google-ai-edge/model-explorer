@@ -103,6 +103,7 @@ import {
   processNodeStylerRules,
   splitLabel,
   splitNamespace,
+  wrapLabel,
 } from './common/utils';
 import {
   ExpandOrCollapseGroupNodeRequest,
@@ -2552,12 +2553,19 @@ export class WebglRenderer implements OnInit, OnChanges, OnDestroy {
 
         // Expand icon.
         const iconZ = y + this.getNodeLabelRelativeY(node) + 18.5;
-        const leftIconX = node.expanded
-          ? labelLeft - 13
-          : (x + labelLeft + 1) / 2 + 1;
-        const rightIconX = node.expanded
-          ? labelRight + 12
-          : (x + width + labelRight - 1) / 2 - 1;
+        let leftIconX = 0;
+        let rightIconX = 0;
+        if (this.appService.config()?.nodeLabelWidth) {
+          leftIconX = x + 12;
+          rightIconX = x + width - 12;
+        } else {
+          leftIconX = node.expanded
+            ? labelLeft - 13
+            : (x + labelLeft + 1) / 2 + 1;
+          rightIconX = node.expanded
+            ? labelRight + 12
+            : (x + width + labelRight - 1) / 2 - 1;
+        }
         groupNodeIcons.push({
           id: node.id,
           nodeId: node.id,
@@ -2784,7 +2792,19 @@ export class WebglRenderer implements OnInit, OnChanges, OnDestroy {
 
       // Font size.
       const labelHeight = getNodeLabelHeight(node, this.appService.config());
-      const lines = splitLabel(this.getNodeLabel(node));
+      let lines: string[] = [];
+      const config = this.appService.config();
+      if (config?.nodeLabelWidth) {
+        lines = wrapLabel(
+          this.getNodeLabel(node),
+          config.nodeLabelWidth,
+          labelHeight,
+          !isOpNode(node),
+        );
+      } else {
+        lines = splitLabel(this.getNodeLabel(node));
+      }
+
       for (let i = 0; i < lines.length; i++) {
         const curLineLabel = lines[i];
         labels.push({
