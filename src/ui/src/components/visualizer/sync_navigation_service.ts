@@ -151,8 +151,8 @@ export class SyncNavigationService {
       case SyncNavigationMode.UPLOAD_MAPPING_FROM_COMPUTER:
       case SyncNavigationMode.LOAD_MAPPING_FROM_CNS: {
         return paneIndex === 0
-          ? curSyncNavigationData?.leftRelatedNodes[nodeId] ?? []
-          : curSyncNavigationData?.rightRelatedNodes[nodeId] ?? [];
+          ? (curSyncNavigationData?.leftRelatedNodes[nodeId] ?? [])
+          : (curSyncNavigationData?.rightRelatedNodes[nodeId] ?? []);
       }
       default:
         return [nodeId];

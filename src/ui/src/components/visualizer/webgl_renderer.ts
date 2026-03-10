@@ -3881,16 +3881,16 @@ export class WebglRenderer implements OnInit, OnChanges, OnDestroy {
               nodeId: node.id,
               borderWidth:
                 paneIndex === 0
-                  ? curSyncNavigationData?.deletedNodesBorderWidth ??
-                    DEFAULT_HIGHLIGHT_NODES_BORDER_WIDTH
-                  : curSyncNavigationData?.newNodesBorderWidth ??
-                    DEFAULT_HIGHLIGHT_NODES_BORDER_WIDTH,
+                  ? (curSyncNavigationData?.deletedNodesBorderWidth ??
+                    DEFAULT_HIGHLIGHT_NODES_BORDER_WIDTH)
+                  : (curSyncNavigationData?.newNodesBorderWidth ??
+                    DEFAULT_HIGHLIGHT_NODES_BORDER_WIDTH),
               borderColor:
                 paneIndex === 0
-                  ? curSyncNavigationData?.deletedNodesBorderColor ??
-                    DEFAULT_DELETE_NODES_BORDER_COLOR
-                  : curSyncNavigationData?.newNodesBorderColor ??
-                    DEFAULT_NEW_NODES_BORDER_COLOR,
+                  ? (curSyncNavigationData?.deletedNodesBorderColor ??
+                    DEFAULT_DELETE_NODES_BORDER_COLOR)
+                  : (curSyncNavigationData?.newNodesBorderColor ??
+                    DEFAULT_NEW_NODES_BORDER_COLOR),
             };
           }
         }
