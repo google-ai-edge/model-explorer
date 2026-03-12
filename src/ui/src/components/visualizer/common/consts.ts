@@ -21,6 +21,9 @@ import {IS_EXTERNAL} from '../../../common/flags';
 /** The height of the node label. */
 export const DEFAULT_NODE_LABEL_HEIGHT = 11;
 
+/** The padding of the label. */
+export const LABEL_PADDING = 24;
+
 /**
  * The padding between the label and the value in node's attrs table.
  */

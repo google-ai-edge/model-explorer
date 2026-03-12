@@ -103,6 +103,7 @@ import {
   processNodeStylerRules,
   splitLabel,
   splitNamespace,
+  wrapLabel,
 } from './common/utils';
 import {
   ExpandOrCollapseGroupNodeRequest,
@@ -2552,12 +2553,19 @@ export class WebglRenderer implements OnInit, OnChanges, OnDestroy {
 
         // Expand icon.
         const iconZ = y + this.getNodeLabelRelativeY(node) + 18.5;
-        const leftIconX = node.expanded
-          ? labelLeft - 13
-          : (x + labelLeft + 1) / 2 + 1;
-        const rightIconX = node.expanded
-          ? labelRight + 12
-          : (x + width + labelRight - 1) / 2 - 1;
+        let leftIconX = 0;
+        let rightIconX = 0;
+        if (this.appService.config()?.maxNodeLabelWidth) {
+          leftIconX = x + 12;
+          rightIconX = x + width - 12;
+        } else {
+          leftIconX = node.expanded
+            ? labelLeft - 13
+            : (x + labelLeft + 1) / 2 + 1;
+          rightIconX = node.expanded
+            ? labelRight + 12
+            : (x + width + labelRight - 1) / 2 - 1;
+        }
         groupNodeIcons.push({
           id: node.id,
           nodeId: node.id,
@@ -2784,7 +2792,19 @@ export class WebglRenderer implements OnInit, OnChanges, OnDestroy {
 
       // Font size.
       const labelHeight = getNodeLabelHeight(node, this.appService.config());
-      const lines = splitLabel(this.getNodeLabel(node));
+      let lines: string[] = [];
+      const config = this.appService.config();
+      if (config?.maxNodeLabelWidth) {
+        lines = wrapLabel(
+          this.getNodeLabel(node),
+          config.maxNodeLabelWidth,
+          labelHeight,
+          !isOpNode(node),
+        );
+      } else {
+        lines = splitLabel(this.getNodeLabel(node));
+      }
+
       for (let i = 0; i < lines.length; i++) {
         const curLineLabel = lines[i];
         labels.push({
@@ -3881,16 +3901,16 @@ export class WebglRenderer implements OnInit, OnChanges, OnDestroy {
               nodeId: node.id,
               borderWidth:
                 paneIndex === 0
-                  ? curSyncNavigationData?.deletedNodesBorderWidth ??
-                    DEFAULT_HIGHLIGHT_NODES_BORDER_WIDTH
-                  : curSyncNavigationData?.newNodesBorderWidth ??
-                    DEFAULT_HIGHLIGHT_NODES_BORDER_WIDTH,
+                  ? (curSyncNavigationData?.deletedNodesBorderWidth ??
+                    DEFAULT_HIGHLIGHT_NODES_BORDER_WIDTH)
+                  : (curSyncNavigationData?.newNodesBorderWidth ??
+                    DEFAULT_HIGHLIGHT_NODES_BORDER_WIDTH),
               borderColor:
                 paneIndex === 0
-                  ? curSyncNavigationData?.deletedNodesBorderColor ??
-                    DEFAULT_DELETE_NODES_BORDER_COLOR
-                  : curSyncNavigationData?.newNodesBorderColor ??
-                    DEFAULT_NEW_NODES_BORDER_COLOR,
+                  ? (curSyncNavigationData?.deletedNodesBorderColor ??
+                    DEFAULT_DELETE_NODES_BORDER_COLOR)
+                  : (curSyncNavigationData?.newNodesBorderColor ??
+                    DEFAULT_NEW_NODES_BORDER_COLOR),
             };
           }
         }
