@@ -16,7 +16,7 @@
  * ==============================================================================
  */
 import {CommonModule} from '@angular/common';
-import {Component, OnInit} from '@angular/core';
+import {Component, OnInit, ChangeDetectionStrategy} from '@angular/core';
 
 import {GraphCollection} from '../visualizer/common/input_graph';
 import {RendererType} from '../visualizer/common/types';
@@ -32,7 +32,7 @@ const COCOSSD_TF_GRAPHS_JSON_URL =
  * The demo page that uses visualizer to visualize a graphs json file.
  */
 @Component({
-  selector: 'demo-page',
+  changeDetection: ChangeDetectionStrategy.Eager,selector: 'demo-page',
   standalone: true,
   imports: [CommonModule, ModelGraphVisualizer],
   templateUrl: './demo_page.ng.html',

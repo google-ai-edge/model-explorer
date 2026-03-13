@@ -16,14 +16,14 @@
  * ==============================================================================
  */
 import {CommonModule} from '@angular/common';
-import {Component} from '@angular/core';
+import {Component, ChangeDetectionStrategy} from '@angular/core';
 import {RouterOutlet} from '@angular/router';
 
 /**
  * The root component.
  */
 @Component({
-  selector: 'app-root',
+  changeDetection: ChangeDetectionStrategy.Eager,selector: 'app-root',
   standalone: true,
   imports: [CommonModule, RouterOutlet],
   templateUrl: './app.component.html',

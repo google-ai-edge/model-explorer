@@ -18,7 +18,7 @@
 
 import {ConnectedPosition, OverlaySizeConfig} from '@angular/cdk/overlay';
 import {CommonModule} from '@angular/common';
-import {Component, Inject} from '@angular/core';
+import {Component, Inject, ChangeDetectionStrategy} from '@angular/core';
 import {MatButtonModule} from '@angular/material/button';
 import {MAT_DIALOG_DATA, MatDialogModule} from '@angular/material/dialog';
 import {MatIconModule} from '@angular/material/icon';
@@ -42,7 +42,7 @@ export interface SettingsDialogData {
  * A dialog showing app level settings.
  */
 @Component({
-  selector: 'settings-dialog',
+  changeDetection: ChangeDetectionStrategy.Eager,selector: 'settings-dialog',
   standalone: true,
   imports: [
     Bubble,
