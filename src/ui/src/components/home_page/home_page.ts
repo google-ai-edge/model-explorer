@@ -19,6 +19,7 @@
 import {CommonModule} from '@angular/common';
 import {
   AfterViewInit,
+  ChangeDetectionStrategy,
   Component,
   computed,
   effect,

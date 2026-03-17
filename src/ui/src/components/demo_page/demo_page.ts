@@ -16,7 +16,7 @@
  * ==============================================================================
  */
 import {CommonModule} from '@angular/common';
-import {Component, OnInit} from '@angular/core';
+import {ChangeDetectionStrategy, Component, OnInit} from '@angular/core';
 
 import {GraphCollection} from '../visualizer/common/input_graph';
 import {RendererType} from '../visualizer/common/types';

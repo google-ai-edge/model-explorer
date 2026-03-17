@@ -16,7 +16,7 @@
  * ==============================================================================
  */
 
-import {Component} from '@angular/core';
+import {ChangeDetectionStrategy, Component} from '@angular/core';
 
 /** A component showing the app logo */
 @Component({

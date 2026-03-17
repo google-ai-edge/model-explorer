@@ -18,6 +18,7 @@
 
 import {CommonModule} from '@angular/common';
 import {
+  ChangeDetectionStrategy,
   Component,
   ElementRef,
   Input,
