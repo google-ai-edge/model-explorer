@@ -16,17 +16,24 @@
  * ==============================================================================
  */
 
-import {Injectable} from '@angular/core';
+import {Injectable, OnDestroy} from '@angular/core';
 
 /**
  * Service to manage web worker.
  */
 @Injectable()
-export class WorkerService {
-  readonly worker: Worker;
+export class WorkerService implements OnDestroy {
+  worker!: Worker;
 
-  constructor() {
+  init(onPortal: boolean) {
+    if (this.worker) {
+      this.worker.terminate();
+    }
     this.worker = new Worker(
         new URL('./worker/worker', import.meta.url), {type: 'classic'});
+  }
+
+  ngOnDestroy() {
+    this.worker.terminate();
   }
 }

@@ -108,6 +108,10 @@ export class TitleBar {
       });
   }
 
+  get onPortal(): boolean {
+    return this.appService.onPortal;
+  }
+
   private async runNdpExtension(
     extension: NodeDataProviderExtension,
     runName: string,

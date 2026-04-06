@@ -128,6 +128,8 @@ export class AppService {
 
   testMode = false;
 
+  onPortal = false;
+
   private groupNodeChildrenCountThresholdFromUrl: string | null = null;
 
   private paneIdToGraph: Record<string, Graph> = {};
@@ -143,7 +145,6 @@ export class AppService {
     private readonly uiStateService: UiStateService,
     private readonly workerService: WorkerService,
   ) {
-    this.listenToWorker();
     this.init();
   }
 
@@ -1106,7 +1107,8 @@ export class AppService {
     this.init();
   }
 
-  private listenToWorker() {
+  setupWorker() {
+    this.workerService.init(this.onPortal);
     this.workerService.worker.addEventListener('message', (event) => {
       const workerEvent = event.data as WorkerEvent;
       switch (workerEvent.eventType) {
