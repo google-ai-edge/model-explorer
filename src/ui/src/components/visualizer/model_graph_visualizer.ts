@@ -107,9 +107,6 @@ export class ModelGraphVisualizer implements OnInit, OnDestroy, OnChanges {
   /** The sources (file paths) of node data. */
   @Input() nodeDataSources: string[] = [];
 
-  /** Whether the visualizer is running on AI Edge Portal. */
-  @Input() onPortal = false;
-
   /** Triggered when the title is clicked. */
   @Output() readonly titleClicked = new EventEmitter<void>();
 
@@ -256,8 +253,6 @@ export class ModelGraphVisualizer implements OnInit, OnDestroy, OnChanges {
   }
 
   ngOnInit() {
-    this.appService.onPortal = this.onPortal;
-    this.appService.setupWorker();
     this.visualizerThemeService.init(this.el);
 
     this.appService.config.set(this.config || {});
