@@ -16,7 +16,8 @@
  * ==============================================================================
  */
 
-import {Injectable, computed, effect, signal} from '@angular/core';
+import {Injectable, computed, effect, inject, signal} from '@angular/core';
+import {LOCAL_STORAGE_SERVICE_INJECTION_TOKEN} from '../../common/local_storage_service_interface';
 import {AppService} from './app_service';
 
 import {ModelNode} from './common/model_graph';
@@ -36,7 +37,6 @@ import {
   matchNodeForQueries,
   processNodeStylerRules,
 } from './common/utils';
-import {LocalStorageService} from './local_storage_service';
 
 /** Spec for a style. */
 export interface Style {
@@ -106,10 +106,11 @@ export class NodeStylerService {
       ).length > 0,
   );
 
-  constructor(
-    private readonly appService: AppService,
-    private readonly localStorageService: LocalStorageService,
-  ) {
+  private readonly localStorageService = inject(
+    LOCAL_STORAGE_SERVICE_INJECTION_TOKEN,
+  );
+
+  constructor(private readonly appService: AppService) {
     effect(() => {
       const rules = this.rules();
 

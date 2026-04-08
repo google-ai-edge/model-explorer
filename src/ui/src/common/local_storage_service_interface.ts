@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright 2024 The Model Explorer Authors. All Rights Reserved.
+ * Copyright 2026 The Model Explorer Authors. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,24 +16,18 @@
  * ==============================================================================
  */
 
-import {Injectable, OnDestroy} from '@angular/core';
+import {InjectionToken} from '@angular/core';
 
-/**
- * Service to manage web worker.
- */
-@Injectable()
-export class WorkerService implements OnDestroy {
-  worker!: Worker;
+import {GraphCollection} from '../components/visualizer/common/input_graph';
 
-  init(onPortal: boolean) {
-    if (this.worker) {
-      this.worker.terminate();
-    }
-    this.worker = new Worker(
-        new URL('./worker/worker', import.meta.url), {type: 'classic'});
-  }
+import {ModelItem} from './types';
 
-  ngOnDestroy() {
-    this.worker.terminate();
-  }
+/** Injection token for the `LocalStorageServiceInterface`. */
+export const LOCAL_STORAGE_SERVICE_INJECTION_TOKEN =
+  new InjectionToken<LocalStorageServiceInterface>('LocalStorageService');
+
+/** The interface of local storage service. */
+export interface LocalStorageServiceInterface {
+  getItem(key: string): string | null;
+  setItem(key: string, value: string): void;
 }

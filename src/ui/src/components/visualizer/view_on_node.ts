@@ -25,6 +25,7 @@ import {
   computed,
   DestroyRef,
   effect,
+  inject,
   Input,
   Signal,
   ViewChild,
@@ -33,6 +34,7 @@ import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
 import {MatIconModule} from '@angular/material/icon';
 import {MatTooltipModule} from '@angular/material/tooltip';
 
+import {LOCAL_STORAGE_SERVICE_INJECTION_TOKEN} from '../../common/local_storage_service_interface';
 import {Bubble} from '../bubble/bubble';
 import {BubbleClick} from '../bubble/bubble_click';
 import {AppService} from './app_service';
@@ -51,7 +53,6 @@ import {
   ViewOnEdgeMode,
 } from './common/types';
 import {getRunName} from './common/utils';
-import {LocalStorageService} from './local_storage_service';
 import {NodeDataProviderExtensionService} from './node_data_provider_extension_service';
 
 interface ShowOnNodeItem {
@@ -139,11 +140,14 @@ export class ViewOnNode {
   curInputMetadataKeyText = '';
   opened = false;
 
+  private readonly localStorageService = inject(
+    LOCAL_STORAGE_SERVICE_INJECTION_TOKEN,
+  );
+
   constructor(
     private readonly appService: AppService,
     private readonly changeDetectorRef: ChangeDetectorRef,
     private readonly destroyRef: DestroyRef,
-    private readonly localStorageService: LocalStorageService,
     private readonly nodeDataProviderExtensionService: NodeDataProviderExtensionService,
   ) {
     // Handle changes on show on node items.
