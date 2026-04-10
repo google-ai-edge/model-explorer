@@ -345,13 +345,38 @@ limitations under the License.
     @for (item of items; track $index; let i = $index; let last = $last) {
       <div class="flat-item">
         <div class="name-row"
-            [class.search-match]="isSearchMatchedOutputValue(item.tensorTag)">
+            [class.search-match]="(item.connectedNodes?.length === 1 && isSearchMatchedOutputValue(item.connectedNodes![0].label)) || isSearchMatchedOutputValue(item.tensorTag)">
           <div class="index">{{item.index}}</div>
-          <div class="name">{{getOutputName(item)}}</div>
-          @if (item.showSourceOpNode) {
-            <div class="source-op-node-label">
-              ({{item.sourceOpNode.label}})
+          @if (item.connectedNodes?.length === 1) {
+            <div class="name locator target-node-container"
+                [attr.data-id]="item.connectedNodes![0].id"
+                [class.search-match]="isSearchMatchedOutputValue(item.connectedNodes![0].label)"
+                (click)="handleLocateNode(item.connectedNodes![0].id, $event)">
+              {{item.connectedNodes![0].label}}
+              <div class="locator-icon-container"
+                  [matTooltip]="locatorTooltip"
+                  matTooltipClass="multiline-tooltip-left"
+                  matTooltipPosition="right">
+                <mat-icon class="locator-icon"
+                    [style.font-size.px]="fontSize"
+                    [style.height.px]="fontSize"
+                    [style.width.px]="fontSize">
+                  my_location
+                </mat-icon>
+              </div>
+              @if (item.showSourceOpNode) {
+                <div class="source-op-node-label">
+                  ({{item.sourceOpNode.label}})
+                </div>
+              }
             </div>
+          } @else {
+            <div class="name">{{getOutputName(item)}}</div>
+            @if (item.showSourceOpNode) {
+              <div class="source-op-node-label">
+                ({{item.sourceOpNode.label}})
+              </div>
+            }
           }
           <div class="filler"></div>
           @if (getHasConnectedToNodes(item)) {
