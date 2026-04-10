@@ -542,7 +542,6 @@ common --noenable_bzlmod
 
 # TODO: Migrate for https://github.com/bazelbuild/bazel/issues/7260
 common --noincompatible_enable_cc_toolchain_resolution
-common --noincompatible_enable_android_toolchain_resolution
 
 
 # Disable Hermetic CC toolchains
