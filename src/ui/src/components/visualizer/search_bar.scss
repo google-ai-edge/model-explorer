@@ -103,6 +103,7 @@
     flex-direction: column;
     background-color: var(--me-surface-container-lowest-color);
     box-shadow: var(--me-bubble-shadow);
+    z-index: 5;
 
     .title-container {
       background-color: var(--me-surface-container-color);
