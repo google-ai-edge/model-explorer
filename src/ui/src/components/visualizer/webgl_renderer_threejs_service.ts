@@ -155,12 +155,17 @@ export class WebglRendererThreejsService {
         }
 
         if (d3.event.type === 'dblclick') {
-          d3.event.stopPropagation();
-          this.webglRenderer.handleDoubleClickOnGraph(
-            d3.event.altKey,
-            d3.event.shiftKey,
-          );
-          return false;
+          // If double clicking on a node, expand/collapse it.
+          if (this.webglRenderer.hoveredNodeId !== '') {
+            d3.event.stopPropagation();
+            this.webglRenderer.handleDoubleClickOnGraph(
+              d3.event.altKey,
+              d3.event.shiftKey,
+            );
+            return false;
+          }
+          // If double clicking on empty canvas space, allow default d3 zoom (zoom in).
+          return true;
         }
 
         // By default, d3.zoom uses scrolling to trigger zooming. To make

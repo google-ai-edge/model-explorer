@@ -360,7 +360,7 @@ export class WebglRenderer implements OnInit, OnChanges, OnDestroy {
   private readonly syncNavigationRelatedNodesHighlights!: WebglRendererHighlightNodesService;
   private readonly syncNavigationDiffHighlights!: WebglRendererHighlightNodesService;
   private draggingArea = false;
-  private hoveredNodeId = '';
+  hoveredNodeId = '';
   private hoveredGroupNodeIconId = '';
   private nodeIdForHoveredGroupNodeIcon = '';
   private hoveredIoPickerId = '';
