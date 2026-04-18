@@ -138,9 +138,17 @@ export class ThreejsService {
 
   private async loadFontAtals(url: string): Promise<three.Texture> {
     return new Promise<three.Texture>((resolve) => {
-      new THREE.TextureLoader().load(url, (texture) => {
-        resolve(texture);
-      });
+      new THREE.TextureLoader().load(
+        url,
+        (texture) => {
+          resolve(texture);
+        },
+        undefined,
+        (error) => {
+          console.error(`Error loading texture url: ${url}`)
+          console.error(error)
+        }
+      );
     });
   }
 
