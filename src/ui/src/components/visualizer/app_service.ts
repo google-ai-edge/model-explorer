@@ -16,9 +16,10 @@
  * ==============================================================================
  */
 
-import {Injectable, signal} from '@angular/core';
+import {Injectable, inject, signal} from '@angular/core';
 import {Subject} from 'rxjs';
 
+import {LOCAL_STORAGE_SERVICE_INJECTION_TOKEN} from '../../common/local_storage_service_interface';
 import {
   DEFAULT_GROUP_NODE_CHILDREN_COUNT_THRESHOLD,
   LOCAL_STORAGE_KEY_SHOW_ON_EDGE_ITEM,
@@ -60,7 +61,6 @@ import {
   WorkerEvent,
   WorkerEventType,
 } from './common/worker_events';
-import {LocalStorageService} from './local_storage_service';
 import {UiStateService} from './ui_state_service';
 import {WorkerService} from './worker_service';
 
@@ -128,6 +128,8 @@ export class AppService {
 
   testMode = false;
 
+  onPortal = false;
+
   private groupNodeChildrenCountThresholdFromUrl: string | null = null;
 
   private paneIdToGraph: Record<string, Graph> = {};
@@ -138,12 +140,14 @@ export class AppService {
   // will be stored here.
   private paneIdToCurModelGraphs: Record<string, ModelGraph> = {};
 
+  private readonly localStorageService = inject(
+    LOCAL_STORAGE_SERVICE_INJECTION_TOKEN,
+  );
+
   constructor(
-    private readonly localStorageService: LocalStorageService,
     private readonly uiStateService: UiStateService,
     private readonly workerService: WorkerService,
   ) {
-    this.listenToWorker();
     this.init();
   }
 
@@ -1106,7 +1110,8 @@ export class AppService {
     this.init();
   }
 
-  private listenToWorker() {
+  setupWorker() {
+    this.workerService.init(this.onPortal);
     this.workerService.worker.addEventListener('message', (event) => {
       const workerEvent = event.data as WorkerEvent;
       switch (workerEvent.eventType) {
