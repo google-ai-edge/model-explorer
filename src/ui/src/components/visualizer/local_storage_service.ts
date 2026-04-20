@@ -15,6 +15,7 @@
  * limitations under the License.
  * ==============================================================================
  */
+import {LocalStorageServiceInterface} from '../../common/local_storage_service_interface';
 
 import {Injectable} from '@angular/core';
 
@@ -22,7 +23,7 @@ import {Injectable} from '@angular/core';
  * Service used to store and retrieve from local storage
  */
 @Injectable({providedIn: 'root'})
-export class LocalStorageService {
+export class LocalStorageService implements LocalStorageServiceInterface {
   getItem(key: string): string | null {
     return window.localStorage.getItem(key);
   }

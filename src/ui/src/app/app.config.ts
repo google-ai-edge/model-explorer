@@ -20,8 +20,10 @@ import {ApplicationConfig, provideZoneChangeDetection} from '@angular/core';
 import {provideAnimations} from '@angular/platform-browser/animations';
 import {provideRouter, Routes} from '@angular/router';
 
+import {LOCAL_STORAGE_SERVICE_INJECTION_TOKEN} from '../common/local_storage_service_interface';
 import {DemoPage} from '../components/demo_page/demo_page';
 import {HomePage} from '../components/home_page/home_page';
+import {LocalStorageService} from '../components/visualizer/local_storage_service';
 import {INJECT_WINDOW} from '../inject';
 import {ModelLoaderService} from '../services/model_loader_service';
 
@@ -37,6 +39,10 @@ export const appConfig: ApplicationConfig = {
     provideRouter(routes),
     provideAnimations(),
     {provide: 'ModelLoaderService', useClass: ModelLoaderService},
+    {
+      provide: LOCAL_STORAGE_SERVICE_INJECTION_TOKEN,
+      useClass: LocalStorageService,
+    },
     {provide: INJECT_WINDOW, useValue: window},
   ],
 };
