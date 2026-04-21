@@ -34,7 +34,6 @@ import {MatRadioModule} from '@angular/material/radio';
 import {MatSnackBar} from '@angular/material/snack-bar';
 import {MatTooltipModule} from '@angular/material/tooltip';
 
-import {LOCAL_STORAGE_SERVICE_INJECTION_TOKEN} from '../../common/local_storage_service_interface';
 import {Bubble} from '../bubble/bubble';
 import {BubbleClick} from '../bubble/bubble_click';
 
@@ -43,6 +42,7 @@ import {
   SYNC_NAVIGATION_MODE_LABELS,
   SyncNavigationMode,
 } from './common/sync_navigation';
+import {LocalStorageService} from './local_storage_service';
 import {SyncNavigationService} from './sync_navigation_service';
 
 const LOCAL_STORAGE_KEY_MATCH_NODE_ID_HIGHLIGHT_DIFFS =
@@ -71,9 +71,7 @@ export class SyncNavigationButton {
 
   private readonly appService = inject(AppService);
   private readonly changeDetectorRef = inject(ChangeDetectorRef);
-  private readonly localStorageService = inject(
-    LOCAL_STORAGE_SERVICE_INJECTION_TOKEN,
-  );
+  private readonly localStorageService = inject(LocalStorageService);
   private readonly syncNavigationService = inject(SyncNavigationService);
   private readonly snackBar = inject(MatSnackBar);
 
@@ -202,10 +200,6 @@ export class SyncNavigationButton {
         `${checked}`,
       );
     }
-  }
-
-  get onPortal(): boolean {
-    return this.appService.onPortal;
   }
 
   private showError(message: string) {

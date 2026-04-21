@@ -16,13 +16,13 @@
  * ==============================================================================
  */
 
-import {Injectable, inject} from '@angular/core';
+import {Injectable} from '@angular/core';
 
-import {LOCAL_STORAGE_SERVICE_INJECTION_TOKEN} from '../common/local_storage_service_interface';
 import {
   DEFAULT_EDGE_LABEL_FONT_SIZE,
   DEFAULT_GROUP_NODE_CHILDREN_COUNT_THRESHOLD,
 } from '../components/visualizer/common/consts';
+import {LocalStorageService} from '../components/visualizer/local_storage_service';
 
 /** Keys for all settings. */
 export enum SettingKey {
@@ -314,11 +314,7 @@ export const ALL_SETTINGS: Array<Setting[]> = [
 export class SettingsService {
   private readonly savedSettings: SavedSettings;
 
-  private readonly localStorageService = inject(
-    LOCAL_STORAGE_SERVICE_INJECTION_TOKEN,
-  );
-
-  constructor() {
+  constructor(private readonly localStorageService: LocalStorageService) {
     // Load saved settings from local storage.
     const strSavedSettings =
       this.localStorageService.getItem(SETTINGS_LOCAL_STORAGE_KEY) || '';
