@@ -32,12 +32,12 @@ import {MatButtonModule} from '@angular/material/button';
 import {MatIconModule} from '@angular/material/icon';
 import {MatSnackBar} from '@angular/material/snack-bar';
 import {MatTooltipModule} from '@angular/material/tooltip';
-import {LOCAL_STORAGE_SERVICE_INJECTION_TOKEN} from '../../common/local_storage_service_interface';
 import {Bubble} from '../bubble/bubble';
 import {BubbleClick} from '../bubble/bubble_click';
 import {AppService} from './app_service';
 import {ProcessedEdgeOverlay} from './common/edge_overlays';
 import {EdgeOverlaysService} from './edge_overlays_service';
+import {LocalStorageService} from './local_storage_service';
 
 interface OverlaysSet {
   id: string;
@@ -74,9 +74,7 @@ export class EdgeOverlaysDropdown {
   @ViewChild(BubbleClick) popup!: BubbleClick;
 
   private readonly appService = inject(AppService);
-  private readonly localStorageService = inject(
-    LOCAL_STORAGE_SERVICE_INJECTION_TOKEN,
-  );
+  private readonly localStorageService = inject(LocalStorageService);
   private readonly changeDetectorRef = inject(ChangeDetectorRef);
   private readonly edgeOverlaysService = inject(EdgeOverlaysService);
   private readonly snackBar = inject(MatSnackBar);
@@ -166,10 +164,6 @@ export class EdgeOverlaysDropdown {
 
   handleMaxHopsChanged(overlay: OverlayItem, value: number) {
     this.edgeOverlaysService.setVisibleEdgeHops(overlay.id, value);
-  }
-
-  get onPortal(): boolean {
-    return this.appService.onPortal;
   }
 
   private showError(message: string) {

@@ -33,7 +33,6 @@ import {
   DestroyRef,
   ElementRef,
   Inject,
-  inject,
   signal,
   Signal,
   ViewChild,
@@ -59,7 +58,6 @@ import {
   GRAPHS_MODEL_SOURCE_PREFIX,
 } from '../../common/consts';
 import {IS_EXTERNAL} from '../../common/flags';
-import {LOCAL_STORAGE_SERVICE_INJECTION_TOKEN} from '../../common/local_storage_service_interface';
 import {type ModelLoaderServiceInterface} from '../../common/model_loader_service_interface';
 import {
   AdapterExtension,
@@ -79,6 +77,7 @@ import {AdapterExtensionService} from '../../services/adapter_extension_service'
 import {ExtensionService} from '../../services/extension_service';
 import {ModelSource, UrlService} from '../../services/url_service';
 import {Bubble} from '../bubble/bubble';
+import {LocalStorageService} from '../visualizer/local_storage_service';
 
 import {AdapterSelectorPanel} from './adapter_selector_panel';
 import {getAdapterCandidates} from './utils';
@@ -181,15 +180,12 @@ export class ModelSourceInput {
 
   private portal: ComponentPortal<AdapterSelectorPanel> | null = null;
 
-  private readonly localStorageService = inject(
-    LOCAL_STORAGE_SERVICE_INJECTION_TOKEN,
-  );
-
   constructor(
     private readonly changeDetectorRef: ChangeDetectorRef,
     private readonly adapterExtensionService: AdapterExtensionService,
     private readonly destroyRef: DestroyRef,
     private readonly extensionService: ExtensionService,
+    private readonly localStorageService: LocalStorageService,
     @Inject('ModelLoaderService')
     private readonly modelLoaderService: ModelLoaderServiceInterface,
     private readonly overlay: Overlay,

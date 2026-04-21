@@ -16,7 +16,7 @@
  * ==============================================================================
  */
 
-import {LOCAL_STORAGE_SERVICE_INJECTION_TOKEN} from '../common/local_storage_service_interface';
+import {LocalStorageService} from '../components/visualizer/local_storage_service';
 
 import {DOCUMENT} from '@angular/common';
 import {Injectable, computed, effect, inject, signal} from '@angular/core';
@@ -37,9 +37,7 @@ const THEME_PREFERENCE_KEY = 'model_explorer_theme';
  */
 @Injectable({providedIn: 'root'})
 export class ThemeService {
-  private readonly localStorageService = inject(
-    LOCAL_STORAGE_SERVICE_INJECTION_TOKEN,
-  );
+  private readonly localStorageService = inject(LocalStorageService);
 
   readonly isDarkMode = computed(() => {
     const userTheme = this.curThemePreference();
