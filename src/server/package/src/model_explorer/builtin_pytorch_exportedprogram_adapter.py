@@ -26,6 +26,13 @@ from .types import ModelExplorerGraphs
 if torch is not None:
   from .pytorch_exported_program_adater_impl import PytorchExportedProgramAdapterImpl
 
+try:
+  import executorch
+except ImportError:
+  executorch = None
+if executorch is not None:
+  from executorch.exir import passes
+
 
 class BuiltinPytorchExportedProgramAdapter(Adapter):
   """Built-in pytorch adapter using ExportedProgram."""
