@@ -42,7 +42,6 @@
 #include "mlir/IR/AsmState.h"
 #include "mlir/IR/Block.h"
 #include "mlir/IR/BuiltinOps.h"
-#include "mlir/IR/Diagnostics.h"
 #include "mlir/IR/Location.h"
 #include "mlir/IR/MLIRContext.h"
 #include "mlir/IR/Operation.h"
@@ -74,6 +73,7 @@
 #include "tensorflow/compiler/mlir/tensorflow/transforms/passes.h"
 #include "tensorflow/compiler/mlir/tensorflow/translate/mlir_import_options.h"
 #include "tensorflow/compiler/mlir/tensorflow/translate/tf_mlir_translate.h"
+#include "tensorflow/compiler/mlir/tensorflow/utils/error_util.h"
 #include "xla/mlir_hlo/mhlo/IR/hlo_ops.h"
 #include "xla/tsl/platform/env.h"
 #include "tensorflow/core/protobuf/saved_model.pb.h"
@@ -164,22 +164,26 @@ absl::StatusOr<TfMetadata> ObtainTfMetadata(absl::string_view model_path) {
   return tf_metadata;
 }
 
-absl::Status DeserializeVhloToStablehlo(mlir::ModuleOp module_op) {
+absl::Status DeserializeVhloToStablehlo(
+    mlir::ModuleOp module_op,
+    mlir::StatusScopedDiagnosticHandler& diag_handler) {
   mlir::PassManager pm(module_op.getContext());
   mlir::stablehlo::createStablehloDeserializePipeline(pm);
   mlir::LogicalResult result = pm.run(module_op);
   if (mlir::failed(result)) {
-    return absl::InternalError("Failed to run stablehlo deserialize pipeline.");
+    return diag_handler.ConsumeStatus();
   }
   return absl::OkStatus();
 }
 
-absl::Status RunTFShapeInference(mlir::ModuleOp module_op) {
+absl::Status RunTFShapeInference(
+    mlir::ModuleOp module_op,
+    mlir::StatusScopedDiagnosticHandler& diag_handler) {
   mlir::PassManager pm(module_op.getContext());
   pm.addPass(mlir::TF::CreateTFShapeInferencePass());
   mlir::LogicalResult result = pm.run(module_op);
   if (mlir::failed(result)) {
-    return absl::InternalError("Failed to run shape inference pass.");
+    return diag_handler.ConsumeStatus();
   }
   return absl::OkStatus();
 }
@@ -187,13 +191,15 @@ absl::Status RunTFShapeInference(mlir::ModuleOp module_op) {
 // Runs all passes involved in transforming or optimizing a TF MLIR graph
 // without any target specialization. Referred logic from
 // compiler/mlir/tensorflow/transforms/bridge.cc.
-absl::Status RunStandardPipeline(mlir::ModuleOp module_op) {
+absl::Status RunStandardPipeline(
+    mlir::ModuleOp module_op,
+    mlir::StatusScopedDiagnosticHandler& diag_handler) {
   mlir::PassManager bridge(module_op.getContext());
   mlir::TF::StandardPipelineOptions pipeline_options;
   CreateTFStandardPipeline(bridge, pipeline_options);
   mlir::LogicalResult result = bridge.run(module_op);
   if (mlir::failed(result)) {
-    return absl::InternalError("Failed to run standard pipeline.");
+    return diag_handler.ConsumeStatus();
   }
   return absl::OkStatus();
 }
@@ -217,26 +223,27 @@ bool HasXlaCallModule(mlir::ModuleOp module) {
 
 // Deserializes tf.XlaCallModule ops and converts it to stablehlo module. Input
 // module op is assumed to be already a tf dialect module.
-absl::Status ConvertToStablehloModule(mlir::ModuleOp module_op) {
+absl::Status ConvertToStablehloModule(
+    mlir::ModuleOp module_op,
+    mlir::StatusScopedDiagnosticHandler& diag_handler) {
   mlir::PassManager bridge(module_op.getContext());
-  bridge.addPass(mlir::odml::CreateRenameEntrypointToMainPass());
   bridge.addPass(mlir::odml::CreateLegalizeTFXlaCallModuleToStablehloPass());
   mlir::LogicalResult result = bridge.run(module_op);
   if (mlir::failed(result)) {
-    return absl::InternalError(
-        "Failed to convert tf_executor dialect to tf & stablehlo dialect MLIR "
-        "module.");
+    return diag_handler.ConsumeStatus();
   }
   return absl::OkStatus();
 }
 
 absl::StatusOr<std::string> ModuleOpToJson(const VisualizeConfig& config,
                                            mlir::Operation* module_op) {
+  mlir::StatusScopedDiagnosticHandler diag_handler(
+      module_op->getContext(), /*propagate=*/false, /*filter_stack=*/true);
   mlir::PassManager pm(module_op->getContext());
   pm.addPass(CreateUniqueOpNamesPass());
   mlir::LogicalResult result = pm.run(module_op);
   if (mlir::failed(result)) {
-    return absl::InternalError("Failed to run unique op names pass.");
+    return diag_handler.ConsumeStatus();
   }
 
   std::string json_output;
@@ -264,6 +271,8 @@ absl::StatusOr<std::string> ConvertSavedModelToJson(
   // Model Explorer does not execute operations, only visualizes them.
   context.allowUnregisteredDialects(true);
   mlir::OwningOpRef<mlir::ModuleOp> module_op;
+  mlir::StatusScopedDiagnosticHandler diag_handler(
+      &context, /*propagate=*/false, /*filter_stack=*/true);
   if (tf_metadata.tf_version == 1) {
     LOG(INFO) << "Converting SavedModel V1 to MLIR module...";
     tensorflow::MLIRImportOptions import_options;
@@ -274,7 +283,7 @@ absl::StatusOr<std::string> ConvertSavedModelToJson(
                                     model_path, tags, exported_names, &context,
                                     import_options));
 
-    RETURN_IF_ERROR(RunTFShapeInference(*module_op));
+    RETURN_IF_ERROR(RunTFShapeInference(*module_op, diag_handler));
   } else {
     LOG(INFO) << "Converting SavedModel V2 to MLIR module...";
     // Converts SavedModel V2 to MLIR module.
@@ -283,7 +292,7 @@ absl::StatusOr<std::string> ConvertSavedModelToJson(
                          model_path, tags, exported_names, &context));
 
     // Converts tf_executor dialect to tf dialect MLIR module.
-    RETURN_IF_ERROR(RunStandardPipeline(*module_op));
+    RETURN_IF_ERROR(RunStandardPipeline(*module_op, diag_handler));
   }
 
   // Converts MLIR module to JSON string.
@@ -291,7 +300,7 @@ absl::StatusOr<std::string> ConvertSavedModelToJson(
     // This indicates it's a JAX converted SavedModel. There are stablehlo ops
     // serialized within tf.XlaCallModule op, we want to deserialize it before
     // proceeding.
-    RETURN_IF_ERROR(ConvertToStablehloModule(*module_op));
+    RETURN_IF_ERROR(ConvertToStablehloModule(*module_op, diag_handler));
   }
 
   return ModuleOpToJson(config, *module_op);
@@ -357,11 +366,8 @@ absl::StatusOr<std::string> ConvertMlirToJson(const VisualizeConfig& config,
   // Model Explorer does not execute operations, only visualizes them.
   context.allowUnregisteredDialects(true);
 
-  std::string diagnostic_messages;
-  mlir::ScopedDiagnosticHandler handler(&context, [&](mlir::Diagnostic& diag) {
-    llvm::raw_string_ostream os(diagnostic_messages);
-    os << diag;
-  });
+  mlir::StatusScopedDiagnosticHandler diag_handler(
+      &context, /*propagate=*/false, /*filter_stack=*/true);
 
   mlir::ParserConfig parser_config(&context);
   std::string model_content;
@@ -370,14 +376,13 @@ absl::StatusOr<std::string> ConvertMlirToJson(const VisualizeConfig& config,
   auto module_op =
       mlir::parseSourceString<::mlir::ModuleOp>(model_content, parser_config);
   if (!module_op) {
-    return absl::InvalidArgumentError(
-        absl::StrCat("Failed to parse MLIR module: ", diagnostic_messages));
+    return diag_handler.ConsumeStatus();
   }
 
-  RETURN_IF_ERROR(DeserializeVhloToStablehlo(*module_op));
+  RETURN_IF_ERROR(DeserializeVhloToStablehlo(*module_op, diag_handler));
 
   if (HasXlaCallModule(*module_op)) {
-    RETURN_IF_ERROR(ConvertToStablehloModule(*module_op));
+    RETURN_IF_ERROR(ConvertToStablehloModule(*module_op, diag_handler));
   }
 
   return ModuleOpToJson(config, *module_op);
