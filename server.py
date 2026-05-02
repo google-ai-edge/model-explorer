@@ -324,9 +324,11 @@ def start(
   @app.route('/apipost/v1/upload', methods=['POST'])
   def upload_file():
     f = request.files['file']
-    file_name = f.filename if f.filename is not None else 'no_name'
+    file_name = os.path.basename(f.filename) if f.filename is not None else 'no_name'
     tmp_dir = tempfile.mkdtemp()
     file_path = os.path.join(tmp_dir, file_name)
+    if not os.path.abspath(file_path).startswith(os.path.abspath(tmp_dir)):
+        return _make_json_response({'error': 'invalid filename'})
     f.save(file_path)
     return _make_json_response({'path': file_path})
 
@@ -382,17 +384,19 @@ def start(
       json_str = node_data.to_json_string()
     return _make_json_response({'content': json_str})
 
-  @app.route('/api/v1/read_text_file')
-  def read_text_file():
+@app.route('/api/v1/read_text_file')
+def read_text_file():
     path = request.args.get('path')
     if path is None:
-      return _make_json_response({'error': 'no file path provided'})
-    path = os.path.expanduser(path)
-
+        return _make_json_response({'error': 'no file path provided'})
+    path = os.path.realpath(os.path.expanduser(path))
+    allowed_extensions = {'.json', '.txt', '.yaml', '.yml', '.pbtxt', '.pb', '.tflite', '.mlmodel'}
+    if not any(path.endswith(ext) for ext in allowed_extensions):
+        return _make_json_response({'error': 'file type not allowed'})
     try:
-      with open(path, 'r') as file:
-        content = file.read()
-      return _make_json_response({'content': content})
+        with open(path, 'r') as file:
+            content = file.read()
+        return _make_json_response({'content': content})
     except Exception as err:
       return _make_json_response({'error': str(err)})
 
