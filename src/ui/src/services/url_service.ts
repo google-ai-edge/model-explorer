@@ -184,6 +184,15 @@ export class UrlService {
       queryParams[QueryParamKey.BENCHMARK] = '1';
     }
 
+    // Preserve unrecognized parameters.
+    const currentParams = new URLSearchParams(document.location.search);
+    const recognizedKeys = Object.values(QueryParamKey) as string[];
+    currentParams.forEach((value, key) => {
+      if (!recognizedKeys.includes(key)) {
+        queryParams[key] = value;
+      }
+    });
+
     // Dedup url update.
     const curQueryParamsStr = JSON.stringify(queryParams);
     if (curQueryParamsStr === this.prevQueryParamStr) {
