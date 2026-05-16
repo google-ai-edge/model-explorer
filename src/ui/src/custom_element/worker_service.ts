@@ -23,9 +23,12 @@ import {Injectable} from '@angular/core';
  */
 @Injectable()
 export class WorkerService {
-  readonly worker: Worker;
+  worker!: Worker;
 
-  constructor() {
+  init(onPortal: boolean) {
+    if (this.worker) {
+      this.worker.terminate();
+    }
     const workerScriptUrl =
       // tslint:disable-next-line:no-any
       (window as any)['modelExplorer'].workerScriptPath ?? 'worker.js';
