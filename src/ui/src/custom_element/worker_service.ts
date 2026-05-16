@@ -16,13 +16,13 @@
  * ==============================================================================
  */
 
-import {Injectable} from '@angular/core';
+import {Injectable, OnDestroy} from '@angular/core';
 
 /**
  * Service to manage web worker.
  */
 @Injectable()
-export class WorkerService {
+export class WorkerService implements OnDestroy {
   worker!: Worker;
 
   init(onPortal: boolean) {
@@ -33,5 +33,9 @@ export class WorkerService {
       // tslint:disable-next-line:no-any
       (window as any)['modelExplorer'].workerScriptPath ?? 'worker.js';
     this.worker = new Worker(workerScriptUrl);
+  }
+
+  ngOnDestroy() {
+    this.worker.terminate();
   }
 }
