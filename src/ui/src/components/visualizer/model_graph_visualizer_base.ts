@@ -119,6 +119,12 @@ export abstract class ModelGraphVisualizerBase
   /** Triggered when the double clicked node is changed. */
   @Output() readonly doubleClickedNodeChanged = new EventEmitter<NodeInfo>();
 
+  /** Triggered when the node search shortcut (Ctrl/Cmd+F) is pressed. */
+  @Output() readonly nodeSearchTriggered = new EventEmitter<void>();
+
+  /** Triggered when the node styler dialog is opened. */
+  @Output() readonly nodeStylerOpened = new EventEmitter<void>();
+
   curProcessedModelGraph?: ModelGraph;
   ready = false;
 
@@ -262,10 +268,13 @@ export abstract class ModelGraphVisualizerBase
     }
     // Press ctrl/cmd+f for search.
     else if (event.key === 'f' && (event.ctrlKey || event.metaKey)) {
-      if (!this.config?.hideTitleBar) {
-        event.preventDefault();
+      if (!inInputElement()) {
+        if (!this.config?.hideTitleBar) {
+          event.preventDefault();
+        }
+        this.nodeSearchTriggered.emit();
+        this.appService.searchKeyClicked.next({});
       }
-      this.appService.searchKeyClicked.next({});
     }
   }
 

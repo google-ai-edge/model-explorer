@@ -20,6 +20,8 @@ import {CommonModule} from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
+  EventEmitter,
+  Output,
   ViewContainerRef,
   signal,
 } from '@angular/core';
@@ -48,6 +50,8 @@ import {NodeStylerService} from './node_styler_service';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class NodeStyler {
+  @Output() readonly nodeStylerOpened = new EventEmitter<void>();
+
   readonly hasNonEmptyNodeStylerRules;
   readonly dialogOpened = signal<boolean>(false);
 
@@ -62,6 +66,7 @@ export class NodeStyler {
 
   handleClickOpenDialog() {
     this.dialogOpened.set(true);
+    this.nodeStylerOpened.emit();
 
     const dialogRef = this.dialog.open(NodeStylerDialog, {
       width: '800px',

@@ -74,6 +74,7 @@ let ndpId = 0;
 })
 export class TitleBar {
   @Output() readonly titleClicked = new EventEmitter<void>();
+  @Output() readonly nodeStylerOpened = new EventEmitter<void>();
 
   private readonly appService = inject(AppService);
   private readonly dialog = inject(MatDialog);
