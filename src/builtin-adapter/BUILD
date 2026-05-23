@@ -132,6 +132,9 @@ cc_library(
 cc_library(
     name = "status_macros",
     hdrs = ["status_macros.h"],
+    deps = [
+        "//third_party/gloop/util/status:status_macros",
+    ],
 )
 
 cc_library(
