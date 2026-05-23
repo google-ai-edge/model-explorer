@@ -32,6 +32,7 @@ from typing import Any, Union
 import portpicker
 import requests
 from flask import Flask, Response, make_response, request, send_from_directory
+from werkzeug.utils import secure_filename
 from IPython import display
 from packaging.version import parse
 from termcolor import colored, cprint
@@ -324,9 +325,14 @@ def start(
   @app.route('/apipost/v1/upload', methods=['POST'])
   def upload_file():
     f = request.files['file']
-    file_name = f.filename if f.filename is not None else 'no_name'
+    file_name = secure_filename(f.filename or 'no_name') or 'upload'
     tmp_dir = tempfile.mkdtemp()
     file_path = os.path.join(tmp_dir, file_name)
+    # Prevent path traversal: ensure resolved path stays inside tmp_dir
+    if not os.path.realpath(file_path).startswith(
+        os.path.realpath(tmp_dir) + os.sep
+    ):
+      return _make_json_response({'error': 'invalid filename'}), 400
     f.save(file_path)
     return _make_json_response({'path': file_path})
 
@@ -387,10 +393,20 @@ def start(
     path = request.args.get('path')
     if path is None:
       return _make_json_response({'error': 'no file path provided'})
-    path = os.path.expanduser(path)
+    real = os.path.realpath(os.path.expanduser(path))
+    # Restrict reads to the user home directory and system temp directory only.
+    allowed_roots = [
+        os.path.realpath(os.path.expanduser('~')),
+        os.path.realpath(tempfile.gettempdir()),
+    ]
+    if not any(
+        real == root or real.startswith(root + os.sep)
+        for root in allowed_roots
+    ):
+      return _make_json_response({'error': 'access denied'}), 403
 
     try:
-      with open(path, 'r') as file:
+      with open(real, 'r') as file:
         content = file.read()
       return _make_json_response({'content': content})
     except Exception as err:
