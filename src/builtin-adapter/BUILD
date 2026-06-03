@@ -120,12 +120,9 @@ cc_library(
 
 cc_library(
     name = "graphnode_builder",
-    srcs = ["graphnode_builder.cc"],
     hdrs = ["graphnode_builder.h"],
     deps = [
-        "@com_google_absl//absl/strings",
-        "@com_google_absl//absl/strings:string_view",
-        "//formats:schema_structs",
+        "@xla//xla/hlo/tools/hlo_diff/render/hlo_adapter:graphnode_builder",
     ],
 )
 

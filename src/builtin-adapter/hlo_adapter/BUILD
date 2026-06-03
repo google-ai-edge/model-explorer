@@ -8,24 +8,9 @@ package(
 
 cc_library(
     name = "direct_hlo_to_json_graph_convert",
-    srcs = ["direct_hlo_to_json_graph_convert.cc"],
     hdrs = ["direct_hlo_to_json_graph_convert.h"],
     compatible_with = ["//buildenv/target:non_prod"],
     deps = [
-        "@com_google_absl//absl/container:flat_hash_map",
-        "@com_google_absl//absl/container:flat_hash_set",
-        "@com_google_absl//absl/functional:any_invocable",
-        "@com_google_absl//absl/status",
-        "@com_google_absl//absl/status:statusor",
-        "@com_google_absl//absl/strings",
-        "@com_google_absl//absl/strings:str_format",
-        "@llvm-project//llvm:Support",
-        "//:graphnode_builder",
-        "//:status_macros",
-        "//formats:schema_structs",
-        "@xla//xla:shape_util",
-        "@xla//xla/hlo/ir:hlo",
-        "@xla//xla/service:pattern_matcher",
-        "@org_tensorflow//tensorflow/core/profiler/utils:hlo_module_utils",
+        "@xla//xla/hlo/tools/hlo_diff/render/hlo_adapter:direct_hlo_to_json_graph_convert",
     ],
 )
