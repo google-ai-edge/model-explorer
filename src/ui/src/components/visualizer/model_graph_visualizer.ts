@@ -18,6 +18,7 @@
 
 import {CommonModule} from '@angular/common';
 import {ChangeDetectionStrategy, Component} from '@angular/core';
+import {MatIconModule} from '@angular/material/icon';
 
 import {LOCAL_STORAGE_SERVICE_INJECTION_TOKEN} from '../../common/local_storage_service_interface';
 import {AppService} from './app_service';
@@ -37,7 +38,13 @@ import {WorkerService} from './worker_service';
 @Component({
   standalone: true,
   selector: 'model-graph-visualizer',
-  imports: [BenchmarkRunner, CommonModule, TitleBar, SplitPanesContainer],
+  imports: [
+    BenchmarkRunner,
+    CommonModule,
+    MatIconModule,
+    TitleBar,
+    SplitPanesContainer,
+  ],
   templateUrl: './model_graph_visualizer.ng.html',
   styleUrls: ['./model_graph_visualizer.scss'],
   host: {

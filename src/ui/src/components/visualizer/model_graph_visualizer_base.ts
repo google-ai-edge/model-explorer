@@ -50,7 +50,12 @@ import {
   SyncNavigationModeChangedEvent,
   ViewOnEdgeMode,
 } from './common/types';
-import {genUid, inInputElement, isOpNode} from './common/utils';
+import {
+  genUid,
+  inInputElement,
+  isOpNode,
+  isWebGlAvailable,
+} from './common/utils';
 import {type VisualizerConfig} from './common/visualizer_config';
 import {type VisualizerUiState} from './common/visualizer_ui_state';
 import {WorkerEventType} from './common/worker_events';
@@ -127,6 +132,7 @@ export abstract class ModelGraphVisualizerBase
 
   curProcessedModelGraph?: ModelGraph;
   ready = false;
+  readonly isWebGlAvailable = isWebGlAvailable();
 
   readonly appService = inject(AppService);
   readonly syncNavigationService = inject(SyncNavigationService);

@@ -72,6 +72,19 @@ const LABEL_WIDTHS: {[label: string]: number} = {};
 export const IS_MAC =
   typeof navigator !== 'undefined' && /Macintosh/.test(navigator.userAgent);
 
+/** Checks whether WebGL environment is available in the current browser. */
+export function isWebGlAvailable(): boolean {
+  try {
+    const canvas = document.createElement('canvas');
+    return !!(
+      window.WebGLRenderingContext &&
+      (canvas.getContext('webgl') || canvas.getContext('experimental-webgl'))
+    );
+  } catch {
+    return false;
+  }
+}
+
 /** Checks whether the given node is an op node. */
 export function isOpNode(node: ModelNode | undefined): node is OpNode {
   return node?.nodeType === NodeType.OP_NODE;

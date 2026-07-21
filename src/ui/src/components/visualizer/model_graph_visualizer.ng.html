@@ -16,9 +16,22 @@ limitations under the License.
 ==============================================================================
 -->
 
-<div class="container" *ngIf="ready"
-    (dragover)="handleDragOver($event)"
-    (drop)="handleDrop($event)">
+
+@if (!isWebGlAvailable) {
+  <div class="webgl-not-available-message">
+    <mat-icon class="warning-icon">warning</mat-icon>
+    <div class="message-text">
+      WebGL is currently unavailable in your browser or environment.<br>
+      Please enable WebGL to use this tool.
+    </div>
+    <div class="tip-text">
+      Tip: In Chrome, try enabling <code>chrome://flags/#ignore-gpu-blocklist</code>
+    </div>
+  </div>
+} @else if (ready) {
+  <div class="container"
+      (dragover)="handleDragOver($event)"
+      (drop)="handleDrop($event)">
   @if (benchmark) {
     <benchmark-runner></benchmark-runner>
   } @else {
@@ -38,4 +51,5 @@ limitations under the License.
       }
     </div>
   }
-</div>
+  </div>
+}
