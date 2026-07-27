@@ -36,6 +36,7 @@ import {
 } from '@angular/core';
 import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
 import {MatSnackBar} from '@angular/material/snack-bar';
+import {loadGraphsJson} from '../../common/utils';
 import {AppService} from './app_service';
 import {GLOBAL_KEY} from './common/consts';
 import {Graph, GraphCollection} from './common/input_graph';
@@ -216,6 +217,28 @@ export abstract class ModelGraphVisualizerBase
             this.handleSelectNodeByNodeIdFromPostMessage(nodeId);
           }
           break;
+        case 'model-explorer-load-graph-collections': {
+          const graphJson = data['graphCollections'];
+          const fileName = data['fileName'] || 'postMessage';
+          if (graphJson) {
+            const result = loadGraphsJson(graphJson, fileName);
+            if (result.graphCollections) {
+              this.appService.reset();
+              this.uiStateService.reset();
+              this.appService.addGraphCollections(result.graphCollections);
+              const graphCollections = this.appService.curGraphCollections();
+              if (
+                graphCollections.length > 0 &&
+                graphCollections[0].graphs.length > 0
+              ) {
+                this.appService.selectGraphInCurrentPane(
+                  graphCollections[0].graphs[0],
+                );
+              }
+            }
+          }
+          break;
+        }
         default:
           break;
       }
@@ -381,7 +404,8 @@ export abstract class ModelGraphVisualizerBase
     paneIndex = 0,
   ) {
     // Find the collection.
-    let collectionsToSearch: GraphCollection[] = this.graphCollections;
+    let collectionsToSearch: GraphCollection[] =
+      this.appService.curGraphCollections();
     if (collectionLabel) {
       const collection = this.appService
         .curGraphCollections()
@@ -626,10 +650,9 @@ export abstract class ModelGraphVisualizerBase
     // Calculate number of graphs in graphCollections and return
     // true if the count is 0.
     return (
-      this.graphCollections.reduce(
-        (acc, collection) => acc + collection.graphs.length,
-        0,
-      ) === 0
+      this.appService
+        .curGraphCollections()
+        .reduce((acc, collection) => acc + collection.graphs.length, 0) === 0
     );
   }
 
@@ -644,6 +667,7 @@ export abstract class ModelGraphVisualizerBase
 
     this.appService.config.set(this.config || {});
     this.appService.addGraphCollections(this.graphCollections);
+    const curGraphCollections = this.appService.curGraphCollections();
     this.appService.curInitialUiState.set(this.initialUiState);
     if (this.config?.nodeStylerRules) {
       this.nodeStylerService.rules.set(this.config.nodeStylerRules);
@@ -653,12 +677,12 @@ export abstract class ModelGraphVisualizerBase
     // default selected graph.
     if (!this.initialUiState || this.initialUiState.paneStates.length === 0) {
       if (
-        this.graphCollections.length > 0 &&
-        this.graphCollections[0].graphs.length > 0
+        curGraphCollections.length > 0 &&
+        curGraphCollections[0].graphs.length > 0
       ) {
-        // Sort graphs in graphCollections[0] by their nodes count in descending
-        // order.
-        const sortedGraphs = [...this.graphCollections[0].graphs].sort(
+        // Sort graphs in curGraphCollections[0] by their nodes count in
+        // descending order.
+        const sortedGraphs = [...curGraphCollections[0].graphs].sort(
           (a, b) => b.nodes.length - a.nodes.length,
         );
         // Select the graph with the most node counts.
@@ -688,7 +712,7 @@ export abstract class ModelGraphVisualizerBase
           );
         } else {
           // Fall back to first graph.
-          const firstGraph = this.graphCollections[0].graphs[0];
+          const firstGraph = curGraphCollections[0].graphs[0];
           this.appService.selectGraphInCurrentPane(
             firstGraph,
             flattenLayers,
@@ -714,7 +738,7 @@ export abstract class ModelGraphVisualizerBase
           );
         } else {
           // Fall back to first graph.
-          const firstGraph = this.graphCollections[0].graphs[0];
+          const firstGraph = curGraphCollections[0].graphs[0];
           this.appService.selectGraphInCurrentPane(firstGraph, flattenLayers0);
         }
         this.appService.setFlattenLayersInCurrentPane(flattenLayers0);
@@ -730,7 +754,7 @@ export abstract class ModelGraphVisualizerBase
           this.appService.openGraphInSplitPane(selectedGraph1, flattenLayers1);
         } else {
           // Fall back to first graph.
-          const firstGraph = this.graphCollections[0].graphs[0];
+          const firstGraph = curGraphCollections[0].graphs[0];
           this.appService.openGraphInSplitPane(firstGraph, flattenLayers1);
         }
 
@@ -757,7 +781,7 @@ export abstract class ModelGraphVisualizerBase
     collectionLabel: string,
     graphId: string,
   ): Graph | undefined {
-    for (const collection of this.graphCollections) {
+    for (const collection of this.appService.curGraphCollections()) {
       for (const graph of collection.graphs) {
         if (
           graph.id === graphId &&
@@ -825,6 +849,15 @@ export abstract class ModelGraphVisualizerBase
 
   private async initThreejs() {
     await this.threejsService.depsLoadedPromise;
+
+    // Signal to parent frames that the visualizer is ready to receive
+    // graph collections via postMessage.
+    window.parent.postMessage(
+      {
+        'cmd': 'model-explorer-ready',
+      },
+      '*',
+    );
 
     this.ready = true;
     this.changeDetectorRef.markForCheck();
