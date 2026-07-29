@@ -8,10 +8,6 @@ package(
 
 cc_library(
     name = "schema_structs",
-    srcs = ["schema_structs.cc"],
     hdrs = ["schema_structs.h"],
-    deps = [
-        "@com_google_absl//absl/container:flat_hash_map",
-        "@llvm-project//llvm:Support",
-    ],
+    deps = ["@xla//xla/hlo/tools/hlo_diff/render/hlo_adapter:schema_structs"],
 )
