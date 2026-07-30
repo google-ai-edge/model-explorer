@@ -558,24 +558,29 @@ void PostProcessSubgraph(Subgraph& subgraph) {
 // signature key is also empty, use the default name.
 std::string GetSubgraphName(int subgraph_index, const SubGraphT& subgraph_t,
                             const SignatureDefs& signature_defs) {
+  std::string name;
   if (!subgraph_t.name.empty()) {
-    return subgraph_t.name;
-  }
-
-  // If the subgraph name is empty, use the signature key if it exists.
-  // TODO(yijieyang): We should add this signature key to graph level info
-  // regardless.
-  for (const auto& signature_def : signature_defs) {
-    if (signature_def->subgraph_index == subgraph_index) {
-      if (!signature_def->signature_key.empty()) {
-        return signature_def->signature_key;
+    name = subgraph_t.name;
+  } else {
+    // If the subgraph name is empty, use the signature key if it exists.
+    // TODO(yijieyang): We should add this signature key to graph level info
+    // regardless.
+    for (const auto& signature_def : signature_defs) {
+      if (signature_def->subgraph_index == subgraph_index) {
+        if (!signature_def->signature_key.empty()) {
+          name = signature_def->signature_key;
+        }
+        break;
       }
-      break;
     }
   }
 
-  return (subgraph_index == 0) ? "main"
-                               : absl::StrCat("subgraph_", subgraph_index);
+  if (name.empty()) {
+    name = (subgraph_index == 0) ? "main"
+                                 : absl::StrCat("subgraph_", subgraph_index);
+  }
+
+  return absl::StrCat("[", subgraph_index, "] ", name);
 }
 
 absl::StatusOr<std::vector<uint8_t>> FlatbufferToJsonConverter::GetBuffer(
