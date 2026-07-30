@@ -135,7 +135,7 @@ export class GraphSelectorPanel {
       for (const graph of graphs) {
         if (
           this.curFilterText !== '' &&
-          !graph.id.toLowerCase().includes(this.curFilterText)
+          !graph.title.toLowerCase().includes(this.curFilterText)
         ) {
           this.hasFilteredOutGraphs = true;
           continue;

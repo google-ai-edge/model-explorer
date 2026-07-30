@@ -51,10 +51,25 @@ export interface GraphCollectionItem {
 /** A graph in a collection in the dropdown menu. */
 export interface GraphItem {
   id: string;
+  title: string;
   graph: Graph;
   level: number;
   nonHiddenNodeCount: number;
   width: number;
+}
+
+/**
+ * Returns the formatted display title for a graph.
+ * Includes the subgraphIndex prefix (e.g. "[0] main") if available.
+ */
+export function getGraphTitle(graph: Graph | null | undefined): string {
+  if (!graph) {
+    return '-';
+  }
+  if (graph.subgraphIndex !== undefined) {
+    return `[${graph.subgraphIndex}] ${graph.id}`;
+  }
+  return graph.id;
 }
 
 const CANVAS = new OffscreenCanvas(500, 300);
@@ -108,7 +123,8 @@ export class GraphSelector {
         graphs: [],
       };
       for (const {graph, level} of collection.graphsWithLevel ?? []) {
-        if (filterText !== '' && !graph.id.toLowerCase().includes(filterText)) {
+        const title = getGraphTitle(graph);
+        if (filterText !== '' && !title.toLowerCase().includes(filterText)) {
           continue;
         }
         const nodeLabelsToHide = new Set<string>(
@@ -120,10 +136,10 @@ export class GraphSelector {
           (node) => !nodeLabelsToHide.has(node.label.toLowerCase()),
         ).length;
         const width =
-          this.getLabelWidth(` ${graph.id}    ${nonHiddenNodeCount} nodes`) +
-          30;
+          this.getLabelWidth(` ${title}    ${nonHiddenNodeCount} nodes`) + 30;
         collectionItem.graphs.push({
           id: graph.id,
+          title,
           graph,
           level,
           nonHiddenNodeCount,
@@ -180,6 +196,10 @@ export class GraphSelector {
       }
       this.updateSelectedGraphInfo(selectedGraphId);
     });
+  }
+
+  getGraphTitle(graph: Graph | null | undefined): string {
+    return getGraphTitle(graph);
   }
 
   handleFilterTextChanged(value: string) {
