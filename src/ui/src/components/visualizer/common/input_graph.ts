@@ -80,6 +80,9 @@ export declare interface Graph {
   /** The id of the graph. */
   id: string;
 
+  /** The optional index of the subgraph. */
+  subgraphIndex?: number;
+
   /**
    * The label of the collection this graph belongs to. This field will be set
    * internally (i.e. users don't need to set it explicitly).

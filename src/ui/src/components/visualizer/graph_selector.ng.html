@@ -27,7 +27,7 @@ limitations under the License.
        (click)="handleClickOpenGraphDropdown(selector)">
     <div class="selector-label-container">
       <div class="selector-label-content">
-        <div class="option-label">{{selectedGraph.value?.id || '-'}}</div>
+        <div class="option-label">{{getGraphTitle(selectedGraph.value)}}</div>
         <div class="node-count-label" *ngIf="selectedGraph.value">
           {{selectedGraphNodeCount}} nodes
         </div>
@@ -75,7 +75,7 @@ limitations under the License.
             [value]="graphItem.graph">
           <div class="option-wrapper">
             <div class="option-container">
-              <div class="option-label">{{graphItem.id}}</div>
+              <div class="option-label">{{graphItem.title}}</div>
               <div class="node-count-label">
                 {{graphItem.nonHiddenNodeCount}} nodes
               </div>
