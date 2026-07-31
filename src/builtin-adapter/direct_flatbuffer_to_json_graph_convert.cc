@@ -926,6 +926,7 @@ absl::Status FlatbufferToJsonConverter::AddSubgraph(const int subgraph_index,
 
   // Creates a Model Explorer subgraph and its context.
   Subgraph subgraph(subgraph_name);
+  subgraph.subgraph_index = subgraph_index;
   SubgraphBuildContext context(subgraph_t, signature_name_map, subgraph);
 
   // Adds GraphInputs node to the subgraph.

@@ -236,6 +236,8 @@ struct Subgraph {
       : subgraph_id(std::move(subgraph_id)) {}
   /// The ID of the subgraph.
   std::string subgraph_id;
+  /// The index of the subgraph in the model.
+  std::optional<int> subgraph_index;
   /// A list of nodes in the subgraph.
   std::vector<GraphNode> nodes;
   /// Data for various tasks that provide extra data to be visualized.
@@ -251,6 +253,7 @@ struct Subgraph {
 
  private:
   static const char kSubgraphId[];
+  static const char kSubgraphIndex[];
   static const char kNodes[];
   static const char kTasksData[];
   static const char kGroupNodeConfigs[];

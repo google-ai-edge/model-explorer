@@ -194,6 +194,7 @@ llvm::json::Object GroupNodeConfig::Json() const {
 }
 
 const char Subgraph::kSubgraphId[] = "id";
+const char Subgraph::kSubgraphIndex[] = "subgraphIndex";
 const char Subgraph::kNodes[] = "nodes";
 const char Subgraph::kTasksData[] = "tasksData";
 const char Subgraph::kGroupNodeConfigs[] = "groupNodeConfigs";
@@ -202,6 +203,9 @@ const char Subgraph::kGroupNodeAttributes[] = "groupNodeAttributes";
 llvm::json::Object Subgraph::Json() const {
   llvm::json::Object json_subgraph;
   json_subgraph[kSubgraphId] = subgraph_id;
+  if (subgraph_index.has_value()) {
+    json_subgraph[kSubgraphIndex] = *subgraph_index;
+  }
   json_subgraph[kNodes] = ToJsonArray(nodes);
   if (tasks_data.has_value()) {
     json_subgraph[kTasksData] = tasks_data->Json();
