@@ -36,7 +36,9 @@
 #include "absl/strings/str_join.h"
 #include "absl/strings/str_split.h"
 #include "absl/strings/string_view.h"
+#include "flatbuffers/buffer.h"
 #include "flatbuffers/flexbuffers.h"
+#include "flatbuffers/vector.h"
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/ADT/StringRef.h"
 #include "llvm/Support/Casting.h"
@@ -50,11 +52,11 @@
 #include "mlir/IR/BuiltinTypes.h"
 #include "mlir/IR/MLIRContext.h"
 #include "mlir/Support/LLVM.h"
-#include "third_party/odml/litert_lm/schema/core/litertlm_header_schema_generated.h"
-#include "third_party/odml/litert_lm/schema/core/litertlm_read.h"
 #include "stablehlo/dialect/StablehloOps.h"
 #include "stablehlo/dialect/VhloOps.h"
 #include "tensorflow/compiler/mlir/lite/core/absl_error_model_builder.h"
+#include "formats/litertlm/litertlm_header_schema_generated.h"
+#include "formats/litertlm/litertlm_read.h"
 #include "formats/schema_structs.h"
 #include "graphnode_builder.h"
 #include "status_macros.h"
@@ -1039,6 +1041,19 @@ void CustomOptionsToAttributes(
   }
 }
 
+namespace {
+absl::StatusOr<const flatbuffers::Vector<
+    flatbuffers::Offset<litert::lm::schema::SectionObject>>*>
+GetLiteRTLMSectionObjects(const litert::lm::schema::LitertlmHeader& header) {
+  if (!header.metadata || !header.metadata->section_metadata() ||
+      !header.metadata->section_metadata()->objects()) {
+    return absl::InvalidArgumentError(
+        "LiteRTLM metadata, section_metadata, or objects is null.");
+  }
+  return header.metadata->section_metadata()->objects();
+}
+}  // namespace
+
 absl::StatusOr<std::string> ConvertFlatbufferDirectlyToJson(
     const VisualizeConfig& config, absl::string_view model_path) {
   GraphCollection collection;
@@ -1064,12 +1079,8 @@ absl::StatusOr<std::string> ConvertFlatbufferDirectlyToJson(
   RETURN_IF_ERROR(litert::lm::schema::ReadHeaderFromLiteRTLM(
       litertlm_content.data(), litertlm_content.length(), &header));
 
-  if (!header.metadata || !header.metadata->section_metadata() ||
-      !header.metadata->section_metadata()->objects()) {
-    return absl::InvalidArgumentError(
-        "LiteRTLM metadata, section_metadata, or objects is null.");
-  }
-  auto section_objects = header.metadata->section_metadata()->objects();
+  ASSIGN_OR_RETURN(const auto* section_objects,
+                   GetLiteRTLMSectionObjects(header));
 
   for (size_t i = 0; i < section_objects->size(); ++i) {
     auto sec_obj = section_objects->Get(i);

@@ -20,7 +20,7 @@ USAGE="$(basename $0) <package-version>
 
 Builds a pip package for the Model Explorer backend adapter.
 
-<package-version> should be a string of the form "x.x.x", eg. "1.2.0".
+<package-version> should be a string of the form \"x.x.x\", eg. \"1.2.0\".
 "
 
 # Define a regex pattern for the format x.x.x
@@ -78,7 +78,7 @@ case "${ARCH}" in
     ;;
   arm64)
     # MacOS arm64.
-    BAZEL_FLAGS="${BAZEL_FLAGS} --linkopt="-ld_classic""
+    BAZEL_FLAGS="${BAZEL_FLAGS} --linkopt=\"-ld_classic\""
     ;;
   aarch64)
     # Linux arm64.
@@ -99,6 +99,15 @@ cp "bazel-bin/python/convert_wrapper/_pywrap_convert_wrapper${LIBRARY_EXTENSION}
 # At least on Windows, we need write permissions to delete the file.
 # Without this, setuptools fails to clean the build directory.
 chmod u+w "${BUILD_DIR}/ai_edge_model_explorer_adapter/_pywrap_convert_wrapper${LIBRARY_EXTENSION}"
+
+# Strip symbol tables from binary on Linux/macOS to reduce wheel size
+if [[ "${ARCH}" == "x86_64" || "${ARCH}" == "aarch64" || "${ARCH}" == "arm64" ]]; then
+  if [[ "$(uname -s)" == "Darwin" ]]; then
+    strip -x "${BUILD_DIR}/ai_edge_model_explorer_adapter/_pywrap_convert_wrapper${LIBRARY_EXTENSION}" || true
+  else
+    strip --strip-unneeded "${BUILD_DIR}/ai_edge_model_explorer_adapter/_pywrap_convert_wrapper${LIBRARY_EXTENSION}" || true
+  fi
+fi
 
 # Build python wheel.
 cd "${BUILD_DIR}"

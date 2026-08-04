@@ -70,6 +70,7 @@ build --define=allow_oversize_protos=true
 
 build --spawn_strategy=standalone
 build -c opt
+build --copt=-fvisibility=hidden
 
 # Make Bazel print out all options from rc files.
 build --announce_rc
@@ -123,6 +124,10 @@ build --incompatible_enforce_config_setting_visibility
 # build --incompatible_config_setting_private_default_visibility
 
 # Default options should come above this line.
+
+# Enforce clang as C/C++ compiler on Linux.
+build:linux --action_env=CC=clang
+build:linux --action_env=CXX=clang++
 
 # Android configs. Bazel needs to have --cpu and --fat_apk_cpu both set to the
 # target CPU to build transient dependencies correctly. See
@@ -273,6 +278,10 @@ build:linux --copt="-Werror=unused-result"
 # Add switch as an error on Linux.
 build:linux --copt="-Wswitch"
 build:linux --copt="-Werror=switch"
+# Allow newer Clang warning flags across LLVM versions without failing under -Werror
+# (e.g., Ubuntu 22.04 LTS runners with Clang 14 encountering -Wno-gnu-offsetof-extensions).
+build:linux --copt=-Wno-unknown-warning-option
+build:linux --host_copt=-Wno-unknown-warning-option
 # This was added in clang-16 by https://reviews.llvm.org/D133574.
 # Can be removed once upb is updated, since a type definition is used within
 # offset of in the current version of ubp.

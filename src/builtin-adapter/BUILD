@@ -132,9 +132,6 @@ cc_library(
 cc_library(
     name = "status_macros",
     hdrs = ["status_macros.h"],
-    deps = [
-        "//third_party/gloop/util/status:status_macros",
-    ],
 )
 
 cc_library(
@@ -197,8 +194,6 @@ cc_library(
         "@llvm-project//mlir:FuncExtensions",
         "@llvm-project//mlir:IR",
         "@llvm-project//mlir:Support",
-        "//third_party/odml/litert_lm/schema/core:litertlm_header_schema",
-        "//third_party/odml/litert_lm/schema/core:litertlm_read",
         "@stablehlo//:stablehlo_ops",
         "@stablehlo//:vhlo_ops",
         "@org_tensorflow//tensorflow/compiler/mlir/lite:const_tensor_utils",
@@ -207,6 +202,8 @@ cc_library(
         "@org_tensorflow//tensorflow/compiler/mlir/lite:tensorflow_lite",
         "@org_tensorflow//tensorflow/compiler/mlir/lite/core:absl_error_model_builder",
         "//formats:schema_structs",
+        "//formats/litertlm:litertlm_header_schema",
+        "//formats/litertlm:litertlm_read",
         "//tools:attribute_printer",
         "//tools:convert_type",
         "//tools:load_opdefs",
