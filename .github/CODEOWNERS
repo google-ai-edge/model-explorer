@@ -1,0 +1,3 @@
+# Require security/infrastructure team approval for workflow or Zizmor configuration changes
+/.github/workflows/ @security-team
+/.github/CODEOWNERS @security-team
