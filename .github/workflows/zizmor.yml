@@ -1,0 +1,36 @@
+name: Zizmor
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+permissions:
+  contents: read
+
+jobs:
+  zizmor:
+    name: Run Zizmor Security Audit
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: '3.11'
+
+      - name: Install zizmor
+        # zizmor: ignore[adhoc-packages]
+        run: pip install zizmor
+
+      - name: Run zizmor
+        run: zizmor .
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
