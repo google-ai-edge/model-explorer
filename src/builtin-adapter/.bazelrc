@@ -43,6 +43,14 @@ common --experimental_repo_remote_exec
 #
 # Default build options. These are applied first and unconditionally.
 
+build --incompatible_enable_cc_toolchain_resolution
+build --repo_env USE_HERMETIC_CC_TOOLCHAIN=1
+
+# TODO: Migrate for https://github.com/bazelbuild/bazel/issues/7260
+build:clang_local --noincompatible_enable_cc_toolchain_resolution
+build:clang_local --noincompatible_enable_android_toolchain_resolution
+build:clang_local --repo_env USE_HERMETIC_CC_TOOLCHAIN=1
+
 build --copt=-DGRPC_BAZEL_BUILD
 build --host_copt=-DGRPC_BAZEL_BUILD
 build --action_env=GRPC_BAZEL_RUNTIME=1
@@ -178,14 +186,22 @@ build:macos --config=apple-toolchain
 
 # Use cc toolchains from apple_support for Apple builds (ios, macos, etc).
 # https://github.com/bazelbuild/apple_support/tree/master?tab=readme-ov-file#bazel-6-setup
+build:apple-toolchain --config=clang_local
 build:apple-toolchain --apple_crosstool_top=@local_config_apple_cc//:toolchain
 build:apple-toolchain --crosstool_top=@local_config_apple_cc//:toolchain
 build:apple-toolchain --host_crosstool_top=@local_config_apple_cc//:toolchain
 
+# Wheel builds need the installable macOS runtime dylib linked into python
+# extensions and packaged into the wheel.
+build:macos_wheel --config=macos
+build:macos_wheel --define=resolve_symbols_in_exec=false
+
 # Settings for MacOS on ARM CPUs.
+build:macos_arm64 --config=macos
 build:macos_arm64 --cpu=darwin_arm64
+build:macos_arm64 --cxxopt=-std=gnu++17
 build:macos_arm64 --macos_minimum_os=11.0
-build:macos_arm64 --platforms=@build_bazel_apple_support//configs/platforms:darwin_arm64
+build:macos_arm64 --platforms=@build_bazel_apple_support//platforms:macos_arm64
 
 # iOS configs for each architecture and the fat binary builds.
 build:ios --apple_platform_type=ios
@@ -475,7 +491,8 @@ build --config=litert_prefixes
 build --define=disable_tf_lite_py=true
 
 # Config to use a gcs bucket as remote cache.
-build:public_cache --remote_cache="https://storage.googleapis.com/litert-bazel-artifacts" --remote_upload_local_results=false
+# Unset DOCKER_CACHEBUSTER variables to prevent random container injection from breaking action cache keys across CI environments.
+build:public_cache --remote_cache="https://storage.googleapis.com/litert-bazel-artifacts" --remote_upload_local_results=false --action_env=DOCKER_CACHEBUSTER= --action_env=DOCKER_HOST_CACHEBUSTER=
 
 # Cache pushes are limited to CI system.
 # WARNING: THIS OPTION WONT WORK IF YOU DO NOT HAVE PROPER AUTHENTICATION AND PERMISSIONS
@@ -549,11 +566,3 @@ test:bulk_test_cpu --build_tests_only
 # TODO: b/397625618 Enable bzlmod
 common --noenable_bzlmod
 
-# TODO: Migrate for https://github.com/bazelbuild/bazel/issues/7260
-common --noincompatible_enable_cc_toolchain_resolution
-common --noincompatible_enable_android_toolchain_resolution
-
-
-# Disable Hermetic CC toolchains
-build --@rules_ml_toolchain//common:enable_hermetic_cc=False
-build --repo_env USE_HERMETIC_CC_TOOLCHAIN=0

@@ -40,9 +40,9 @@ rules_shell_toolchains()
 # b) get the sha256 hash of the commit by running:
 #    curl -L https://github.com/tensorflow/tensorflow/archive/<COMMIT_HASH>.tar.gz | sha256sum
 #    and update TENSORFLOW_SHA256 with the result.
-TENSORFLOW_COMMIT = "9e1afa4e5cfd8818518183211b77f2976c7dc450"
+TENSORFLOW_COMMIT = "bcdab1a62e138c8f8784a7477c0be8af6dd0bd0a"
 
-TENSORFLOW_SHA256 = "c67c2e8c62b55936a3d7705989af57a0eb28a8b97ab7ed95fe294917c6fb0c14"
+TENSORFLOW_SHA256 = "c3c552414ab2e59e72511a21c1df566346a7c8f160909325edec6d1ff403d69d"
 
 http_archive(
     name = "org_tensorflow",
@@ -57,6 +57,34 @@ http_archive(
 # restriction that load() statements need to be at the top of .bzl files.
 # E.g. we can not retrieve a new repository with http_archive and then load()
 # a macro from that repository in the same file.
+# Use 3.22.0 (from 3.5.1 of tensorflow) to fix binary signing issue on MacOS Tahoe.
+http_archive(
+    name = "build_bazel_rules_apple",
+    sha256 = "a78f26c22ac8d6e3f3fcaad50eace4d9c767688bd7254b75bdf4a6735b299f6a",
+    url = "https://github.com/bazelbuild/rules_apple/releases/download/3.22.0/rules_apple.3.22.0.tar.gz",
+)
+
+load(
+    "@build_bazel_rules_apple//apple:repositories.bzl",
+    "apple_rules_dependencies",
+)
+
+apple_rules_dependencies()
+
+http_archive(
+    name = "build_bazel_rules_swift",
+    sha256 = "f7a67197cd8a79debfe70b8cef4dc19d03039af02cc561e31e0718e98cad83ac",
+    url = "https://github.com/bazelbuild/rules_swift/releases/download/2.9.0/rules_swift.2.9.0.tar.gz",
+)
+
+# Lower the version from 1.24.5 that tensorflow uses to 1.23.1, the highest version which don't have
+# issues with missing LC_UUID, DEVELOPER_DIR or SDKROOT on MacOS Tahoe.
+http_archive(
+    name = "build_bazel_apple_support",
+    sha256 = "ee20cc5c0bab47065473c8033d462374dd38d172406ecc8de5c8f08487943f2f",
+    url = "https://github.com/bazelbuild/apple_support/releases/download/1.23.1/apple_support.1.23.1.tar.gz",
+)
+
 load("@org_tensorflow//tensorflow:workspace3.bzl", "tf_workspace3")
 
 tf_workspace3()
@@ -72,19 +100,12 @@ http_archive(
     ],
 )
 
-load(
-    "@rules_ml_toolchain//cc/deps:cc_toolchain_deps.bzl",
-    "cc_toolchain_deps",
-)
-
-cc_toolchain_deps()
-
 # Initialize hermetic Python
 load("@xla//third_party/py:python_init_rules.bzl", "python_init_rules")
 
 python_init_rules()
 
-load("@xla//third_party/py:python_init_repositories.bzl", "python_init_repositories")
+load("@rules_ml_toolchain//py:python_init_repositories.bzl", "python_init_repositories")
 
 python_init_repositories(
     default_python_version = "system",
@@ -103,11 +124,11 @@ python_init_repositories(
     },
 )
 
-load("@xla//third_party/py:python_init_toolchains.bzl", "python_init_toolchains")
+load("@rules_ml_toolchain//py:python_register_toolchain.bzl", "python_register_toolchain")
 
-python_init_toolchains()
+python_register_toolchain()
 
-load("@xla//third_party/py:python_init_pip.bzl", "python_init_pip")
+load("@rules_ml_toolchain//py:python_init_pip.bzl", "python_init_pip")
 
 python_init_pip()
 
@@ -134,6 +155,17 @@ load(
 )
 
 python_wheel_version_suffix_repository(name = "tf_wheel_version_suffix")
+
+# Initialize hermetic C++
+load(
+    "@rules_ml_toolchain//cc/deps:cc_toolchain_deps.bzl",
+    "cc_toolchain_deps",
+)
+
+cc_toolchain_deps()
+
+register_toolchains("@rules_ml_toolchain//cc:linux_x86_64_linux_x86_64")
+# End hermetic C++ initialization
 
 load(
     "@rules_ml_toolchain//gpu/cuda:cuda_json_init_repository.bzl",
