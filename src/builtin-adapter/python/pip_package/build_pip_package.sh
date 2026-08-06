@@ -47,7 +47,7 @@ IFS='.' read -ra VERSION_PARTS <<< "${PYTHON_VERSION}"
 export TF_PYTHON_VERSION="${VERSION_PARTS[0]}.${VERSION_PARTS[1]}"
 export PROJECT_NAME=${WHEEL_PROJECT_NAME:-ai_edge_model_explorer_adapter}
 BUILD_DIR="gen/adapter_pip"
-BAZEL_FLAGS="--copt=-O3"
+BAZEL_FLAGS="--copt=-O1 --local_ram_resources=9216 --jobs=3 --config=public_cache"
 ARCH="$(uname -m)"
 
 # Build source tree.
@@ -78,7 +78,7 @@ case "${ARCH}" in
     ;;
   arm64)
     # MacOS arm64.
-    BAZEL_FLAGS="${BAZEL_FLAGS} --linkopt=\"-ld_classic\""
+    BAZEL_FLAGS="${BAZEL_FLAGS} --linkopt=\"-ld_classic\" --linkopt=\"-Wl,-headerpad_max_install_names\""
     ;;
   aarch64)
     # Linux arm64.
@@ -89,6 +89,10 @@ case "${ARCH}" in
     exit 1
     ;;
 esac
+
+if [[ "$(uname -s)" == "Darwin" ]]; then
+  BAZEL_FLAGS="${BAZEL_FLAGS} --config=macos_wheel"
+fi
 
 bazel build -c opt -s --config=monolithic --config=noaws --config=nogcp --config=nohdfs --config=nonccl \
   ${BAZEL_FLAGS} python/convert_wrapper:_pywrap_convert_wrapper
