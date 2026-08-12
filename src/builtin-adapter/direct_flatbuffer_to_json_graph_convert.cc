@@ -16,6 +16,7 @@
 #include "direct_flatbuffer_to_json_graph_convert.h"
 
 #include <algorithm>
+#include <array>
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
@@ -36,6 +37,8 @@
 #include "absl/strings/str_join.h"
 #include "absl/strings/str_split.h"
 #include "absl/strings/string_view.h"
+#include "absl/types/span.h"
+#include "flatbuffers/base.h"
 #include "flatbuffers/buffer.h"
 #include "flatbuffers/flexbuffers.h"
 #include "flatbuffers/vector.h"
@@ -74,6 +77,7 @@
 #include "tensorflow/compiler/mlir/tensorflow/ir/tf_dialect.h"
 #include "tensorflow/compiler/mlir/tensorflow/ir/tf_types.h"
 #include "xla/tsl/platform/env.h"
+#include "xla/tsl/platform/file_system.h"
 #include "tensorflow/core/framework/tensor.pb.h"
 
 namespace tooling {
@@ -1042,6 +1046,15 @@ void CustomOptionsToAttributes(
 }
 
 namespace {
+constexpr size_t kHeaderPrefixSize = 32;
+constexpr size_t kHeaderEndOffsetByteOffset = 24;
+constexpr uint64_t kMaxHeaderSize = 100 * 1024 * 1024;  // 100 MB
+
+std::string FormatGraphCollection(const GraphCollection& collection) {
+  llvm::json::Value json_result(collection.Json());
+  return llvm::formatv("{0:2}", json_result);
+}
+
 absl::StatusOr<const flatbuffers::Vector<
     flatbuffers::Offset<litert::lm::schema::SectionObject>>*>
 GetLiteRTLMSectionObjects(const litert::lm::schema::LitertlmHeader& header) {
@@ -1052,56 +1065,108 @@ GetLiteRTLMSectionObjects(const litert::lm::schema::LitertlmHeader& header) {
   }
   return header.metadata->section_metadata()->objects();
 }
-}  // namespace
 
-absl::StatusOr<std::string> ConvertFlatbufferDirectlyToJson(
-    const VisualizeConfig& config, absl::string_view model_path) {
-  GraphCollection collection;
-
-  std::string content;
-  RETURN_IF_ERROR(tsl::ReadFileToString(tsl::Env::Default(),
-                                        std::string(model_path), &content));
-  bool is_litertlm_file = litert::lm::schema::IsLiteRTLMFile(content);
-
-  // Handles .tflite file.
-  if (!is_litertlm_file) {
-    std::string model_content = std::move(content);
-    ASSIGN_OR_RETURN(Graph graph, BuildGraphFromContent(config, model_content));
-    collection.graphs.push_back(std::move(graph));
-    llvm::json::Value json_result(collection.Json());
-    return llvm::formatv("{0:2}", json_result);
+absl::StatusOr<std::string> ConvertLitertlmDirectlyToJson(
+    const VisualizeConfig& config, tsl::RandomAccessFile* file,
+    absl::string_view header_prefix, uint64_t file_size) {
+  if (header_prefix.size() < kHeaderPrefixSize) {
+    return absl::InvalidArgumentError(
+        "Header prefix is smaller than 32 bytes.");
+  }
+  uint64_t header_end_offset = flatbuffers::ReadScalar<uint64_t>(
+      header_prefix.data() + kHeaderEndOffsetByteOffset);
+  if (header_end_offset < kHeaderPrefixSize) {
+    return absl::InvalidArgumentError(
+        absl::StrCat("Invalid header end offset: ", header_end_offset,
+                     " is smaller than prefix size ", kHeaderPrefixSize));
+  }
+  if (header_end_offset > file_size) {
+    return absl::InvalidArgumentError(
+        absl::StrCat("Invalid header size: ", header_end_offset,
+                     " bytes exceeds file size ", file_size, " bytes."));
+  }
+  if (header_end_offset > kMaxHeaderSize) {
+    return absl::InvalidArgumentError(
+        absl::StrCat("Invalid header size: ", header_end_offset,
+                     " bytes exceeds maximum allowed limit."));
   }
 
-  // Handles .litertlm file.
-  std::string litertlm_content = std::move(content);
+  // Read full header metadata [0, header_end_offset).
+  std::string header_data(header_end_offset, '\0');
+  absl::string_view header_slice;
+  RETURN_IF_ERROR(file->Read(0, header_slice, absl::MakeSpan(header_data)));
 
   litert::lm::schema::LitertlmHeader header;
   RETURN_IF_ERROR(litert::lm::schema::ReadHeaderFromLiteRTLM(
-      litertlm_content.data(), litertlm_content.length(), &header));
+      const_cast<char*>(header_slice.data()), header_slice.size(), &header));
 
   ASSIGN_OR_RETURN(const auto* section_objects,
                    GetLiteRTLMSectionObjects(header));
 
+  // Range-read only TFLiteModel section slices.
+  GraphCollection collection;
   for (size_t i = 0; i < section_objects->size(); ++i) {
-    auto sec_obj = section_objects->Get(i);
+    const auto* sec_obj = section_objects->Get(i);
     if (sec_obj->data_type() ==
         litert::lm::schema::AnySectionDataType_TFLiteModel) {
-      absl::string_view model_content(
-          litertlm_content.data() + sec_obj->begin_offset(),
-          sec_obj->end_offset() - sec_obj->begin_offset());
-      absl::StatusOr<Graph> graph =
-          BuildGraphFromContent(config, model_content);
-      if (!graph.ok()) {
-        return absl::InvalidArgumentError(
-            absl::StrCat("Failed to build model from buffer for section ", i,
-                         " in litertlm file: ", graph.status().ToString()));
+      if (sec_obj->end_offset() < sec_obj->begin_offset()) {
+        return absl::InvalidArgumentError(absl::StrCat(
+            "Invalid section offset: begin ", sec_obj->begin_offset(),
+            " is greater than end ", sec_obj->end_offset()));
       }
-      collection.graphs.push_back(std::move(*graph));
+      if (sec_obj->end_offset() > file_size) {
+        return absl::InvalidArgumentError(
+            absl::StrCat("Invalid section offset: end ", sec_obj->end_offset(),
+                         " exceeds file size ", file_size));
+      }
+      size_t model_len = sec_obj->end_offset() - sec_obj->begin_offset();
+      std::string model_content(model_len, '\0');
+      absl::string_view model_slice;
+      RETURN_IF_ERROR(file->Read(sec_obj->begin_offset(), model_slice,
+                                 absl::MakeSpan(model_content)));
+      ASSIGN_OR_RETURN(Graph graph, BuildGraphFromContent(config, model_slice));
+      collection.graphs.push_back(std::move(graph));
     }
   }
 
-  llvm::json::Value json_result(collection.Json());
-  return llvm::formatv("{0:2}", json_result);
+  if (collection.graphs.empty()) {
+    return absl::InvalidArgumentError(
+        "No TFLiteModel sections found in LiteRT-LM container.");
+  }
+
+  return FormatGraphCollection(collection);
+}
+}  // namespace
+
+absl::StatusOr<std::string> ConvertFlatbufferDirectlyToJson(
+    const VisualizeConfig& config, absl::string_view model_path) {
+  tsl::Env* env = tsl::Env::Default();
+  std::unique_ptr<tsl::RandomAccessFile> file;
+  RETURN_IF_ERROR(env->NewRandomAccessFile(std::string(model_path), &file));
+
+  uint64_t file_size = 0;
+  RETURN_IF_ERROR(env->GetFileSize(std::string(model_path), &file_size));
+
+  std::array<char, kHeaderPrefixSize> header_prefix;
+  absl::string_view prefix_slice;
+  absl::Status status =
+      file->Read(0, prefix_slice, absl::MakeSpan(header_prefix));
+
+  if (status.ok() && prefix_slice.size() == header_prefix.size() &&
+      litert::lm::schema::IsLiteRTLMFile(prefix_slice)) {
+    return ConvertLitertlmDirectlyToJson(config, file.get(), prefix_slice,
+                                         file_size);
+  }
+
+  // Handles .tflite file.
+  std::string content(file_size, '\0');
+  absl::string_view content_slice;
+  RETURN_IF_ERROR(file->Read(0, content_slice, absl::MakeSpan(content)));
+
+  GraphCollection collection;
+  ASSIGN_OR_RETURN(Graph graph, BuildGraphFromContent(config, content_slice));
+  collection.graphs.push_back(std::move(graph));
+  return FormatGraphCollection(collection);
 }
 
 }  // namespace visualization_client
