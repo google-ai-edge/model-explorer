@@ -1107,6 +1107,9 @@ absl::StatusOr<std::string> ConvertLitertlmDirectlyToJson(
   GraphCollection collection;
   for (size_t i = 0; i < section_objects->size(); ++i) {
     const auto* sec_obj = section_objects->Get(i);
+    if (sec_obj == nullptr) {
+      continue;
+    }
     if (sec_obj->data_type() ==
         litert::lm::schema::AnySectionDataType_TFLiteModel) {
       if (sec_obj->end_offset() < sec_obj->begin_offset()) {
