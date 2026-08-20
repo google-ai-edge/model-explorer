@@ -7,6 +7,8 @@ package(
     default_visibility = ["//visibility:public"],
 )
 
+exports_files(["README.md"])  # copybara:comment
+
 cc_library(
     name = "translate_helpers",
     srcs = ["translate_helpers.cc"],
@@ -35,6 +37,7 @@ cc_library(
         "@org_tensorflow//tensorflow/compiler/mlir/lite:tensorflow_lite",
         "//formats:schema_structs",
         "//tools:attribute_printer",
+        "//tools:diagnostic_collector",
         "//tools:load_opdefs",
         "//tools:namespace_heuristics",
         "//tools:shardy_utils",
@@ -207,6 +210,7 @@ cc_library(
         "//formats/litertlm:litertlm_read",
         "//tools:attribute_printer",
         "//tools:convert_type",
+        "//tools:diagnostic_collector",
         "//tools:load_opdefs",
         "//tools:namespace_heuristics",
         "@org_tensorflow//tensorflow/compiler/mlir/lite/schema:schema_fbs",
