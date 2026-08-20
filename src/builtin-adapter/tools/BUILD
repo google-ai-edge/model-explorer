@@ -28,6 +28,7 @@ cc_library(
     srcs = ["shardy_utils.cc"],
     hdrs = ["shardy_utils.h"],
     deps = [
+        ":diagnostic_collector",
         "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_absl//absl/log",
         "@com_google_absl//absl/random",
@@ -65,5 +66,18 @@ cc_library(
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/strings:string_view",
         "@com_google_absl//absl/types:span",
+    ],
+)
+
+cc_library(
+    name = "diagnostic_collector",
+    srcs = ["diagnostic_collector.cc"],
+    hdrs = ["diagnostic_collector.h"],
+    deps = [
+        "@com_google_absl//absl/container:flat_hash_map",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/strings:str_format",
+        "@com_google_absl//absl/strings:string_view",
     ],
 )

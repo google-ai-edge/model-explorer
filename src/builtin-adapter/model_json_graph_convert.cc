@@ -274,7 +274,7 @@ absl::StatusOr<std::string> ConvertSavedModelToJson(
   mlir::StatusScopedDiagnosticHandler diag_handler(
       &context, /*propagate=*/false, /*filter_stack=*/true);
   if (tf_metadata.tf_version == 1) {
-    LOG(INFO) << "Converting SavedModel V1 to MLIR module...";
+    VLOG(1) << "Converting SavedModel V1 to MLIR module...";
     tensorflow::MLIRImportOptions import_options;
     import_options.upgrade_legacy = true;
 
@@ -285,7 +285,7 @@ absl::StatusOr<std::string> ConvertSavedModelToJson(
 
     RETURN_IF_ERROR(RunTFShapeInference(*module_op, diag_handler));
   } else {
-    LOG(INFO) << "Converting SavedModel V2 to MLIR module...";
+    VLOG(1) << "Converting SavedModel V2 to MLIR module...";
     // Converts SavedModel V2 to MLIR module.
     ASSIGN_OR_RETURN(module_op,
                      tensorflow::SavedModelObjectGraphToMlirImport(

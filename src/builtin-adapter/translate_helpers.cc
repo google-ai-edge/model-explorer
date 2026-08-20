@@ -60,6 +60,7 @@
 #include "graphnode_builder.h"
 #include "status_macros.h"
 #include "tools/attribute_printer.h"
+#include "tools/diagnostic_collector.h"
 #include "tools/load_opdefs.h"
 #include "tools/namespace_heuristics.h"
 #include "tools/shardy_utils.h"
@@ -121,6 +122,7 @@ struct GraphBuildContext {
   Counter node_counter;
   Counter tensor_counter;
   bool has_debug_info;
+  DiagnosticCollector diagnostics;
 };
 
 // Skip serializing attributes that match the given name. This is a hard-code to
@@ -328,9 +330,8 @@ void TfliteMaybeAppendSubgraphs(Operation& operation,
       }
     }
   }
-  llvm::errs() << absl::StrCat(
-      "Operation: ", operation.getName().getStringRef().str(),
-      " has unsupported nested regions.");
+  VLOG(1) << "Operation: " << operation.getName().getStringRef().str()
+          << " has unsupported nested regions.";
 }
 
 // Adds the block arguments of a function op to the subgraph.
@@ -351,11 +352,9 @@ void AddGraphInputs(const VisualizeConfig& config, mlir::func::FuncOp& fop,
       inputs_str.getValue().split(input_names, ',', /*MaxSplit=*/-1,
                                   /*KeepEmpty=*/false);
       if (input_names.size() != fop.getNumArguments()) {
-        llvm::errs()
-            << "WARNING: number of input names (" << input_names.size()
-            << ") != number of arguments (" << fop.getNumArguments()
-            << "). Input tensor names are not guaranteed to store in the "
-               "correct edge.\n";
+        VLOG(1) << "Number of input names (" << input_names.size()
+                << ") != number of arguments (" << fop.getNumArguments()
+                << ") for function '" << fop.getSymName().str() << "'.";
       }
     }
   }
@@ -460,7 +459,7 @@ void GenerateShardyNodeName(Operation& operation, GraphNodeBuilder& builder) {
 // Gets a list of output tensor name(s) of an TFLite operation. Returns empty
 // list if there are errors or the operation has no output tensors.
 llvm::SmallVector<llvm::StringRef, 2> GetTfliteTensorNames(
-    Operation& operation) {
+    Operation& operation, DiagnosticCollector* diagnostics = nullptr) {
   llvm::SmallVector<llvm::StringRef, 2> tensor_names;
   const int num_tensors = operation.getNumResults();
   if (num_tensors == 0) {
@@ -473,10 +472,12 @@ llvm::SmallVector<llvm::StringRef, 2> GetTfliteTensorNames(
     if (num_tensors == 1) {
       tensor_names.push_back(nameLoc.getName());
     } else {
-      llvm::errs() << absl::StrCat(
-          "ERROR: ", num_tensors,
-          " output tensors are expected for operation: ", op_name.str(),
-          ", but only 1 is found.\n");
+      VLOG(2) << num_tensors
+              << " output tensors are expected for operation: " << op_name.str()
+              << ", but only 1 name location is found.";
+      if (diagnostics != nullptr) {
+        diagnostics->RecordMissingTensorName(op_name.str());
+      }
     }
   } else if (fusedLoc != nullptr) {
     int num_locs = fusedLoc.getLocations().size();
@@ -486,16 +487,19 @@ llvm::SmallVector<llvm::StringRef, 2> GetTfliteTensorNames(
             llvm::dyn_cast<mlir::NameLoc>(fusedLoc.getLocations()[i])
                 .getName());
       }
-
     } else {
-      llvm::errs() << absl::StrCat(
-          "ERROR: ", num_tensors,
-          " output tensors are expected for operation: ", op_name.str(),
-          ", but ", num_locs, " are found.\n");
+      VLOG(2) << num_tensors
+              << " output tensors are expected for operation: " << op_name.str()
+              << ", but " << num_locs << " fused locations are found.";
+      if (diagnostics != nullptr) {
+        diagnostics->RecordMissingTensorName(op_name.str());
+      }
     }
   } else {
-    llvm::errs() << "ERROR: No tensor names are found for operation: "
-                 << op_name.str() << "\n";
+    VLOG(2) << "No tensor names are found for operation: " << op_name.str();
+    if (diagnostics != nullptr) {
+      diagnostics->RecordMissingTensorName(op_name.str());
+    }
   }
   return tensor_names;
 }
@@ -544,15 +548,17 @@ absl::Status PopulateInputEdgeInfo(const mlir::Value& val, int input_index,
 // Adds tensor tags to the graph node.
 // If the op name is not found in the op_defs map, we will return an error.
 // Likely it means the op_defs map is not up to date, and we need to update it.
-void AddTensorTags(const OpdefsMap& op_defs, Operation& op,
+void AddTensorTags(GraphBuildContext& context, Operation& op,
                    GraphNodeBuilder& builder) {
   const std::string op_label = builder.GetNodeLabel();
-  if (!op_defs.contains(op_label)) {
-    // Some ops are not in the op_defs map, we will skip adding tensor tags for
-    // them.
+  if (!context.op_defs.contains(op_label)) {
+    // Record missing op def to diagnostics for TFLite dialect operations.
+    if (IsTfliteDialect(op)) {
+      context.diagnostics.RecordMissingOpDef(op_label);
+    }
     return;
   }
-  const OpMetadata& op_metadata = op_defs.at(op_label);
+  const OpMetadata& op_metadata = context.op_defs.at(op_label);
   if (op_metadata.arguments.size() <= op.getNumOperands()) {
     for (int i = 0; i < op_metadata.arguments.size(); ++i) {
       builder.AppendAttrToMetadata(EdgeType::kInput, i, kTensorTag,
@@ -632,7 +638,7 @@ void AddOutputsMetadata(const VisualizeConfig& config, Operation& operation,
   Counter& tensor_counter = context.tensor_counter;
   llvm::SmallVector<llvm::StringRef, 2> tensor_names;
   if (IsTfliteDialect(operation) || config.add_tensor_name_attribute) {
-    tensor_names = GetTfliteTensorNames(operation);
+    tensor_names = GetTfliteTensorNames(operation, &context.diagnostics);
   }
   for (int output_index = 0, e = operation.getNumResults(); output_index < e;
        ++output_index) {
@@ -928,8 +934,8 @@ absl::Status MaybeAddNestedRegion(const VisualizeConfig& config,
 // This is the core logic for converting an MLIR operation to a graph node.
 absl::Status AddNode(const VisualizeConfig& config, Operation& operation,
                      GraphBuildContext& context, Subgraph& subgraph) {
+  VLOG(2) << "Processing MLIR op: " << operation.getName().getStringRef().str();
   GraphNodeBuilder builder;
-  const OpdefsMap& op_defs = context.op_defs;
   OpToNodeIdMap& seen_ops = context.seen_ops;
   // Sets the node_id, node_label, and node_name according to the dialect.
   AddNodeInfo(operation, context, builder);
@@ -939,7 +945,7 @@ absl::Status AddNode(const VisualizeConfig& config, Operation& operation,
   llvm::SmallVector<llvm::StringRef, 2> tensor_names;
   if (IsTfliteDialect(operation)) {
     TfliteMaybeAppendSubgraphs(operation, builder);
-    AddTensorTags(op_defs, operation, builder);
+    AddTensorTags(context, operation, builder);
   }
   RETURN_IF_ERROR(
       MaybeAddNestedRegion(config, operation, context, builder, subgraph));
@@ -968,10 +974,12 @@ absl::StatusOr<Subgraph> FuncOpToSubgraph(const VisualizeConfig& config,
   // Extract shardy propagation edges as an edge overlay if present and add
   // to the task data to auto-load in the UI.
   absl::StatusOr<EdgeOverlaysData> propagation_edges =
-      ExtractShardyPropagationEdges(fop, context.seen_ops, context.inputs);
+      ExtractShardyPropagationEdges(fop, context.seen_ops, context.inputs,
+                                    &context.diagnostics);
   if (!propagation_edges.ok()) {
-    LOG(ERROR) << "Failed to extract shardy propagation edges: "
-               << propagation_edges.status();
+    VLOG(1) << "Failed to extract shardy propagation edges: "
+            << propagation_edges.status();
+    context.diagnostics.EmitSummary(subgraph.subgraph_id);
     return subgraph;
   }
   if (!propagation_edges->overlays.empty()) {
@@ -984,6 +992,7 @@ absl::StatusOr<Subgraph> FuncOpToSubgraph(const VisualizeConfig& config,
         *std::move(propagation_edges));
     subgraph.tasks_data = std::move(edge_overlays_data);
   }
+  context.diagnostics.EmitSummary(subgraph.subgraph_id);
   return subgraph;
 }
 
