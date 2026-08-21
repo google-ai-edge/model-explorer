@@ -5,13 +5,13 @@
 # https://yaml-online-parser.appspot.com/
 #
 
-name: Test Build Single Adapter PyPI
+name: Test Build Single Adapter
 
 on:
   workflow_dispatch:
     inputs:
       runner:
-        description: 'Hosted Runner'
+        description: "Target Platform Runner"
         required: true
         default: ubuntu-22.04
         type: choice
@@ -19,81 +19,106 @@ on:
           - ubuntu-22.04
           - macos-latest
           - ubuntu-22.04-arm
-
-      python-version:
-        description: 'Python Version'
-        required: true
-        default: '3.11'
-        type: choice
-        options:
-          - '3.13'
-          - '3.12'
-          - '3.11'
-          - '3.10'
-          - '3.9'
-
-      package-version:
-        description: 'Package Version'
-        required: true
-        default: '0.0.0'
-        type: string
-
-      create-release:
-        description: 'Create a GitHub Release?'
-        required: true
-        default: false
+      REFRESH_CACHE:
+        description: "Force refresh Bazel disk cache"
         type: boolean
+        default: false
+
+concurrency:
+  group: ${{ github.workflow }}-${{ inputs.runner }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  # Job 1: Build the single wheel file
-  build:
-    runs-on: ${{ github.event.inputs.runner }}
+  test-build:
+    name: "Test Build (${{ inputs.runner }})"
+    runs-on: ${{ inputs.runner }}
+    defaults:
+      run:
+        working-directory: src/builtin-adapter
+    permissions:
+      actions: write  # For gh cache delete
+      contents: read
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REFRESH_CACHE: ${{ inputs.REFRESH_CACHE }}
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          lfs: true
 
-      - name: Set up Python ${{ github.event.inputs.python-version }}
+      - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: ${{ github.event.inputs.python-version }}
+          python-version: "3.11"
 
-      - name: Install Dependencies
+      - name: Install Python dependencies
         run: |
-          python -m pip install --upgrade pip setuptools wheel twine
+          python3 -m pip install --upgrade pip
+          pip install wheel
 
-      - name: Build Package
+      - name: Set up cache keys
+        id: cache-keys
         run: |
-          cd ./src/builtin-adapter
-          ./python/pip_package/build_pip_package.sh ${{ github.event.inputs.package-version }}
+          CACHE_RESTORE_KEY_2="${{ github.workflow }}-${{ inputs.runner }}"
+          CACHE_RESTORE_KEY_1="$CACHE_RESTORE_KEY_2-${{ hashFiles('**/WORKSPACE', '**/.bazelrc') }}"
+          CACHE_RESTORE_KEY_0="$CACHE_RESTORE_KEY_1-${{ hashFiles('**/BUILD*') }}"
+          CACHE_KEY="$CACHE_RESTORE_KEY_0-${{ github.sha }}"
+          echo "CACHE_RESTORE_KEY_2=$CACHE_RESTORE_KEY_2" >> "$GITHUB_OUTPUT"
+          echo "CACHE_RESTORE_KEY_1=$CACHE_RESTORE_KEY_1" >> "$GITHUB_OUTPUT"
+          echo "CACHE_RESTORE_KEY_0=$CACHE_RESTORE_KEY_0" >> "$GITHUB_OUTPUT"
+          echo "CACHE_KEY=$CACHE_KEY" >> "$GITHUB_OUTPUT"
 
-      - name: Verify the Distribution
-        run: twine check ./src/builtin-adapter/gen/adapter_pip/dist/*
+      - name: Clean build outputs if cache is being refreshed
+        if: env.REFRESH_CACHE == 'true'
+        run: bazel clean --expunge
 
-      - name: Upload Wheel as an Artifact
+      - name: Restore bazel cache
+        id: bazel-cache
+        if: env.REFRESH_CACHE != 'true'
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/.cache/bazel
+          key: ${{ steps.cache-keys.outputs.CACHE_KEY }}
+          restore-keys: |
+            ${{ steps.cache-keys.outputs.CACHE_RESTORE_KEY_0 }}-
+            ${{ steps.cache-keys.outputs.CACHE_RESTORE_KEY_1 }}-
+            ${{ steps.cache-keys.outputs.CACHE_RESTORE_KEY_2 }}-
+
+      - name: Check cache hit
+        run: |
+          echo "Cache Hit: ${{ steps.bazel-cache.outputs.cache-hit }}"
+          echo "Cache Primary Key: ${{ steps.bazel-cache.outputs.cache-primary-key }}"
+          echo "Cache Matched Key: ${{ steps.bazel-cache.outputs.cache-matched-key }}"
+
+      - name: Bazel build Python wheel package
+        run: |
+          BAZEL_FLAGS="--disk_cache=$HOME/.cache/bazel --repository_cache=$HOME/.cache/bazel/repo --config=public_cache -c opt"
+          if [[ "${{ inputs.runner }}" == "macos-latest" ]]; then
+            BAZEL_FLAGS="$BAZEL_FLAGS --config=macos_arm64 --local_ram_resources=9216 --jobs=3 --copt=-O1"
+          fi
+          bazel build $BAZEL_FLAGS //python/ai_edge_model_explorer_adapter:wheel
+
+      - name: Test wheel installation and FFI smoke test
+        run: |
+          pip install bazel-bin/python/ai_edge_model_explorer_adapter/*.whl
+          python3 -c "import ai_edge_model_explorer_adapter as adapter; print('Adapter loaded successfully:', adapter.VisualizeConfig())"
+
+      - name: Upload wheel artifact
         uses: actions/upload-artifact@v4
         with:
-          name: python-wheels-${{ github.event.inputs.runner }}-${{ github.event.inputs.python-version }}
-          path: ./src/builtin-adapter/gen/adapter_pip/dist/*.whl
+          name: ai-edge-model-explorer-adapter-${{ inputs.runner }}-test-wheel
+          path: src/builtin-adapter/bazel-bin/python/ai_edge_model_explorer_adapter/*.whl
+          if-no-files-found: error
 
-  # Job 2: Create the release using the built artifact
-  release:
-    # This job runs only after the 'build' job succeeds
-    needs: build
-    if: github.event.inputs.create-release == true
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-      - name: Download wheel from build job
-        uses: actions/download-artifact@v4
+      - name: Remove stale cache if cache is being refreshed
+        if: env.REFRESH_CACHE == 'true'
+        continue-on-error: true
+        run: gh cache delete ${{ steps.cache-keys.outputs.CACHE_KEY }}
+
+      - name: Save bazel cache if updated
+        uses: actions/cache/save@v4
+        if: env.REFRESH_CACHE == 'true' || steps.bazel-cache.outputs.cache-hit != 'true'
         with:
-          path: dist
-
-      - name: Display downloaded files
-        run: ls -R dist
-
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
-        with:
-          files: dist/**/*.whl
-          prerelease: true
-          tag_name: adapter-v${{ github.event.inputs.package-version }}
+          path: ~/.cache/bazel
+          key: ${{ steps.cache-keys.outputs.CACHE_KEY }}
