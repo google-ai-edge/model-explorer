@@ -18,19 +18,24 @@ jobs:
   angular:
     name: Angular Build
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     defaults:
       run:
         working-directory: ./src/ui
     steps:
       - name: Checkout the source code
-        uses: actions/checkout@v3
+        uses: actions/checkout@a37ce9120846195fa4ece8f58b268e6043cb2f26 # v3
+        with:
+          persist-credentials: false
       - name: Setup Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@3235b876344d2a9aa001b8d1453c930bba69e610 # v3
         with:
           node-version: '22.12.0'
       - name: Install dependencies
         run: npm install
       - name: Install rollup
+        # zizmor: ignore[adhoc-packages]
         run: npm install @rollup/rollup-linux-x64-gnu
       - name: Build
         run: npm run build
