@@ -1,11 +1,14 @@
 load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
 load("@rules_cc//cc:cc_library.bzl", "cc_library")
 load("@rules_cc//cc:cc_test.bzl", "cc_test")
+load("//tools/build_defs/testing:bzl_library.bzl", "bzl_library")
 
 package(
     # copybara:uncomment default_applicable_licenses = ["@org_tensorflow//tensorflow:license"],
     default_visibility = ["//visibility:public"],
 )
+
+exports_files(["README.md"])
 
 cc_library(
     name = "translate_helpers",
@@ -240,4 +243,11 @@ cc_library(
         "@org_tensorflow//tensorflow/core:lib",
         "@org_tensorflow//tensorflow/core:protos_all_cc",
     ],
+)
+
+bzl_library(
+    name = "version_bzl",
+    srcs = ["version.bzl"],
+    parse_tests = False,
+    visibility = ["//visibility:private"],
 )

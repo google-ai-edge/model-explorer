@@ -1,55 +1,55 @@
 # Model Explorer Adapter
 
+The Model Explorer Adapter provides graph extraction and visualization
+conversion for ML models (TensorFlow SavedModel, GraphDef, FlatBuffer/TFLite,
+StableHLO/MLIR) to Model Explorer's visualization JSON format.
+
+It is implemented as a stable C-ABI library
+(`libai_edge_model_explorer_adapter.so` / `.dylib`) with a pure Python `ctypes`
+FFI wrapper for universal ABI stability across Python versions without pybind11
+compile-time matrix bloat.
+
 ## Install from PyPI
 
-Install `ai-edge-model-explorer-adapter` via pip from PyPI. For example, in
-a Python virtual environment:
+Install `ai-edge-model-explorer-adapter` via pip from PyPI. For example, in a
+Python virtual environment:
 
-```
+```bash
 % python3 -m venv ~/tmp/venv
 % source ~/tmp/venv/bin/activate
 (venv) $ pip install ai-edge-model-explorer-adapter
 ```
 
 ## Use the Package
-After installation, the package should now be importable and usable. For
-example:
 
-```
-(venv) $ python3
->>> from ai_edge_model_explorer_adapter import _pywrap_convert_wrapper as convert_wrapper
->>> config = convert_wrapper.VisualizeConfig()
->>> model_path = 'foo.tflite'
->>> json = convert_wrapper.ConvertFlatbufferToJson(config, model_path, True)
->>> print(json)
+After installation, the package can be imported directly:
+
+```python
+import ai_edge_model_explorer_adapter as adapter
+
+config = adapter.VisualizeConfig()
+json_str = adapter.ConvertFlatbufferDirectlyToJson(config, "model.tflite")
+print(json_str)
 ```
 
 ## Build and Install Locally
 
-### Build
+### Declarative Bazel Build
 
-The script `python/pip_package/build_pip_package.sh` builds a Python *.whl*
-under the output directory `gen/adapter_pip/dist`. The first argument is the
-package version, which should be a string of the form "x.x.x". For example:
+Build the Python wheel directly using Bazel:
 
+```bash
+bazel build -c opt //python/ai_edge_model_explorer_adapter:wheel
 ```
-% ./python/pip_package/build_pip_package.sh 0.1.0
 
-% tree gen/adapter_pip/dist
-gen/adapter_pip/dist
-├── ai_edge_model_explorer_adapter-0.1.0-cp311-cp311-manylinux_2_17_x86_64.whl
-└── ai-edge-model-explorer-adapter-0.1.0.manylinux_2_17_x86_64.tar.gz
-```
+The resulting wheel is located under `bazel-bin/`:
+`bazel-bin/python/ai_edge_model_explorer_adapter/`
 
 ### Install
 
-Install the resulting *.whl* via pip. For example, in a Python virtual
-environment:
+Install the resulting wheel via pip:
 
+```bash
+(venv) $ pip install \
+  bazel-bin/python/ai_edge_model_explorer_adapter/*.whl
 ```
-% python3 -m venv ~/tmp/venv
-% source ~/tmp/venv/bin/activate
-(venv) $ pip install gen/adapter_pip/dist/ai_edge_model_explorer_adapter-0.1.0-cp311-cp311-manylinux_2_17_x86_64.whl
-```
-
-The package should now be importable and usable.
