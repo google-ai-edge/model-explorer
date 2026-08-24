@@ -32,7 +32,7 @@ class BuiltinTfliteFlatbufferAdapter(Adapter):
           'A built-in adapter that converts a TFLite model to Model Explorer'
           ' format by directly parsing the flatbuffer.'
       ),
-      fileExts=['tflite','litertlm'],
+      fileExts=['tflite', 'litertlm'],
   )
 
   def __init__(self):
