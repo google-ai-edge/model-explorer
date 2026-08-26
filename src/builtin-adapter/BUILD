@@ -49,12 +49,13 @@ cc_binary(
     ],
     deps = [
         ":models_to_json_lib",
+        "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/flags:parse",
         "@com_google_absl//absl/log:absl_log",
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/status:statusor",
+        "@com_google_absl//absl/strings",
         "//common:visualize_config",
-        "@org_tensorflow//tensorflow/compiler/mlir:init_mlir",
-        "@org_tensorflow//tensorflow/compiler/mlir/lite/tools:command_line_flags",
         "@org_tensorflow//tensorflow/core:lib",
     ],
 )

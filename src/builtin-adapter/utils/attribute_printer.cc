@@ -162,7 +162,9 @@ void PrintDenseIntOrFPElementsAttr(const mlir::DenseIntOrFPElementsAttr& attr,
     PrintDenseElementsAttrImpl(attr.isSplat(), type, PrintFn, size_limit, os);
   } else {
     if (!llvm::isa<mlir::FloatType>(element_type)) {
-      ABSL_LOG(ERROR) << "unexpected element type";
+      ABSL_VLOG(2)
+          << "Unsupported DenseElementsAttr element type in attribute printer";
+      os << "<unsupported_element_type>";
       return;
     }
     auto value_it = attr.value_begin<llvm::APFloat>();

@@ -14,21 +14,29 @@
 // =============================================================================
 
 #include <string>
-#include <vector>
 
+#include "absl/flags/flag.h"
+#include "absl/flags/parse.h"
 #include "absl/log/absl_log.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
-#include "tensorflow/compiler/mlir/init_mlir.h"
+#include "absl/strings/match.h"
 #include "common/visualize_config.h"
 #include "models_to_json_lib.h"
-#include "tensorflow/compiler/mlir/lite/tools/command_line_flags.h"
 #include "tensorflow/core/platform/env.h"
+#include "tensorflow/core/platform/init_main.h"
 
-constexpr char kInputFileFlag[] = "i";
-constexpr char kOutputFileFlag[] = "o";
-constexpr char kConstElementCountLimitFlag[] = "const_element_count_limit";
-constexpr char kDisableMlirFlag[] = "disable_mlir";
+ABSL_FLAG(std::string, input_file, "", "Input filename or directory");
+ABSL_FLAG(std::string, output_file, "", "Output filename");
+ABSL_FLAG(std::string, i, "", "Alias for --input_file");
+ABSL_FLAG(std::string, o, "", "Alias for --output_file");
+ABSL_FLAG(int, const_element_count_limit, 16,
+          "The maximum number of constant elements. If the number exceeds this "
+          "threshold, the rest of data will be elided. If the flag is not set, "
+          "the default threshold is 16 (use -1 to print all)");
+ABSL_FLAG(bool, disable_mlir, false,
+          "Disable the MLIR-based conversion. If set to true, the conversion "
+          "becomes from model directly to graph json");
 
 namespace {
 
@@ -37,44 +45,31 @@ using ::model_explorer::adapter::ConvertModelToJson;
 }  // namespace
 
 int main(int argc, char* argv[]) {
-  tensorflow::InitMlir y(&argc, &argv);
+  constexpr char kUsage[] =
+      "Converts ML models (TFLite, SavedModel, MLIR, LiteRT-LM) to Model "
+      "Explorer JSON format.\nUsage: models_to_json "
+      "--input_file=<input_model> --output_file=<output_json>";
+  tensorflow::port::InitMain(kUsage, &argc, &argv);
+  absl::ParseCommandLine(argc, argv);
 
-  // Creates and parses flags.
-  std::string input_file, output_file;
-  int const_element_count_limit = 16;
-  bool disable_mlir = false;
-
-  std::vector<mlir::Flag> flag_list = {
-      mlir::Flag::CreateFlag(kInputFileFlag, &input_file,
-                             "Input filename or directory",
-                             mlir::Flag::kOptional),
-      mlir::Flag::CreateFlag(kOutputFileFlag, &output_file, "Output filename",
-                             mlir::Flag::kOptional),
-      mlir::Flag::CreateFlag(
-          kConstElementCountLimitFlag, &const_element_count_limit,
-          "The maximum number of constant elements. If the number exceeds this "
-          "threshold, the rest of data will be elided. If the flag is not set, "
-          "the default threshold is 16 (use -1 to print all)",
-          mlir::Flag::kOptional),
-      mlir::Flag::CreateFlag(
-          kDisableMlirFlag, &disable_mlir,
-          "Disable the MLIR-based conversion. If set to true, the conversion "
-          "becomes from model directly to graph json",
-          mlir::Flag::kOptional),
-  };
-  mlir::Flags::Parse(&argc, const_cast<const char**>(argv), flag_list);
+  std::string input_file = absl::GetFlag(FLAGS_input_file);
+  if (input_file.empty()) {
+    input_file = absl::GetFlag(FLAGS_i);
+  }
+  std::string output_file = absl::GetFlag(FLAGS_output_file);
+  if (output_file.empty()) {
+    output_file = absl::GetFlag(FLAGS_o);
+  }
+  const int const_element_count_limit =
+      absl::GetFlag(FLAGS_const_element_count_limit);
+  const bool disable_mlir = absl::GetFlag(FLAGS_disable_mlir);
 
   if (input_file.empty() || output_file.empty()) {
     ABSL_LOG(ERROR) << "Input or output files cannot be empty.";
     return 1;
   }
 
-  if (output_file.empty()) {
-    ABSL_LOG(ERROR) << "Output filename cannot be empty.";
-    return 1;
-  }
-
-  if (output_file.substr(output_file.size() - 4, 4) != "json") {
+  if (!absl::EndsWith(output_file, ".json")) {
     ABSL_LOG(WARNING) << "Please specify output format to be JSON.";
   }
 

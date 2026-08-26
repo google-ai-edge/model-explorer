@@ -52,6 +52,7 @@ cc_library(
         "//common:schema_structs",
         "//common:visualize_config",
         "//utils:attribute_printer",
+        "//utils:diagnostic_collector",
         "//utils:load_opdefs",
         "//utils:namespace_heuristics",
         "//utils:shardy_utils",

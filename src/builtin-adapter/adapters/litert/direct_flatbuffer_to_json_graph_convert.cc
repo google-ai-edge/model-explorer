@@ -63,6 +63,7 @@
 #include "common/visualize_config.h"
 #include "utils/attribute_printer.h"
 #include "utils/convert_type.h"
+#include "utils/diagnostic_collector.h"
 #include "utils/load_opdefs.h"
 #include "utils/namespace_heuristics.h"
 #include "stablehlo/dialect/StablehloOps.h"
@@ -153,6 +154,8 @@ struct SubgraphBuildContext {
   std::vector<std::string> node_ids;
   // The Model Explorer subgraph to be built.
   Subgraph& subgraph;
+  // Aggregated diagnostics for the subgraph.
+  DiagnosticCollector diagnostics;
 };
 
 // A helper class to hold the TFLite model data and convert it to Model Explorer
@@ -256,20 +259,17 @@ std::vector<std::string> GetOpNames(const OperatorCodes& op_codes) {
 // in EdgeMap.
 void PopulateEdgeInfo(const int tensor_index, const EdgeInfo& edge_info,
                       EdgeMap& edge_map) {
-  if (edge_map.contains(tensor_index)) {
+  auto [it, inserted] = edge_map.try_emplace(tensor_index, edge_info);
+  if (!inserted) {
     if (!edge_info.source_node_id.empty()) {
-      edge_map.at(tensor_index).source_node_id = edge_info.source_node_id;
+      it->second.source_node_id = edge_info.source_node_id;
     }
     if (!edge_info.source_node_output_id.empty()) {
-      edge_map.at(tensor_index).source_node_output_id =
-          edge_info.source_node_output_id;
+      it->second.source_node_output_id = edge_info.source_node_output_id;
     }
     if (!edge_info.target_node_input_id.empty()) {
-      edge_map.at(tensor_index).target_node_input_id =
-          edge_info.target_node_input_id;
+      it->second.target_node_input_id = edge_info.target_node_input_id;
     }
-  } else {
-    edge_map.emplace(tensor_index, edge_info);
   }
 }
 
@@ -406,14 +406,14 @@ void AppendMetadata(EdgeType edge_type, int metadata_id, int tensor_index,
 // Adds quantization parameters to the graph node builder.
 void AddQuantizationParameters(const std::unique_ptr<TensorT>& tensor,
                                const EdgeType edge_type, const int rel_idx,
-                               GraphNodeBuilder& builder) {
+                               GraphNodeBuilder& builder,
+                               DiagnosticCollector& diagnostics) {
   if (tensor->quantization == nullptr) return;
   const std::unique_ptr<tflite::QuantizationParametersT>& quant =
       tensor->quantization;
   if (quant->scale.size() != quant->zero_point.size()) {
-    ABSL_LOG(ERROR) << absl::StrCat(
-        "Quantization parameters must have the same size: scale(",
-        quant->scale.size(), ") != zero point(", quant->zero_point.size(), ")");
+    diagnostics.RecordQuantizationMismatch(tensor->name, quant->scale.size(),
+                                           quant->zero_point.size());
     return;
   }
   if (quant->scale.empty()) return;
@@ -447,22 +447,17 @@ void ValidateSubgraph(absl::string_view subgraph_name,
   absl::flat_hash_set<std::string> node_ids_set(node_ids.begin(),
                                                 node_ids.end());
   if (node_ids_set.size() != node_ids.size()) {
-    ABSL_LOG(INFO) << "Node ids: " << absl::StrJoin(node_ids, ",");
-    ABSL_LOG(ERROR) << "Node ids are not unique in " << subgraph_name;
+    ABSL_LOG(WARNING) << "Node ids are not unique in subgraph " << subgraph_name
+                      << " (found " << node_ids.size() << " total nodes, "
+                      << node_ids_set.size() << " unique IDs).";
+    ABSL_VLOG(2) << "Node ids: " << absl::StrJoin(node_ids, ",");
   }
 
-  bool has_incomplete_edges = false;
-  for (const auto& edge : edge_map) {
-    const int tensor_index = edge.first;
-    const EdgeInfo& edge_info = edge.second;
+  for (const auto& [tensor_index, edge_info] : edge_map) {
     if (EdgeInfoIncomplete(edge_info)) {
-      has_incomplete_edges = true;
-      ABSL_LOG(INFO) << "tensor index: " << tensor_index << ", "
-                     << EdgeInfoDebugString(edge_info);
+      context.diagnostics.RecordIncompleteEdge(tensor_index,
+                                               EdgeInfoDebugString(edge_info));
     }
-  }
-  if (has_incomplete_edges) {
-    ABSL_LOG(ERROR) << "EdgeMap has incomplete EdgeInfo in " << subgraph_name;
   }
 }
 
@@ -675,7 +670,8 @@ absl::Status FlatbufferToJsonConverter::AddAuxiliaryNode(
     absl::Status status = AddConstantToNodeAttr(tensor, context, builder);
     // Logs the error and continues to add the node to the graph.
     if (!status.ok()) {
-      ABSL_LOG(ERROR) << status.message();
+      context.diagnostics.RecordOptionError("Const", status.message());
+      ABSL_VLOG(2) << "Failed to add constant attribute: " << status.message();
     }
   }
 
@@ -813,7 +809,10 @@ absl::Status FlatbufferToJsonConverter::AddOptionsToNodeAttribute(
   }
   absl::Status status = SubgraphIdxToAttributes(op, context, attrs);
   if (!status.ok()) {
-    ABSL_LOG(ERROR) << status.message();
+    context.diagnostics.RecordOptionError(builder.GetNodeLabel(),
+                                          status.message());
+    ABSL_VLOG(2) << "Failed to extract subgraph index attributes for "
+                 << builder.GetNodeLabel() << ": " << status.message();
   }
   std::string value;
   llvm::raw_string_ostream sstream(value);
@@ -842,12 +841,12 @@ absl::Status FlatbufferToJsonConverter::AddTensorTags(
     const OperatorT& op, SubgraphBuildContext& context,
     GraphNodeBuilder& builder) {
   const std::string op_label = builder.GetNodeLabel();
-  // TODO(b/466671567): Make the error reporting less verbose.
-  if (!op_defs_.contains(op_label)) {
-    return absl::InvalidArgumentError(
-        absl::StrCat("No op def found for op: ", op_label));
+  auto it = op_defs_.find(op_label);
+  if (it == op_defs_.end()) {
+    context.diagnostics.RecordMissingOpDef(op_label);
+    return absl::OkStatus();
   }
-  const OpMetadata& op_metadata = op_defs_.at(op_label);
+  const OpMetadata& op_metadata = it->second;
   if (op_metadata.arguments.size() <= op.inputs.size()) {
     for (int i = 0; i < op_metadata.arguments.size(); ++i) {
       builder.AppendAttrToMetadata(EdgeType::kInput, i, kTensorTag,
@@ -881,10 +880,14 @@ absl::Status FlatbufferToJsonConverter::AddNode(const int node_index,
       GenerateNodeName(node_label, op.outputs, context);
   GraphNodeBuilder builder;
   builder.SetNodeInfo(node_id_str, node_label, node_name);
+  ABSL_VLOG(2) << "Adding node " << node_index << " [" << node_id_str
+               << "] op: " << node_label;
   // Logs the error and continues to add the node to the graph.
   absl::Status status = AddOptionsToNodeAttribute(op, context, builder);
   if (!status.ok()) {
-    ABSL_LOG(ERROR) << status.message();
+    context.diagnostics.RecordOptionError(node_label, status.message());
+    ABSL_VLOG(2) << "Failed to add options to node attribute: "
+                 << status.message();
   }
 
   for (int i = 0; i < op.inputs.size(); ++i) {
@@ -905,7 +908,7 @@ absl::Status FlatbufferToJsonConverter::AddNode(const int node_index,
     }
     AppendIncomingEdge(edge_map.at(tensor_index), builder);
     AddQuantizationParameters(tensors[tensor_index], EdgeType::kInput, i,
-                              builder);
+                              builder, context.diagnostics);
   }
 
   for (int i = 0; i < op.outputs.size(); ++i) {
@@ -917,13 +920,10 @@ absl::Status FlatbufferToJsonConverter::AddNode(const int node_index,
                      edge_map);
 
     AddQuantizationParameters(tensors[tensor_index], EdgeType::kOutput, i,
-                              builder);
+                              builder, context.diagnostics);
   }
 
-  status = AddTensorTags(op, context, builder);
-  if (!status.ok()) {
-    ABSL_LOG(ERROR) << status.message();
-  }
+  ABSL_RETURN_IF_ERROR(AddTensorTags(op, context, builder));
 
   context.subgraph.nodes.push_back(std::move(builder).Build());
   return absl::OkStatus();
@@ -936,8 +936,9 @@ absl::Status FlatbufferToJsonConverter::AddSubgraph(const int subgraph_index,
   const std::string subgraph_name =
       GetSubgraphName(subgraph_index, subgraph_t, model_->signature_defs);
   SignatureNameMap signature_name_map;
-  if (signature_map_.contains(subgraph_index)) {
-    signature_name_map = signature_map_.at(subgraph_index);
+  if (auto it = signature_map_.find(subgraph_index);
+      it != signature_map_.end()) {
+    signature_name_map = it->second;
   }
 
   // Creates a Model Explorer subgraph and its context.
@@ -958,6 +959,7 @@ absl::Status FlatbufferToJsonConverter::AddSubgraph(const int subgraph_index,
       AddAuxiliaryNode(NodeType::kOutputNode, subgraph_t.outputs, context));
 
   ValidateSubgraph(subgraph_name, context);
+  context.diagnostics.EmitSummary(subgraph_name);
   PostProcessSubgraph(subgraph);
   graph.subgraphs.push_back(std::move(subgraph));
   return absl::OkStatus();

@@ -19,6 +19,19 @@ package(
 )
 
 cc_library(
+    name = "diagnostic_collector",
+    srcs = ["diagnostic_collector.cc"],
+    hdrs = ["diagnostic_collector.h"],
+    deps = [
+        "@com_google_absl//absl/container:flat_hash_map",
+        "@com_google_absl//absl/log:absl_log",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/strings:str_format",
+        "@com_google_absl//absl/strings:string_view",
+    ],
+)
+
+cc_library(
     name = "attribute_printer",
     srcs = ["attribute_printer.cc"],
     hdrs = ["attribute_printer.h"],
@@ -36,12 +49,14 @@ cc_library(
     srcs = ["shardy_utils.cc"],
     hdrs = ["shardy_utils.h"],
     deps = [
+        ":diagnostic_collector",
         "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_absl//absl/log:absl_log",
         "@com_google_absl//absl/random",
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/status:status_macros",
         "@com_google_absl//absl/status:statusor",
+        "@com_google_absl//absl/strings",
         "@com_google_absl//absl/strings:str_format",
         "@llvm-project//llvm:Support",
         "@llvm-project//mlir:IR",

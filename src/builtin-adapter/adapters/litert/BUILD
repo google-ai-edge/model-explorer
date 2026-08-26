@@ -45,6 +45,7 @@ cc_library(
         "//common:visualize_config",
         "//utils:attribute_printer",
         "//utils:convert_type",
+        "//utils:diagnostic_collector",
         "//utils:load_opdefs",
         "//utils:namespace_heuristics",
         "@stablehlo//:stablehlo_ops",

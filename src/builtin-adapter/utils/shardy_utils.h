@@ -35,6 +35,7 @@
 #include "mlir/IR/Operation.h"
 #include "mlir/IR/Value.h"
 #include "common/schema_structs.h"
+#include "utils/diagnostic_collector.h"
 #include "shardy/dialect/sdy/ir/dialect.h"
 
 namespace model_explorer {
@@ -76,7 +77,8 @@ absl::StatusOr<model_explorer::adapter::EdgeOverlaysData>
 ExtractShardyPropagationEdges(
     mlir::Operation* root,
     const absl::flat_hash_map<mlir::Operation*, std::string>& op_to_id,
-    const llvm::SmallDenseMap<mlir::Value, std::string>& input_nodes);
+    const llvm::SmallDenseMap<mlir::Value, std::string>& input_nodes,
+    DiagnosticCollector* diagnostics = nullptr);
 
 class Color {
  public:

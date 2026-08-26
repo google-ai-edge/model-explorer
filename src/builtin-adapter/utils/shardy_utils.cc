@@ -28,6 +28,7 @@
 #include "absl/status/status.h"
 #include "absl/status/status_macros.h"
 #include "absl/status/statusor.h"
+#include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "llvm/ADT/APInt.h"
 #include "llvm/ADT/DenseMap.h"
@@ -41,6 +42,7 @@
 #include "mlir/Support/LLVM.h"
 #include "mlir/Support/WalkResult.h"
 #include "common/schema_structs.h"
+#include "utils/diagnostic_collector.h"
 #include "shardy/dialect/sdy/ir/constants.h"
 #include "shardy/dialect/sdy/ir/dialect.h"
 #include "shardy/dialect/sdy/ir/utils.h"
@@ -276,7 +278,8 @@ absl::StatusOr<std::string> GetNodeIdFromEdgeValueRef(
 void CollectEdgesForOperation(
     Operation* op, const OpToNodeIdMap& op_to_id,
     const InputValueToNodeIdMap& input_nodes,
-    llvm::DenseMap<mlir::sdy::AxisRefAttr, std::vector<Edge>>& axis_to_edges) {
+    llvm::DenseMap<mlir::sdy::AxisRefAttr, std::vector<Edge>>& axis_to_edges,
+    DiagnosticCollector* diagnostics = nullptr) {
   llvm::SmallVector<mlir::sdy::PropagationEdgesAttr> all_edges;
   if (!HasShardyPropagationEdges(*op, all_edges)) {
     return;
@@ -296,13 +299,21 @@ void CollectEdgesForOperation(
               GetNodeIdFromEdgeValueRef(op, target, op_to_id, input_nodes);
 
           if (!source_op_id.ok()) {
-            ABSL_LOG(ERROR)
-                << "Failed to get source node id: " << source_op_id.status();
+            ABSL_VLOG(2) << "Failed to get source node id: "
+                         << source_op_id.status();
+            if (diagnostics != nullptr) {
+              diagnostics->RecordShardyEdgeFailure(absl::StrCat(
+                  "source node id: ", source_op_id.status().message()));
+            }
             continue;
           }
           if (!target_op_id.ok()) {
-            ABSL_LOG(ERROR)
-                << "Failed to get target node id: " << target_op_id.status();
+            ABSL_VLOG(2) << "Failed to get target node id: "
+                         << target_op_id.status();
+            if (diagnostics != nullptr) {
+              diagnostics->RecordShardyEdgeFailure(absl::StrCat(
+                  "target node id: ", target_op_id.status().message()));
+            }
             continue;
           }
           axis_to_edges[axis].emplace_back(Edge{
@@ -317,11 +328,13 @@ void CollectEdgesForOperation(
 
 absl::StatusOr<EdgeOverlaysData> ExtractShardyPropagationEdges(
     Operation* root, const OpToNodeIdMap& op_to_id,
-    const InputValueToNodeIdMap& input_nodes) {
+    const InputValueToNodeIdMap& input_nodes,
+    DiagnosticCollector* diagnostics) {
   llvm::DenseMap<mlir::sdy::AxisRefAttr, std::vector<Edge>> axis_to_edges;
 
   root->walk([&](Operation* op) -> mlir::WalkResult {
-    CollectEdgesForOperation(op, op_to_id, input_nodes, axis_to_edges);
+    CollectEdgesForOperation(op, op_to_id, input_nodes, axis_to_edges,
+                             diagnostics);
     return mlir::WalkResult::advance();
   });
 
