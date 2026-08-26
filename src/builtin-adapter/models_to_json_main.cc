@@ -16,14 +16,14 @@
 #include <string>
 #include <vector>
 
-#include "absl/log/log.h"
+#include "absl/log/absl_log.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "tensorflow/compiler/mlir/init_mlir.h"
+#include "common/visualize_config.h"
 #include "models_to_json_lib.h"
-#include "visualize_config.h"
 #include "tensorflow/compiler/mlir/lite/tools/command_line_flags.h"
-#include "xla/tsl/platform/env.h"
+#include "tensorflow/core/platform/env.h"
 
 constexpr char kInputFileFlag[] = "i";
 constexpr char kOutputFileFlag[] = "o";
@@ -32,7 +32,7 @@ constexpr char kDisableMlirFlag[] = "disable_mlir";
 
 namespace {
 
-using ::tooling::visualization_client::ConvertModelToJson;
+using ::model_explorer::adapter::ConvertModelToJson;
 
 }  // namespace
 
@@ -65,34 +65,33 @@ int main(int argc, char* argv[]) {
   mlir::Flags::Parse(&argc, const_cast<const char**>(argv), flag_list);
 
   if (input_file.empty() || output_file.empty()) {
-    LOG(ERROR) << "Input or output files cannot be empty.";
+    ABSL_LOG(ERROR) << "Input or output files cannot be empty.";
     return 1;
   }
 
   if (output_file.empty()) {
-    LOG(ERROR) << "Output filename cannot be empty.";
+    ABSL_LOG(ERROR) << "Output filename cannot be empty.";
     return 1;
   }
 
   if (output_file.substr(output_file.size() - 4, 4) != "json") {
-    LOG(WARNING) << "Please specify output format to be JSON.";
+    ABSL_LOG(WARNING) << "Please specify output format to be JSON.";
   }
 
   // Creates visualization config.
-  tooling::visualization_client::VisualizeConfig config(
-      const_element_count_limit);
+  model_explorer::adapter::VisualizeConfig config(const_element_count_limit);
 
   const absl::StatusOr<std::string> json_output =
       ConvertModelToJson(config, input_file, disable_mlir);
   if (!json_output.ok()) {
-    LOG(ERROR) << json_output.status();
+    ABSL_LOG(ERROR) << json_output.status();
     return 1;
   }
 
   absl::Status status =
       tsl::WriteStringToFile(tsl::Env::Default(), output_file, *json_output);
   if (!status.ok()) {
-    LOG(ERROR) << status;
+    ABSL_LOG(ERROR) << status;
     return 1;
   }
 

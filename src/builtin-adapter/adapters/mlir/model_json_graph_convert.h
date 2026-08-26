@@ -13,8 +13,8 @@
 // limitations under the License.
 // =============================================================================
 
-#ifndef THIRD_PARTY_MODELS_TO_JSON_LIB_H_
-#define THIRD_PARTY_MODELS_TO_JSON_LIB_H_
+#ifndef THIRD_PARTY_ADAPTERS_MLIR_MODEL_JSON_GRAPH_CONVERT_H_
+#define THIRD_PARTY_ADAPTERS_MLIR_MODEL_JSON_GRAPH_CONVERT_H_
 
 #include <string>
 
@@ -25,19 +25,20 @@
 namespace model_explorer {
 namespace adapter {
 
-// Converts a model to model explorer JSON string.
-//
-// The model can be a TFLite Flatbuffer, a TF SavedModel or GraphDef, or a
-// StableHLO module represented using MLIR textual or bytecode format.
-//
-// If `disable_mlir` is true, the model will be converted to JSON directly
-// without going through MLIR. Currently, this only applies to TFLite and TF
-// adapters. For TFLite, it's preferred to set `disable_mlir` to true. For TF
-// SavedModel, it's preferred to set `disable_mlir` to false.
-absl::StatusOr<std::string> ConvertModelToJson(const VisualizeConfig& config,
-                                               absl::string_view input_file,
-                                               bool disable_mlir);
+// Converts a SavedModel to visualizer JSON string through tf dialect MLIR.
+absl::StatusOr<std::string> ConvertSavedModelToJson(
+    const VisualizeConfig& config, absl::string_view model_path);
+
+// Converts a Flatbuffer to visualizer JSON string through tfl dialect MLIR.
+absl::StatusOr<std::string> ConvertFlatbufferToJson(
+    const VisualizeConfig& config, absl::string_view model_path_or_buffer,
+    bool is_modelpath);
+
+// Converts a MLIR textual/bytecode file to visualizer JSON string.
+// Note: now only supports tf, tfl, stablehlo dialects inside the file.
+absl::StatusOr<std::string> ConvertMlirToJson(const VisualizeConfig& config,
+                                              absl::string_view model_path);
 
 }  // namespace adapter
 }  // namespace model_explorer
-#endif  // THIRD_PARTY_MODELS_TO_JSON_LIB_H_
+#endif  // THIRD_PARTY_ADAPTERS_MLIR_MODEL_JSON_GRAPH_CONVERT_H_

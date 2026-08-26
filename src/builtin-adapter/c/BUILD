@@ -15,10 +15,9 @@
 
 load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
 load("@rules_cc//cc:cc_library.bzl", "cc_library")
-load("@rules_cc//cc:cc_test.bzl", "cc_test")
 
 package(
-    # copybara:uncomment default_applicable_licenses = ["@org_tensorflow//tensorflow:license"],
+    # copybara:uncomment default_applicable_licenses = ["//third_party/odml:license"],
     default_visibility = ["//visibility:public"],
     licenses = ["notice"],
 )
@@ -37,10 +36,10 @@ cc_library(
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/status:statusor",
         "@com_google_absl//absl/strings:string_view",
-        "//:direct_flatbuffer_to_json_graph_convert",
-        "//:direct_saved_model_to_json_graph_convert",
-        "//:model_json_graph_convert",
-        "//:visualize_config",
+        "//adapters/litert:direct_flatbuffer_to_json_graph_convert",
+        "//adapters/mlir:model_json_graph_convert",
+        "//adapters/tensorflow:direct_saved_model_to_json_graph_convert",
+        "//common:visualize_config",
     ],
 )
 
@@ -66,9 +65,9 @@ cc_binary(
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/status:statusor",
         "@com_google_absl//absl/strings:string_view",
-        "//:direct_flatbuffer_to_json_graph_convert",
-        "//:direct_saved_model_to_json_graph_convert",
-        "//:model_json_graph_convert",
-        "//:visualize_config",
+        "//adapters/litert:direct_flatbuffer_to_json_graph_convert",
+        "//adapters/mlir:model_json_graph_convert",
+        "//adapters/tensorflow:direct_saved_model_to_json_graph_convert",
+        "//common:visualize_config",
     ],
 )

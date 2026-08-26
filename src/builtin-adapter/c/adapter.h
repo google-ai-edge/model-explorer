@@ -37,7 +37,7 @@ typedef enum {
   ADAPTER_STATUS_NOT_FOUND = 3,
 } AdapterStatusCode;
 
-// Configuration matching tooling::visualization_client::VisualizeConfig
+// Configuration matching model_explorer::adapter::VisualizeConfig
 typedef struct {
   int32_t const_element_count_limit;
   bool add_tensor_name_attribute;

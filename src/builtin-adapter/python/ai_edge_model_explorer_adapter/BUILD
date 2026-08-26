@@ -19,11 +19,8 @@ load(
     "VERSION",
 )
 
-load("@rules_python//python:defs.bzl", "py_library", "py_test")
-load("@rules_python//python:packaging.bzl", "py_package", "py_wheel")
-
 package(
-    # copybara:uncomment default_applicable_licenses = ["@org_tensorflow//tensorflow:license"],
+    # copybara:uncomment default_applicable_licenses = ["//third_party/odml:license"],
     default_visibility = ["//visibility:public"],
     licenses = ["notice"],
 )
@@ -46,7 +43,7 @@ pytype_strict_library(
     ],
     deps = [
         ":_ffi",  # build_cleaner: keep
-        ":version",
+        ":version",  # build_cleaner: keep
     ],
 )
 

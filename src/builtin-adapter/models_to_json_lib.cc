@@ -19,19 +19,18 @@
 
 #include "absl/log/log.h"
 #include "absl/status/status.h"
+#include "absl/status/status_macros.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
-#include "direct_flatbuffer_to_json_graph_convert.h"
-#include "direct_saved_model_to_json_graph_convert.h"
-#include "mediapipe_adapter/mediapipe_to_json.h"
-#include "model_json_graph_convert.h"
-#include "status_macros.h"
-#include "visualize_config.h"
+#include "adapters/litert/direct_flatbuffer_to_json_graph_convert.h"
+#include "adapters/mlir/model_json_graph_convert.h"
+#include "adapters/tensorflow/direct_saved_model_to_json_graph_convert.h"
+#include "common/visualize_config.h"
 #include "tsl/platform/path.h"
 
-namespace tooling {
-namespace visualization_client {
+namespace model_explorer {
+namespace adapter {
 
 namespace {
 
@@ -42,7 +41,6 @@ enum ModelFormat {
   kFlatbufferDirect,
   kSavedModelDirect,
   kGraphDefDirect,
-  kMediapipePipeline,
 };
 
 absl::StatusOr<ModelFormat> GetModelFormat(absl::string_view input_file,
@@ -85,8 +83,8 @@ absl::StatusOr<ModelFormat> GetModelFormat(absl::string_view input_file,
 absl::StatusOr<std::string> ConvertModelToJson(const VisualizeConfig& config,
                                                absl::string_view input_file,
                                                const bool disable_mlir) {
-  ASSIGN_OR_RETURN(ModelFormat model_format,
-                   GetModelFormat(input_file, disable_mlir));
+  ABSL_ASSIGN_OR_RETURN(ModelFormat model_format,
+                        GetModelFormat(input_file, disable_mlir));
 
   absl::StatusOr<std::string> json_output;
   switch (model_format) {
@@ -115,10 +113,6 @@ absl::StatusOr<std::string> ConvertModelToJson(const VisualizeConfig& config,
       json_output = ConvertGraphDefDirectlyToJson(config, input_file);
       break;
     }
-    case kMediapipePipeline: {
-      json_output = ConvertMediapipeToJson(config, input_file);
-      break;
-    }
     default: {
       // Should never happen.
       return absl::InternalError("Unknown model format.");
@@ -128,5 +122,5 @@ absl::StatusOr<std::string> ConvertModelToJson(const VisualizeConfig& config,
   return json_output;
 }
 
-}  // namespace visualization_client
-}  // namespace tooling
+}  // namespace adapter
+}  // namespace model_explorer

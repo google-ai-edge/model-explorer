@@ -22,10 +22,10 @@
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/string_view.h"
-#include "direct_flatbuffer_to_json_graph_convert.h"
-#include "direct_saved_model_to_json_graph_convert.h"
-#include "model_json_graph_convert.h"
-#include "visualize_config.h"
+#include "adapters/litert/direct_flatbuffer_to_json_graph_convert.h"
+#include "adapters/mlir/model_json_graph_convert.h"
+#include "adapters/tensorflow/direct_saved_model_to_json_graph_convert.h"
+#include "common/visualize_config.h"
 
 namespace {
 inline void EnsureInitialized() {}
@@ -33,7 +33,7 @@ inline void EnsureInitialized() {}
 
 namespace {
 
-using ::tooling::visualization_client::VisualizeConfig;
+using ::model_explorer::adapter::VisualizeConfig;
 
 VisualizeConfig ToCppConfig(const AdapterVisualizeConfig* c_config) {
   EnsureInitialized();
@@ -103,7 +103,7 @@ AdapterStatusCode adapter_convert_saved_model_to_json(
     const AdapterVisualizeConfig* config, const char* model_path,
     char** out_json, char** out_error_message) {
   if (model_path == nullptr) return ADAPTER_STATUS_INVALID_ARGUMENT;
-  auto result = ::tooling::visualization_client::ConvertSavedModelToJson(
+  auto result = ::model_explorer::adapter::ConvertSavedModelToJson(
       ToCppConfig(config), model_path);
   return HandleResult(result, out_json, out_error_message);
 }
@@ -112,7 +112,7 @@ AdapterStatusCode adapter_convert_flatbuffer_to_json(
     const AdapterVisualizeConfig* config, const char* model_path,
     bool is_modelpath, char** out_json, char** out_error_message) {
   if (model_path == nullptr) return ADAPTER_STATUS_INVALID_ARGUMENT;
-  auto result = ::tooling::visualization_client::ConvertFlatbufferToJson(
+  auto result = ::model_explorer::adapter::ConvertFlatbufferToJson(
       ToCppConfig(config), model_path, is_modelpath);
   return HandleResult(result, out_json, out_error_message);
 }
@@ -121,9 +121,8 @@ AdapterStatusCode adapter_convert_flatbuffer_directly_to_json(
     const AdapterVisualizeConfig* config, const char* model_path,
     char** out_json, char** out_error_message) {
   if (model_path == nullptr) return ADAPTER_STATUS_INVALID_ARGUMENT;
-  auto result =
-      ::tooling::visualization_client::ConvertFlatbufferDirectlyToJson(
-          ToCppConfig(config), model_path);
+  auto result = ::model_explorer::adapter::ConvertFlatbufferDirectlyToJson(
+      ToCppConfig(config), model_path);
   return HandleResult(result, out_json, out_error_message);
 }
 
@@ -131,9 +130,8 @@ AdapterStatusCode adapter_convert_saved_model_directly_to_json(
     const AdapterVisualizeConfig* config, const char* model_path,
     char** out_json, char** out_error_message) {
   if (model_path == nullptr) return ADAPTER_STATUS_INVALID_ARGUMENT;
-  auto result =
-      ::tooling::visualization_client::ConvertSavedModelDirectlyToJson(
-          ToCppConfig(config), model_path);
+  auto result = ::model_explorer::adapter::ConvertSavedModelDirectlyToJson(
+      ToCppConfig(config), model_path);
   return HandleResult(result, out_json, out_error_message);
 }
 
@@ -141,7 +139,7 @@ AdapterStatusCode adapter_convert_graph_def_directly_to_json(
     const AdapterVisualizeConfig* config, const char* model_path,
     char** out_json, char** out_error_message) {
   if (model_path == nullptr) return ADAPTER_STATUS_INVALID_ARGUMENT;
-  auto result = ::tooling::visualization_client::ConvertGraphDefDirectlyToJson(
+  auto result = ::model_explorer::adapter::ConvertGraphDefDirectlyToJson(
       ToCppConfig(config), model_path);
   return HandleResult(result, out_json, out_error_message);
 }
@@ -150,7 +148,7 @@ AdapterStatusCode adapter_convert_mlir_to_json(
     const AdapterVisualizeConfig* config, const char* model_path,
     char** out_json, char** out_error_message) {
   if (model_path == nullptr) return ADAPTER_STATUS_INVALID_ARGUMENT;
-  auto result = ::tooling::visualization_client::ConvertMlirToJson(
+  auto result = ::model_explorer::adapter::ConvertMlirToJson(
       ToCppConfig(config), model_path);
   return HandleResult(result, out_json, out_error_message);
 }
