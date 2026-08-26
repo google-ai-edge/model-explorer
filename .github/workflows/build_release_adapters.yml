@@ -38,12 +38,13 @@ jobs:
       REFRESH_CACHE: ${{ inputs.REFRESH_CACHE }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           lfs: true
+          persist-credentials: false
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
           python-version: "3.12"
 
@@ -73,7 +74,7 @@ jobs:
       - name: Restore bazel cache
         id: bazel-cache
         if: env.REFRESH_CACHE != 'true'
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         with:
           path: ~/.cache/bazel
           key: ${{ steps.cache-keys.outputs.CACHE_KEY }}
@@ -108,7 +109,7 @@ jobs:
           python3 -c "import ai_edge_model_explorer_adapter as adapter; print('Adapter loaded successfully:', adapter.VisualizeConfig())"
 
       - name: Upload wheel artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: ai-edge-model-explorer-adapter-${{ matrix.runner }}
           path: src/builtin-adapter/bazel-bin/python/ai_edge_model_explorer_adapter/*.whl
@@ -122,7 +123,7 @@ jobs:
         run: gh cache delete "${TARGET_CACHE_KEY}"
 
       - name: Save bazel cache if refreshing
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         if: env.REFRESH_CACHE == 'true'
         with:
           path: ~/.cache/bazel
