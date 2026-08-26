@@ -25,6 +25,9 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref || github.run_id }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+
 jobs:
   run-formatting:
     name: Formatting
@@ -37,8 +40,3 @@ jobs:
     uses: ./.github/workflows/playwright.yml
     with:
       trigger-sha: ${{ github.event.pull_request.head.sha }}
-
-
-
-
-
