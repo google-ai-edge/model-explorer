@@ -13,6 +13,7 @@
 # limitations under the License.
 # ==============================================================================
 
+load("@rules_python//python:packaging.bzl", "py_package", "py_wheel")
 load("@org_tensorflow//tensorflow:pytype.default.bzl", "pytype_strict_library")
 load(
     "//:version.bzl",
@@ -20,7 +21,6 @@ load(
 )
 
 package(
-    # copybara:uncomment default_applicable_licenses = ["//third_party/odml:license"],
     default_visibility = ["//visibility:public"],
     licenses = ["notice"],
 )
@@ -49,7 +49,6 @@ pytype_strict_library(
 
 # Declarative PyPI Packaging
 # To build wheel: bazel build -c opt //python/ai_edge_model_explorer_adapter:wheel
-# copybara:comment_begin(oss-only)
 genrule(
     name = "copy_ai_edge_model_explorer_adapter_so",
     srcs = ["//c:ai_edge_model_explorer_adapter"],
@@ -192,7 +191,17 @@ py_package(
 py_wheel(
     name = "wheel",
     abi = "none",
+    classifiers = [
+        "Programming Language :: Python :: 3",
+        "License :: OSI Approved :: Apache Software License",
+        "Operating System :: POSIX :: Linux",
+        "Operating System :: MacOS :: MacOS X",
+        "Operating System :: Microsoft :: Windows",
+    ],
+    description_file = "//:README.md",
     distribution = "ai_edge_model_explorer_adapter",
+    homepage = "https://github.com/google-ai-edge/model-explorer",
+    license = "Apache-2.0",
     platform = select({
         ":wheel_platform_linux_x86_64": "manylinux_2_27_x86_64",
         ":wheel_platform_linux_arm64": "manylinux_2_27_aarch64",
@@ -206,21 +215,10 @@ py_wheel(
         ":windows_x86_64": "win_amd64",
         "//conditions:default": "any",
     }),
-    python_tag = "py3",
     python_requires = ">=3.9",
-    summary = "Model Explorer backend adapter for model conversion",
-    description_file = "//:README.md",
-    license = "Apache-2.0",
-    homepage = "https://github.com/google-ai-edge/model-explorer",
-    classifiers = [
-        "Programming Language :: Python :: 3",
-        "License :: OSI Approved :: Apache Software License",
-        "Operating System :: POSIX :: Linux",
-        "Operating System :: MacOS :: MacOS X",
-        "Operating System :: Microsoft :: Windows",
-    ],
+    python_tag = "py3",
     strip_path_prefixes = ["python"],
+    summary = "Model Explorer backend adapter for model conversion",
     version = VERSION,
     deps = [":package"],
 )
-# copybara:comment_end

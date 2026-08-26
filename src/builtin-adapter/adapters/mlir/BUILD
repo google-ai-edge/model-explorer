@@ -16,7 +16,6 @@ load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
 load("@rules_cc//cc:cc_library.bzl", "cc_library")
 
 package(
-    # copybara:uncomment default_applicable_licenses = ["//third_party/odml:license"],
     default_visibility = ["//visibility:public"],
 )
 
@@ -61,7 +60,6 @@ cc_library(
         "@org_tensorflow//tensorflow/compiler/mlir/lite:flatbuffer_tflite_operator_lib",  # buildcleaner: keep
         "@org_tensorflow//tensorflow/compiler/mlir/lite:tensorflow_lite",
         "@org_tensorflow//tensorflow/compiler/mlir/tensorflow:tensorflow_types",
-        # copybara:uncomment "@org_tensorflow//tensorflow_text:ops_lib",
     ],
 )
 
