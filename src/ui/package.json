@@ -20,7 +20,7 @@
     "@angular/elements": "^20.1.2",
     "@angular/forms": "^20.1.2",
     "@angular/material": "^20.1.2",
-    "@angular/platform-browser": "^20.1.2",
+    "@angular/platform-browser": "^22.1.2",
     "@angular/platform-browser-dynamic": "^20.1.2",
     "@angular/router": "^20.1.2",
     "d3": "5.7.0",
