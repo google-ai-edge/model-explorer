@@ -32,6 +32,7 @@ jobs:
   test-build:
     name: "Test Build (${{ inputs.runner }})"
     runs-on: ${{ inputs.runner }}
+    container: ${{ inputs.runner == 'linux-x86-n2-16' && 'us-docker.pkg.dev/ml-oss-artifacts-published/ml-public-container/ml-build:latest' || null }} # zizmor: ignore[unpinned-images]
     defaults:
       run:
         working-directory: src/builtin-adapter
