@@ -33,7 +33,7 @@
 # TF version options;
 #     v2: Build TF v2
 #
-# Embedded Linux options (experimental and only tested with TFLite build yet)
+# Embedded Linux options (experimental and only tested with LiteRT build yet)
 #     elinux:          General Embedded Linux options shared by all flavors.
 #     elinux_aarch64:  Embedded Linux options for aarch64 (ARM64) CPU support.
 #     elinux_armhf:    Embedded Linux options for armhf (ARMv7) CPU support.
@@ -437,7 +437,7 @@ common --experimental_repo_remote_exec
 # Use GitHub mirror for BCR to work around bcr.bazel.build outages
 common --registry=https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/
 
-# TFLite build configs for generic embedded Linux
+# LiteRT build configs for generic embedded Linux
 build:elinux --crosstool_top=@local_config_embedded_arm//:toolchain
 build:elinux --host_crosstool_top=@bazel_tools//tools/cpp:toolchain
 build:elinux_aarch64 --config=elinux

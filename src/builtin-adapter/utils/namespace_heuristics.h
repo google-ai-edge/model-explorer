@@ -23,7 +23,7 @@
 namespace model_explorer {
 namespace adapter {
 
-// Obtains the best matching namespace for the TFLite node based on the provided
+// Obtains the best matching namespace for the LiteRT node based on the provided
 // op name (eg. "conv_2d") and candidate names.
 //
 // The candidate names are obtained from the tensor names. The node namespace is

@@ -1,7 +1,7 @@
 # Model Explorer Adapter
 
 The Model Explorer Adapter provides graph extraction and visualization
-conversion for ML models (TensorFlow SavedModel, GraphDef, FlatBuffer/TFLite,
+conversion for ML models (TensorFlow SavedModel, GraphDef, FlatBuffer/LiteRT,
 StableHLO/MLIR) to Model Explorer's visualization JSON format.
 
 It is implemented as a stable C-ABI library

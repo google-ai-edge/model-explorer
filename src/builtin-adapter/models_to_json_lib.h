@@ -27,12 +27,12 @@ namespace adapter {
 
 // Converts a model to model explorer JSON string.
 //
-// The model can be a TFLite Flatbuffer, a TF SavedModel or GraphDef, or a
+// The model can be a LiteRT Flatbuffer, a TF SavedModel or GraphDef, or a
 // StableHLO module represented using MLIR textual or bytecode format.
 //
 // If `disable_mlir` is true, the model will be converted to JSON directly
-// without going through MLIR. Currently, this only applies to TFLite and TF
-// adapters. For TFLite, it's preferred to set `disable_mlir` to true. For TF
+// without going through MLIR. Currently, this only applies to LiteRT and TF
+// adapters. For LiteRT, it's preferred to set `disable_mlir` to true. For TF
 // SavedModel, it's preferred to set `disable_mlir` to false.
 absl::StatusOr<std::string> ConvertModelToJson(const VisualizeConfig& config,
                                                absl::string_view input_file,

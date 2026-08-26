@@ -419,7 +419,7 @@ std::string GenerateTfliteNodeName(llvm::StringRef node_label,
   if (fusedLoc == nullptr && nameLoc == nullptr) {
     return "";
   }
-  // In TFLite, we store op's output tensor names in location attribute. So it
+  // In LiteRT, we store op's output tensor names in location attribute. So it
   // could be either a simple NameLoc of the original node_name; or a special
   // case when an op has multiple output tensors, it creates a FusedLoc to
   // store each tensor names.
@@ -431,10 +431,10 @@ std::string GenerateTfliteNodeName(llvm::StringRef node_label,
       tensor_names.push_back(llvm::dyn_cast<mlir::NameLoc>(loc).getName());
     }
   }
-  // Some TFLite has fused op names with several hierarchical information
-  // concatenated together with semicolons. In this case, we will find the last
-  // single node name that contains this node label. If no matching found, we
-  // will return the first single node name by default.
+  // Some LiteRT models have fused op names with several hierarchical
+  // information concatenated together with semicolons. In this case, we will
+  // find the last single node name that contains this node label. If no
+  // matching found, we will return the first single node name by default.
   std::vector<std::string> candidate_names;
   for (absl::string_view tensor_name : tensor_names) {
     std::vector<std::string> tmp_names =
@@ -453,7 +453,7 @@ void GenerateShardyNodeName(Operation& operation, GraphNodeBuilder& builder) {
   AddJaxNodeNameAndAttribute(operation, builder);
 }
 
-// Gets a list of output tensor name(s) of a TFLite operation. Returns empty
+// Gets a list of output tensor name(s) of a LiteRT operation. Returns empty
 // list if there are errors or the operation has no output tensors.
 llvm::SmallVector<llvm::StringRef, 2> GetTfliteTensorNames(
     Operation& operation, DiagnosticCollector* diagnostics = nullptr) {
@@ -552,7 +552,7 @@ void AddTensorTags(GraphBuildContext& context, Operation& op,
   const std::string op_label = builder.GetNodeLabel();
   auto it = context.op_defs.find(op_label);
   if (it == context.op_defs.end()) {
-    // Record missing op def to diagnostics for TFLite dialect operations.
+    // Record missing op def to diagnostics for LiteRT dialect operations.
     if (IsTfliteDialect(op)) {
       context.diagnostics.RecordMissingOpDef(op_label);
     }

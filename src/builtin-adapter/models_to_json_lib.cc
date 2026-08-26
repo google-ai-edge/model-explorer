@@ -55,7 +55,7 @@ absl::StatusOr<ModelFormat> GetModelFormat(absl::string_view input_file,
     }
   }
   if (extension == "tflite") {
-    // TFLite Flatbuffer.
+    // LiteRT Flatbuffer.
     if (disable_mlir) {
       return kFlatbufferDirect;
     } else {

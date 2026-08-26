@@ -46,7 +46,7 @@ using ::model_explorer::adapter::ConvertModelToJson;
 
 int main(int argc, char* argv[]) {
   constexpr char kUsage[] =
-      "Converts ML models (TFLite, SavedModel, MLIR, LiteRT-LM) to Model "
+      "Converts ML models (LiteRT, SavedModel, MLIR, LiteRT-LM) to Model "
       "Explorer JSON format.\nUsage: models_to_json "
       "--input_file=<input_model> --output_file=<output_json>";
   tensorflow::port::InitMain(kUsage, &argc, &argv);

@@ -158,7 +158,7 @@ struct SubgraphBuildContext {
   DiagnosticCollector diagnostics;
 };
 
-// A helper class to hold the TFLite model data and convert it to Model Explorer
+// A helper class to hold the LiteRT model data and convert it to Model Explorer
 // JSON graph.
 class FlatbufferToJsonConverter {
  public:
