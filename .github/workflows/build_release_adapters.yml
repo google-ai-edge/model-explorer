@@ -38,6 +38,13 @@ jobs:
       GH_TOKEN: ${{ github.token }}
       REFRESH_CACHE: ${{ inputs.REFRESH_CACHE }}
     steps:
+      - name: Install Git LFS
+        if: matrix.runner == 'linux-x86-n2-16'
+        working-directory: .
+        run: |
+          sudo apt-get update && sudo apt-get install -y git-lfs
+          git lfs install
+
       - name: Checkout code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -49,6 +56,13 @@ jobs:
         with:
           python-version: "3.12"
 
+      - name: Install System Dependencies
+        if: matrix.runner == 'linux-x86-n2-16'
+        run: |
+          sudo apt-get update && sudo apt-get install -y --no-install-recommends libc++-18-dev libc++abi-18-dev llvm-18 clang-18
+          sudo update-alternatives --install /usr/bin/clang clang /usr/bin/clang-18 100
+          sudo update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-18 100
+
       - name: Install Python dependencies
         run: |
           python3 -m pip install --upgrade pip
@@ -57,9 +71,9 @@ jobs:
       - name: Set up cache keys
         id: cache-keys
         env:
-          RUNNER_NAME: ${{ matrix.runner }}
+          TARGET_RUNNER: ${{ matrix.runner }}
         run: |
-          CACHE_RESTORE_KEY_2="${GITHUB_WORKFLOW}-${RUNNER_NAME}"
+          CACHE_RESTORE_KEY_2="${GITHUB_WORKFLOW}-${TARGET_RUNNER}"
           CACHE_RESTORE_KEY_1="${CACHE_RESTORE_KEY_2}-${{ hashFiles('**/WORKSPACE', '**/.bazelrc') }}"
           CACHE_RESTORE_KEY_0="${CACHE_RESTORE_KEY_1}-${{ hashFiles('**/BUILD*') }}"
           CACHE_KEY="${CACHE_RESTORE_KEY_0}-${GITHUB_SHA}"
@@ -96,10 +110,10 @@ jobs:
 
       - name: Bazel build Python wheel package
         env:
-          RUNNER_NAME: ${{ matrix.runner }}
+          TARGET_RUNNER: ${{ matrix.runner }}
         run: |
           BAZEL_FLAGS="--disk_cache=$HOME/.cache/bazel --repository_cache=$HOME/.cache/bazel/repo --config=public_cache -c opt"
-          if [[ "${RUNNER_NAME}" == "macos-latest" ]]; then
+          if [[ "${TARGET_RUNNER}" == "macos-latest" ]]; then
             BAZEL_FLAGS="${BAZEL_FLAGS} --config=macos_arm64 --local_ram_resources=9216 --jobs=3 --copt=-O1"
           fi
           bazel build ${BAZEL_FLAGS} //python/ai_edge_model_explorer_adapter:wheel
@@ -121,7 +135,8 @@ jobs:
         continue-on-error: true
         env:
           TARGET_CACHE_KEY: ${{ steps.cache-keys.outputs.CACHE_KEY }}
-        run: gh cache delete "${TARGET_CACHE_KEY}"
+          GH_REPO: ${{ github.repository }}
+        run: gh cache delete "${TARGET_CACHE_KEY}" --repo "${GH_REPO}"
 
       - name: Save bazel cache if refreshing
         uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
