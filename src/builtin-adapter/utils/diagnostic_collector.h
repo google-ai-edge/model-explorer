@@ -60,6 +60,10 @@ class DiagnosticCollector {
   // Emits a single consolidated summary log at conversion conclusion.
   void EmitSummary(absl::string_view context_name) const;
 
+  // Formats diagnostic issues into a visualizer JSON string.
+  // Returns an empty string if there are no diagnostic warnings recorded.
+  std::string ToJson() const;
+
   // Accessors for inspection and unit testing.
   int total_missing_op_def_nodes() const { return missing_op_defs_.total; }
   const absl::flat_hash_map<std::string, int>& missing_op_defs() const {

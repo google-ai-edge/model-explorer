@@ -18,6 +18,7 @@
 #include <algorithm>
 #include <cstddef>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "absl/container/flat_hash_map.h"
@@ -25,6 +26,8 @@
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_join.h"
 #include "absl/strings/string_view.h"
+#include "llvm/Support/JSON.h"
+#include "llvm/Support/raw_ostream.h"
 
 namespace model_explorer {
 namespace adapter {
@@ -144,6 +147,35 @@ void DiagnosticCollector::EmitSummary(absl::string_view context_name) const {
         context_name, missing_tensor_names_.total,
         missing_tensor_names_.breakdown.size());
   }
+}
+
+std::string DiagnosticCollector::ToJson() const {
+  if (!HasDiagnostics()) {
+    return "";
+  }
+  int warning_count =
+      total_missing_op_def_nodes() + quantization_mismatches() +
+      incomplete_edges_count() + total_option_errors() +
+      total_shardy_edge_failures() + total_missing_tensor_names();
+  if (warning_count == 0) {
+    return "";
+  }
+
+  llvm::json::Object diag_obj;
+  diag_obj["warningCount"] = warning_count;
+  diag_obj["quantMismatches"] = quantization_mismatches();
+  diag_obj["missingOpDefs"] = total_missing_op_def_nodes();
+  diag_obj["incompleteEdges"] = incomplete_edges_count();
+  diag_obj["optionErrors"] = total_option_errors();
+  diag_obj["shardyEdgeFailures"] = total_shardy_edge_failures();
+  diag_obj["missingTensorNames"] = total_missing_tensor_names();
+
+  llvm::json::Object root;
+  root["diagnostics"] = std::move(diag_obj);
+  std::string json_str;
+  llvm::raw_string_ostream os(json_str);
+  os << llvm::json::Value(std::move(root));
+  return json_str;
 }
 
 }  // namespace adapter

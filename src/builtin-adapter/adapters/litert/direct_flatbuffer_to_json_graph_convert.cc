@@ -159,29 +159,6 @@ struct SubgraphBuildContext {
   DiagnosticCollector diagnostics;
 };
 
-std::string FormatDiagnosticsJson(const DiagnosticCollector& diag) {
-  int warning_count =
-      diag.total_missing_op_def_nodes() + diag.quantization_mismatches() +
-      diag.incomplete_edges_count() + diag.total_option_errors() +
-      diag.total_shardy_edge_failures() + diag.total_missing_tensor_names();
-  if (warning_count == 0) return "";
-  llvm::json::Object diag_obj;
-  diag_obj["warningCount"] = warning_count;
-  diag_obj["quantMismatches"] = diag.quantization_mismatches();
-  diag_obj["missingOpDefs"] = diag.total_missing_op_def_nodes();
-  diag_obj["incompleteEdges"] = diag.incomplete_edges_count();
-  diag_obj["optionErrors"] = diag.total_option_errors();
-  diag_obj["shardyEdgeFailures"] = diag.total_shardy_edge_failures();
-  diag_obj["missingTensorNames"] = diag.total_missing_tensor_names();
-
-  llvm::json::Object root;
-  root["diagnostics"] = std::move(diag_obj);
-  std::string json_str;
-  llvm::raw_string_ostream os(json_str);
-  os << llvm::json::Value(std::move(root));
-  return json_str;
-}
-
 // A helper class to hold the LiteRT model data and convert it to Model Explorer
 // JSON graph.
 class FlatbufferToJsonConverter {
@@ -1035,7 +1012,7 @@ absl::Status FlatbufferToJsonConverter::AddSubgraph(const int subgraph_index,
   ValidateSubgraph(subgraph_name, context);
   context.diagnostics.EmitSummary(subgraph_name);
 
-  std::string diag_json = FormatDiagnosticsJson(context.diagnostics);
+  std::string diag_json = context.diagnostics.ToJson();
   ABSL_RETURN_IF_ERROR(StatusReporter::ReportStage(
       reporter_, LifecycleStage::kPostprocessingSubgraph,
       "Postprocessing subgraph namespaces", subgraph_name, diag_json));
@@ -1110,38 +1087,6 @@ absl::StatusOr<Graph> BuildGraphFromContent(const VisualizeConfig& config,
   return converter.BuildGraph();
 }
 
-}  // namespace
-
-// Logic referred from `CustomOptionsToAttributes` in
-// tensorflow/compiler/mlir/lite/flatbuffer_operator.cc.
-void CustomOptionsToAttributes(
-    const std::vector<uint8_t>& custom_options, mlir::Builder mlir_builder,
-    llvm::SmallVectorImpl<mlir::NamedAttribute>& attributes) {
-  if (custom_options.empty()) {
-    // Avoid calling flexbuffers::GetRoot() with empty data. Otherwise it will
-    // crash.
-    //
-    // TODO(yijieyang): We should use a default value for input custom_options
-    // that is not empty to avoid this check.
-    return;
-  }
-  const flexbuffers::Map& map = flexbuffers::GetRoot(custom_options).AsMap();
-  if (map.IsTheEmptyMap()) {
-    // The custom_options is not empty but not a valid flex buffer map.
-    attributes.emplace_back(mlir_builder.getNamedAttr(
-        "custom_options", mlir_builder.getStringAttr("<non-deserializable>")));
-    return;
-  }
-  const flexbuffers::TypedVector& keys = map.Keys();
-  for (size_t i = 0; i < keys.size(); ++i) {
-    const char* key = keys[i].AsKey();
-    const flexbuffers::Reference& value = map[key];
-    attributes.emplace_back(mlir_builder.getNamedAttr(
-        key, mlir_builder.getStringAttr(value.ToString())));
-  }
-}
-
-namespace {
 constexpr size_t kHeaderPrefixSize = 32;
 constexpr size_t kHeaderEndOffsetByteOffset = 24;
 constexpr uint64_t kMaxHeaderSize = 100 * 1024 * 1024;  // 100 MB
@@ -1251,7 +1196,38 @@ absl::StatusOr<std::string> ConvertLitertlmDirectlyToJson(
 
   return result;
 }
+
 }  // namespace
+
+// Converts custom options to attributes.
+// Logic referred from `CustomOptionsToAttributes` in
+// tensorflow/compiler/mlir/lite/flatbuffer_operator.cc.
+void CustomOptionsToAttributes(
+    const std::vector<uint8_t>& custom_options, mlir::Builder mlir_builder,
+    llvm::SmallVectorImpl<mlir::NamedAttribute>& attributes) {
+  if (custom_options.empty()) {
+    // Avoid calling flexbuffers::GetRoot() with empty data. Otherwise it will
+    // crash.
+    //
+    // TODO(yijieyang): We should use a default value for input custom_options
+    // that is not empty to avoid this check.
+    return;
+  }
+  const flexbuffers::Map& map = flexbuffers::GetRoot(custom_options).AsMap();
+  if (map.IsTheEmptyMap()) {
+    // The custom_options is not empty but not a valid flex buffer map.
+    attributes.emplace_back(mlir_builder.getNamedAttr(
+        "custom_options", mlir_builder.getStringAttr("<non-deserializable>")));
+    return;
+  }
+  const flexbuffers::TypedVector& keys = map.Keys();
+  for (size_t i = 0; i < keys.size(); ++i) {
+    const char* key = keys[i].AsKey();
+    const flexbuffers::Reference& value = map[key];
+    attributes.emplace_back(mlir_builder.getNamedAttr(
+        key, mlir_builder.getStringAttr(value.ToString())));
+  }
+}
 
 absl::StatusOr<std::string> ConvertFlatbufferDirectlyToJson(
     const VisualizeConfig& config, absl::string_view model_path,
