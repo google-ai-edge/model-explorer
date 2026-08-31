@@ -13,8 +13,8 @@
 // limitations under the License.
 // =============================================================================
 
-#ifndef THIRD_PARTY_COMMON_GRAPHNODE_BUILDER_H_
-#define THIRD_PARTY_COMMON_GRAPHNODE_BUILDER_H_
+#ifndef MODEL_EXPLORER_BACKEND_COMMON_GRAPHNODE_BUILDER_H_
+#define MODEL_EXPLORER_BACKEND_COMMON_GRAPHNODE_BUILDER_H_
 
 #include <string>
 #include <utility>
@@ -100,4 +100,4 @@ class GraphNodeBuilder {
 
 }  // namespace adapter
 }  // namespace model_explorer
-#endif  // THIRD_PARTY_COMMON_GRAPHNODE_BUILDER_H_
+#endif  // MODEL_EXPLORER_BACKEND_COMMON_GRAPHNODE_BUILDER_H_

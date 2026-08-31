@@ -13,8 +13,8 @@
 // limitations under the License.
 // =============================================================================
 
-#ifndef THIRD_PARTY_COMMON_VISUALIZE_CONFIG_H_
-#define THIRD_PARTY_COMMON_VISUALIZE_CONFIG_H_
+#ifndef MODEL_EXPLORER_BACKEND_COMMON_VISUALIZE_CONFIG_H_
+#define MODEL_EXPLORER_BACKEND_COMMON_VISUALIZE_CONFIG_H_
 
 namespace model_explorer {
 namespace adapter {
@@ -36,4 +36,4 @@ struct VisualizeConfig {
 
 }  // namespace adapter
 }  // namespace model_explorer
-#endif  // THIRD_PARTY_COMMON_VISUALIZE_CONFIG_H_
+#endif  // MODEL_EXPLORER_BACKEND_COMMON_VISUALIZE_CONFIG_H_

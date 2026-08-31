@@ -13,8 +13,8 @@
 // limitations under the License.
 // =============================================================================
 
-#ifndef THIRD_PARTY_UTILS_SHARDY_UTILS_H_
-#define THIRD_PARTY_UTILS_SHARDY_UTILS_H_
+#ifndef MODEL_EXPLORER_BACKEND_UTILS_SHARDY_UTILS_H_
+#define MODEL_EXPLORER_BACKEND_UTILS_SHARDY_UTILS_H_
 
 #include <array>
 #include <cstddef>
@@ -167,4 +167,4 @@ class EdgeOverlayBuilder {
 
 }  // namespace adapter
 }  // namespace model_explorer
-#endif  // THIRD_PARTY_UTILS_SHARDY_UTILS_H_
+#endif  // MODEL_EXPLORER_BACKEND_UTILS_SHARDY_UTILS_H_

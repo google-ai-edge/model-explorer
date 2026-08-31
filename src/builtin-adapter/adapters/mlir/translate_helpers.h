@@ -13,8 +13,8 @@
 // limitations under the License.
 // =============================================================================
 
-#ifndef THIRD_PARTY_ADAPTERS_MLIR_TRANSLATE_HELPERS_H_
-#define THIRD_PARTY_ADAPTERS_MLIR_TRANSLATE_HELPERS_H_
+#ifndef MODEL_EXPLORER_BACKEND_ADAPTERS_MLIR_TRANSLATE_HELPERS_H_
+#define MODEL_EXPLORER_BACKEND_ADAPTERS_MLIR_TRANSLATE_HELPERS_H_
 
 #include "absl/status/statusor.h"
 #include "mlir/Dialect/Func/IR/FuncOps.h"
@@ -35,4 +35,4 @@ absl::StatusOr<Graph> MlirToGraph(const VisualizeConfig& config,
 
 }  // namespace adapter
 }  // namespace model_explorer
-#endif  // THIRD_PARTY_ADAPTERS_MLIR_TRANSLATE_HELPERS_H_
+#endif  // MODEL_EXPLORER_BACKEND_ADAPTERS_MLIR_TRANSLATE_HELPERS_H_

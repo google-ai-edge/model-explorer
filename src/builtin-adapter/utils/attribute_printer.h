@@ -13,8 +13,8 @@
 // limitations under the License.
 // =============================================================================
 
-#ifndef THIRD_PARTY_UTILS_ATTRIBUTE_PRINTER_H_
-#define THIRD_PARTY_UTILS_ATTRIBUTE_PRINTER_H_
+#ifndef MODEL_EXPLORER_BACKEND_UTILS_ATTRIBUTE_PRINTER_H_
+#define MODEL_EXPLORER_BACKEND_UTILS_ATTRIBUTE_PRINTER_H_
 
 #include <cstdint>
 
@@ -64,4 +64,4 @@ void PrintAttribute(const mlir::Attribute& attr, int64_t size_limit,
 
 }  // namespace adapter
 }  // namespace model_explorer
-#endif  // THIRD_PARTY_UTILS_ATTRIBUTE_PRINTER_H_
+#endif  // MODEL_EXPLORER_BACKEND_UTILS_ATTRIBUTE_PRINTER_H_

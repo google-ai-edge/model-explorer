@@ -13,8 +13,8 @@
 // limitations under the License.
 // =============================================================================
 
-#ifndef THIRD_PARTY_ADAPTERS_MLIR_TRANSFORMS_PASSES_H_
-#define THIRD_PARTY_ADAPTERS_MLIR_TRANSFORMS_PASSES_H_
+#ifndef MODEL_EXPLORER_BACKEND_ADAPTERS_MLIR_TRANSFORMS_PASSES_H_
+#define MODEL_EXPLORER_BACKEND_ADAPTERS_MLIR_TRANSFORMS_PASSES_H_
 
 #include <memory>
 
@@ -32,4 +32,4 @@ std::unique_ptr<mlir::Pass> CreateUniqueOpNamesPass();
 
 }  // namespace adapter
 }  // namespace model_explorer
-#endif  // THIRD_PARTY_ADAPTERS_MLIR_TRANSFORMS_PASSES_H_
+#endif  // MODEL_EXPLORER_BACKEND_ADAPTERS_MLIR_TRANSFORMS_PASSES_H_

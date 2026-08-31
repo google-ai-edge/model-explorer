@@ -60,6 +60,7 @@
 #include "adapters/litert/litertlm/litertlm_read.h"
 #include "common/graphnode_builder.h"
 #include "common/schema_structs.h"
+#include "common/status_reporter.h"
 #include "common/visualize_config.h"
 #include "utils/attribute_printer.h"
 #include "utils/convert_type.h"
@@ -158,13 +159,36 @@ struct SubgraphBuildContext {
   DiagnosticCollector diagnostics;
 };
 
+std::string FormatDiagnosticsJson(const DiagnosticCollector& diag) {
+  int warning_count =
+      diag.total_missing_op_def_nodes() + diag.quantization_mismatches() +
+      diag.incomplete_edges_count() + diag.total_option_errors() +
+      diag.total_shardy_edge_failures() + diag.total_missing_tensor_names();
+  if (warning_count == 0) return "";
+  llvm::json::Object diag_obj;
+  diag_obj["warningCount"] = warning_count;
+  diag_obj["quantMismatches"] = diag.quantization_mismatches();
+  diag_obj["missingOpDefs"] = diag.total_missing_op_def_nodes();
+  diag_obj["incompleteEdges"] = diag.incomplete_edges_count();
+  diag_obj["optionErrors"] = diag.total_option_errors();
+  diag_obj["shardyEdgeFailures"] = diag.total_shardy_edge_failures();
+  diag_obj["missingTensorNames"] = diag.total_missing_tensor_names();
+
+  llvm::json::Object root;
+  root["diagnostics"] = std::move(diag_obj);
+  std::string json_str;
+  llvm::raw_string_ostream os(json_str);
+  os << llvm::json::Value(std::move(root));
+  return json_str;
+}
+
 // A helper class to hold the LiteRT model data and convert it to Model Explorer
 // JSON graph.
 class FlatbufferToJsonConverter {
  public:
-  FlatbufferToJsonConverter(
-      const VisualizeConfig& config,
-      std::unique_ptr<FlatBufferModelAbslError> model_ptr);
+  FlatbufferToJsonConverter(const VisualizeConfig& config,
+                            std::unique_ptr<FlatBufferModelAbslError> model_ptr,
+                            StatusReporter* reporter = nullptr);
 
   // Disables copy/move for this class.
   FlatbufferToJsonConverter(const FlatbufferToJsonConverter&) = delete;
@@ -230,6 +254,8 @@ class FlatbufferToJsonConverter {
   std::vector<std::string> func_names_;
   // Map from subgraph index to signature name map.
   SignatureMap signature_map_;
+  // Status reporter.
+  StatusReporter* reporter_ = nullptr;
 };
 
 std::string EdgeInfoDebugString(const EdgeInfo& edge_info) {
@@ -284,6 +310,25 @@ void AppendIncomingEdge(const EdgeInfo& edge_info, GraphNodeBuilder& builder) {
   builder.AppendEdgeInfo(edge_info.source_node_id,
                          edge_info.source_node_output_id,
                          edge_info.target_node_input_id);
+}
+
+// Helper function to report operation progress within a subgraph.
+absl::Status ReportOpProgress(StatusReporter* reporter, int64_t current_op_idx,
+                              int64_t total_ops, absl::string_view op_label,
+                              absl::string_view subgraph_name) {
+  std::string message;
+  if (total_ops > 0) {
+    if (!op_label.empty()) {
+      message = absl::StrCat("Processing op ", current_op_idx + 1, "/",
+                             total_ops, " (", op_label, ")");
+    } else {
+      message =
+          absl::StrCat("Processing op ", current_op_idx + 1, "/", total_ops);
+    }
+  }
+  return StatusReporter::Report(reporter, LifecycleStage::kProcessingOperations,
+                                current_op_idx, total_ops, message,
+                                subgraph_name, op_label);
 }
 
 // Returns a string representation of the tensor shape, eg. "float32[3,2,5]".
@@ -939,6 +984,14 @@ absl::Status FlatbufferToJsonConverter::AddSubgraph(const int subgraph_index,
   const SubGraphT& subgraph_t = *model_->subgraphs[subgraph_index];
   const std::string subgraph_name =
       GetSubgraphName(subgraph_index, subgraph_t, model_->signature_defs);
+
+  ABSL_RETURN_IF_ERROR(StatusReporter::Report(
+      reporter_, LifecycleStage::kProcessingSubgraphs, subgraph_index,
+      model_->subgraphs.size(),
+      absl::StrCat("Processing subgraph ", subgraph_index + 1, "/",
+                   model_->subgraphs.size(), ": ", subgraph_name),
+      subgraph_name));
+
   SignatureNameMap signature_name_map;
   if (auto it = signature_map_.find(subgraph_index);
       it != signature_map_.end()) {
@@ -951,19 +1004,41 @@ absl::Status FlatbufferToJsonConverter::AddSubgraph(const int subgraph_index,
   SubgraphBuildContext context(subgraph_t, signature_name_map, subgraph);
 
   // Adds GraphInputs node to the subgraph.
+  ABSL_RETURN_IF_ERROR(StatusReporter::Report(
+      reporter_, LifecycleStage::kBuildingNodesAndEdges, 0,
+      subgraph_t.operators.size() + 2, "Adding GraphInputs auxiliary node",
+      subgraph_name));
   ABSL_RETURN_IF_ERROR(
       AddAuxiliaryNode(NodeType::kInputNode, subgraph_t.inputs, context));
 
   for (int i = 0; i < subgraph_t.operators.size(); ++i) {
+    absl::string_view op_label = "";
+    if (subgraph_t.operators[i]->opcode_index < op_names_.size()) {
+      op_label = op_names_[subgraph_t.operators[i]->opcode_index];
+    }
+    ABSL_RETURN_IF_ERROR(ReportOpProgress(
+        reporter_, i, subgraph_t.operators.size(), op_label, subgraph_name));
     ABSL_RETURN_IF_ERROR(AddNode(i, context));
   }
 
   // Adds GraphOutputs node to the subgraph.
+  ABSL_RETURN_IF_ERROR(StatusReporter::Report(
+      reporter_, LifecycleStage::kBuildingNodesAndEdges,
+      subgraph_t.operators.size() + 1, subgraph_t.operators.size() + 2,
+      "Adding GraphOutputs auxiliary node", subgraph_name));
   ABSL_RETURN_IF_ERROR(
       AddAuxiliaryNode(NodeType::kOutputNode, subgraph_t.outputs, context));
 
+  ABSL_RETURN_IF_ERROR(StatusReporter::ReportStage(
+      reporter_, LifecycleStage::kSubgraphValidation,
+      "Validating subgraph integrity", subgraph_name));
   ValidateSubgraph(subgraph_name, context);
   context.diagnostics.EmitSummary(subgraph_name);
+
+  std::string diag_json = FormatDiagnosticsJson(context.diagnostics);
+  ABSL_RETURN_IF_ERROR(StatusReporter::ReportStage(
+      reporter_, LifecycleStage::kPostprocessingSubgraph,
+      "Postprocessing subgraph namespaces", subgraph_name, diag_json));
   PostProcessSubgraph(subgraph);
   graph.subgraphs.push_back(std::move(subgraph));
   return absl::OkStatus();
@@ -971,12 +1046,14 @@ absl::Status FlatbufferToJsonConverter::AddSubgraph(const int subgraph_index,
 
 FlatbufferToJsonConverter::FlatbufferToJsonConverter(
     const VisualizeConfig& config,
-    std::unique_ptr<FlatBufferModelAbslError> model_ptr)
+    std::unique_ptr<FlatBufferModelAbslError> model_ptr,
+    StatusReporter* reporter)
     : config_(config),
       op_defs_(LoadTfliteOpdefs()),
       model_ptr_(std::move(model_ptr)),
       mlir_context_(mlir::MLIRContext()),
-      mlir_builder_(&mlir_context_) {
+      mlir_builder_(&mlir_context_),
+      reporter_(reporter) {
   model_ = std::unique_ptr<ModelT>(model_ptr_->GetModel()->UnPack());
   op_names_ = GetOpNames(model_->operator_codes);
 
@@ -1019,14 +1096,17 @@ absl::StatusOr<Graph> FlatbufferToJsonConverter::BuildGraph() {
 }
 
 absl::StatusOr<Graph> BuildGraphFromContent(const VisualizeConfig& config,
-                                            absl::string_view model_content) {
+                                            absl::string_view model_content,
+                                            StatusReporter* reporter) {
+  ABSL_RETURN_IF_ERROR(StatusReporter::ReportStage(
+      reporter, LifecycleStage::kParsingModel, "Parsing FlatBuffer model AST"));
   std::unique_ptr<FlatBufferModelAbslError> model_ptr =
       FlatBufferModelAbslError::VerifyAndBuildFromBuffer(model_content.data(),
                                                          model_content.size());
   if (model_ptr == nullptr) {
     return absl::InvalidArgumentError("Failed to build model from buffer.");
   }
-  FlatbufferToJsonConverter converter(config, std::move(model_ptr));
+  FlatbufferToJsonConverter converter(config, std::move(model_ptr), reporter);
   return converter.BuildGraph();
 }
 
@@ -1084,7 +1164,8 @@ GetLiteRTLMSectionObjects(const litert::lm::schema::LitertlmHeader& header) {
 
 absl::StatusOr<std::string> ConvertLitertlmDirectlyToJson(
     const VisualizeConfig& config, tsl::RandomAccessFile* file,
-    absl::string_view header_prefix, uint64_t file_size) {
+    absl::string_view header_prefix, uint64_t file_size,
+    StatusReporter* reporter) {
   if (header_prefix.size() < kHeaderPrefixSize) {
     return absl::InvalidArgumentError(
         "Header prefix is smaller than 32 bytes.");
@@ -1106,6 +1187,10 @@ absl::StatusOr<std::string> ConvertLitertlmDirectlyToJson(
         absl::StrCat("Invalid header size: ", header_end_offset,
                      " bytes exceeds maximum allowed limit."));
   }
+
+  ABSL_RETURN_IF_ERROR(StatusReporter::ReportStage(
+      reporter, LifecycleStage::kParsingContainerHeader,
+      "Parsing LiteRT-LM container header"));
 
   // Read full header metadata [0, header_end_offset).
   std::string header_data(header_end_offset, '\0');
@@ -1136,13 +1221,16 @@ absl::StatusOr<std::string> ConvertLitertlmDirectlyToJson(
             absl::StrCat("Invalid section offset: end ", sec_obj->end_offset(),
                          " exceeds file size ", file_size));
       }
+      ABSL_RETURN_IF_ERROR(StatusReporter::Report(
+          reporter, LifecycleStage::kReadingFile, i, section_objects->size(),
+          absl::StrCat("Reading TFLiteModel section ", i)));
       size_t model_len = sec_obj->end_offset() - sec_obj->begin_offset();
       std::string model_content(model_len, '\0');
       absl::string_view model_slice;
       ABSL_RETURN_IF_ERROR(file->Read(sec_obj->begin_offset(), model_slice,
                                       absl::MakeSpan(model_content)));
-      ABSL_ASSIGN_OR_RETURN(Graph graph,
-                            BuildGraphFromContent(config, model_slice));
+      ABSL_ASSIGN_OR_RETURN(
+          Graph graph, BuildGraphFromContent(config, model_slice, reporter));
       collection.graphs.push_back(std::move(graph));
     }
   }
@@ -1152,12 +1240,26 @@ absl::StatusOr<std::string> ConvertLitertlmDirectlyToJson(
         "No TFLiteModel sections found in LiteRT-LM container.");
   }
 
-  return FormatGraphCollection(collection);
+  ABSL_RETURN_IF_ERROR(
+      StatusReporter::ReportStage(reporter, LifecycleStage::kSerializingJson,
+                                  "Serializing JSON graph collection"));
+
+  std::string result = FormatGraphCollection(collection);
+
+  ABSL_RETURN_IF_ERROR(StatusReporter::ReportStage(
+      reporter, LifecycleStage::kCompleted, "LiteRT-LM conversion completed"));
+
+  return result;
 }
 }  // namespace
 
 absl::StatusOr<std::string> ConvertFlatbufferDirectlyToJson(
-    const VisualizeConfig& config, absl::string_view model_path) {
+    const VisualizeConfig& config, absl::string_view model_path,
+    StatusReporter* reporter) {
+  ABSL_RETURN_IF_ERROR(
+      StatusReporter::ReportStage(reporter, LifecycleStage::kStarting,
+                                  "Initializing FlatBuffer conversion"));
+
   tsl::Env* env = tsl::Env::Default();
   std::unique_ptr<tsl::RandomAccessFile> file;
   ABSL_RETURN_IF_ERROR(
@@ -1165,6 +1267,10 @@ absl::StatusOr<std::string> ConvertFlatbufferDirectlyToJson(
 
   uint64_t file_size = 0;
   ABSL_RETURN_IF_ERROR(env->GetFileSize(std::string(model_path), &file_size));
+
+  ABSL_RETURN_IF_ERROR(
+      StatusReporter::Report(reporter, LifecycleStage::kReadingFile, 0,
+                             file_size, "Reading file header prefix"));
 
   std::array<char, kHeaderPrefixSize> header_prefix;
   absl::string_view prefix_slice;
@@ -1174,19 +1280,33 @@ absl::StatusOr<std::string> ConvertFlatbufferDirectlyToJson(
   if (status.ok() && prefix_slice.size() == header_prefix.size() &&
       litert::lm::schema::IsLiteRTLMFile(prefix_slice)) {
     return ConvertLitertlmDirectlyToJson(config, file.get(), prefix_slice,
-                                         file_size);
+                                         file_size, reporter);
   }
 
   // Handles .tflite file.
+  ABSL_RETURN_IF_ERROR(
+      StatusReporter::Report(reporter, LifecycleStage::kReadingFile, 0,
+                             file_size, "Reading .tflite file into memory"));
+
   std::string content(file_size, '\0');
   absl::string_view content_slice;
   ABSL_RETURN_IF_ERROR(file->Read(0, content_slice, absl::MakeSpan(content)));
 
   GraphCollection collection;
   ABSL_ASSIGN_OR_RETURN(Graph graph,
-                        BuildGraphFromContent(config, content_slice));
+                        BuildGraphFromContent(config, content_slice, reporter));
   collection.graphs.push_back(std::move(graph));
-  return FormatGraphCollection(collection);
+
+  ABSL_RETURN_IF_ERROR(
+      StatusReporter::ReportStage(reporter, LifecycleStage::kSerializingJson,
+                                  "Serializing JSON graph collection"));
+
+  std::string result = FormatGraphCollection(collection);
+
+  ABSL_RETURN_IF_ERROR(StatusReporter::ReportStage(
+      reporter, LifecycleStage::kCompleted, "FlatBuffer conversion completed"));
+
+  return result;
 }
 
 }  // namespace adapter

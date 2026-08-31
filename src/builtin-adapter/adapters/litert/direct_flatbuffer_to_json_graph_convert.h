@@ -13,8 +13,8 @@
 // limitations under the License.
 // =============================================================================
 
-#ifndef THIRD_PARTY_ADAPTERS_LITERT_DIRECT_FLATBUFFER_TO_JSON_GRAPH_CONVERT_H_
-#define THIRD_PARTY_ADAPTERS_LITERT_DIRECT_FLATBUFFER_TO_JSON_GRAPH_CONVERT_H_
+#ifndef MODEL_EXPLORER_BACKEND_ADAPTERS_LITERT_DIRECT_FLATBUFFER_TO_JSON_GRAPH_CONVERT_H_
+#define MODEL_EXPLORER_BACKEND_ADAPTERS_LITERT_DIRECT_FLATBUFFER_TO_JSON_GRAPH_CONVERT_H_
 
 #include <cstdint>
 #include <string>
@@ -25,6 +25,7 @@
 #include "llvm/ADT/SmallVector.h"
 #include "mlir/IR/Attributes.h"
 #include "mlir/IR/Builders.h"
+#include "common/status_reporter.h"
 #include "common/visualize_config.h"
 
 namespace model_explorer {
@@ -33,7 +34,8 @@ namespace adapter {
 // Converts a Flatbuffer to visualizer JSON string. This process entails neither
 // converting to MLIR nor preparing the model for execution.
 absl::StatusOr<std::string> ConvertFlatbufferDirectlyToJson(
-    const VisualizeConfig& config, absl::string_view model_path);
+    const VisualizeConfig& config, absl::string_view model_path,
+    StatusReporter* reporter = nullptr);
 
 // Converts custom options to attributes.
 // Logic referred from `CustomOptionsToAttributes` in
@@ -44,4 +46,4 @@ void CustomOptionsToAttributes(
 
 }  // namespace adapter
 }  // namespace model_explorer
-#endif  // THIRD_PARTY_ADAPTERS_LITERT_DIRECT_FLATBUFFER_TO_JSON_GRAPH_CONVERT_H_
+#endif  // MODEL_EXPLORER_BACKEND_ADAPTERS_LITERT_DIRECT_FLATBUFFER_TO_JSON_GRAPH_CONVERT_H_

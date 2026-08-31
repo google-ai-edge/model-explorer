@@ -13,8 +13,8 @@
 // limitations under the License.
 // =============================================================================
 
-#ifndef THIRD_PARTY_COMMON_SCHEMA_STRUCTS_H_
-#define THIRD_PARTY_COMMON_SCHEMA_STRUCTS_H_
+#ifndef MODEL_EXPLORER_BACKEND_COMMON_SCHEMA_STRUCTS_H_
+#define MODEL_EXPLORER_BACKEND_COMMON_SCHEMA_STRUCTS_H_
 
 #include <optional>
 #include <string>
@@ -287,4 +287,4 @@ struct GraphCollection {
 
 }  // namespace adapter
 }  // namespace model_explorer
-#endif  // THIRD_PARTY_COMMON_SCHEMA_STRUCTS_H_
+#endif  // MODEL_EXPLORER_BACKEND_COMMON_SCHEMA_STRUCTS_H_

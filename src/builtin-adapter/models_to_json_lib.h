@@ -13,8 +13,8 @@
 // limitations under the License.
 // =============================================================================
 
-#ifndef THIRD_PARTY_MODELS_TO_JSON_LIB_H_
-#define THIRD_PARTY_MODELS_TO_JSON_LIB_H_
+#ifndef MODEL_EXPLORER_BACKEND_MODELS_TO_JSON_LIB_H_
+#define MODEL_EXPLORER_BACKEND_MODELS_TO_JSON_LIB_H_
 
 #include <string>
 
@@ -40,4 +40,4 @@ absl::StatusOr<std::string> ConvertModelToJson(const VisualizeConfig& config,
 
 }  // namespace adapter
 }  // namespace model_explorer
-#endif  // THIRD_PARTY_MODELS_TO_JSON_LIB_H_
+#endif  // MODEL_EXPLORER_BACKEND_MODELS_TO_JSON_LIB_H_

@@ -13,8 +13,8 @@
 // limitations under the License.
 // =============================================================================
 
-#ifndef THIRD_PARTY_ADAPTERS_MLIR_TRANSLATIONS_H_
-#define THIRD_PARTY_ADAPTERS_MLIR_TRANSLATIONS_H_
+#ifndef MODEL_EXPLORER_BACKEND_ADAPTERS_MLIR_TRANSLATIONS_H_
+#define MODEL_EXPLORER_BACKEND_ADAPTERS_MLIR_TRANSLATIONS_H_
 
 #include <utility>
 
@@ -65,4 +65,4 @@ static mlir::LogicalResult MlirToJsonTranslate(mlir::Operation* op,
 
 }  // namespace adapter
 }  // namespace model_explorer
-#endif  // THIRD_PARTY_ADAPTERS_MLIR_TRANSLATIONS_H_
+#endif  // MODEL_EXPLORER_BACKEND_ADAPTERS_MLIR_TRANSLATIONS_H_

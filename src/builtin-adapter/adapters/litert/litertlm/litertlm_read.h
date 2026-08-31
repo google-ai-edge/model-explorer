@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef THIRD_PARTY_ADAPTERS_LITERT_LITERTLM_LITERTLM_READ_H_
-#define THIRD_PARTY_ADAPTERS_LITERT_LITERTLM_LITERTLM_READ_H_
+#ifndef MODEL_EXPLORER_BACKEND_ADAPTERS_LITERT_LITERTLM_LITERTLM_READ_H_
+#define MODEL_EXPLORER_BACKEND_ADAPTERS_LITERT_LITERTLM_LITERTLM_READ_H_
 
 #include <cstddef>
 #include <cstdint>
@@ -103,4 +103,4 @@ absl::Status ReadHeaderFromLiteRTLM(std::istream& litertlm_stream,
 }  // namespace lm
 }  // namespace litert
 
-#endif  // THIRD_PARTY_ADAPTERS_LITERT_LITERTLM_LITERTLM_READ_H_
+#endif  // MODEL_EXPLORER_BACKEND_ADAPTERS_LITERT_LITERTLM_LITERTLM_READ_H_

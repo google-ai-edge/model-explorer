@@ -42,6 +42,7 @@ cc_library(
         "//adapters/litert/litertlm:litertlm_read",
         "//common:graphnode_builder",
         "//common:schema_structs",
+        "//common:status_reporter",
         "//common:visualize_config",
         "//utils:attribute_printer",
         "//utils:convert_type",

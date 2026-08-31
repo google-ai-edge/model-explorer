@@ -17,6 +17,7 @@
 from __future__ import annotations
 
 import ctypes
+import enum
 from importlib import resources
 import os
 import sys
@@ -34,10 +35,53 @@ class CStringParam(ctypes.c_char_p):
     return obj
 
 
+class AdapterModelFormat(enum.IntEnum):
+  UNKNOWN = 0
+  FLATBUFFER = 1
+  FLATBUFFER_DIRECT = 2
+  SAVED_MODEL = 3
+  SAVED_MODEL_DIRECT = 4
+  GRAPH_DEF_DIRECT = 5
+  MLIR = 6
+
+
 class AdapterVisualizeConfig(ctypes.Structure):
   _fields_ = [
       ("const_element_count_limit", ctypes.c_int32),
       ("add_tensor_name_attribute", ctypes.c_bool),
+  ]
+
+
+class AdapterProgressReport(ctypes.Structure):
+  _fields_ = [
+      ("struct_size", ctypes.c_uint32),
+      ("stage", ctypes.c_char_p),
+      ("stage_id", ctypes.c_int32),
+      ("current_step", ctypes.c_int64),
+      ("total_steps", ctypes.c_int64),
+      ("progress_fraction", ctypes.c_double),
+      ("message", ctypes.c_char_p),
+      ("subgraph_name", ctypes.c_char_p),
+      ("current_op", ctypes.c_char_p),
+      ("elapsed_time_ms", ctypes.c_int64),
+      ("payload_json", ctypes.c_char_p),
+  ]
+
+
+AdapterProgressCallback = ctypes.CFUNCTYPE(
+    ctypes.c_int, ctypes.POINTER(AdapterProgressReport), ctypes.c_void_p
+)
+
+
+class AdapterConvertOptions(ctypes.Structure):
+  _fields_ = [
+      ("struct_size", ctypes.c_uint32),
+      ("format", ctypes.c_int32),
+      ("model_path", ctypes.c_char_p),
+      ("config", AdapterVisualizeConfig),
+      ("progress_callback", AdapterProgressCallback),
+      ("user_data", ctypes.c_void_p),
+      ("is_modelpath", ctypes.c_bool),
   ]
 
 
@@ -97,6 +141,13 @@ def _setup_signatures(lib: ctypes.CDLL) -> None:
       ctypes.POINTER(AdapterVisualizeConfig)
   ]
   lib.adapter_get_default_config.restype = None
+
+  lib.adapter_convert.argtypes = [
+      ctypes.POINTER(AdapterConvertOptions),
+      ctypes.POINTER(ctypes.c_char_p),
+      ctypes.POINTER(ctypes.c_char_p),
+  ]
+  lib.adapter_convert.restype = ctypes.c_int
 
   converter_funcs = [
       lib.adapter_convert_saved_model_to_json,

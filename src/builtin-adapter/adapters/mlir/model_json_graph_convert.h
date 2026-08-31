@@ -13,8 +13,8 @@
 // limitations under the License.
 // =============================================================================
 
-#ifndef THIRD_PARTY_ADAPTERS_MLIR_MODEL_JSON_GRAPH_CONVERT_H_
-#define THIRD_PARTY_ADAPTERS_MLIR_MODEL_JSON_GRAPH_CONVERT_H_
+#ifndef MODEL_EXPLORER_BACKEND_ADAPTERS_MLIR_MODEL_JSON_GRAPH_CONVERT_H_
+#define MODEL_EXPLORER_BACKEND_ADAPTERS_MLIR_MODEL_JSON_GRAPH_CONVERT_H_
 
 #include <string>
 
@@ -41,4 +41,4 @@ absl::StatusOr<std::string> ConvertMlirToJson(const VisualizeConfig& config,
 
 }  // namespace adapter
 }  // namespace model_explorer
-#endif  // THIRD_PARTY_ADAPTERS_MLIR_MODEL_JSON_GRAPH_CONVERT_H_
+#endif  // MODEL_EXPLORER_BACKEND_ADAPTERS_MLIR_MODEL_JSON_GRAPH_CONVERT_H_

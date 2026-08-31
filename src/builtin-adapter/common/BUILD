@@ -40,6 +40,16 @@ cc_library(
 )
 
 cc_library(
+    name = "status_reporter",
+    hdrs = ["status_reporter.h"],
+    deps = [
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/strings:string_view",
+    ],
+)
+
+cc_library(
     name = "visualize_config",
     hdrs = ["visualize_config.h"],
 )

@@ -38,6 +38,7 @@ cc_library(
         "//adapters/litert:direct_flatbuffer_to_json_graph_convert",
         "//adapters/mlir:model_json_graph_convert",
         "//adapters/tensorflow:direct_saved_model_to_json_graph_convert",
+        "//common:status_reporter",
         "//common:visualize_config",
     ],
 )
@@ -67,6 +68,7 @@ cc_binary(
         "//adapters/litert:direct_flatbuffer_to_json_graph_convert",
         "//adapters/mlir:model_json_graph_convert",
         "//adapters/tensorflow:direct_saved_model_to_json_graph_convert",
+        "//common:status_reporter",
         "//common:visualize_config",
     ],
 )

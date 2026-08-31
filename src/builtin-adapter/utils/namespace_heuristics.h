@@ -13,8 +13,8 @@
 // limitations under the License.
 // =============================================================================
 
-#ifndef THIRD_PARTY_UTILS_NAMESPACE_HEURISTICS_H_
-#define THIRD_PARTY_UTILS_NAMESPACE_HEURISTICS_H_
+#ifndef MODEL_EXPLORER_BACKEND_UTILS_NAMESPACE_HEURISTICS_H_
+#define MODEL_EXPLORER_BACKEND_UTILS_NAMESPACE_HEURISTICS_H_
 
 #include <string>
 
@@ -39,4 +39,4 @@ std::string TfliteNodeNamespaceHeuristic(
 
 }  // namespace adapter
 }  // namespace model_explorer
-#endif  // THIRD_PARTY_UTILS_NAMESPACE_HEURISTICS_H_
+#endif  // MODEL_EXPLORER_BACKEND_UTILS_NAMESPACE_HEURISTICS_H_

@@ -13,10 +13,10 @@
 // limitations under the License.
 // =============================================================================
 
-#ifndef THIRD_PARTY_ADAPTERS_MLIR_TRANSFORMS_CONVERSION_H_
-#define THIRD_PARTY_ADAPTERS_MLIR_TRANSFORMS_CONVERSION_H_
+#ifndef MODEL_EXPLORER_BACKEND_ADAPTERS_MLIR_TRANSFORMS_CONVERSION_H_
+#define MODEL_EXPLORER_BACKEND_ADAPTERS_MLIR_TRANSFORMS_CONVERSION_H_
 
 // Re-export the passes header to simplify client imports.
 #include "adapters/mlir/transforms/passes.h"  // IWYU pragma: export
 
-#endif  // THIRD_PARTY_ADAPTERS_MLIR_TRANSFORMS_CONVERSION_H_
+#endif  // MODEL_EXPLORER_BACKEND_ADAPTERS_MLIR_TRANSFORMS_CONVERSION_H_
