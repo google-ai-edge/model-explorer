@@ -31,12 +31,12 @@ permissions:
 jobs:
   run-formatting:
     name: Formatting
-    uses: ./.github/workflows/formatting.yml
+    uses: ./.github/workflows/formatting.yml # zizmor: ignore[self-repository]
     with:
       trigger-sha: ${{ github.event.pull_request.head.sha }}
   
   run-tests:
     name: Playwright Tests
-    uses: ./.github/workflows/playwright.yml
+    uses: ./.github/workflows/playwright.yml # zizmor: ignore[self-repository]
     with:
       trigger-sha: ${{ github.event.pull_request.head.sha }}
