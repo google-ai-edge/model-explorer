@@ -19,7 +19,7 @@ load("@llvm-project//mlir:tblgen.bzl", "gentbl_cc_library")
 
 package(
     default_visibility = [
-        "//:__subpackages__",
+        "//visibility:public",
     ],
 )
 

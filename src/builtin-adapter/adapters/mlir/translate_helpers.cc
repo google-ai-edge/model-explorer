@@ -99,27 +99,19 @@ class Counter {
 
 // The context maintained during the graph building process.
 struct GraphBuildContext {
-  GraphBuildContext(const OpdefsMap& op_defs, const OpToNodeIdMap& seen_ops,
-                    const InputValueToNodeIdMap& inputs, Counter node_counter,
-                    Counter tensor_counter, bool has_debug_info)
-      : op_defs(op_defs),
-        seen_ops(seen_ops),
-        inputs(inputs),
-        node_counter(node_counter),
-        tensor_counter(tensor_counter),
-        has_debug_info(has_debug_info) {}
-
   GraphBuildContext() = default;
 
-  // A map from Model Explorer node label to OpMetadata.
-  OpdefsMap op_defs;
+  // A map from Model Explorer node label to OpMetadata for LiteRT.
+  OpdefsMap tfl_op_defs;
+  // A map from Model Explorer node label to OpMetadata for StableHLO.
+  OpdefsMap stablehlo_op_defs;
   // A map from MLIR Operation to Model Explorer node ID.
   OpToNodeIdMap seen_ops;
   // A map from a function input (MLIR) value to Model Explorer node ID.
   InputValueToNodeIdMap inputs;
   Counter node_counter;
   Counter tensor_counter;
-  bool has_debug_info;
+  bool has_debug_info = false;
   DiagnosticCollector diagnostics;
 };
 
@@ -550,8 +542,18 @@ absl::Status PopulateInputEdgeInfo(const mlir::Value& val, int input_index,
 void AddTensorTags(GraphBuildContext& context, Operation& op,
                    GraphNodeBuilder& builder) {
   const std::string op_label = builder.GetNodeLabel();
-  auto it = context.op_defs.find(op_label);
-  if (it == context.op_defs.end()) {
+  const OpdefsMap* op_defs_map = nullptr;
+
+  if (IsTfliteDialect(op)) {
+    op_defs_map = &context.tfl_op_defs;
+  } else if (IsStablehloDialect(op)) {
+    op_defs_map = &context.stablehlo_op_defs;
+  }
+
+  if (op_defs_map == nullptr) return;
+
+  auto it = op_defs_map->find(op_label);
+  if (it == op_defs_map->end()) {
     // Record missing op def to diagnostics for LiteRT dialect operations.
     if (IsTfliteDialect(op)) {
       context.diagnostics.RecordMissingOpDef(op_label);
@@ -560,15 +562,19 @@ void AddTensorTags(GraphBuildContext& context, Operation& op,
   }
   const OpMetadata& op_metadata = it->second;
   if (op_metadata.arguments.size() <= op.getNumOperands()) {
-    for (int i = 0; i < op_metadata.arguments.size(); ++i) {
-      builder.AppendAttrToMetadata(EdgeType::kInput, i, kTensorTag,
-                                   op_metadata.arguments[i]);
+    for (size_t i = 0; i < op_metadata.arguments.size(); ++i) {
+      if (!op_metadata.arguments[i].empty()) {
+        builder.AppendAttrToMetadata(EdgeType::kInput, i, kTensorTag,
+                                     op_metadata.arguments[i]);
+      }
     }
   }
   if (op_metadata.results.size() <= op.getNumResults()) {
-    for (int i = 0; i < op_metadata.results.size(); ++i) {
-      builder.AppendAttrToMetadata(EdgeType::kOutput, i, kTensorTag,
-                                   op_metadata.results[i]);
+    for (size_t i = 0; i < op_metadata.results.size(); ++i) {
+      if (!op_metadata.results[i].empty()) {
+        builder.AppendAttrToMetadata(EdgeType::kOutput, i, kTensorTag,
+                                     op_metadata.results[i]);
+      }
     }
   }
 }
@@ -952,8 +958,8 @@ absl::Status AddNode(const VisualizeConfig& config, Operation& operation,
   llvm::SmallVector<llvm::StringRef, 2> tensor_names;
   if (IsTfliteDialect(operation)) {
     TfliteMaybeAppendSubgraphs(operation, builder);
-    AddTensorTags(context, operation, builder);
   }
+  AddTensorTags(context, operation, builder);
   ABSL_RETURN_IF_ERROR(
       MaybeAddNestedRegion(config, operation, context, builder, subgraph));
   AddOutputsMetadata(config, operation, context, builder);
@@ -969,13 +975,19 @@ absl::StatusOr<Subgraph> FuncOpToSubgraph(const VisualizeConfig& config,
   GraphBuildContext context;
   context.has_debug_info = has_debug_info;
   AddGraphInputs(config, fop, context, subgraph);
-  mlir::Block& block = fop.getBody().front();
-  for (Operation& op : block) {
-    if (IsTfliteDialect(op)) {
-      context.op_defs = LoadTfliteOpdefs();
-      break;
+  fop.walk([&](Operation* op) -> mlir::WalkResult {
+    if (IsTfliteDialect(*op) && context.tfl_op_defs.empty()) {
+      context.tfl_op_defs = LoadTfliteOpdefs();
     }
-  }
+    if (IsStablehloDialect(*op) && context.stablehlo_op_defs.empty()) {
+      context.stablehlo_op_defs = LoadStablehloOpdefs();
+    }
+    if (!context.tfl_op_defs.empty() && !context.stablehlo_op_defs.empty()) {
+      return mlir::WalkResult::interrupt();
+    }
+    return mlir::WalkResult::advance();
+  });
+  mlir::Block& block = fop.getBody().front();
   for (Operation& operation : block) {
     ABSL_RETURN_IF_ERROR(AddNode(config, operation, context, subgraph));
   }

@@ -848,15 +848,19 @@ absl::Status FlatbufferToJsonConverter::AddTensorTags(
   }
   const OpMetadata& op_metadata = it->second;
   if (op_metadata.arguments.size() <= op.inputs.size()) {
-    for (int i = 0; i < op_metadata.arguments.size(); ++i) {
-      builder.AppendAttrToMetadata(EdgeType::kInput, i, kTensorTag,
-                                   op_metadata.arguments[i]);
+    for (size_t i = 0; i < op_metadata.arguments.size(); ++i) {
+      if (!op_metadata.arguments[i].empty()) {
+        builder.AppendAttrToMetadata(EdgeType::kInput, i, kTensorTag,
+                                     op_metadata.arguments[i]);
+      }
     }
   }
   if (op_metadata.results.size() <= op.outputs.size()) {
-    for (int i = 0; i < op_metadata.results.size(); ++i) {
-      builder.AppendAttrToMetadata(EdgeType::kOutput, i, kTensorTag,
-                                   op_metadata.results[i]);
+    for (size_t i = 0; i < op_metadata.results.size(); ++i) {
+      if (!op_metadata.results[i].empty()) {
+        builder.AppendAttrToMetadata(EdgeType::kOutput, i, kTensorTag,
+                                     op_metadata.results[i]);
+      }
     }
   }
   return absl::OkStatus();

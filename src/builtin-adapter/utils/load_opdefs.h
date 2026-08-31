@@ -29,13 +29,13 @@ struct OpMetadata {
   std::vector<std::string> arguments;
   std::vector<std::string> results;
 
-  // Move Constructor
-  OpMetadata(std::vector<std::string>&& arguments,
-             std::vector<std::string>&& results)
+  OpMetadata(std::vector<std::string> arguments,
+             std::vector<std::string> results)
       : arguments(std::move(arguments)), results(std::move(results)) {}
 };
 
 absl::flat_hash_map<std::string, OpMetadata> LoadTfliteOpdefs();
+absl::flat_hash_map<std::string, OpMetadata> LoadStablehloOpdefs();
 
 }  // namespace adapter
 }  // namespace model_explorer

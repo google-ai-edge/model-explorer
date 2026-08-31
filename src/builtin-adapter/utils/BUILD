@@ -15,7 +15,9 @@
 load("@rules_cc//cc:cc_library.bzl", "cc_library")
 
 package(
-    default_visibility = ["//visibility:public"],
+    default_visibility = [
+        "//visibility:public",
+    ],
 )
 
 cc_library(
@@ -35,6 +37,7 @@ cc_library(
     name = "attribute_printer",
     srcs = ["attribute_printer.cc"],
     hdrs = ["attribute_printer.h"],
+    visibility = ["//visibility:public"],
     deps = [
         ":shardy_utils",
         "@com_google_absl//absl/log:absl_log",
@@ -48,6 +51,7 @@ cc_library(
     name = "shardy_utils",
     srcs = ["shardy_utils.cc"],
     hdrs = ["shardy_utils.h"],
+    visibility = ["//visibility:public"],
     deps = [
         ":diagnostic_collector",
         "@com_google_absl//absl/container:flat_hash_map",
@@ -70,6 +74,7 @@ cc_library(
     name = "convert_type",
     srcs = ["convert_type.cc"],
     hdrs = ["convert_type.h"],
+    visibility = ["//visibility:public"],
     deps = ["@org_tensorflow//tensorflow/compiler/mlir/lite/schema:schema_fbs"],
 )
 
@@ -77,6 +82,7 @@ cc_library(
     name = "load_opdefs",
     srcs = ["load_opdefs.cc"],
     hdrs = ["load_opdefs.h"],
+    visibility = ["//visibility:public"],
     deps = ["@com_google_absl//absl/container:flat_hash_map"],
 )
 
@@ -84,6 +90,7 @@ cc_library(
     name = "namespace_heuristics",
     srcs = ["namespace_heuristics.cc"],
     hdrs = ["namespace_heuristics.h"],
+    visibility = ["//visibility:public"],
     deps = [
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/strings:string_view",
