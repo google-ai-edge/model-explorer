@@ -14,8 +14,8 @@
 # ==============================================================================
 
 
-from dataclasses import dataclass
 from abc import abstractmethod
+from dataclasses import dataclass
 from typing import Union
 
 from .config_editor import ConfigEditor, ConfigEditorGroup
@@ -43,8 +43,8 @@ class NodeDataProviderMetadata(ExtensionMetadata):
 
 @dataclass
 class NodeDataProviderFilter:
-  """
-  The filter conditions that determine whether a node data provider
+  """The filter conditions that determine whether a node data provider
+
   extension should be available or visible in the UI.
 
   The filter conditions (modelFileExts and adapterIds) are combined using
@@ -117,7 +117,7 @@ class NodeDataProvider(Extension):
 
     Args:
       provider_id: The id of the provider, matching the id specified in the
-          corresponding `NodeDataProviderMetadata` defined in `metadata`.
+        corresponding `NodeDataProviderMetadata` defined in `metadata`.
     """
     pass
 
@@ -134,12 +134,12 @@ class NodeDataProvider(Extension):
 
     Args:
       provider_id: The id of the provider, matching the id specified in the
-          corresponding `NodeDataProviderMetadata` defined in `metadata`.
+        corresponding `NodeDataProviderMetadata` defined in `metadata`.
       model_path: The path to the model file.
       graph_id: The id of the graph where the extension should be applied.
       config_values: key-value pairs for the config values that users entered in
-          the UI.
+        the UI.
       graph: The Model Explorer graph. This is not available in Google internal
-          colab.
+        colab.
     """
     pass

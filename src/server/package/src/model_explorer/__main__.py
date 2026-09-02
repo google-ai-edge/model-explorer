@@ -13,8 +13,9 @@
 # limitations under the License.
 # ==============================================================================
 
+"""Main executable entrypoint for Model Explorer."""
+
 from .cmdline import main
 
-# For `python -m model_explorer`
 if __name__ == '__main__':
   main()

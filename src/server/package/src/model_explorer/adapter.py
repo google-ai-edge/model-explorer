@@ -14,7 +14,7 @@
 # ==============================================================================
 
 from dataclasses import dataclass, field
-from typing import Dict, Any
+from typing import Any, Dict
 
 from .extension_base import Extension
 from .extension_matadata import ExtensionMetadata

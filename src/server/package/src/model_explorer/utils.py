@@ -13,10 +13,10 @@
 # limitations under the License.
 # ==============================================================================
 
+from dataclasses import asdict
 import json
 import os
 import tempfile
-from dataclasses import asdict
 from typing import Any, Union
 
 from .types import GraphCollection, ModelExplorerGraphs

@@ -13,6 +13,8 @@
 # limitations under the License.
 # ==============================================================================
 
+import http
+from importlib import metadata
 import json
 import logging
 import os
@@ -23,16 +25,21 @@ import sys
 import tempfile
 import threading
 import time
-import traceback
-import webbrowser
-from importlib import metadata
 from time import sleep
+import traceback
 from typing import Any, Union
+import webbrowser
 
 import portpicker
 import requests
-from flask import Flask, Response, make_response, request, send_from_directory
-from IPython import display
+
+import flask
+
+try:
+  from IPython import display
+except ImportError:
+  display = None
+
 from packaging.version import parse
 from termcolor import colored, cprint
 from watchdog.observers import Observer
@@ -49,6 +56,8 @@ from .file_change_handler import FileChangeHandler
 from .server_directive_dispatcher import ServerDirectiveDispatcher
 from .server_director import ServerDirector
 from .utils import convert_adapter_response
+
+OSS_WEB_APP_DIR = os.path.join(os.path.dirname(__file__), 'web_app')
 
 server_directive_dispatcher = ServerDirectiveDispatcher()
 
@@ -74,7 +83,7 @@ def _print_loaded_extensions(type: str, label: str, all_extensions: list[dict]):
 
 def _make_json_response(obj):
   body = json.dumps(obj)
-  resp = make_response(body)
+  resp = flask.make_response(body)
   resp.headers['Content-Type'] = 'application/json'
   return resp
 
@@ -82,7 +91,7 @@ def _make_json_response(obj):
 def _get_latest_version_from_repo(package_json_url: str) -> str:
   req = requests.get(package_json_url)
   version = parse('0')
-  if req.status_code == requests.codes.ok:
+  if req.status_code == http.HTTPStatus.OK:
     j = json.loads(req.text.encode('utf-8'))
     releases = j.get('releases', [])
     for release in releases:
@@ -170,8 +179,7 @@ def _check_new_version(print_msg=True):
           _print_yellow(f'\nRelease notes: {releaseUrl}')
   except:
     pass
-  finally:
-    return check_new_version_resp
+  return check_new_version_resp
 
 
 def _is_port_in_use(host: str, port: int) -> bool:
@@ -186,17 +194,33 @@ def _is_port_in_use(host: str, port: int) -> bool:
     sys.exit(1)
 
 
-def _js(script):
+def _js(script: str) -> None:
+  if display is None:
+    raise NotImplementedError(
+        'IPython is not available in the current environment. '
+        'In-notebook visualization requires IPython to be installed.'
+    )
   display.display(display.Javascript(script))
 
 
+def _read_file_content(path: str) -> str:
+  """Reads file content from the given path."""
+  expanded_path = os.path.expanduser(path)
+  with open(expanded_path, 'r', encoding='utf-8') as f:
+    return f.read()
+
+
+def _serve_static_asset(rel_path: str) -> flask.Response:
+  """Serves web_app static assets from package resources or local directory."""
+  # Reject absolute paths or directory traversal sequences.
+  if os.path.isabs(rel_path) or '..' in rel_path.replace('\\', '/').split('/'):
+    flask.abort(404)
+
+  return flask.send_from_directory(OSS_WEB_APP_DIR, rel_path)
+
+
 def _is_internal_colab() -> bool:
-  return (
-      'BORG_TASK_HANDLE' in os.environ
-      or 'X20_HOME' in os.environ
-      or 'UNITTEST_ON_BORG' in os.environ
-      or 'google3.research.colab.lib' in sys.modules
-  )
+  return False
 
 
 def _refresh_app_callback():
@@ -230,10 +254,10 @@ def start(
     extensions: A list of extension module names. Default to empty.
     colab_height: The height of the embedded iFrame when running in colab.
     cors_host: The value of the Access-Control-Allow-Origin header. The header
-        won't be present if it is None.
+      won't be present if it is None.
     skip_health_check: Whether to skip the health check after server starts.
     watch: Whether to watch for changes in model files. If `True`, the page will
-        automatically refresh when changes are detected.
+      automatically refresh when changes are detected.
   """
 
   # Don't start the server if user wants to reuse an existing server.
@@ -273,7 +297,7 @@ def start(
         print(colored(f'port {port} already in use.', 'red'))
         sys.exit(1)
 
-  app = Flask(__name__)
+  app = flask.Flask(__name__)
 
   # Disable logging from werkzeug.
   #
@@ -282,8 +306,9 @@ def start(
   logging.getLogger('werkzeug').disabled = True
 
   # Disable startup messages.
-  cli: Any = sys.modules['flask.cli']
-  cli.show_server_banner = lambda *x: None
+  cli: Any = sys.modules.get('flask.cli')
+  if cli is not None:
+    cli.show_server_banner = lambda *x: None
 
   # Print a info message when used in colab.
   if colab:
@@ -323,7 +348,7 @@ def start(
   # colab.
   @app.route('/apipost/v1/upload', methods=['POST'])
   def upload_file():
-    f = request.files['file']
+    f = flask.request.files['file']
     file_name = f.filename if f.filename is not None else 'no_name'
     tmp_dir = tempfile.mkdtemp()
     file_path = os.path.join(tmp_dir, file_name)
@@ -332,7 +357,7 @@ def start(
 
   @app.route('/api/v1/send_command')
   def send_command():
-    cmd_json = json.loads(request.args.get('json', '{}'))
+    cmd_json = json.loads(flask.request.args.get('json', '{}'))
     try:
       resp = extension_manager.run_cmd(cmd_json)
       return _make_json_response(resp)
@@ -345,19 +370,19 @@ def start(
   @app.route('/apipost/v1/send_command', methods=['POST'])
   def send_command_post():
     try:
-      resp = extension_manager.run_cmd(request.json)
+      resp = extension_manager.run_cmd(flask.request.json)
       return _make_json_response(resp)
     except Exception as err:
       traceback.print_exc()
       return _make_json_response({'error': f'{type(err).__name__}: {str(err)}'})
     finally:
-      extension_manager.cleanup(request.json)
+      extension_manager.cleanup(flask.request.json)
 
   @app.route('/api/v1/load_graphs_json')
   def load_graphs_json():
     if config is None:
       return {}
-    graph_index_str = request.args.get('graph_index')
+    graph_index_str = flask.request.args.get('graph_index')
     if graph_index_str is None:
       return {}
     graph_index = int(graph_index_str)
@@ -371,7 +396,7 @@ def start(
   def load_node_data():
     if config is None:
       return {}
-    node_data_index_str = request.args.get('node_data_index')
+    node_data_index_str = flask.request.args.get('node_data_index')
     if node_data_index_str is None:
       return {}
     node_data_index = int(node_data_index_str)
@@ -384,14 +409,11 @@ def start(
 
   @app.route('/api/v1/read_text_file')
   def read_text_file():
-    path = request.args.get('path')
+    path = flask.request.args.get('path')
     if path is None:
       return _make_json_response({'error': 'no file path provided'})
-    path = os.path.expanduser(path)
-
     try:
-      with open(path, 'r') as file:
-        content = file.read()
+      content = _read_file_content(path)
       return _make_json_response({'content': content})
     except Exception as err:
       return _make_json_response({'error': str(err)})
@@ -403,7 +425,7 @@ def start(
 
   @app.route('/apipost/v1/update_config', methods=['POST'])
   def update_config():
-    config_data = request.json
+    config_data = flask.request.json
     if config and config_data:
       config.set_transferrable_data(config_data)
 
@@ -432,7 +454,7 @@ def start(
   @app.route('/api/v1/notify_user_provided_model_path')
   def notify_user_provided_model_path():
     if watch:
-      path = request.args.get('path')
+      path = flask.request.args.get('path')
       if path:
         abs_path = os.path.abspath(os.path.expanduser(path))
         _watch_file_changes(file_path=abs_path)
@@ -463,7 +485,7 @@ def start(
         'Access-Control-Allow-Origin': '*',
         'Cache-Control': 'no-cache',
     }
-    return Response(
+    return flask.Response(
         stream(),
         headers=headers,
         content_type='text/event-stream',
@@ -473,12 +495,12 @@ def start(
   @app.route('/')
   def send_index_html():
     """Serves index.html."""
-    return send_from_directory('web_app', 'index.html')
+    return _serve_static_asset('index.html')
 
   @app.route('/<path:path>')
   def send_static(path):
     """Serves static files."""
-    return send_from_directory('web_app', path)
+    return _serve_static_asset(path)
 
   @app.after_request
   def add_header(response):
@@ -530,8 +552,9 @@ def start(
       for model_file in model_files:
         _watch_file_changes(file_path=model_file)
 
-    app_thread = threading.Thread(target=lambda: app.run(host=host, port=port))
-    app_thread.daemon = True
+    app_thread = threading.Thread(
+        target=lambda: app.run(host=host, port=port), daemon=True
+    )
     app_thread.start()
 
     # Wait for server to start

@@ -13,15 +13,14 @@
 # limitations under the License.
 # ==============================================================================
 
+from dataclasses import asdict
 import os
-from .types import NdpCommand
-
+from typing import Union
+from dacite import from_dict
 from .graph_builder import Graph
 from .registered_extension import RegisteredExtension
+from .types import NdpCommand
 from .utils import get_instance_method
-from dacite import from_dict
-from dataclasses import asdict
-from typing import Union
 
 
 class NdpRunner:

@@ -128,11 +128,9 @@ class ModelExplorerConfig:
     Args:
       path: the path of the node data json file to add.
       model_name: the name of the model. If not set, the node data will be
-          applied to the first model added to the config by default.
-
-          To set this parameter:
-          For non-pytorch model, this should be the name of the model file
-          (e.g. model.tflite). For pytorch model, it should be the `name`
+        applied to the first model added to the config by default.  To set this
+        parameter: For non-pytorch model, this should be the name of the model
+          file (e.g. model.tflite). For pytorch model, it should be the `name`
           parameter used to call the `add_model_from_pytorch` api.
     """
     # Get the absolute path (after expanding home dir path "~").
@@ -158,11 +156,9 @@ class ModelExplorerConfig:
       name: the name of the NodeData for display purpose.
       node_data: the NodeData object or node data json string to add.
       model_name: the name of the model. If not set, the node data will be
-          applied to the first model added to the config by default.
-
-          To set this parameter:
-          For non-pytorch model, this should be the name of the model file
-          (e.g. model.tflite). For pytorch model, it should be the `name`
+        applied to the first model added to the config by default.  To set this
+        parameter: For non-pytorch model, this should be the name of the model
+          file (e.g. model.tflite). For pytorch model, it should be the `name`
           parameter used to call the `add_model_from_pytorch` api.
     """
     node_data_index = len(self.node_data_list)
@@ -189,7 +185,7 @@ class ModelExplorerConfig:
     Args:
       server_host: the host of the server to reuse.
       server_port: the port of the server to reuse. If unspecified, it will try
-          to find a running server from port 8080 to 8099.
+        to find a running server from port 8080 to 8099.
     """
     # Find the server to reuse.
     self.reuse_server_host = server_host

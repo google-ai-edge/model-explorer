@@ -13,12 +13,9 @@
 # limitations under the License.
 # ==============================================================================
 
-from importlib.metadata import version
-
-from . import graph_builder, node_data_builder, config_editor
+from . import config_editor, graph_builder, node_data_builder
 from .adapter import Adapter, AdapterMetadata
 from .apis import config, visualize, visualize_from_config, visualize_pytorch
-from .consts import PACKAGE_NAME
 from .node_data_provider import GetConfigEditorsResult, NodeDataProvider, NodeDataProviderFilter, NodeDataProviderMetadata, NodeDataProviderResult
 from .types import ModelExplorerGraphs
 
@@ -41,4 +38,4 @@ __all__ = [
     'config_editor',
 ]
 
-__version__ = version(PACKAGE_NAME)
+__version__ = '0.1.33'

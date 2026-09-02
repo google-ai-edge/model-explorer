@@ -79,12 +79,12 @@ def visualize(
     node_data: The node data or a list of node data to display.
     colab_height: The height of the embedded iFrame when running in colab.
     reuse_server: Whether to reuse the current server/browser tab(s) to
-        visualize.
+      visualize.
     reuse_server_host: the host of the server to reuse. Default to localhost.
     reuse_server_port: the port of the server to reuse. If unspecified, it will
-        try to find a running server from port 8080 to 8099.
+      try to find a running server from port 8080 to 8099.
     watch: Whether to watch for changes in model files. If `True`, the page will
-        automatically refresh when changes are detected.
+      automatically refresh when changes are detected.
   """
   # Construct config.
   cur_config = config()
@@ -138,10 +138,10 @@ def visualize_pytorch(
     colab_height: The height of the embedded iFrame when running in colab.
     settings: The settings that config the visualization.
     reuse_server: Whether to reuse the current server/browser tab(s) to
-        visualize.
+      visualize.
     reuse_server_host: the host of the server to reuse. Default to localhost.
     reuse_server_port: the port of the server to reuse. If unspecified, it will
-        try to find a running server from port 8080 to 8099.
+      try to find a running server from port 8080 to 8099.
   """
   # Construct config.
   cur_config = config()
@@ -188,7 +188,7 @@ def visualize_from_config(
     no_open_in_browser: Don't open the web app in browser after server starts.
     colab_height: The height of the embedded iFrame when running in colab.
     watch: Whether to watch for changes in model files. If `True`, the page will
-        automatically refresh when changes are detected.
+      automatically refresh when changes are detected.
   """
   # Start server.
   server.start(

@@ -14,7 +14,7 @@
 # ==============================================================================
 
 PACKAGE_NAME = 'ai-edge-model-explorer'
-MODULE_NAME = 'model_explorer'
+MODULE_NAME = __package__ if __package__ else 'model_explorer'
 DEFAULT_HOST = 'localhost'
 DEFAULT_PORT = 8080
 DEFAULT_COLAB_HEIGHT = 850

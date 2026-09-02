@@ -17,9 +17,7 @@ import queue
 
 
 class ServerDirectiveDispatcher:
-  """
-  A class to register server directive listeners and dispatch messages to them.
-  """
+  """A class to register server directive listeners and dispatch messages to them."""
 
   def __init__(self):
     self.listeners = []

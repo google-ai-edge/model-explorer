@@ -15,6 +15,12 @@
 
 import os
 import shutil
+
+try:
+  import torch
+except ImportError:
+  torch = None
+
 from dataclasses import asdict
 from importlib import import_module
 from typing import Any, Dict, Union
@@ -30,27 +36,32 @@ from .utils import convert_adapter_response
 
 
 class ExtensionManager(object, metaclass=Singleton):
-  BUILTIN_ADAPTER_MODULES: list[str] = [
-      '.builtin_tflite_flatbuffer_adapter',
-      '.builtin_tflite_mlir_adapter',
-      '.builtin_tf_mlir_adapter',
-      '.builtin_tf_direct_adapter',
-      '.builtin_graphdef_adapter',
-      '.builtin_pytorch_exportedprogram_adapter',
-      '.builtin_mlir_adapter',
-  ]
+  BUILTIN_ADAPTER_MODULES: list[str] = (
+      [
+          '.builtin_tflite_flatbuffer_adapter',
+          '.builtin_tflite_mlir_adapter',
+          '.builtin_tf_mlir_adapter',
+          '.builtin_tf_direct_adapter',
+          '.builtin_graphdef_adapter',
+      ]
+      + (['.builtin_pytorch_exportedprogram_adapter'] if torch else [])
+      + [
+          '.builtin_mlir_adapter',
+      ]
+  )
 
-  CACHED_REGISTERED_EXTENSIONS: Dict[str, RegisteredExtension] = {}
+  CACHED_REGISTERED_EXTENSIONS: Dict[str, list[RegisteredExtension]] = {}
 
   def __init__(self, custom_extension_modules: list[str] = []):
-    # Don't load extensions from ai_edge_model_explorer_adapter if it is not
-    # available.
+    # Don't load extensions from backend adapter if it is not available.
     try:
-      import ai_edge_model_explorer_adapter
+      import ai_edge_model_explorer_adapter  # type: ignore
     except ImportError:
-      ExtensionManager.BUILTIN_ADAPTER_MODULES = [
-          '.builtin_pytorch_exportedprogram_adapter',
-      ]
+      ExtensionManager.BUILTIN_ADAPTER_MODULES = (
+          ['.builtin_pytorch_exportedprogram_adapter']
+          if torch is not None
+          else []
+      )
 
     # For custom extensions (i.e. non-built-in extensions), we load their "main"
     # module by default.
@@ -127,39 +138,49 @@ class ExtensionManager(object, metaclass=Singleton):
     for module in (
         ExtensionManager.BUILTIN_ADAPTER_MODULES + self.custom_extension_modules
     ):
-      module_full_name = f'{MODULE_NAME}{module}'
+      module_full_name = (
+          f'{MODULE_NAME}{module}' if module.startswith('.') else module
+      )
 
       # Get the registered extension from cache if it has already been
       # registered.
       if module_full_name in ExtensionManager.CACHED_REGISTERED_EXTENSIONS:
-        self.extensions.append(
+        self.extensions.extend(
             ExtensionManager.CACHED_REGISTERED_EXTENSIONS[module_full_name]
         )
       # Import the extension module if it has not been registered.
       else:
+        before_keys = set(ExtensionClassProcessor.get_registry().keys())
         try:
-          import_module(module, MODULE_NAME)
+          import_module(module, MODULE_NAME if module.startswith('.') else None)
         except Exception as err:
           print(f'! Failed to load extension module "{module}":')
           print(err)
           print()
           continue
 
-    for ext in ExtensionClassProcessor.get_registry().values():
-      metadata = ext['metadata']
-      metadata_list = []
-      if isinstance(metadata, list):
-        metadata_list = metadata
-      else:
-        metadata_list = [metadata]
-      for metadata in metadata_list:
-        extension = RegisteredExtension(
-            metadata=metadata, type=ext['type'], ext_class=ext['cls']
-        )
-        self.extensions.append(extension)
+        registry = ExtensionClassProcessor.get_registry()
+        new_keys = set(registry.keys()) - before_keys
+        matching_exts = [
+            ext
+            for k, ext in registry.items()
+            if k in new_keys or ext['cls'].__module__ == module_full_name
+        ]
+
+        module_extensions: list[RegisteredExtension] = []
+        for ext in matching_exts:
+          metadata = ext['metadata']
+          metadata_list = metadata if isinstance(metadata, list) else [metadata]
+          for m in metadata_list:
+            extension = RegisteredExtension(
+                metadata=m, type=ext['type'], ext_class=ext['cls']
+            )
+            module_extensions.append(extension)
+
         ExtensionManager.CACHED_REGISTERED_EXTENSIONS[module_full_name] = (
-            extension
+            module_extensions
         )
+        self.extensions.extend(module_extensions)
 
   def _get_extension_by_id(self, id: str) -> Union[RegisteredExtension, None]:
     matches = [ext for ext in self.extensions if ext.metadata.id == id]

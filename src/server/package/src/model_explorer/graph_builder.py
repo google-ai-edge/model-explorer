@@ -238,9 +238,7 @@ GroupNodeAttributes = Dict[str, Dict[str, str]]
 
 @dataclass
 class GroupNodeConfig:
-  """
-  Custom configs for group nodes matched by the namespace regex.
-  """
+  """Custom configs for group nodes matched by the namespace regex."""
 
   # The regex of the namespace of the group node. The namespace to match should
   # include the name of the group itself.

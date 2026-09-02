@@ -13,9 +13,9 @@
 # limitations under the License.
 # ==============================================================================
 
+from dataclasses import asdict, dataclass, field
 import json
 import os
-from dataclasses import asdict, dataclass, field
 from typing import Literal, Union
 
 from .utils import remove_none
