@@ -31,6 +31,16 @@ limitations under the License.
           [class.selected]="graph.id === selectedGraphId()">
         <div class="graph-info-wrapper" (click)="handleSelectGraph(graph)">
           <div class="graph-label-wrapper">
+            <div class="dropdown-toggle-button-container"
+                *ngIf="graph.hasSubgraphs && !hasFilteredOutGraphs"
+                (click)="toggleCollapse($event, graph)">
+              <mat-icon class="dropdown-toggle-btn">
+                {{isCollapsed(graph) ? 'arrow_right' : 'arrow_drop_down'}}
+              </mat-icon>
+            </div>
+            <span class="dropdown-spacer"
+                *ngIf="!graph.hasSubgraphs && !hasFilteredOutGraphs && graph.level === 0 && hasAnySubgraphsInCollection(collection)">
+            </span>
             <mat-icon class="indent-symbol" *ngIf="showIndentSymbol(graph)">
               turn_left
             </mat-icon>
@@ -39,6 +49,9 @@ limitations under the License.
             </div>
           </div>
           <div class="node-count-label">
+            <span class="subgraph-count-label" *ngIf="isCollapsed(graph) && (graph.subgraphCount ?? 0) > 0">
+              ({{getSubgraphCountLabel(graph.subgraphCount!)}})
+            </span>
             {{getGraphNonHiddenNodeCountLabel(graph.nonHiddenNodeCount)}}
           </div>
         </div>

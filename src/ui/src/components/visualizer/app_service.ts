@@ -78,6 +78,8 @@ export class AppService {
 
   readonly curSelectedRenderer = signal<RendererInfo | undefined>(undefined);
 
+  readonly collapsedGraphIds = signal<Set<string>>(new Set<string>());
+
   readonly spaceKeyToZoomFitClicked = new Subject<{}>();
 
   readonly searchKeyClicked = new Subject<{}>();
@@ -1127,6 +1129,17 @@ export class AppService {
           break;
       }
     });
+  }
+
+  toggleGraphCollapse(key: string) {
+    const collapsed = this.collapsedGraphIds();
+    const newSet = new Set(collapsed);
+    if (newSet.has(key)) {
+      newSet.delete(key);
+    } else {
+      newSet.add(key);
+    }
+    this.collapsedGraphIds.set(newSet);
   }
 
   private init() {
