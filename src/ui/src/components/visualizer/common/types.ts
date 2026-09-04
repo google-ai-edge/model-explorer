@@ -1055,7 +1055,6 @@ export type Command =
   | CollapseInfoPanelCommand
   | ShowInfoPanelCommand
   | SetViewOnEdgeCommand;
-
 /** The type of the element to render. */
 export enum RenderElementType {
   NODE,
