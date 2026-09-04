@@ -56,6 +56,8 @@ export interface GraphItem {
   level: number;
   nonHiddenNodeCount: number;
   width: number;
+  hasSubgraphs?: boolean;
+  subgraphCount?: number;
 }
 
 /**
@@ -149,6 +151,19 @@ export class GraphSelector {
           width + 30,
           this.maxGraphItemIdWidth,
         );
+      }
+      for (let i = 0; i < collectionItem.graphs.length; i++) {
+        const curGraph = collectionItem.graphs[i];
+        let count = 0;
+        for (let j = i + 1; j < collectionItem.graphs.length; j++) {
+          if (collectionItem.graphs[j].level > curGraph.level) {
+            count++;
+          } else {
+            break;
+          }
+        }
+        curGraph.hasSubgraphs = count > 0;
+        curGraph.subgraphCount = count;
       }
       if (collectionItem.graphs.length > 0) {
         graphCollectionItems.push(collectionItem);

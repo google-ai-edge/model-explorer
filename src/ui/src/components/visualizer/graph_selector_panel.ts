@@ -101,7 +101,11 @@ export class GraphSelectorPanel {
   }
 
   showIndentSymbol(graphItem: GraphItem): boolean {
-    return !this.hasFilteredOutGraphs && (graphItem.level ?? 0) > 0;
+    return (
+      !this.hasFilteredOutGraphs &&
+      (graphItem.level ?? 0) > 0 &&
+      !graphItem.hasSubgraphs
+    );
   }
 
   getGraphItemPaddingLeft(graphItem: GraphItem): number {
@@ -123,6 +127,29 @@ export class GraphSelectorPanel {
     return `${graphItem.graph.collectionLabel}___${graphItem.graph.id}`;
   }
 
+  getGraphKey(graphItem: GraphItem): string {
+    return `${graphItem.graph.collectionLabel}___${graphItem.id}`;
+  }
+
+  isCollapsed(graphItem: GraphItem): boolean {
+    return this.appService.collapsedGraphIds().has(this.getGraphKey(graphItem));
+  }
+
+  toggleCollapse(event: MouseEvent, graphItem: GraphItem) {
+    event.stopPropagation();
+    event.preventDefault();
+    const key = this.getGraphKey(graphItem);
+    this.appService.toggleGraphCollapse(key);
+  }
+
+  hasAnySubgraphsInCollection(collection: GraphCollectionItem): boolean {
+    return collection.graphs.some((g) => g.hasSubgraphs);
+  }
+
+  getSubgraphCountLabel(count: number): string {
+    return `${count} subgraph${count === 1 ? '' : 's'}`;
+  }
+
   get curGraphCollectionItems(): GraphCollectionItem[] {
     const graphCollectionItems: GraphCollectionItem[] = [];
     this.hasFilteredOutGraphs = false;
@@ -132,6 +159,7 @@ export class GraphSelectorPanel {
         collection,
         graphs: [],
       };
+      let hiddenBelowLevel = Infinity;
       for (const graph of graphs) {
         if (
           this.curFilterText !== '' &&
@@ -140,6 +168,20 @@ export class GraphSelectorPanel {
           this.hasFilteredOutGraphs = true;
           continue;
         }
+
+        // Only apply collapse filtering in tree view (when not searching).
+        if (this.curFilterText === '') {
+          if (graph.level <= hiddenBelowLevel) {
+            hiddenBelowLevel = Infinity;
+          }
+          if (graph.level > hiddenBelowLevel) {
+            continue;
+          }
+          if (this.isCollapsed(graph)) {
+            hiddenBelowLevel = graph.level;
+          }
+        }
+
         collectionItem.graphs.push(graph);
       }
       if (collectionItem.graphs.length > 0) {

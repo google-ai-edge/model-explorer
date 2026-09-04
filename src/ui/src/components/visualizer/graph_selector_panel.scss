@@ -87,6 +87,45 @@
         align-items: center;
       }
 
+      .dropdown-toggle-button-container {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        border-radius: 99px;
+        margin-right: 2px;
+        width: 18px;
+        height: 18px;
+
+        &:hover {
+          background-color: var(--me-surface-container-highest-color);
+        }
+      }
+
+      .dropdown-toggle-btn {
+        font-size: 18px;
+        width: 18px;
+        height: 18px;
+        line-height: 18px;
+        color: var(--me-on-surface-low-color);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+
+        &:hover {
+          color: var(--me-on-surface-color);
+        }
+      }
+
+      .dropdown-spacer {
+        width: 18px;
+        height: 18px;
+        margin-right: 2px;
+        flex-shrink: 0;
+        display: inline-block;
+      }
+
       .indent-symbol {
         font-size: 16px;
         width: 16px;
@@ -105,6 +144,14 @@
       .node-count-label {
         color: var(--me-on-surface-low-color);
         margin-left: 12px;
+        display: flex;
+        align-items: center;
+
+        .subgraph-count-label {
+          color: var(--me-on-surface-low-color);
+          margin-right: 4px;
+          opacity: 0.85;
+        }
       }
 
       .action-button {
