@@ -59,7 +59,9 @@ void PrintDenseElementsAttrImpl(bool is_splat, const mlir::ShapedType& type,
   if (num_elements == 0) return;
 
   // Special case for 0-d and splat tensors.
-  if (is_splat) return PrintEltFn(0);
+  if (type.getRank() == 0 || is_splat) {
+    return PrintEltFn(0);
+  }
 
   // We use a mixed-radix counter to iterate through the shape. When we bump a
   // non-least-significant digit, we emit a close bracket. When we next emit an
