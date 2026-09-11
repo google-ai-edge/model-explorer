@@ -46,6 +46,7 @@ export interface GraphCollectionItem {
   label: string;
   graphs: GraphItem[];
   collection: GraphCollection;
+  hasSubgraphs?: boolean;
 }
 
 /** A graph in a collection in the dropdown menu. */
@@ -56,6 +57,8 @@ export interface GraphItem {
   level: number;
   nonHiddenNodeCount: number;
   width: number;
+  hasSubgraphs?: boolean;
+  subgraphCount?: number;
 }
 
 /**
@@ -115,7 +118,6 @@ export class GraphSelector {
 
     // Calculate count for non-hidden nodes in each graph.
     const graphCollectionItems: GraphCollectionItem[] = [];
-    const filterText = this.curFilterText().toLowerCase();
     for (const collection of collections) {
       const collectionItem: GraphCollectionItem = {
         label: collection.label,
@@ -124,9 +126,6 @@ export class GraphSelector {
       };
       for (const {graph, level} of collection.graphsWithLevel ?? []) {
         const title = getGraphTitle(graph);
-        if (filterText !== '' && !title.toLowerCase().includes(filterText)) {
-          continue;
-        }
         const nodeLabelsToHide = new Set<string>(
           (graph.nodeLabelsToHide ?? config.nodeLabelsToHide ?? []).map(
             (label) => label.toLowerCase(),
@@ -150,6 +149,22 @@ export class GraphSelector {
           this.maxGraphItemIdWidth,
         );
       }
+      for (let i = 0; i < collectionItem.graphs.length; i++) {
+        const curGraph = collectionItem.graphs[i];
+        let count = 0;
+        for (let j = i + 1; j < collectionItem.graphs.length; j++) {
+          if (collectionItem.graphs[j].level > curGraph.level) {
+            count++;
+          } else {
+            break;
+          }
+        }
+        curGraph.hasSubgraphs = count > 0;
+        curGraph.subgraphCount = count;
+      }
+      collectionItem.hasSubgraphs = collectionItem.graphs.some(
+        (g) => g.hasSubgraphs,
+      );
       if (collectionItem.graphs.length > 0) {
         graphCollectionItems.push(collectionItem);
         const collectionLabelWidth =
