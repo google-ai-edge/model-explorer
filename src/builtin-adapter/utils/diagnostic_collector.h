@@ -38,9 +38,10 @@ class DiagnosticCollector {
   // Records a missing op def for tensor port tagging.
   void RecordMissingOpDef(absl::string_view op_label);
 
-  // Records a quantization scale/zero_point vector size mismatch.
+  // Records a quantization metadata issue for `tensor_name` (reported under
+  // `quantMismatches` in `ToJson()`).
   void RecordQuantizationMismatch(absl::string_view tensor_name,
-                                  size_t scale_size, size_t zero_point_size);
+                                  absl::string_view details);
 
   // Records an incomplete edge detected during subgraph validation.
   void RecordIncompleteEdge(int tensor_index, absl::string_view details);

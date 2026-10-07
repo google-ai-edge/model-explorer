@@ -76,7 +76,10 @@ cc_library(
     srcs = ["convert_type.cc"],
     hdrs = ["convert_type.h"],
     visibility = ["//visibility:public"],
-    deps = ["@org_tensorflow//tensorflow/compiler/mlir/lite/schema:schema_fbs"],
+    deps = [
+        "@com_google_absl//absl/strings",
+        "@org_tensorflow//tensorflow/compiler/mlir/lite/schema:schema_fbs",
+    ],
 )
 
 cc_library(

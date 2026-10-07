@@ -17,6 +17,7 @@
 
 #include <algorithm>
 #include <array>
+#include <cstddef>
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
@@ -25,6 +26,8 @@
 #include <utility>
 #include <vector>
 
+#include "absl/base/attributes.h"
+#include "absl/base/nullability.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/log/absl_log.h"
@@ -34,7 +37,6 @@
 #include "absl/strings/ascii.h"
 #include "absl/strings/match.h"
 #include "absl/strings/str_cat.h"
-#include "absl/strings/str_format.h"
 #include "absl/strings/str_join.h"
 #include "absl/strings/str_split.h"
 #include "absl/strings/string_view.h"
@@ -58,6 +60,7 @@
 #include "mlir/Support/LLVM.h"
 #include "adapters/litert/litertlm/litertlm_header_schema_generated.h"
 #include "adapters/litert/litertlm/litertlm_read.h"
+#include "adapters/litert/quantization_formatter.h"
 #include "common/graphnode_builder.h"
 #include "common/schema_structs.h"
 #include "common/status_reporter.h"
@@ -103,8 +106,6 @@ constexpr absl::string_view kTensorName = "tensor_name";
 constexpr absl::string_view kTensorShape = "tensor_shape";
 constexpr absl::string_view kTensorTag = "__tensor_tag";
 constexpr absl::string_view kValue = "__value";
-constexpr absl::string_view kQuantization = "quantization";
-constexpr absl::string_view kQuantizedDimension = "quantized_dimension";
 constexpr absl::string_view kSignatureName = "signature_name";
 
 struct EdgeInfo {
@@ -157,6 +158,9 @@ struct SubgraphBuildContext {
   Subgraph& subgraph;
   // Aggregated diagnostics for the subgraph.
   DiagnosticCollector diagnostics;
+  // Quantization metadata built so far, keyed by tensor.
+  absl::flat_hash_map<const TensorT*, QuantizationMetadata>
+      quantization_metadata;
 };
 
 // A helper class to hold the LiteRT model data and convert it to Model Explorer
@@ -176,14 +180,19 @@ class FlatbufferToJsonConverter {
   absl::StatusOr<Graph> BuildGraph();
 
  private:
-  // Gets the buffer data of the given tensor.
-  absl::StatusOr<std::vector<uint8_t>> GetBuffer(const TensorT& tensor,
-                                                 SubgraphBuildContext& context);
+  // Returns a zero-copy view of `tensor`'s buffer data.
+  absl::StatusOr<absl::Span<const uint8_t>> GetBufferSpan(
+      const TensorT& tensor) const ABSL_ATTRIBUTE_LIFETIME_BOUND;
+
+  // Appends `tensor`'s quantization metadata to the node metadata, if any.
+  void AddQuantizationParameters(const TensorT* absl_nullable tensor,
+                                 EdgeType edge_type, int rel_idx,
+                                 SubgraphBuildContext& context,
+                                 GraphNodeBuilder& builder) const;
 
   // Adds the constant value to the node attribute.
   absl::Status AddConstantToNodeAttr(const TensorT& tensor,
-                                     SubgraphBuildContext& context,
-                                     GraphNodeBuilder& builder);
+                                     GraphNodeBuilder& builder) const;
 
   // Adds an auxiliary node (GraphInputs, GraphOutputs or const node) to the
   // subgraph.
@@ -217,7 +226,7 @@ class FlatbufferToJsonConverter {
   const VisualizeConfig& config_;
   // Map from op name to op metadata.
   const OpdefsMap op_defs_;
-  // Pointer to the flatbuffer model.
+  // Non-null pointer to the flatbuffer model.
   std::unique_ptr<FlatBufferModelAbslError> model_ptr_;
   // MLIR context and builder for creating MLIR attributes.
   mlir::MLIRContext mlir_context_;  // Owns the mlir context.
@@ -306,21 +315,6 @@ absl::Status ReportOpProgress(StatusReporter* reporter, int64_t current_op_idx,
   return StatusReporter::Report(reporter, LifecycleStage::kProcessingOperations,
                                 current_op_idx, total_ops, message,
                                 subgraph_name, op_label);
-}
-
-// Returns a string representation of the tensor shape, eg. "float32[3,2,5]".
-// Unknown dimensions are represented with -1.
-std::string StringifyTensorShape(const TensorT& tensor) {
-  std::string shape_str;
-  if (!tensor.shape_signature.empty()) {
-    shape_str = absl::StrJoin(tensor.shape_signature, ",");
-  } else {
-    shape_str = absl::StrJoin(tensor.shape, ",");
-  }
-  if (shape_str.empty()) {
-    return TensorTypeToString(tensor.type);
-  }
-  return absl::StrCat(TensorTypeToString(tensor.type), "[", shape_str, "]");
 }
 
 // Obtains the node namespace based on the node label and related tensor names.
@@ -423,41 +417,6 @@ void AppendMetadata(EdgeType edge_type, int metadata_id, int tensor_index,
     builder.AppendAttrToMetadata(edge_type, metadata_id, kSignatureName,
                                  name_it->second);
   }
-}
-
-// Adds quantization parameters to the graph node builder.
-void AddQuantizationParameters(const std::unique_ptr<TensorT>& tensor,
-                               const EdgeType edge_type, const int rel_idx,
-                               GraphNodeBuilder& builder,
-                               DiagnosticCollector& diagnostics) {
-  if (tensor->quantization == nullptr) return;
-  const std::unique_ptr<tflite::QuantizationParametersT>& quant =
-      tensor->quantization;
-  if (quant->scale.size() != quant->zero_point.size()) {
-    diagnostics.RecordQuantizationMismatch(tensor->name, quant->scale.size(),
-                                           quant->zero_point.size());
-    return;
-  }
-  if (quant->scale.empty()) return;
-
-  std::vector<std::string> parameters;
-  parameters.reserve(quant->scale.size());
-  for (int i = 0; i < quant->scale.size(); ++i) {
-    // Parameters will be shown as "[scale] * (q - [zero_point])"
-    const float scale = quant->scale[i];
-    const int64_t zp = quant->zero_point[i];
-    const char zp_sign = zp < 0 ? '+' : '-';
-    const int64_t abs_zp = std::abs(zp);
-    parameters.push_back(abs_zp == 0 ? absl::StrFormat("%g * q", scale)
-                                     : absl::StrFormat("%g * (q %c %d)", scale,
-                                                       zp_sign, abs_zp));
-  }
-  const std::string quant_str = absl::StrJoin(parameters, ",");
-  builder.AppendAttrToMetadata(edge_type, rel_idx, kQuantization, quant_str);
-
-  // Adds the quantized dimension.
-  builder.AppendAttrToMetadata(edge_type, rel_idx, kQuantizedDimension,
-                               absl::StrCat(quant->quantized_dimension));
 }
 
 // Validates whether the subgraph is complete with all nodes and edges.
@@ -603,38 +562,83 @@ std::string GetSubgraphName(int subgraph_index, const SubGraphT& subgraph_t,
                                : absl::StrCat("subgraph_", subgraph_index);
 }
 
-absl::StatusOr<std::vector<uint8_t>> FlatbufferToJsonConverter::GetBuffer(
-    const TensorT& tensor, SubgraphBuildContext& context) {
-  const uint64_t buffer_offset = model_->buffers[tensor.buffer]->offset;
-  const uint64_t buffer_size = model_->buffers[tensor.buffer]->size;
+absl::StatusOr<absl::Span<const uint8_t>>
+FlatbufferToJsonConverter::GetBufferSpan(const TensorT& tensor) const {
+  if (tensor.buffer >= model_->buffers.size() ||
+      model_->buffers[tensor.buffer] == nullptr) {
+    return absl::InvalidArgumentError(
+        absl::StrCat("Invalid buffer index ", tensor.buffer, " for tensor \"",
+                     tensor.name, "\"."));
+  }
+  const tflite::BufferT& buffer = *model_->buffers[tensor.buffer];
+  const uint64_t buffer_offset = buffer.offset;
+  const uint64_t buffer_size = buffer.size;
   // Check if constant tensor is stored outside of the flatbuffers.
   if (tflite::IsValidBufferOffset(buffer_offset)) {
-    if (!model_->buffers[tensor.buffer]->data.empty()) {
+    if (!buffer.data.empty()) {
       return absl::InvalidArgumentError(
           "Buffer data and offset cannot be set at the same time.");
     }
+    if (model_ptr_->allocation() == nullptr) {
+      return absl::InvalidArgumentError(absl::StrCat(
+          "Missing model allocation for external buffer of tensor \"",
+          tensor.name, "\"."));
+    }
     const uint8_t* file_begin_ptr =
         reinterpret_cast<const uint8_t*>(model_ptr_->allocation()->base());
-    if (buffer_offset + buffer_size > model_ptr_->allocation()->bytes()) {
+    const uint64_t total_bytes = model_ptr_->allocation()->bytes();
+    if (buffer_offset > total_bytes ||
+        buffer_size > total_bytes - buffer_offset) {
       return absl::InvalidArgumentError(
           absl::StrCat("Constant buffer of tensor \"", tensor.name,
                        "\" specified an out of range offset."));
     }
-    return std::vector<uint8_t>(file_begin_ptr + buffer_offset,
-                                file_begin_ptr + buffer_offset + buffer_size);
+    return absl::MakeConstSpan(file_begin_ptr + buffer_offset, buffer_size);
   }
-  return model_->buffers[tensor.buffer]->data;
+  return absl::MakeConstSpan(buffer.data);
+}
+
+void FlatbufferToJsonConverter::AddQuantizationParameters(
+    const TensorT* absl_nullable tensor, const EdgeType edge_type,
+    const int rel_idx, SubgraphBuildContext& context,
+    GraphNodeBuilder& builder) const {
+  if (tensor == nullptr || tensor->quantization == nullptr) return;
+  // A tensor appears on several edges (producer output, every consumer input,
+  // GraphInputs / GraphOutputs), so its metadata is built and diagnosed once.
+  auto [it, inserted] = context.quantization_metadata.try_emplace(tensor);
+  if (inserted) {
+    it->second = BuildQuantizationMetadata(
+        *tensor, context.subgraph_t.tensors,
+        [this](const TensorT& t) { return GetBufferSpan(t); },
+        config_.const_element_count_limit);
+    if (it->second.issue.has_value()) {
+      context.diagnostics.RecordQuantizationMismatch(tensor->name,
+                                                     *it->second.issue);
+    }
+  }
+  for (const auto& [key, value] : it->second.attrs) {
+    builder.AppendAttrToMetadata(edge_type, rel_idx, key, value);
+  }
 }
 
 absl::Status FlatbufferToJsonConverter::AddConstantToNodeAttr(
-    const TensorT& tensor, SubgraphBuildContext& context,
-    GraphNodeBuilder& builder) {
-  ABSL_ASSIGN_OR_RETURN(std::vector<uint8_t> buffer,
-                        GetBuffer(tensor, context));
-  if (buffer.empty()) {
+    const TensorT& tensor, GraphNodeBuilder& builder) const {
+  ABSL_ASSIGN_OR_RETURN(absl::Span<const uint8_t> buffer_span,
+                        GetBufferSpan(tensor));
+  if (buffer_span.empty()) {
     return absl::InvalidArgumentError(
         absl::StrCat("Buffer data for tensor \"", tensor.name, "\" is empty."));
   }
+  // The TFLite const-tensor utilities take `std::vector`, so reuse the inline
+  // buffer when present and copy only external-offset slices.
+  const std::vector<uint8_t>& inline_buffer =
+      model_->buffers[tensor.buffer]->data;
+  std::vector<uint8_t> offset_buffer_copy;
+  if (inline_buffer.empty()) {
+    offset_buffer_copy.assign(buffer_span.begin(), buffer_span.end());
+  }
+  const std::vector<uint8_t>& buffer =
+      inline_buffer.empty() ? offset_buffer_copy : inline_buffer;
   ABSL_ASSIGN_OR_RETURN(mlir::ElementsAttr elem_attr,
                         ConvertBufferToAttr(tensor, buffer, mlir_builder_));
   std::string value;
@@ -689,7 +693,7 @@ absl::Status FlatbufferToJsonConverter::AddAuxiliaryNode(
 
   if (node_type == NodeType::kConstNode) {
     const TensorT& tensor = *tensors[tensor_indices[0]];
-    absl::Status status = AddConstantToNodeAttr(tensor, context, builder);
+    absl::Status status = AddConstantToNodeAttr(tensor, builder);
     // Logs the error and continues to add the node to the graph.
     if (!status.ok()) {
       context.diagnostics.RecordOptionError("Const", status.message());
@@ -717,8 +721,16 @@ absl::Status FlatbufferToJsonConverter::AddAuxiliaryNode(
             NodeType::kConstNode, std::vector<int>{tensor_index}, context));
       }
       AppendIncomingEdge(edge_map.at(tensor_index), builder);
+      AddQuantizationParameters(tensors[tensor_index].get(), EdgeType::kInput,
+                                i, context, builder);
     } else {
       AppendMetadata(EdgeType::kOutput, i, tensor_index, context, builder);
+      // Only GraphInputs outputs get quantization metadata here. Pseudo-const
+      // outputs skip it because each consumer's input edge already shows it.
+      if (node_type == NodeType::kInputNode) {
+        AddQuantizationParameters(tensors[tensor_index].get(),
+                                  EdgeType::kOutput, i, context, builder);
+      }
 
       PopulateEdgeInfo(tensor_index,
                        {.source_node_id = node_id_str,
@@ -933,8 +945,8 @@ absl::Status FlatbufferToJsonConverter::AddNode(const int node_index,
           NodeType::kConstNode, std::vector<int>{tensor_index}, context));
     }
     AppendIncomingEdge(edge_map.at(tensor_index), builder);
-    AddQuantizationParameters(tensors[tensor_index], EdgeType::kInput, i,
-                              builder, context.diagnostics);
+    AddQuantizationParameters(tensors[tensor_index].get(), EdgeType::kInput, i,
+                              context, builder);
   }
 
   for (int i = 0; i < op.outputs.size(); ++i) {
@@ -945,8 +957,8 @@ absl::Status FlatbufferToJsonConverter::AddNode(const int node_index,
                       .source_node_output_id = absl::StrCat(i)},
                      edge_map);
 
-    AddQuantizationParameters(tensors[tensor_index], EdgeType::kOutput, i,
-                              builder, context.diagnostics);
+    AddQuantizationParameters(tensors[tensor_index].get(), EdgeType::kOutput, i,
+                              context, builder);
   }
 
   ABSL_RETURN_IF_ERROR(AddTensorTags(op, context, builder));

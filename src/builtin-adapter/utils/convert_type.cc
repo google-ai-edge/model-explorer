@@ -17,12 +17,14 @@
 
 #include <string>
 
+#include "absl/strings/str_cat.h"
+#include "absl/strings/str_join.h"
 #include "tensorflow/compiler/mlir/lite/schema/schema_generated.h"
 
 namespace model_explorer {
 namespace adapter {
 
-std::string TensorTypeToString(tflite::TensorType type) {
+std::string StringifyTensorType(tflite::TensorType type) {
   switch (type) {
     case tflite::TensorType_FLOAT32:
       return "float32";
@@ -64,9 +66,28 @@ std::string TensorTypeToString(tflite::TensorType type) {
       return "int4";
     case tflite::TensorType_INT2:
       return "int2";
+    case tflite::TensorType_UINT4:
+      return "uint4";
+    case tflite::TensorType_FLOAT8_E4M3FN:
+      return "float8_e4m3fn";
+    case tflite::TensorType_FLOAT8_E5M2:
+      return "float8_e5m2";
     default:
       return "unknown";
   }
+}
+
+std::string StringifyTensorShape(const tflite::TensorT& tensor) {
+  std::string shape_str;
+  if (!tensor.shape_signature.empty()) {
+    shape_str = absl::StrJoin(tensor.shape_signature, ",");
+  } else {
+    shape_str = absl::StrJoin(tensor.shape, ",");
+  }
+  if (shape_str.empty()) {
+    return StringifyTensorType(tensor.type);
+  }
+  return absl::StrCat(StringifyTensorType(tensor.type), "[", shape_str, "]");
 }
 
 }  // namespace adapter

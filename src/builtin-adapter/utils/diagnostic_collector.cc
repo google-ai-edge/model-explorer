@@ -16,7 +16,6 @@
 #include "utils/diagnostic_collector.h"
 
 #include <algorithm>
-#include <cstddef>
 #include <string>
 #include <utility>
 #include <vector>
@@ -56,11 +55,10 @@ void DiagnosticCollector::RecordMissingOpDef(absl::string_view op_label) {
 }
 
 void DiagnosticCollector::RecordQuantizationMismatch(
-    absl::string_view tensor_name, size_t scale_size, size_t zero_point_size) {
+    absl::string_view tensor_name, absl::string_view details) {
   if (quant_mismatches_.NeedsSample()) {
     quant_mismatches_.RecordSample(
-        absl::StrFormat("tensor '%s': scale(%zu) != zp(%zu)", tensor_name,
-                        scale_size, zero_point_size));
+        absl::StrFormat("tensor '%s': %s", tensor_name, details));
   } else {
     quant_mismatches_.total++;
   }
@@ -115,7 +113,7 @@ void DiagnosticCollector::EmitSummary(absl::string_view context_name) const {
 
   if (!quant_mismatches_.empty()) {
     ABSL_LOG(WARNING) << absl::StrFormat(
-        "[%s] Detected %d quantization parameter size mismatches. Samples: "
+        "[%s] Detected %d quantization parameter issues. Samples: "
         "[%s]",
         context_name, quant_mismatches_.total,
         FormatSamples(quant_mismatches_.samples));

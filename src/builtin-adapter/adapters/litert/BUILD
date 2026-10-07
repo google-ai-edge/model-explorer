@@ -19,10 +19,34 @@ package(
 )
 
 cc_library(
+    name = "quantization_formatter",
+    srcs = ["quantization_formatter.cc"],
+    hdrs = ["quantization_formatter.h"],
+    deps = [
+        "@com_google_absl//absl/base:nullability",
+        "@com_google_absl//absl/functional:function_ref",
+        "@com_google_absl//absl/log:absl_check",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status:statusor",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/strings:str_format",
+        "@com_google_absl//absl/strings:string_view",
+        "@com_google_absl//absl/types:span",
+        "@eigen_archive//:eigen3",
+        "@llvm-project//llvm:Support",
+        "//utils:convert_type",
+        "@org_tensorflow//tensorflow/compiler/mlir/lite/schema:schema_fbs",
+    ],
+)
+
+cc_library(
     name = "direct_flatbuffer_to_json_graph_convert",
     srcs = ["direct_flatbuffer_to_json_graph_convert.cc"],
     hdrs = ["direct_flatbuffer_to_json_graph_convert.h"],
     deps = [
+        ":quantization_formatter",
+        "@com_google_absl//absl/base:core_headers",
+        "@com_google_absl//absl/base:nullability",
         "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_absl//absl/container:flat_hash_set",
         "@com_google_absl//absl/log:absl_log",
@@ -30,7 +54,6 @@ cc_library(
         "@com_google_absl//absl/status:status_macros",
         "@com_google_absl//absl/status:statusor",
         "@com_google_absl//absl/strings",
-        "@com_google_absl//absl/strings:str_format",
         "@com_google_absl//absl/strings:string_view",
         "@com_google_absl//absl/types:span",
         "@flatbuffers//:runtime_cc",

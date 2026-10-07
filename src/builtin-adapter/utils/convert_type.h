@@ -23,7 +23,13 @@
 namespace model_explorer {
 namespace adapter {
 
-std::string TensorTypeToString(tflite::TensorType type);
+// Returns the string name of `type` (e.g. "float32"), or "unknown" if
+// unrecognized.
+std::string StringifyTensorType(tflite::TensorType type);
+
+// Returns a string representation of the tensor shape, e.g. "float32[3,2,5]".
+// Unknown dimensions are represented with -1.
+std::string StringifyTensorShape(const tflite::TensorT& tensor);
 
 }  // namespace adapter
 }  // namespace model_explorer
