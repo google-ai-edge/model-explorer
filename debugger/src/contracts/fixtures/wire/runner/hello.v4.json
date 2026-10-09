@@ -1,0 +1,10 @@
+{
+  "type": "hello",
+  "protocolVersion": 4,
+  "platform": "iOS",
+  "debuggerEnabled": true,
+  "fileTransfer": true,
+  "runtimes": [
+    "LiteRT-LM"
+  ]
+}

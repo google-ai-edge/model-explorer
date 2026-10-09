@@ -1,0 +1,140 @@
+/**
+ * @license
+ * Copyright 2026 The AI Edge Model Explorer Authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ==============================================================================
+ */
+
+/**
+ * Shared control primitives adapted from Model Explorer (Apache-2.0).
+ * References: styles.scss, settings_dialog and model_source_input.
+ * Layout stays with each feature; Material owns interaction state layers.
+ */
+@use '@angular/material' as mat;
+
+@mixin action-tooltips {
+  // Material disables pointer events; retain hover access to the explanation.
+  // The native disabled attribute still prevents clicks and keyboard activation.
+  button.mat-mdc-button-base.mat-mdc-tooltip-trigger:disabled {
+    pointer-events: auto;
+  }
+}
+
+@mixin text-actions($selector: 'button[mat-button]') {
+  #{$selector}.mat-mdc-button-base.mat-mdc-button {
+    height: 36px;
+    font: 500 14px / normal var(--me-font-family);
+    letter-spacing: normal;
+    color: var(--mat-button-text-label-text-color);
+    border-radius: 4px;
+  }
+}
+
+@mixin compact-icon(
+  $size: 36px,
+  $icon-size: 20px,
+  $padding: calc((#{$size} - #{$icon-size}) / 2)
+) {
+  // Beat the dark Material theme's html[data-theme] density selector too.
+  // Otherwise the same popup's close button grows from 36px to 48px in dark mode.
+  &.mat-mdc-button-base.mat-mdc-icon-button {
+    @include mat.icon-button-overrides(
+      (
+        state-layer-size: $size,
+        icon-size: $icon-size,
+        touch-target-display: none,
+      )
+    );
+    width: $size;
+    height: $size;
+    padding: $padding;
+    flex: none;
+    border-radius: 50%;
+    color: var(--me-on-surface-variant-color);
+    mat-icon {
+      font-size: $icon-size;
+      line-height: $icon-size;
+      width: $icon-size;
+      height: $icon-size;
+    }
+  }
+}
+
+// Opt in only where the overlay's default Roboto/report tokens still apply.
+@mixin dialog-text {
+  :host {
+    font-family: var(--me-font-family);
+    --mat-dialog-subhead-color: var(--mat-button-text-label-text-color);
+    --mat-dialog-supporting-text-color: var(--me-on-surface-variant-color);
+  }
+  h2[mat-dialog-title] {
+    font: 500 24px/32px var(--me-font-family);
+    letter-spacing: normal;
+    color: var(--mat-dialog-subhead-color);
+  }
+  // Outrank Material's .mat-mdc-dialog-container .mat-mdc-dialog-content rule.
+  :host mat-dialog-content {
+    font: 400 16px/24px var(--me-font-family);
+    letter-spacing: normal;
+    color: var(--mat-dialog-supporting-text-color);
+  }
+}
+
+@mixin debug-dock-surface {
+  background: var(--debug-dock-bg);
+  border: 1px solid var(--debug-dock-border);
+  border-radius: 12px;
+  box-shadow: var(--debug-dock-shadow);
+}
+
+@mixin find-trigger {
+  height: 28px;
+  padding: 0 6px;
+  min-width: 0;
+  border: 1px solid var(--me-outline-variant-color);
+  border-radius: 4px;
+  font: 400 12px/20px var(--me-font-family);
+  letter-spacing: normal;
+  color: var(--me-on-surface-color);
+}
+
+@mixin settings-input {
+  box-sizing: border-box;
+  height: 21px;
+  border: 1px solid var(--me-outline-color);
+  border-radius: 3px;
+  padding: 1px 2px;
+  font: 400 13.3333px / normal var(--me-font-family);
+  color: var(--me-on-surface-color);
+  background: Field;
+}
+
+// Shared form density for session creation, runtime options and file pickers.
+@mixin configuration-input {
+  @include settings-input;
+  height: 32px;
+  padding: 0 8px;
+  border-radius: 4px;
+  font: 400 13px/20px var(--me-font-family);
+  background: var(--me-runtime-field-color);
+}
+
+// Model Explorer adapter_selector_panel surface and spacing.
+@mixin configuration-popup {
+  box-sizing: border-box;
+  border-radius: 8px;
+  background: var(--me-surface-container-low-color);
+  color: var(--me-on-surface-color);
+  box-shadow: var(--me-bubble-shadow);
+}

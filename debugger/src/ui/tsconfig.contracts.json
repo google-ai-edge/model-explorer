@@ -1,0 +1,6 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {"noEmit": true, "types": []},
+  "files": ["scripts/check_contracts.ts"],
+  "include": []
+}

@@ -1,0 +1,610 @@
+/**
+ * @license
+ * Copyright 2026 The AI Edge Model Explorer Authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ==============================================================================
+ */
+
+@use '../../../theme/explorer_controls' as controls;
+@use '@angular/material' as mat;
+@include controls.action-tooltips;
+// Geometry from the supplied configDialog; controls use the Model Explorer Material theme.
+:host {
+  display: block;
+  min-width: 0;
+  font: 13px/20px var(--me-font-family);
+  color: var(--me-on-surface-color);
+  box-sizing: border-box;
+
+  *,
+  *::before,
+  *::after {
+    box-sizing: inherit;
+  }
+}
+.editor {
+  border: 1px solid var(--me-surface-variant-color);
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--me-surface-color);
+}
+header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 64px;
+  padding: 28px 24px 4px;
+}
+h2 {
+  font: 500 20px/28px var(--me-font-family);
+  margin: 0;
+  outline: none;
+}
+:host header button.mat-mdc-button-base {
+  @include mat.icon-button-overrides(
+    (
+      state-layer-size: 32px,
+      icon-size: 20px,
+      touch-target-display: none,
+    )
+  );
+  width: 32px;
+  height: 32px;
+  padding: 6px;
+}
+header mat-icon {
+  width: 20px;
+  height: 20px;
+  font-size: 20px;
+}
+form {
+  padding-top: 16px;
+}
+form > section {
+  margin: 0 24px 24px;
+}
+h3 {
+  font: 500 15px/24px var(--me-font-family);
+  margin: 0 0 12px;
+}
+label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  color: var(--me-on-surface-color);
+  margin: 0;
+  font: 13px/16px var(--me-font-family);
+}
+input {
+  height: 32px;
+  padding: 5px 8px;
+  border: 1px solid var(--me-outline-color, #747775);
+  border-radius: 4px;
+  background: var(--me-surface-color);
+  color: var(--me-on-surface-color);
+  font: 13px/20px var(--me-font-family);
+  min-width: 0;
+  width: 100%;
+}
+.model-label {
+  gap: 10px;
+}
+.model-label > button,
+.runtime-grid label > button,
+.runtime-control > button:first-child {
+  display: flex;
+  justify-content: space-between;
+  text-align: left;
+  height: 32px;
+  padding: 0 8px;
+  border: 1px solid var(--me-outline-color, #747775);
+  border-radius: 4px;
+  background: var(--me-surface-color);
+  color: var(--me-on-surface-color);
+  font: 400 13px/20px var(--me-font-family);
+  letter-spacing: normal;
+}
+.runtime-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  margin-top: 20px;
+  min-width: 0;
+}
+.runtime-grid > section {
+  padding: 16px;
+  background: color-mix(
+    in srgb,
+    var(--me-surface-color) 60%,
+    var(--me-surface-container-high-color)
+  );
+  border-radius: 4px;
+  min-width: 0;
+}
+.runtime-grid h3 {
+  font: 500 14px/24px var(--me-font-family);
+  margin: 0 0 16px;
+}
+.runtime-grid > section > label {
+  margin-bottom: 16px;
+}
+.runtime-grid > section > label > button {
+  width: calc(100% - 120px);
+}
+.runtime-control {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 112px;
+  gap: 8px;
+}
+.runtime-control > button {
+  height: 32px;
+  font: 500 13px/20px var(--me-font-family);
+  padding: 0 8px;
+  letter-spacing: normal;
+}
+.runtime-control mat-icon {
+  font-size: 18px;
+  width: 18px;
+  height: 18px;
+}
+.differences {
+  min-height: 98px;
+  margin-top: -6px;
+  margin-bottom: 8px;
+  font: 12px/18px var(--me-font-family);
+  color: var(--me-on-surface-variant-color);
+}
+.differences > span {
+  display: block;
+  margin-bottom: 4px;
+}
+.differences > div {
+  display: flex;
+  margin-top: 4px;
+  width: fit-content;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  color: var(--me-on-surface-color);
+}
+.differences > div > span {
+  padding: 3px 7px;
+  background: var(--session-config-tag-key);
+  border-radius: 4px 0 0 4px;
+}
+.differences strong {
+  padding: 3px 7px;
+  background: var(--session-config-tag-value);
+  font-weight: 600;
+  border-radius: 0 4px 4px 0;
+}
+.differences p {
+  margin: 4px 0;
+}
+.artifact-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  min-height: 28px;
+  margin-bottom: 8px;
+}
+.artifact-label button {
+  height: 28px;
+  font: 400 12px/20px var(--me-font-family);
+  padding: 0 4px;
+  letter-spacing: normal;
+}
+.artifact-label mat-icon {
+  font-size: 14px;
+  width: 14px;
+  height: 14px;
+}
+.artifact-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.artifact-actions button {
+  height: 32px;
+  padding: 0 2px;
+  font: 500 13px/20px var(--me-font-family);
+  letter-spacing: normal;
+}
+.artifact-actions mat-icon {
+  font-size: 18px;
+  width: 18px;
+  height: 18px;
+}
+.artifact-name {
+  overflow-wrap: anywhere;
+}
+.notice {
+  margin: 0 auto 0 0;
+  align-self: center;
+  color: var(--me-on-surface-variant-color);
+  font: 12px/18px var(--me-font-family);
+}
+[role='alert'] {
+  margin: 8px 24px;
+  color: var(--me-error-text-color);
+}
+form > section:last-of-type {
+  margin-bottom: 32px;
+}
+footer {
+  margin-top: 0;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  border-top: 1px solid var(--me-surface-variant-color);
+  padding: 8px;
+  background: var(--me-surface-container-high-color);
+}
+footer button {
+  height: 36px;
+  font: 500 14px/20px var(--me-font-family);
+  letter-spacing: normal;
+}
+footer button[type='submit'] {
+  background: transparent;
+  color: var(--me-primary-color);
+  box-shadow: none;
+}
+footer button:disabled {
+  opacity: 0.45;
+}
+
+:host button:disabled {
+  color: var(--me-on-surface-variant-color);
+  opacity: 0.45;
+}
+
+.selected-artifact {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 52px;
+  padding: 10px;
+  border: 1px solid var(--me-surface-variant-color);
+  border-radius: 4px;
+  background: var(--me-surface-color);
+}
+.selected-artifact > div {
+  min-width: 0;
+  flex: 1;
+}
+.selected-artifact span {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.selected-artifact small {
+  display: block;
+  color: var(--me-on-surface-variant-color);
+  font: 12px/18px var(--me-font-family);
+}
+:host .selected-artifact button.mat-mdc-button-base {
+  @include mat.icon-button-overrides(
+    (
+      state-layer-size: 28px,
+      icon-size: 18px,
+      touch-target-display: none,
+    )
+  );
+  width: 28px;
+  height: 28px;
+  padding: 5px;
+}
+.selected-artifact button mat-icon {
+  font-size: 18px;
+  width: 18px;
+  height: 18px;
+}
+
+.capture-toggle {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  width: fit-content;
+  cursor: pointer;
+}
+.capture-toggle input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--me-primary-color);
+}
+.capture-details {
+  margin: 12px 0 0 24px;
+  font: 12px/18px var(--me-font-family);
+  color: var(--me-on-surface-variant-color);
+  max-width: 640px;
+}
+.capture-details strong {
+  color: var(--me-on-surface-color);
+  font-weight: 500;
+}
+.capture-details p {
+  margin: 6px 0;
+}
+.capture-config [role='status'] {
+  font: 12px/18px var(--me-font-family);
+  color: var(--me-primary-color);
+}
+@media (max-width: 700px) {
+  .runtime-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  form > section {
+    margin-left: 16px;
+    margin-right: 16px;
+  }
+  header {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+  footer {
+    flex-wrap: wrap;
+  }
+  .notice {
+    flex-basis: 100%;
+    padding: 0 8px;
+  }
+  .capture-details {
+    margin-left: 0;
+  }
+}
+
+@include controls.text-actions;
+
+:host header button.mat-mdc-button-base {
+  @include controls.compact-icon(32px);
+}
+:host .selected-artifact button.mat-mdc-button-base {
+  @include controls.compact-icon(32px, 18px);
+}
+
+:host input:not([type='checkbox']) {
+  height: 32px;
+  padding: 5px 8px;
+  font: 400 13px/20px var(--me-font-family);
+}
+:host .runtime-grid label > button.mat-mdc-button-base.mat-mdc-button,
+:host .runtime-control > button:first-child.mat-mdc-button-base.mat-mdc-button {
+  height: 32px;
+  padding: 0 8px;
+  font: 400 13px/20px var(--me-font-family);
+  color: var(--me-on-surface-color);
+}
+
+@media (max-width: 700px) {
+  .runtime-grid > section > label > button {
+    width: 100%;
+    white-space: nowrap;
+  }
+}
+
+:host footer button[type='submit'].mat-mdc-button-base.mat-mdc-button {
+  &:not(:disabled) {
+    color: var(--me-primary-color);
+  }
+  &:disabled {
+    color: var(--me-on-surface-variant-color);
+  }
+}
+
+// Keep Generate on the Name label row; the input spans the full field width.
+.identity label {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 24px;
+  grid-template-rows: 24px 32px;
+  gap: 6px 4px;
+  align-items: center;
+}
+.name-control {
+  display: contents;
+}
+.identity .name-control input {
+  grid-column: 1/-1;
+  grid-row: 2;
+}
+.identity .name-control button {
+  grid-column: 2;
+  grid-row: 1;
+}
+:host .identity button.mat-mdc-button-base.mat-mdc-icon-button {
+  @include mat.icon-button-overrides(
+    (
+      state-layer-size: 24px,
+      icon-size: 18px,
+      touch-target-display: none,
+      hover-state-layer-opacity: 0,
+      focus-state-layer-opacity: 0,
+    )
+  );
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border-radius: 4px;
+  color: var(--me-primary-color);
+  mat-icon {
+    font-size: 18px;
+    line-height: 18px;
+    width: 18px;
+    height: 18px;
+  }
+  &:hover:not(:disabled) {
+    background: var(--me-surface-container-high-color);
+  }
+  &:focus-visible {
+    outline: 2px solid var(--me-primary-color);
+    outline-offset: 2px;
+  }
+  &:disabled {
+    color: var(--me-on-surface-variant-color);
+    opacity: 0.45;
+  }
+}
+:host-context([data-theme='dark'])
+  .identity
+  button.mat-mdc-button-base.mat-mdc-icon-button:hover:not(:disabled) {
+  background: var(--me-surface-container-highest-color);
+}
+// Align mixed-height runtime controls by their centers.
+.runtime-control {
+  align-items: center;
+  min-height: 36px;
+}
+.runtime-grid {
+  row-gap: 0;
+}
+.runtime-grid > section {
+  display: grid;
+  grid-template-rows: subgrid;
+  grid-row: span 6;
+}
+.differences {
+  flex: 1;
+}
+.artifact-label {
+  min-height: 36px;
+  flex-shrink: 0;
+  gap: 8px;
+}
+.artifact-actions {
+  min-height: 36px;
+  flex-wrap: wrap;
+}
+footer {
+  align-items: center;
+}
+@media (max-width: 700px) {
+  .runtime-grid {
+    row-gap: 16px;
+  }
+  .runtime-grid > section {
+    display: block;
+    grid-row: auto;
+  }
+  .artifact-label {
+    flex-wrap: wrap;
+  }
+}
+
+.selected-artifact small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+// Candidate form actions use the primary text-action variant, not Settings density.
+:host
+  .runtime-control
+  > button:not(:first-child).mat-mdc-button-base.mat-mdc-button,
+:host .artifact-actions button.mat-mdc-button-base.mat-mdc-button {
+  height: 32px;
+  font: 500 13px/20px var(--me-font-family);
+  color: var(--me-primary-color);
+  letter-spacing: normal;
+}
+:host .artifact-label button.mat-mdc-button-base.mat-mdc-button {
+  height: 28px;
+  font: 400 12px/20px var(--me-font-family);
+  color: var(--me-primary-color);
+}
+:host .artifact-label button.mat-mdc-button-base:disabled {
+  color: var(--me-on-surface-variant-color);
+}
+.runtime-control > config-picker {
+  flex: 1;
+  min-width: 0;
+}
+:host .runtime-control > button.mat-mdc-button-base.mat-mdc-button {
+  height: 32px;
+  font: 500 13px/20px var(--me-font-family);
+  color: var(--me-primary-color);
+}
+.runtime-notice {
+  color: var(--me-on-surface-variant-color);
+  font: 12px/18px var(--me-font-family);
+  overflow-wrap: anywhere;
+}
+.device-field {
+  min-width: 0;
+  margin-bottom: 16px;
+}
+.device-field > label > config-picker {
+  width: calc(100% - 120px);
+}
+.runner-observation {
+  display: grid;
+  gap: 4px;
+  margin-top: 8px;
+}
+.runner-observation .runtime-notice span {
+  display: block;
+}
+.runner-observation button.mat-mdc-button-base {
+  justify-self: start;
+  height: 28px;
+  padding: 0 4px;
+  font: 400 12px/20px var(--me-font-family);
+  color: var(--me-primary-color);
+}
+.model-source {
+  min-width: 0;
+}
+.model-source .runtime-notice {
+  margin: 6px 0 0;
+}
+.automatic-capture {
+  margin: 0 0 12px;
+  color: var(--me-on-surface-variant-color);
+  font: 13px/20px var(--me-font-family);
+}
+
+// The business key/value tags have their own paired surfaces in both themes.
+:host {
+  --session-config-tag-key: #e1e5eb;
+  --session-config-tag-value: #eceff3;
+}
+:host-context([data-theme='dark']) {
+  --session-config-tag-key: #42474e;
+  --session-config-tag-value: #343940;
+}
+.build-field {
+  min-width: 0;
+  margin-bottom: 16px;
+}
+.build-field .runtime-notice {
+  margin: 6px 0 0;
+}
+.fixed-build {
+  font: 500 13px/20px var(--me-font-family);
+  overflow-wrap: anywhere;
+}
+.runtime-grid > section {
+  grid-row: span 7;
+}
+.device-field > label > config-picker {
+  width: 100%;
+}
+.device-validation {
+  margin: 8px 24px 16px;
+  color: var(--me-on-surface-variant-color);
+  font: 12px/18px var(--me-font-family);
+}

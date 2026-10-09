@@ -1,0 +1,262 @@
+/**
+ * @license
+ * Copyright 2026 The AI Edge Model Explorer Authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ==============================================================================
+ */
+
+graph-architecture-view {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  --architecture-bg: var(--me-surface-color);
+  --architecture-surface: var(--me-surface-container-low-color);
+  --architecture-rule: var(--me-outline-hairline-color);
+  --architecture-text: var(--me-on-surface-color);
+  --architecture-muted: var(--me-on-surface-variant-color);
+  --architecture-blue: var(--me-primary-color);
+  --architecture-sans: var(--me-font-family);
+  --architecture-mono: var(--mono);
+  --architecture-shadow: var(--me-bubble-shadow);
+  --architecture-diff-low: var(--me-surface-color);
+  --architecture-diff-strong: light-dark(#f7cfcd, #71453f);
+  .architectureView {
+    flex: 1;
+  }
+  .architectureView {
+    position: relative;
+    min-width: 0;
+    min-height: 0;
+    background: var(--architecture-bg);
+    overflow: hidden;
+  }
+  .architectureViewport {
+    position: absolute;
+    inset: 0;
+    overflow: auto;
+    overscroll-behavior: contain;
+    scrollbar-gutter: stable;
+    touch-action: pan-x pan-y;
+    outline-offset: -3px;
+    cursor: grab;
+  }
+  .architectureViewport.panning {
+    cursor: grabbing;
+    user-select: none;
+  }
+  .architectureStage {
+    box-sizing: border-box;
+    width: max-content;
+    min-width: 100%;
+    min-height: 100%;
+    padding: 16px 24px 64px;
+  }
+  .architectureSvg {
+    display: block;
+    margin: 0 auto;
+    overflow: visible;
+    font-family: var(--architecture-sans);
+  }
+  .architectureEdge {
+    fill: none;
+    stroke: var(--architecture-muted);
+    stroke-width: 1;
+    opacity: 0.7;
+    pointer-events: none;
+  }
+  .architectureEdge.related {
+    stroke: var(--architecture-blue);
+    stroke-width: 2;
+    opacity: 1;
+  }
+  .architectureArrowHead {
+    fill: var(--architecture-muted);
+  }
+  .architectureRelationArrowHead {
+    fill: var(--architecture-blue);
+  }
+  .architectureNode {
+    cursor: pointer;
+    outline: none;
+  }
+  .architectureNode rect {
+    fill: var(--architecture-bg);
+    stroke: var(--architecture-rule);
+    stroke-width: 1;
+  }
+  .architectureNode text {
+    fill: var(--architecture-text);
+    pointer-events: none;
+    user-select: none;
+  }
+  .architectureNodeName {
+    font: 12px var(--architecture-sans);
+  }
+  .architectureNodeAction {
+    font: 10px var(--architecture-sans);
+    fill: var(--architecture-muted) !important;
+  }
+  .architecturePort .architectureNodeName {
+    font-size: 11px;
+    fill: var(--architecture-muted);
+  }
+  .architectureEntry rect {
+    fill: var(--architecture-surface);
+    stroke: var(--architecture-muted);
+  }
+  .architectureTensor rect {
+    fill: var(--tensor-fill, var(--architecture-bg));
+    stroke: var(--architecture-muted);
+  }
+  .architectureTensorName {
+    font: 11px var(--architecture-sans);
+  }
+  .architectureMetric {
+    font: 10px var(--architecture-mono);
+    fill: var(--architecture-text) !important;
+    opacity: 0.8;
+  }
+  .architectureNode.producer rect,
+  .architectureNode.consumer rect {
+    stroke: var(--architecture-blue);
+    stroke-width: 1.5;
+    stroke-dasharray: 4 2;
+  }
+  .architectureNode:hover rect {
+    stroke: var(--architecture-blue);
+    stroke-width: 1.5;
+  }
+  .architectureNode.selected rect {
+    stroke: var(--architecture-blue);
+    stroke-width: 2.5;
+    stroke-dasharray: none;
+  }
+  .architectureNode:focus-visible rect {
+    stroke: var(--architecture-blue);
+    stroke-width: 3;
+    stroke-dasharray: none;
+  }
+  .architectureNode.selected .architectureNodeAction {
+    fill: var(--architecture-blue) !important;
+  }
+  .architectureTensor.filtered {
+    opacity: 0.28;
+  }
+  .architectureTensor.missing rect {
+    stroke-dasharray: 3 3;
+  }
+  .architectureControls {
+    position: absolute;
+    z-index: 3;
+    right: 18px;
+    bottom: 12px;
+    display: flex;
+    align-items: center;
+    max-width: calc(100% - 36px);
+    background: var(--architecture-bg);
+    border: 1px solid var(--architecture-rule);
+    border-radius: 6px;
+    box-shadow: var(--architecture-shadow);
+    overflow: hidden;
+    cursor: default;
+  }
+  .architectureControls button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+    height: 30px;
+    min-height: 30px;
+    min-width: 32px;
+    padding: 0 5px;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    color: var(--architecture-text);
+  }
+  .architectureControls button + button {
+    border-left: 1px solid var(--architecture-rule);
+  }
+  .architectureControls button:hover:not(:disabled) {
+    background: var(--architecture-surface);
+    color: var(--architecture-blue);
+  }
+  .architectureControls button:focus-visible {
+    outline: 2px solid var(--architecture-blue);
+    outline-offset: -2px;
+  }
+  .architectureControls button:disabled {
+    color: var(--architecture-muted);
+    opacity: 0.45;
+    cursor: default;
+  }
+  .architectureControls .architectureIcon {
+    font: normal 18px/1 'Workspace Mode Icons';
+    letter-spacing: normal;
+    text-transform: none;
+    white-space: nowrap;
+    font-feature-settings: 'liga';
+    -webkit-font-smoothing: antialiased;
+  }
+  .architectureControls .architectureZoom {
+    min-width: 49px;
+    font: 11px var(--architecture-mono);
+    font-variant-numeric: tabular-nums;
+  }
+  .architectureEmpty {
+    margin: 0;
+    padding: 32px;
+    color: var(--architecture-muted);
+    text-align: center;
+    font-size: 12px;
+  }
+  @media (max-width: 600px) {
+    .architectureControls {
+      right: 12px;
+      bottom: 10px;
+      max-width: calc(100% - 24px);
+    }
+    .architectureControls button {
+      min-width: 28px;
+    }
+    .architectureControls .architectureZoom {
+      min-width: 43px;
+    }
+  }
+
+  .architectureExecute {
+    cursor: pointer;
+    outline: none;
+  }
+  .architectureExecute rect {
+    fill: transparent;
+    stroke: transparent;
+  }
+  .architectureExecuteIcon {
+    fill: var(--architecture-muted);
+    font: 14px var(--architecture-sans);
+    pointer-events: none;
+  }
+  .architectureExecute:hover rect {
+    fill: color-mix(in srgb, var(--architecture-blue) 8%, transparent);
+  }
+  .architectureExecute:focus-visible rect {
+    stroke: var(--architecture-blue);
+    stroke-width: 2;
+  }
+  .architectureViewport:focus-visible {
+    outline: 2px solid var(--architecture-blue);
+  }
+}

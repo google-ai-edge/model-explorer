@@ -1,0 +1,210 @@
+/**
+ * @license
+ * Copyright 2026 The AI Edge Model Explorer Authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ==============================================================================
+ */
+
+@use 'sass:map';
+@use '@angular/material' as mat;
+
+$hue-undefined: 'undefined';
+$blue-palette: (
+  50: #e8f0fe,
+  100: #d2e3fc,
+  200: #aecbfa,
+  300: #8ab4f8,
+  400: #669df6,
+  500: #4285f4,
+  600: #0b57d0,
+  700: #1967d2,
+  800: #185abc,
+  900: #174ea6,
+  A100: $hue-undefined,
+  A200: $hue-undefined,
+  A400: $hue-undefined,
+  A700: $hue-undefined,
+  contrast: (
+    50: #174ea6,
+    100: #174ea6,
+    200: #174ea6,
+    300: #174ea6,
+    400: #174ea6,
+    500: white,
+    600: white,
+    700: white,
+    800: white,
+    900: white,
+    A100: $hue-undefined,
+    A200: $hue-undefined,
+    A400: $hue-undefined,
+    A700: $hue-undefined,
+  ),
+);
+
+$blue-palette-dark: (
+  50: #e8f0fe,
+  100: #d2e3fc,
+  200: #aecbfa,
+  300: #8ab4f8,
+  400: #669df6,
+  500: #4285f4,
+  600: #a8c7fa,
+  700: #1967d2,
+  800: #185abc,
+  900: #174ea6,
+  A100: $hue-undefined,
+  A200: $hue-undefined,
+  A400: $hue-undefined,
+  A700: $hue-undefined,
+  contrast: (
+    50: #174ea6,
+    100: #174ea6,
+    200: #174ea6,
+    300: #174ea6,
+    400: #174ea6,
+    500: white,
+    600: #062e6f,
+    700: white,
+    800: white,
+    900: white,
+    A100: $hue-undefined,
+    A200: $hue-undefined,
+    A400: $hue-undefined,
+    A700: $hue-undefined,
+  ),
+);
+
+// Angular Material theme file.
+// See https://material.angular.io/guide/theming for more details.
+
+// Define the application's color palettes.
+$primary: mat.m2-define-palette($blue-palette, 600);
+$accent: mat.m2-define-palette($blue-palette, 600);
+$primary_dark: mat.m2-define-palette($blue-palette-dark, 600);
+$accent_dark: mat.m2-define-palette($blue-palette-dark, 600);
+
+// Create a typography config
+$typography-config: mat.m2-define-typography-config();
+
+// Create a theme definition that specifies color palettes,
+// typography config, and default density level.
+$light-theme: mat.m2-define-light-theme(
+  (
+    color: (
+      primary: $primary,
+      accent: $accent,
+    ),
+    typography: $typography-config,
+    density: 0,
+  )
+);
+
+$dark-theme: mat.m2-define-dark-theme(
+  (
+    color: (
+      primary: $primary_dark,
+      accent: $accent_dark,
+    ),
+    typography: $typography-config,
+    density: 0,
+  )
+);
+
+// Adapted from Model Explorer theme.scss (Apache-2.0). Only used components emitted.
+// The `mat.core` mixin applies common styles used by multiple components, such
+// as ripples, overlays, and high contrast mode. Include it exactly once.
+@include mat.core();
+@mixin components($theme) {
+  @include mat.core-theme($theme);
+  @include mat.button-theme($theme);
+  @include mat.icon-button-theme($theme);
+  @include mat.icon-theme($theme);
+  @include mat.menu-theme($theme);
+  @include mat.dialog-theme($theme);
+  @include mat.tooltip-theme($theme);
+  @include mat.slide-toggle-theme($theme);
+  @include mat.checkbox-theme($theme);
+  @include mat.form-field-theme($theme);
+  @include mat.input-theme($theme);
+  @include mat.snack-bar-theme($theme);
+  @include mat.progress-spinner-theme($theme);
+}
+// Dark mode re-emits only the color layer; typography and density are theme independent.
+@mixin colors($theme) {
+  @include mat.core-color($theme);
+  @include mat.button-color($theme);
+  @include mat.icon-button-color($theme);
+  @include mat.icon-color($theme);
+  @include mat.menu-color($theme);
+  @include mat.dialog-color($theme);
+  @include mat.tooltip-color($theme);
+  @include mat.slide-toggle-color($theme);
+  @include mat.checkbox-color($theme);
+  @include mat.form-field-color($theme);
+  @include mat.input-color($theme);
+  @include mat.snack-bar-color($theme);
+  @include mat.progress-spinner-color($theme);
+}
+html {
+  @include components($light-theme);
+}
+html[data-theme='dark'] {
+  @include colors($dark-theme);
+}
+.material-icons {
+  font-family: 'Workspace Mode Icons';
+  font-weight: normal;
+  font-style: normal;
+  font-size: 24px;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  display: inline-block;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  font-feature-settings: 'liga';
+  -webkit-font-smoothing: antialiased;
+}
+.cdk-overlay-container {
+  font-family: Roboto, Arial, sans-serif;
+}
+.mat-mdc-menu-panel {
+  --mat-menu-container-color: var(--me-surface-color);
+}
+.mat-mdc-menu-item.theme-selected {
+  background: var(--me-secondary-container-color);
+}
+
+.mat-mdc-dialog-container {
+  --mat-dialog-container-color: var(--surface);
+  --mat-dialog-subhead-color: var(--on1);
+  --mat-dialog-supporting-text-color: var(--on2);
+}
+
+.mat-mdc-menu-panel.session-actions-menu {
+  min-width: 224px;
+  max-width: 224px;
+}
+
+.session-configuration-dialog {
+  --mat-dialog-container-shape: 4px;
+}
+
+// Model Explorer applies its application font to text buttons, including overlays.
+.mat-mdc-snack-bar-container .mat-mdc-button {
+  font-family: var(--me-font-family);
+  line-height: normal;
+}

@@ -1,0 +1,8 @@
+{
+  "type": "error",
+  "requestId": "3f6c2c9e-6c1a-4f7b-9d2e-1b7a9d5c0e21",
+  "error": "Native operation cancelled",
+  "errorCode": "stopped",
+  "generationStatus": "stopped",
+  "runDirectory": "Documents/Runs/3F6C2C9E-6C1A-4F7B-9D2E-1B7A9D5C0E21"
+}

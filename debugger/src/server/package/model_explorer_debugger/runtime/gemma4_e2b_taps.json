@@ -1,0 +1,75 @@
+{
+  "format_version": 1,
+  "source_sha256": "37dcf27b6d3b8522891dc0d3bbaaf4f3a2e6f264ad0c6d25238355de93be85a2",
+  "tapped_sha256": "b70076a3586458139887652227d255f771103e91344b3c578a39d54994d283e1",
+  "taps": [
+    {
+      "signature": "decode",
+      "subgraph": 0,
+      "op": 10,
+      "output": 0,
+      "tensor": 354,
+      "tensor_name": "LanguageModel.decode_graph/LanguageModel.transformer_stack/transformer.transformer/layer_0/layer_0.pre_qkv/pre_attention_norm/composite",
+      "output_name": "tap_sg0_op10_out0",
+      "shape": [
+        1,
+        1,
+        1536
+      ],
+      "tensor_type": 0,
+      "added_graph_output": true,
+      "backend_support": "unverified"
+    },
+    {
+      "signature": "prefill_1024",
+      "subgraph": 1,
+      "op": 12,
+      "output": 0,
+      "tensor": 216,
+      "tensor_name": "LanguageModel.prefill_graph/LanguageModel.transformer_stack/transformer.transformer/layer_0/layer_0.pre_qkv/pre_attention_norm/composite",
+      "output_name": "tap_sg1_op12_out0",
+      "shape": [
+        1,
+        1024,
+        1536
+      ],
+      "tensor_type": 0,
+      "added_graph_output": true,
+      "backend_support": "unverified"
+    },
+    {
+      "signature": "prefill_128",
+      "subgraph": 2,
+      "op": 12,
+      "output": 0,
+      "tensor": 216,
+      "tensor_name": "LanguageModel.prefill_graph/LanguageModel.transformer_stack/transformer.transformer/layer_0/layer_0.pre_qkv/pre_attention_norm/composite1",
+      "output_name": "tap_sg2_op12_out0",
+      "shape": [
+        1,
+        128,
+        1536
+      ],
+      "tensor_type": 0,
+      "added_graph_output": true,
+      "backend_support": "unverified"
+    },
+    {
+      "signature": "verify",
+      "subgraph": 3,
+      "op": 11,
+      "output": 0,
+      "tensor": 364,
+      "tensor_name": "LanguageModel.decode_graph/LanguageModel.transformer_stack/transformer.transformer/layer_0/layer_0.pre_qkv/pre_attention_norm/composite1",
+      "output_name": "tap_sg3_op11_out0",
+      "shape": [
+        1,
+        4,
+        1536
+      ],
+      "tensor_type": 0,
+      "added_graph_output": true,
+      "backend_support": "unverified"
+    }
+  ]
+}

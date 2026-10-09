@@ -1,0 +1,38 @@
+{
+  "type": "completed",
+  "requestId": "3f6c2c9e-6c1a-4f7b-9d2e-1b7a9d5c0e21",
+  "runDirectory": "Documents/Runs/3F6C2C9E-6C1A-4F7B-9D2E-1B7A9D5C0E21",
+  "output": "hello",
+  "generationStatus": "succeeded",
+  "dumpStatus": "ready",
+  "result": {
+    "formatVersion": 1,
+    "jobID": "3F6C2C9E-6C1A-4F7B-9D2E-1B7A9D5C0E21",
+    "modelSHA256": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+    "platform": "macOS",
+    "backend": "CPU",
+    "debuggerEnabled": true,
+    "input": "Describe the picture.",
+    "output": "hello",
+    "contextLength": 1024,
+    "maxOutputTokens": 32,
+    "thinkingEnabled": false,
+    "speculativeDecodingEnabled": false,
+    "sampler": {
+      "seed": 0,
+      "temperature": 0,
+      "topK": 1,
+      "topP": 1
+    },
+    "runtimeInstance": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+    "modelLoadCount": 1,
+    "tokenCountBefore": 0,
+    "tokenCount": 14,
+    "turnSequence": 1,
+    "tensors": [],
+    "uncapturedPoints": [],
+    "elapsedSecondsWithCapture": 2.9,
+    "generationStatus": "succeeded",
+    "dumpStatus": "ready"
+  }
+}

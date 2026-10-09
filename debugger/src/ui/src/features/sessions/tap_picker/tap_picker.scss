@@ -1,0 +1,181 @@
+/**
+ * @license
+ * Copyright 2026 The AI Edge Model Explorer Authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ==============================================================================
+ */
+
+:host {
+  display: block;
+  min-width: 0;
+  margin-top: 16px;
+  font: 13px/20px var(--me-font-family);
+  color: var(--me-on-surface-color);
+}
+* {
+  box-sizing: border-box;
+}
+.model-heading {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: space-between;
+}
+.model-heading strong {
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+.model-heading span,
+.hint,
+small,
+.picker-footer > span {
+  color: var(--me-on-surface-variant-color);
+  font-size: 12px;
+}
+.picker-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+.chosen {
+  list-style: none;
+  padding: 0;
+  margin: 8px 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.chosen li {
+  display: flex;
+  align-items: center;
+  max-width: 100%;
+  border: 1px solid var(--me-surface-variant-color);
+  border-radius: 4px;
+  padding-left: 8px;
+}
+.chosen li > span {
+  overflow-wrap: anywhere;
+}
+.chosen small {
+  margin-left: 6px;
+}
+.chosen button {
+  width: 32px;
+  height: 32px;
+  padding: 6px;
+  flex-shrink: 0;
+}
+.chosen mat-icon {
+  width: 18px;
+  height: 18px;
+  font-size: 18px;
+}
+.picker {
+  border: 1px solid var(--me-outline-color);
+  border-radius: 4px;
+  margin-top: 8px;
+  overflow: hidden;
+}
+.search {
+  display: flex;
+  gap: 8px;
+  padding: 12px;
+}
+.search input,
+.search select {
+  min-width: 0;
+  background: var(--me-surface-color);
+  color: var(--me-on-surface-color);
+  border: 1px solid var(--me-outline-color);
+  border-radius: 4px;
+  padding: 6px 8px;
+  font: inherit;
+}
+.search input {
+  flex: 1;
+}
+.hint {
+  padding: 0 12px;
+  margin: 0 0 8px;
+}
+.results {
+  max-height: 320px;
+  overflow: auto;
+  border-block: 1px solid var(--me-surface-variant-color);
+}
+.point {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--me-surface-variant-color);
+}
+.point:last-child {
+  border: 0;
+}
+.point label {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  cursor: pointer;
+}
+.point input {
+  margin-top: 4px;
+  accent-color: var(--me-primary-color);
+  flex-shrink: 0;
+}
+.point strong,
+.point small {
+  display: block;
+  overflow-wrap: anywhere;
+}
+.point strong {
+  font-weight: 500;
+}
+.point details {
+  margin-left: 24px;
+  font-size: 12px;
+  color: var(--me-on-surface-variant-color);
+}
+.point details p {
+  overflow-wrap: anywhere;
+  margin: 4px 0;
+}
+.point summary {
+  cursor: pointer;
+  width: fit-content;
+}
+.picker-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 4px 12px;
+}
+.results > p {
+  padding: 8px 12px;
+}
+[role='alert'] {
+  color: var(--me-error-text-color);
+}
+button {
+  color: var(--me-primary-color);
+}
+@media (max-width: 600px) {
+  .search {
+    flex-direction: column;
+  }
+  .chosen li {
+    width: 100%;
+    justify-content: space-between;
+  }
+}

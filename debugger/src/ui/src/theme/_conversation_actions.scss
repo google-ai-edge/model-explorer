@@ -1,0 +1,63 @@
+/**
+ * @license
+ * Copyright 2026 The AI Edge Model Explorer Authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ==============================================================================
+ */
+
+// Conversation actions. Preserve the accepted shell interaction specificity.
+report-app .debugger-shell {
+  button.graph-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    box-sizing: border-box;
+    min-height: 30px;
+    padding: 6px 8px;
+    border: 0;
+    border-radius: 4px;
+    background: var(--button-stage-bg);
+    color: var(--button-stage-ink);
+    font:
+      500 12px/18px Roboto,
+      Arial,
+      sans-serif;
+    white-space: nowrap;
+    box-shadow: none;
+  }
+  button.graph-link .button-icon {
+    font-size: 16px;
+    line-height: 16px;
+    width: 16px;
+    height: 16px;
+  }
+  button.graph-link:not(:disabled):hover {
+    background: color-mix(
+      in srgb,
+      var(--button-stage-bg),
+      var(--button-stage-ink) 12%
+    );
+    color: var(--button-stage-ink);
+  }
+  button.graph-link:disabled {
+    opacity: 0.35;
+  }
+}
+
+report-app .debugger-shell {
+  button.graph-link:focus-visible {
+    outline-offset: 3px;
+  }
+}

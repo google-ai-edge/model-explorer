@@ -1,0 +1,96 @@
+<!--
+ Copyright 2026 The AI Edge Model Explorer Authors.
+
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+ ==============================================================================
+-->
+<div class="debugger-shell">
+  <app-toolbar />
+  @if (workspace.chatError()) {
+    <p role="alert">{{ workspace.chatError() }}</p>
+  }
+  @if (workspace.home()) {
+    <home-page />
+  } @else if (!state.session() && workspace.runtime.selected()?.has_capture) {
+    <main class="empty" role="status">
+      @if (state.error()) {
+        <h2>Session unavailable</h2>
+        <p>{{ state.error() }}</p>
+        <button (click)="state.load()">Retry</button>
+      } @else if (workspace.runtime.selected()?.has_capture) {
+        Loading session…
+      } @else {
+        <h2>Local session</h2>
+        <p>Initialize the runtime, then send a prompt. Captured results will appear here.</p>
+      }
+    </main>
+  } @else {
+    @if (!state.session() || workspace.mode() === 'Chat' || workspace.view() === 'Token Diff') {
+      @defer (on immediate) {
+        @for (chatKey of [conversationKey()]; track chatKey) {
+          <conversation-panel />
+        }
+      } @placeholder {
+        <main class="empty" role="status">Loading conversation…</main>
+      } @error {
+        <main class="empty" role="alert">
+          <h2>Conversation unavailable</h2>
+          <p>Reload the page to try again.</p>
+          <button mat-button (click)="reloadPage()">Reload</button>
+        </main>
+      }
+    } @else if (workspace.view() === 'Graph Diff' && state.graphError()) {
+      <main class="empty" role="alert">
+        <h2>Graph unavailable</h2>
+        <p>{{ state.graphError() }}</p>
+        <button mat-button (click)="state.retryGraph()">Retry Graph</button>
+      </main>
+    } @else if (
+      workspace.view() === 'Graph Diff' &&
+      state.preview.batches.length &&
+      (state.graphLoading() || !state.semantic())
+    ) {
+      <main class="empty" role="status">Loading Graph…</main>
+    } @else if (
+      workspace.view() === 'Graph Diff' &&
+      (!state.preview.batches.length || !state.semantic()?.layers?.length)
+    ) {
+      <main class="empty">
+        <h2>Graph data not captured</h2>
+        <p>This run has no verified tensor-to-graph profile.</p>
+      </main>
+    } @else if (workspace.view() === 'Graph Diff') {
+      @defer (on immediate) {
+        <graph-workspace />
+      } @placeholder {
+        <main class="empty" role="status">Loading Graph…</main>
+      } @error {
+        <main class="empty" role="alert">
+          <h2>Graph unavailable</h2>
+          <button mat-button (click)="reloadPage()">Reload</button>
+        </main>
+      }
+    } @else {
+      @defer (on immediate) {
+        <kv-panel />
+      } @placeholder {
+        <main class="empty" role="status">Loading KV analysis…</main>
+      } @error {
+        <main class="empty" role="alert">
+          <h2>KV analysis unavailable</h2>
+          <button (click)="reloadPage()">Reload</button>
+        </main>
+      }
+    }
+  }
+</div>

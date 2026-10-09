@@ -1,0 +1,125 @@
+<!--
+ Copyright 2026 The AI Edge Model Explorer Authors.
+
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+ ==============================================================================
+-->
+<header>
+  <h2 id="chat-configuration-title" tabindex="-1">
+    {{ create ? 'New chat' : 'Chat configuration' }}
+  </h2>
+</header>
+<div class="body" [attr.aria-busy]="saving()">
+  @for (group of groups; track group.name) {
+    <section [attr.aria-label]="group.name">
+      <div class="columns group-head">
+        <h3>{{ group.name }}</h3>
+        @for (side of sides; track side) {
+          <div class="side-heading">
+            <span>{{ side === 'ref' ? 'Reference' : 'Target' }}</span
+            ><span class="copy-actions"
+              ><button
+                mat-icon-button
+                [disabled]="saving() || !canCopy(group, side)"
+                [attr.aria-label]="'Copy ' + group.name + ' to ' + side"
+                (click)="copy(group, side)"
+              >
+                <mat-icon>{{ copied().has(group.name + side) ? 'check' : 'content_copy' }}</mat-icon
+                ><span class="sr-only" role="status">{{
+                  copied().has(group.name + side) ? 'Copied' : ''
+                }}</span>
+              </button>
+              @if (canUndo(group.name, side)) {
+                <button
+                  mat-icon-button
+                  [disabled]="saving()"
+                  [attr.aria-label]="'Undo ' + group.name + ' ' + side"
+                  (click)="undo(group.name, side)"
+                >
+                  <mat-icon>undo</mat-icon>
+                </button>
+              }
+            </span>
+          </div>
+        }
+      </div>
+      @for (key of group.keys; track key) {
+        <div class="columns field-row">
+          <span>{{ key === 'systemPrompt' ? '' : labels[key] }}</span>
+          @for (side of sides; track side) {
+            <div class="edit-value">
+              @if (!supported(side, key)) {
+                <span class="unavailable">Unavailable for PyTorch</span>
+              } @else {
+                @if (key === 'thinking') {
+                  <config-picker
+                    [disabled]="saving()"
+                    [label]="side + ' ' + labels[key]"
+                    plural="thinking modes"
+                    [value]="thinkingLabel(side)"
+                    [options]="thinkingOptions"
+                    (valueChange)="setThinking(side, $event)"
+                  />
+                } @else if (key === 'systemPrompt') {
+                  <textarea
+                    [disabled]="saving()"
+                    [(ngModel)]="values[side][key]"
+                    [attr.aria-label]="side + ' ' + labels[key]"
+                    maxlength="16000"
+                    placeholder="Optional"
+                  ></textarea>
+                } @else {
+                  <input
+                    type="number"
+                    [(ngModel)]="values[side][key]"
+                    [attr.aria-label]="side + ' ' + labels[key]"
+                    placeholder="Default"
+                    [disabled]="
+                      saving() || (key === 'thinkingBudget' && values[side]['thinking'] === 'off')
+                    "
+                    [min]="ranges[key].min"
+                    [max]="ranges[key].max"
+                    [step]="ranges[key].step"
+                  />
+                }
+                @if (key !== 'systemPrompt') {
+                  <button
+                    mat-icon-button
+                    [disabled]="
+                      saving() ||
+                      isDefault(side, key) ||
+                      (key === 'thinkingBudget' && values[side]['thinking'] === 'off')
+                    "
+                    [attr.aria-label]="'Reset ' + side + ' ' + labels[key] + ' to default'"
+                    (click)="resetField(side, key)"
+                  >
+                    <mat-icon>restart_alt</mat-icon>
+                  </button>
+                }
+              }
+            </div>
+          }
+        </div>
+      }
+    </section>
+  }
+  @if (error()) {
+    <p role="alert">{{ error() }}</p>
+  }
+</div>
+<footer>
+  <button mat-button [disabled]="saving()" (click)="ref.close()">Cancel</button
+  ><button mat-button [disabled]="saving() || !session" (click)="save()">
+    {{ saving() ? 'Saving…' : create ? 'Create chat' : 'Save' }}
+  </button>
+</footer>

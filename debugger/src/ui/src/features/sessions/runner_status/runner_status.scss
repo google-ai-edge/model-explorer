@@ -1,0 +1,110 @@
+/**
+ * @license
+ * Copyright 2026 The AI Edge Model Explorer Authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ==============================================================================
+ */
+
+@use '@angular/material' as mat;
+:host {
+  display: block;
+  min-width: 0;
+}
+.runner-trigger {
+  min-width: 0;
+  max-width: 100%;
+  padding: 0 6px;
+  height: 32px;
+  margin-left: -6px;
+  color: var(--me-on-surface-color);
+  font: 14px/20px var(--me-font-family);
+  letter-spacing: normal;
+}
+.runner-trigger strong {
+  font-weight: 600;
+}
+.runner-state {
+  font-size: 12px;
+  font-weight: 400;
+  margin-left: 8px;
+  white-space: nowrap;
+  color: var(--me-on-surface-variant-color);
+}
+.failure {
+  color: var(--me-error-text-color);
+}
+.runner-trigger mat-icon {
+  font-size: 18px;
+  width: 18px;
+  height: 18px;
+}
+.runner-details {
+  box-sizing: border-box;
+  width: min(340px, calc(100vw - 24px));
+  padding: 12px 16px 16px;
+  background: var(--me-surface-color);
+  color: var(--me-on-surface-color);
+  border: 1px solid var(--me-surface-variant-color);
+  border-radius: 8px;
+  box-shadow: 0 6px 24px #0002;
+  font: 13px/20px var(--me-font-family);
+}
+.runner-details header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.runner-details h3 {
+  margin: 0;
+  font: 500 14px/20px var(--me-font-family);
+}
+.runner-details button {
+  @include mat.icon-button-overrides(
+    (
+      state-layer-size: 32px,
+      icon-size: 18px,
+      touch-target-display: none,
+    )
+  );
+  width: 32px;
+  height: 32px;
+  padding: 7px;
+}
+.runner-details mat-icon {
+  font-size: 18px;
+  line-height: 18px;
+  height: 18px;
+  width: 18px;
+}
+.runner-details dl {
+  display: grid;
+  grid-template-columns: 100px minmax(0, 1fr);
+  gap: 8px 12px;
+  margin: 16px 0 0;
+}
+.runner-details dt {
+  color: var(--me-on-surface-variant-color);
+}
+.runner-details dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.runner-details p {
+  margin: 12px 0 0;
+  color: var(--me-on-surface-variant-color);
+}
+.runner-details [role='alert'] {
+  color: var(--me-error-text-color);
+}

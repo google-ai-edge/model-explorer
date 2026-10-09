@@ -1,0 +1,24 @@
+# Dependencies and virtual environments
+node_modules/
+.venv/
+
+# Build output and caches
+dist/
+# The pinned Model Explorer visualizer bundle is source, not build output.
+!/src/ui/public/graph-execution/upstream/model-explorer/dist/
+.angular/
+.build/
+# Native LiteRT-LM libraries staged by src/runner/apple/Tools.
+/src/runner/apple/Vendor/
+*.egg-info/
+__pycache__/
+
+# Local runtime and test artifacts
+.local-runtime/
+test-results/
+playwright-report/
+
+# Debugger runtime assembly
+runtime/third_party/
+runtime/.tools/
+runtime/artifacts/

@@ -1,0 +1,66 @@
+/**
+ * @license
+ * Copyright 2026 The AI Edge Model Explorer Authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ==============================================================================
+ */
+
+// Global on purpose (ViewEncapsulation.None): the base look lives in
+// shared/styles/_find_navigation.scss via the host's .find-tools class, and the
+// hosting panels' context classes below keep selecting the inner controls.
+find-navigator {
+  display: flex;
+  align-items: center;
+  flex: none;
+  gap: 0;
+  font-variant-numeric: tabular-nums;
+}
+find-navigator > button {
+  min-height: 32px;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  color: var(--me-on-surface-color);
+}
+find-navigator > button:hover:not(:disabled) {
+  background: var(--button-hover);
+}
+find-navigator > .result-count {
+  width: auto;
+  min-width: 48px;
+  padding: 0 4px;
+  font: 11px/20px var(--me-font-family);
+  white-space: nowrap;
+}
+find-navigator.match-nav {
+  gap: 2px;
+  font-size: 11px;
+}
+@container kv-analysis (max-width: 900px) {
+  find-navigator > .first-result {
+    display: none;
+  }
+}
+@container kv-analysis (max-width: 500px) {
+  find-navigator > .result-count {
+    min-width: 40px;
+    padding: 0 2px;
+    font-size: 10px;
+  }
+}
+@container kv-analysis (max-width: 380px) {
+  .toolbar find-navigator > button:not(.result-count) {
+    display: none;
+  }
+}

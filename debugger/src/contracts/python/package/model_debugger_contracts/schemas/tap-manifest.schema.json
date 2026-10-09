@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "model-debugger:tap-manifest",
+  "title": "TapManifest",
+  "description": "Capture points selected in a prepared .litertlm: produced by the Server's prepare_tap, decoded by the Apple Runner (Core/CaptureJob.swift) and read back by runtime/litert_capture.py.",
+  "type": "object",
+  "required": ["format_version", "source_sha256", "tapped_sha256", "taps"],
+  "properties": {
+    "format_version": {"const": 1},
+    "source_sha256": {"$ref": "#/$defs/sha256"},
+    "tapped_sha256": {"$ref": "#/$defs/sha256"},
+    "taps": {"type": "array", "minItems": 1, "maxItems": 16, "items": {"$ref": "#/$defs/tap"}}
+  },
+  "$defs": {
+    "sha256": {"type": "string", "pattern": "^[0-9a-fA-F]{64}$"},
+    "tap": {
+      "type": "object",
+      "required": ["signature", "subgraph", "op", "output", "tensor", "tensor_name", "output_name", "shape", "tensor_type"],
+      "properties": {
+        "signature": {"type": "string", "minLength": 1},
+        "subgraph": {"type": "integer", "minimum": 0},
+        "op": {"type": "integer", "minimum": 0},
+        "output": {"type": "integer", "minimum": 0},
+        "tensor": {"type": "integer", "minimum": 0},
+        "tensor_name": {"type": "string"},
+        "output_name": {"type": "string", "minLength": 1},
+        "shape": {"type": "array", "minItems": 1, "items": {"type": "integer", "minimum": 1}},
+        "tensor_type": {"type": "integer", "minimum": 0}
+      }
+    }
+  }
+}

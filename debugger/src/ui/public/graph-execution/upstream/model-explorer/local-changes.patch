@@ -1,0 +1,166 @@
+--- a/dist/main_browser.js
++++ b/dist/main_browser.js
+@@ -42926,10 +42926,10 @@
+         let r = window;
+         r[Ey] == null && (r[Ey] = { renderers: {} });
+         let o = this.inPopup ? -1 : this.appService.getPaneIndexById(this.paneId);
+-        r[Ey].renderers[o] = this, this.benchmark && this.startBenchmark();
++        r[Ey].renderers[o] = this, meViewportRegister(this), this.benchmark && this.startBenchmark();
+       }
+       ngOnDestroy() {
+-        this.workerService.worker.removeEventListener("message", this.messageEventListener), this.webglRendererThreejsService.dispose(), document.body.style.cursor = "default";
++        meViewportUnregister(this), this.workerService.worker.removeEventListener("message", this.messageEventListener), this.webglRendererThreejsService.dispose(), document.body.style.cursor = "default";
+       }
+       getActiveSelectedNodeInfo() {
+         if (this.selectedNodeId) return { nodeId: this.selectedNodeId, rendererId: this.rendererId, isGroupNode: ct(this.curModelGraph.nodesById[this.selectedNodeId]) };
+@@ -52746,7 +52746,115 @@
+     }
+     return i59;
+   })();
+-  var y4 = "https://fonts.googleapis.com/icon?family=Material+Icons";
++  // Graph Diff experiment: bounded viewport bridge for pinned visualizer 0.1.2.
++  // Registrations are scoped to each component's AppService, never window.me_test.
++  // See VIEWPORT-BRIDGE.md. This patch does not alter layout or selection behavior.
++  var meViewportRenderers = new WeakMap();
++  function meViewportRegister(renderer) {
++    if (renderer.inPopup) return;
++    let renderers = meViewportRenderers.get(renderer.appService);
++    if (!renderers) meViewportRenderers.set(renderer.appService, renderers = new Map());
++    renderers.set(renderer.paneId, renderer);
++  }
++  function meViewportUnregister(renderer) {
++    let renderers = meViewportRenderers.get(renderer.appService);
++    if (renderers?.get(renderer.paneId) === renderer) renderers.delete(renderer.paneId);
++  }
++  function meViewportRenderer(wrapper, paneIndex) {
++    if (!Number.isInteger(paneIndex) || paneIndex < 0) return null;
++    let app = wrapper.visualizer()?.appService;
++    let pane = app?.panes()[paneIndex];
++    let renderer = pane && meViewportRenderers.get(app)?.get(pane.id);
++    let container = renderer?.container?.nativeElement;
++    let service = renderer?.webglRendererThreejsService;
++    if (!renderer || !container?.isConnected || container.clientWidth <= 0 || container.clientHeight <= 0 ||
++        !service?.camera || !renderer.curModelGraph || !renderer.nodesToRender.length) return null;
++    return { renderer, container, service, paneIndex };
++  }
++  // Local Graph Diff extension: repaint only the surface, leaving geometry and camera intact.
++  function mePaneBackgroundSet(target, background) {
++    if (!target || typeof background !== "string" || !/^#[0-9a-f]{6}$/i.test(background)) return false;
++    let { service } = target;
++    if (!service.scene?.background?.set) return false;
++    service.scene.background.set(background);
++    service.render();
++    return true;
++  }
++  function meViewportRead(target) {
++    if (!target) return null;
++    let { renderer, container, service, paneIndex } = target;
++    // d3 transform: screen = scene * pixelsPerUnit + translation.
++    // clientHeight is CSS pixels; drawing-buffer size / DPR is intentionally unused.
++    let pixelsPerUnit = service.curScale / service.convertZFromScreenToScene(1);
++    if (!Number.isFinite(pixelsPerUnit) || pixelsPerUnit <= 0) return null;
++    return {
++      paneIndex, paneId: renderer.paneId, graphId: renderer.curModelGraph.id,
++      centerX: (container.clientWidth / 2 - service.curTranslateX) / pixelsPerUnit,
++      centerY: (container.clientHeight / 2 - service.curTranslateY) / pixelsPerUnit,
++      pixelsPerUnit, width: container.clientWidth, height: container.clientHeight,
++      selectedNodeId: renderer.selectedNodeId || ""
++    };
++  }
++  // Local Graph Diff extension: select or clear without camera navigation.
++  function mePaneSelectionSet(target, nodeId) {
++    if (!target || typeof nodeId !== "string") return false;
++    let { renderer } = target;
++    if (nodeId && !renderer.curModelGraph.nodesById[nodeId]) return false;
++    renderer.appService.setNodeToReveal(renderer.paneId, undefined);
++    renderer.appService.selectNode(renderer.paneId, {
++      nodeId,
++      rendererId: renderer.rendererId,
++      isGroupNode: false,
++      triggerNavigationSync: false
++    });
++    return true;
++  }
++  function meViewportDuration(duration, fallback = 0) {
++    if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return 0;
++    return Number.isFinite(duration) ? Math.max(0, Math.min(1000, duration)) : fallback;
++  }
++  function meViewportSet(target, viewport, duration = 0) {
++    if (!target || !viewport ||
++        (viewport.graphId != null && viewport.graphId !== target.renderer.curModelGraph.id) ||
++        !Number.isFinite(viewport.centerX) || !Number.isFinite(viewport.centerY) ||
++        !Number.isFinite(viewport.pixelsPerUnit) || viewport.pixelsPerUnit <= 0) return false;
++    let { container, service } = target;
++    let extent = service.zoom.scaleExtent();
++    let scale = Math.max(extent[0], Math.min(extent[1], viewport.pixelsPerUnit * service.convertZFromScreenToScene(1)));
++    // Cancel a previous fit animation so it cannot overwrite an immediate restore.
++    Ro(container).interrupt();
++    service.centerViewAt(viewport.centerX, viewport.centerY, scale, meViewportDuration(duration));
++    return true;
++  }
++  function meViewportFit(target, options = {}) {
++    if (!target) return false;
++    let { renderer, container, service } = target;
++    if (![renderer.currentMinX, renderer.currentMaxX, renderer.currentMinZ, renderer.currentMaxZ].every(Number.isFinite) ||
++        renderer.currentMaxX <= renderer.currentMinX || renderer.currentMaxZ <= renderer.currentMinZ) return false;
++    let padding = Number.isFinite(options.padding) ? Math.max(0.1, Math.min(1, options.padding)) : 0.9;
++    Ro(container).interrupt();
++    service.zoomFitGraph(padding, meViewportDuration(options.duration, 160));
++    return true;
++  }
++  function meViewportFocus(target, nodeId, options = {}) {
++    if (!target || typeof nodeId !== "string") return false;
++    let { renderer, container } = target;
++    if (options.graphId != null && options.graphId !== renderer.curModelGraph.id) return false;
++    let node = renderer.curModelGraph.nodesById[nodeId];
++    if (!node || !renderer.isNodeRendered(nodeId)) return false;
++    // Eo is the pinned distribution's nominal label height (11 scene units).
++    let labelSize = Number.isFinite(options.labelSize) ? Math.max(8, Math.min(24, options.labelSize)) : 12.5;
++    let pixelsPerUnit = labelSize / Eo;
++    let centerX = renderer.getNodeX(node) + renderer.getNodeWidth(node) / 2;
++    let centerY = renderer.getNodeY(node) + renderer.getNodeHeight(node) / 2;
++    if (options.align !== "center") {
++      let padding = Number.isFinite(options.paddingTop) ? options.paddingTop : 32;
++      padding = Math.max(0, Math.min(container.clientHeight / 2, padding));
++      centerY = renderer.getNodeY(node) + (container.clientHeight / 2 - padding) / pixelsPerUnit;
++    }
++    return meViewportSet(target, { centerX, centerY, pixelsPerUnit }, options.duration);
++  }
++  var y4 = "model-explorer-fonts.css";
+   var b4 = (() => {
+     class i59 {
+       el;
+@@ -52769,6 +52877,24 @@
+         let o = `${r}/styles.css`;
+         this.el.nativeElement.shadowRoot.appendChild(Uw(o)), document.head.appendChild(Uw(o));
+       }
++      setPaneBackground = (background, paneIndex = 0) => {
++        return this.ngZone.run(() => mePaneBackgroundSet(meViewportRenderer(this, paneIndex), background));
++      };
++      readPaneViewport = (paneIndex = 0) => {
++        return this.ngZone.run(() => meViewportRead(meViewportRenderer(this, paneIndex)));
++      };
++      setPaneSelection = (nodeId, paneIndex = 0) => {
++        return this.ngZone.run(() => mePaneSelectionSet(meViewportRenderer(this, paneIndex), nodeId));
++      };
++      setPaneViewport = (viewport, paneIndex = 0, duration = 0) => {
++        return this.ngZone.run(() => meViewportSet(meViewportRenderer(this, paneIndex), viewport, duration));
++      };
++      fitPaneGraph = (paneIndex = 0, options = {}) => {
++        return this.ngZone.run(() => meViewportFit(meViewportRenderer(this, paneIndex), options));
++      };
++      focusNodeViewport = (nodeId, paneIndex = 0, options = {}) => {
++        return this.ngZone.run(() => meViewportFocus(meViewportRenderer(this, paneIndex), nodeId, options));
++      };
+       selectNode = (e, n, r, o = 0) => {
+         this.ngZone.run(() => {
+           this.visualizer()?.selectNode(e, n, r, o);
+@@ -52789,7 +52915,7 @@
+       };
+       static \u0275cmp = xe({ type: i59, selectors: [["custom-element-wrapper"]], viewQuery: function(n, r) {
+         n & 1 && Hv(r.visualizer, zw, 5), n & 2 && wu();
+-      }, inputs: { graphCollections: [1, "graphCollections"], config: [1, "config"], initialUiState: [1, "initialUiState"], benchmark: [1, "benchmark"], selectNode: "selectNode", addNodeDataProviderData: "addNodeDataProviderData", addNodeDataProviderDataWithGraphIndex: "addNodeDataProviderDataWithGraphIndex" }, outputs: { titleClicked: "titleClicked", uiStateChanged: "uiStateChanged", modelGraphProcessed: "modelGraphProcessed", selectedNodeChanged: "selectedNodeChanged", hoveredNodeChanged: "hoveredNodeChanged", doubleClickedNodeChanged: "doubleClickedNodeChanged" }, decls: 2, vars: 4, consts: [[1, "me-custom-element-container"], [3, "titleClicked", "uiStateChanged", "modelGraphProcessed", "selectedNodeChanged", "hoveredNodeChanged", "doubleClickedNodeChanged", "graphCollections", "config", "initialUiState", "benchmark"]], template: function(n, r) {
++      }, inputs: { graphCollections: [1, "graphCollections"], config: [1, "config"], initialUiState: [1, "initialUiState"], benchmark: [1, "benchmark"], setPaneBackground: "setPaneBackground", readPaneViewport: "readPaneViewport", setPaneSelection: "setPaneSelection", setPaneViewport: "setPaneViewport", fitPaneGraph: "fitPaneGraph", focusNodeViewport: "focusNodeViewport", selectNode: "selectNode", addNodeDataProviderData: "addNodeDataProviderData", addNodeDataProviderDataWithGraphIndex: "addNodeDataProviderDataWithGraphIndex" }, outputs: { titleClicked: "titleClicked", uiStateChanged: "uiStateChanged", modelGraphProcessed: "modelGraphProcessed", selectedNodeChanged: "selectedNodeChanged", hoveredNodeChanged: "hoveredNodeChanged", doubleClickedNodeChanged: "doubleClickedNodeChanged" }, decls: 2, vars: 4, consts: [[1, "me-custom-element-container"], [3, "titleClicked", "uiStateChanged", "modelGraphProcessed", "selectedNodeChanged", "hoveredNodeChanged", "doubleClickedNodeChanged", "graphCollections", "config", "initialUiState", "benchmark"]], template: function(n, r) {
+         n & 1 && (b(0, "div", 0)(1, "model-graph-visualizer", 1), Z("titleClicked", function() {
+           return r.titleClicked.emit();
+         })("uiStateChanged", function(s) {

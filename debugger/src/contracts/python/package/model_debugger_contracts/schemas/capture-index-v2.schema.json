@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "model-debugger:capture-index-v2",
+  "title": "CaptureIndexV2",
+  "description": "export/capture_index.json written by runtime/litert_capture.py (LiteRT-LM) and model_debugger_runner/pytorch_capture.py (PyTorch); read by capture_importer.py. See docs/data-contract.md.",
+  "type": "object",
+  "required": ["format_version", "tensor_root", "tensors"],
+  "properties": {
+    "format_version": {"const": 2},
+    "tensor_root": {"enum": ["run", "export"]},
+    "tensors": {"type": "array", "items": {"$ref": "#/$defs/record"}},
+    "runtime": {"type": "string"},
+    "export_scope": {"type": "string"},
+    "capture_scope": {"type": "string"},
+    "tapped_sha256": {"type": "string", "pattern": "^[0-9a-fA-F]{64}$"},
+    "backend_requested": {"type": "string"},
+    "uncaptured_signatures": {"type": "array", "items": {"type": "string"}},
+    "native_trace": {
+      "type": "object",
+      "required": ["path", "sha256"],
+      "properties": {"path": {"type": "string", "minLength": 1}, "sha256": {"type": "string", "pattern": "^[0-9a-fA-F]{64}$"}}
+    },
+    "admitted_input_ids": {"type": "array", "items": {"type": "integer", "minimum": 0}},
+    "resources": {"type": "array", "items": {"$ref": "#/$defs/record"}}
+  },
+  "$defs": {
+    "record": {
+      "type": "object",
+      "required": ["format", "path", "key", "dtype", "shape"],
+      "properties": {
+        "format": {"const": "safetensors"},
+        "path": {"type": "string", "minLength": 1},
+        "key": {"type": "string", "minLength": 1},
+        "dtype": {"type": "string", "minLength": 1},
+        "shape": {"type": "array", "items": {"type": "integer", "minimum": 0}}
+      }
+    }
+  }
+}

@@ -1,0 +1,207 @@
+/**
+ * @license
+ * Copyright 2026 The AI Edge Model Explorer Authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ==============================================================================
+ */
+
+@use '../controls' as graph-controls;
+@use '../../../shared/styles/data_table' as data-table;
+@include graph-controls.code-block;
+
+@include data-table.defaults;
+
+:host {
+  display: block;
+  flex-shrink: 0;
+  max-height: 45vh;
+  overflow: auto;
+}
+section {
+  margin: 16px 20px;
+  padding: 16px;
+  border: 1px solid var(--outline);
+  border-radius: 6px;
+  color: var(--on1);
+}
+header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+h2 {
+  font-size: 14px;
+  margin: 0;
+}
+h3 {
+  font-size: 12px;
+  margin: 0;
+}
+p {
+  font-size: 12px;
+  color: var(--on2);
+  line-height: 1.5;
+  margin: 8px 0;
+}
+.summary {
+  display: flex;
+  gap: 24px;
+  flex-wrap: wrap;
+  font-size: 12px;
+  margin: 16px 0;
+}
+.table-wrap {
+  overflow: auto;
+}
+table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 12px;
+  text-align: left;
+}
+th,
+td {
+  padding: 10px;
+  border-bottom: 1px solid var(--outline);
+}
+th {
+  font-weight: 500;
+  color: var(--on2);
+}
+td,
+dd {
+  font-family: var(--mono);
+}
+details {
+  margin-top: 16px;
+  font-size: 12px;
+}
+summary {
+  cursor: pointer;
+  padding: 4px 0;
+}
+.runs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  margin: 16px 0;
+}
+dl {
+  display: grid;
+  grid-template-columns: 140px 1fr;
+  gap: 10px;
+  font-size: 11px;
+}
+dt {
+  color: var(--on2);
+}
+dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+button {
+  font: inherit;
+  font-size: 12px;
+  padding: 6px 10px;
+  min-height: 32px;
+  color: var(--on1);
+  background: var(--surface);
+  border: 1px solid var(--outline);
+  border-radius: 4px;
+  cursor: pointer;
+}
+button:focus-visible,
+summary:focus-visible {
+  outline: 2px solid var(--pri);
+  outline-offset: 2px;
+}
+.error {
+  padding: 12px 20px;
+}
+@media (max-width: 800px) {
+  .runs {
+    grid-template-columns: 1fr;
+  }
+  section {
+    margin: 16px;
+  }
+  header {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+  dl {
+    grid-template-columns: 110px 1fr;
+  }
+}
+:host(.kv-scope) {
+  flex: 1;
+  min-height: 0;
+  max-height: none;
+}
+.pair-picker {
+  padding: 16px 20px 0;
+}
+.pair-picker label,
+.preview-controls label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+}
+.preview-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 20px;
+  border-top: 1px solid var(--outline);
+  padding-top: 16px;
+}
+.preview-controls nav {
+  display: flex;
+  gap: 6px;
+}
+select {
+  font: inherit;
+  color: var(--on1);
+  background: var(--surface);
+  border: 1px solid var(--outline);
+  border-radius: 4px;
+  padding: 6px;
+  min-height: 32px;
+}
+select:focus-visible {
+  outline: 2px solid var(--pri);
+  outline-offset: 2px;
+}
+.raw-shape,
+pre {
+  font-family: var(--mono);
+  font-size: 11px;
+}
+pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  line-height: 1.7;
+  max-height: 180px;
+  overflow: auto;
+}
+.runs article {
+  min-width: 0;
+}
+.loading {
+  padding: 0 20px;
+}

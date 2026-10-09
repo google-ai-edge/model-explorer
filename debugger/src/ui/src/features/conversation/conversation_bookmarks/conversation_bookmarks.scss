@@ -1,0 +1,126 @@
+/**
+ * @license
+ * Copyright 2026 The AI Edge Model Explorer Authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ==============================================================================
+ */
+
+:host {
+  display: block;
+  flex: none;
+}
+.bookmark-select.mat-mdc-button {
+  height: 32px;
+  min-width: 0;
+  padding: 0 8px;
+  border-radius: 4px;
+  font: 400 13px/20px var(--me-font-family);
+  letter-spacing: normal;
+  color: var(--me-on-surface-color);
+}
+.bookmark-select.mat-mdc-button > mat-icon {
+  width: 24px;
+  height: 24px;
+  font-size: 24px;
+  margin: 0 4px 0 0;
+}
+.bookmark-select ::ng-deep .mat-mdc-button-touch-target {
+  height: 32px;
+}
+.bookmark-panel {
+  width: 420px;
+  max-width: calc(100vw - 16px);
+  max-height: 60vh;
+  overflow: auto;
+  padding: 8px 0;
+  border-radius: 4px;
+  background: var(--me-surface-container-color);
+  color: var(--me-on-surface-color);
+  box-shadow: var(--me-menu-shadow, 0 2px 6px #0003);
+  font: 400 12px/18px var(--me-font-family);
+}
+.bookmark-panel.empty {
+  width: 260px;
+}
+.bookmark-row {
+  display: flex;
+  align-items: center;
+  padding: 0 6px;
+  gap: 2px;
+}
+.bookmark-row .bookmark-location {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  height: 48px;
+  justify-content: flex-start;
+  padding: 6px 8px;
+  font: 400 12px/18px var(--me-font-family);
+  letter-spacing: normal;
+  color: inherit;
+  border-radius: 3px;
+}
+.bookmark-location ::ng-deep .mdc-button__label {
+  display: block;
+  min-width: 0;
+  width: 100%;
+  text-align: left;
+}
+.bookmark-title,
+.bookmark-view {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+.bookmark-title {
+  font-weight: 500;
+}
+.bookmark-view {
+  font: 400 11px/16px var(--me-font-family);
+  color: var(--me-on-surface-variant-color);
+  margin-top: 2px;
+}
+.bookmark-row .mat-mdc-icon-button {
+  width: 28px;
+  height: 28px;
+  padding: 6px;
+  border-radius: 3px;
+}
+.bookmark-row mat-icon {
+  width: 16px;
+  height: 16px;
+  font-size: 16px;
+  line-height: 16px;
+}
+.bookmark-row ::ng-deep .mat-mdc-button-touch-target {
+  display: none;
+}
+.bookmark-empty {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 12px;
+}
+.bookmark-empty span {
+  color: var(--me-on-surface-variant-color);
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}

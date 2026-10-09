@@ -1,0 +1,73 @@
+/**
+ * @license
+ * Copyright 2026 The AI Edge Model Explorer Authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ==============================================================================
+ */
+
+@use '../../../theme/explorer_controls' as controls;
+@include controls.action-tooltips;
+:host {
+  display: inline-flex;
+}
+:host > button.mat-mdc-button-base.mat-mdc-button,
+.actions button.mat-mdc-button-base.mat-mdc-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 4px;
+  color: var(--me-primary-color);
+  font: 500 13px/20px var(--me-font-family);
+  letter-spacing: normal;
+}
+:host > button.mat-mdc-button-base.mat-mdc-button {
+  padding: 0 2px;
+}
+mat-icon {
+  font-size: 18px;
+  width: 18px;
+  height: 18px;
+}
+.hf-picker {
+  @include controls.configuration-popup;
+  width: 360px;
+  max-width: calc(100vw - 16px);
+  padding: 16px;
+  max-height: calc(100dvh - 16px);
+  overflow: auto;
+}
+label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 12px;
+  font: 13px/20px var(--me-font-family);
+}
+input {
+  @include controls.configuration-input;
+  min-width: 0;
+  width: 100%;
+}
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.actions button:disabled {
+  opacity: 0.4;
+}

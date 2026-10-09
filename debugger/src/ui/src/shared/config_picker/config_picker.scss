@@ -1,0 +1,143 @@
+/**
+ * @license
+ * Copyright 2026 The AI Edge Model Explorer Authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ==============================================================================
+ */
+
+@use '../../theme/explorer_controls' as controls;
+@include controls.action-tooltips;
+:host {
+  display: block;
+  min-width: 0;
+}
+:host > button.mat-mdc-button-base.mat-mdc-button {
+  @include controls.configuration-input;
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  text-align: left;
+  letter-spacing: normal;
+  color: var(--me-on-surface-color);
+  &:disabled {
+    opacity: 0.5;
+  }
+}
+:host > button ::ng-deep .mat-mdc-button-touch-target {
+  height: 100%;
+}
+.value {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+:host ::ng-deep .mdc-button__label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.picker {
+  @include controls.configuration-popup;
+  width: 100%;
+  padding: 8px;
+  max-height: min(320px, calc(100dvh - 16px));
+  overflow: auto;
+  font: 13px/20px var(--me-font-family);
+}
+.picker input {
+  @include controls.configuration-input;
+  width: 100%;
+}
+[role='listbox'] {
+  max-height: 240px;
+  overflow: auto;
+}
+input + [role='listbox'] {
+  margin-top: 8px;
+}
+[role='option'][mat-button].mat-mdc-button-base.mat-mdc-button {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  height: 32px;
+  min-height: 32px;
+  border-radius: 0;
+  padding: 0 8px;
+  letter-spacing: normal;
+  font: 400 13px/20px var(--me-font-family);
+  color: var(--mat-button-text-label-text-color);
+}
+.picker ::ng-deep .mat-mdc-button-touch-target {
+  height: 100%;
+}
+[role='option'][aria-selected='true'] {
+  background: var(--me-secondary-container-color);
+}
+mat-icon {
+  font-size: 20px;
+  width: 20px;
+  height: 20px;
+}
+p {
+  margin: 12px 8px;
+}
+
+.option-text {
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+  min-width: 0;
+}
+.option-text small {
+  font: 11px/16px var(--me-font-family);
+  color: var(--me-on-surface-variant-color);
+}
+
+[role='option'].described[mat-button].mat-mdc-button-base.mat-mdc-button {
+  height: auto;
+  min-height: 44px;
+  padding: 4px 8px;
+}
+.described .option-text {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.picker {
+  max-width: calc(100vw - 16px);
+}
+.option-hint {
+  display: block;
+  min-width: 0;
+}
+.option-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+// Model Explorer graph_selector_panel: one 16px line plus 4px vertical insets.
+.picker.compact [role='option'][mat-button].mat-mdc-button-base.mat-mdc-button {
+  height: 24px;
+  min-height: 24px;
+  font: 400 12px/16px var(--me-font-family);
+}
+.compact .option-text {
+  white-space: nowrap;
+}
+.compact mat-icon {
+  width: 16px;
+  height: 16px;
+  font-size: 16px;
+}

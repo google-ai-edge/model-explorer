@@ -1,0 +1,161 @@
+/**
+ * @license
+ * Copyright 2026 The AI Edge Model Explorer Authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ==============================================================================
+ */
+
+@use '../shared/styles/data_table' as data-table;
+/** Model Explorer info_panel metadata-table presentation (Apache-2.0).
+ * Two value columns are the Token Diff adapter; density and overflow match ME.
+ */
+@mixin metadata {
+  @include data-table.defaults;
+  // Inside a titled section (explorer-info-section sets --info-indent) content hangs under the
+  // title text, as Model Explorer's grouped lists do; outside one it keeps the 12px gutter.
+  table {
+    border-spacing: 0;
+    border-collapse: collapse;
+    margin: 0 12px 0 var(--info-indent, 12px);
+    width: calc(100% - 16px - var(--info-indent, 12px));
+    max-width: calc(100% - 16px - var(--info-indent, 12px));
+    table-layout: fixed;
+    font: 12px/18px var(--me-font-family);
+  }
+  th,
+  td {
+    height: auto;
+    position: static;
+    background: transparent;
+    font: 12px/18px var(--me-font-family);
+    padding: 2px 0;
+    border: 0;
+    text-align: left;
+    vertical-align: text-top;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-weight: 400;
+  }
+  th:first-child {
+    width: 104px;
+    padding-right: 6px;
+    color: var(--me-on-surface-low-color);
+  }
+  thead th {
+    font: 500 11px/18px var(--me-font-family);
+    color: var(--me-on-surface-variant-color);
+  }
+  .info-note {
+    margin: 4px 12px 4px var(--info-indent, 12px);
+    font: 12px/18px var(--me-font-family);
+    color: var(--me-on-surface-variant-color);
+  }
+  .info-close.mat-mdc-button-base {
+    width: 24px;
+    height: 24px;
+    padding: 2px;
+    color: var(--me-on-surface-variant-color);
+  }
+  .info-close mat-icon {
+    font-size: 20px;
+    width: 20px;
+    height: 20px;
+  }
+  .info-close ::ng-deep .mat-mdc-button-touch-target {
+    display: none;
+  }
+}
+
+/** The details panel of a Debug view: one chrome for Token Diff, Graph Diff and KV Diff. Its
+ * default width is 350px in each view's state. */
+@mixin panel-chrome {
+  border-left: 1px solid var(--me-surface-variant-color);
+  background: var(--me-surface-color);
+}
+/** A hairline between the titled sections of a details panel. */
+@mixin section-dividers {
+  explorer-info-section + explorer-info-section {
+    display: block;
+    border-top: 1px solid var(--me-surface-variant-color);
+  }
+}
+/** Action links of a details panel: icon and label hang under the section title. */
+@mixin actions {
+  .info-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin: 0 12px 0 calc(var(--info-indent, 12px) - 6px);
+  }
+  .info-actions > button {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 6px;
+    width: 100%;
+    min-height: 24px;
+    box-sizing: border-box;
+    margin: 0;
+    padding: 3px 4px;
+    border: 0;
+    border-radius: 3px;
+    background: transparent;
+    color: var(--me-primary-color);
+    font: 400 12px/18px var(--me-font-family);
+    cursor: pointer;
+  }
+  .info-actions > button:disabled {
+    opacity: 0.5;
+    cursor: default;
+  }
+  .info-actions > button:not(:disabled):hover {
+    background: var(--me-surface-container-high-color);
+  }
+  .info-actions > button mat-icon {
+    width: 16px;
+    height: 16px;
+    font-size: 16px;
+    line-height: 16px;
+  }
+}
+
+/** Candidates comparison columns on top of Model Explorer metadata rows. */
+@mixin comparison-grid {
+  th,
+  td {
+    box-sizing: border-box;
+  }
+  table tr > :first-child {
+    width: 42%;
+  }
+  table tr > :nth-child(2):not([colspan]) {
+    width: 22%;
+  }
+  table tr > :nth-child(3) {
+    width: auto;
+  }
+  table:has(colgroup) tr > :nth-child(3) {
+    width: 22%;
+  }
+  table tr > :nth-child(4) {
+    width: 14%;
+  }
+  col.property {
+    width: 42%;
+  }
+  col.delta {
+    width: 14%;
+  }
+}

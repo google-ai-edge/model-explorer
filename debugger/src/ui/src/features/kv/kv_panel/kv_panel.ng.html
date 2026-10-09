@@ -1,0 +1,925 @@
+<!--
+ Copyright 2026 The AI Edge Model Explorer Authors.
+
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+ ==============================================================================
+-->
+<section
+  class="kv-workspace"
+  [class.results-overlay]="resultsOverlay()"
+  [class.details-overlay]="detailsOverlay()"
+  [class.resizing]="resizing()"
+  [style.--details-width.px]="actualPanelWidth()"
+  aria-label="KV Diff"
+>
+  <main class="analysis" aria-label="KV Analysis">
+    <div class="toolbar" role="group" aria-label="KV analysis controls">
+      <button
+        cdkOverlayOrigin
+        #contextOrigin="cdkOverlayOrigin"
+        class="context-button"
+        aria-label="Choose KV observation"
+        [title]="context()?.label ?? 'Choose KV observation'"
+        [attr.aria-expanded]="popup() === 'context'"
+        (click)="popup.set('context')"
+      >
+        <span class="turn-label">Turn {{ selectedTurn() }}</span
+        ><span class="moment-label"
+          >·
+          {{
+            context()?.moment === 'terminal'
+              ? 'Generation end'
+              : context()?.moment === 'prefill_post'
+                ? 'After Prefill'
+                : context()?.moment === 'prefill_pre'
+                  ? 'Before Prefill'
+                  : (context()?.phase ?? 'Observation')
+          }}</span
+        ><mat-icon>arrow_drop_down</mat-icon>
+      </button>
+      @if (context()?.basis) {
+        <span
+          class="context-basis"
+          role="note"
+          [title]="
+            'Logical context derived from the runtime dump (' +
+            (context()?.context_basis ?? context()?.basis) +
+            '), not a recorded native trace. Both sides must derive the same context to be compared.'
+          "
+          >Inferred context</span
+        >
+      }
+      <span class="tool-divider context-divider" aria-hidden="true"></span>
+      <div class="view-switch" role="group" aria-label="Chart view">
+        <button
+          title="Heatmap"
+          aria-label="Heatmap"
+          [attr.aria-pressed]="view() === 'heatmap'"
+          (click)="view.set('heatmap')"
+        >
+          <mat-icon>grid_on</mat-icon><span>Heatmap</span>
+        </button>
+        <button
+          title="Trends"
+          aria-label="Trends"
+          [attr.aria-pressed]="view() === 'trends'"
+          (click)="view.set('trends')"
+        >
+          <mat-icon>show_chart</mat-icon><span>Trends</span>
+        </button>
+      </div>
+      <button
+        mat-icon-button
+        class="undo-zoom"
+        aria-label="Undo zoom"
+        matTooltip="Undo zoom"
+        [disabled]="!zoomHistory().length"
+        (click)="undoZoom()"
+      >
+        <mat-icon>undo</mat-icon>
+      </button>
+      <span class="tool-divider" aria-hidden="true"></span>
+      <span class="display-summary">{{ metricLabel() }} · {{ kind() === 'key' ? 'K' : 'V' }}</span>
+      <button
+        mat-icon-button
+        cdkOverlayOrigin
+        #displayOrigin="cdkOverlayOrigin"
+        class="display-button"
+        aria-label="Display settings"
+        [attr.aria-expanded]="popup() === 'display'"
+        [matTooltip]="
+          metricLabel() + ' · ' + (kind() === 'key' ? 'Key' : 'Value') + ' · ' + headLabel()
+        "
+        (click)="openDisplay()"
+      >
+        <mat-icon>visibility</mat-icon>
+      </button>
+      <div class="find-controls" role="group" aria-label="Find controls">
+        <button
+          mat-button
+          cdkOverlayOrigin
+          #findOrigin="cdkOverlayOrigin"
+          class="find-trigger"
+          aria-label="Find by metric"
+          [class.has-condition]="!!formula()"
+          [matTooltip]="formula() || 'Find by metric'"
+          [attr.aria-expanded]="popup() === 'find'"
+          (click)="openFind()"
+        >
+          <mat-icon>filter_alt</mat-icon><span class="find-label">Find</span>
+          @if (formula()) {
+            <span class="condition-preview">{{ formula() }}</span>
+          }
+        </button>
+        @if (formula()) {
+          <find-navigator
+            [index]="resultIndex()"
+            [total]="resultTotal()"
+            [busy]="findLoading()"
+            [countAction]="true"
+            countLabel="Toggle result table"
+            [countTooltip]="showResults() ? 'Hide results' : 'Show results'"
+            [countExpanded]="showResults()"
+            countControls="kv-find-results"
+            (first)="firstResult()"
+            (previous)="moveResult(-1)"
+            (next)="moveResult(1)"
+            (count)="setResults(!showResults())"
+          />
+        }
+        <button
+          mat-icon-button
+          class="bookmark-current"
+          aria-label="Bookmark current location"
+          [matTooltip]="isSaved() ? 'Remove bookmark' : 'Add bookmark'"
+          [attr.aria-pressed]="isSaved()"
+          [disabled]="!bookmarkSelection()"
+          (click)="toggleBookmark()"
+        >
+          <mat-icon>{{ isSaved() ? 'bookmark' : 'bookmark_add' }}</mat-icon>
+        </button>
+      </div>
+    </div>
+    @if (bookmarkError()) {
+      <p class="notice-banner bookmark-error" role="alert">{{ bookmarkError() }}</p>
+    }
+    @if (stateNotice()) {
+      <p class="notice-banner" role="status">{{ stateNotice() }}</p>
+    }
+    @if (loading()) {
+      <div class="state-message" role="status">
+        <mat-icon>hourglass_empty</mat-icon>
+        <h2>Loading captured KV cache</h2>
+        <p>Comparing stored positions and heads…</p>
+      </div>
+    } @else if (error()) {
+      <div class="state-message" role="alert">
+        <mat-icon>error_outline</mat-icon>
+        <h2>KV analysis unavailable</h2>
+        <p>{{ error() }}</p>
+        <button class="outlined" (click)="retry.set(retry() + 1)">Retry</button>
+      </div>
+    } @else if (!context()) {
+      <div class="state-message">
+        <mat-icon>grid_off</mat-icon>
+        <h2>{{ entryMissing() ? 'KV observation unavailable' : 'KV cache not captured' }}</h2>
+        @if (!entryMissing()) {
+          <p>No stored KV observation is available for Turn {{ selectedTurn() }}.</p>
+        }
+        @if ((state.session()?.turns?.length ?? 0) > 1) {
+          <p>Choose another turn to inspect its captured cache.</p>
+        }
+      </div>
+    } @else {
+      <div class="analysis-body">
+        <section class="canvas" aria-label="Visualization">
+          @if (!fullRange()) {
+            <div class="state-message compact">
+              <mat-icon>grid_off</mat-icon>
+              <h2>Position comparison unavailable</h2>
+              <p>
+                {{
+                  selectedLayer()?.reason ||
+                    'No comparable ' +
+                      (kind() === 'key' ? 'Key' : 'Value') +
+                      ' tensors were captured for this observation.'
+                }}
+              </p>
+              @if (layers().length) {
+                <label
+                  >Layer
+                  <select
+                    aria-label="Inspect captured layer"
+                    [value]="selectedLayer()?.layer"
+                    (change)="chooseLayer(+$any($event.target).value)"
+                  >
+                    @for (row of layers(); track row.layer) {
+                      <option [value]="row.layer" [selected]="row.layer === selectedLayer()?.layer">
+                        Layer {{ row.layer }} · {{ statusLabel(row.status) }}
+                      </option>
+                    }
+                  </select></label
+                >
+              }
+            </div>
+          } @else {
+            <div class="plot-scroll">
+              @if (view() === 'trends') {
+                <div class="trend-heading">
+                  <label
+                    >Layer
+                    <select
+                      aria-label="Trend layer"
+                      [value]="selectedLayer()?.layer"
+                      (change)="chooseLayer(+$any($event.target).value)"
+                    >
+                      @for (id of layerIds(); track id) {
+                        <option [value]="id" [selected]="id === selectedLayer()?.layer">
+                          Layer {{ id }}
+                        </option>
+                      }
+                    </select></label
+                  ><span>{{ metricLabel() }} · {{ headLabel() }}</span>
+                </div>
+              }
+              <div class="range-canvas" [attr.aria-busy]="chartLoading()">
+                <kv-range-chart
+                  [view]="view()"
+                  [visibleRange]="visibleRange()"
+                  [layers]="layerIds()"
+                  [bins]="chartBins()"
+                  [rows]="chartRows()"
+                  [metric]="metric()"
+                  [selected]="inspectedRange()"
+                  [trendLayer]="selectedLayer()?.layer ?? 0"
+                  [color]="chartColor"
+                  [format]="chartFormat"
+                  [filtered]="!!formula()"
+                  [disabled]="chartLoading() || !!chartError()"
+                  (select)="selectRange($event)"
+                  (zoom)="zoomTo($event)"
+                  (capacity)="setCapacity($event)"
+                />
+                @if (chartLoading()) {
+                  <span class="chart-status" role="status">Loading range…</span>
+                } @else if (chartError()) {
+                  <div class="chart-status error" role="alert">
+                    <span>{{ chartError() }}</span
+                    ><button class="outlined" (click)="rangeRetry.set(rangeRetry() + 1)">
+                      Retry
+                    </button>
+                  </div>
+                }
+              </div>
+            </div>
+            <ng-container [ngTemplateOutlet]="chartFooter" />
+          }
+        </section>
+      </div>
+    }
+  </main>
+  @if (showResults() && !loading() && !error() && context()) {
+    <section class="results" id="kv-find-results" aria-label="Find results">
+      <header>
+        <strong
+          >Results <span>{{ resultTotal() }}</span></strong
+        ><button
+          mat-icon-button
+          class="result-close"
+          aria-label="Close results"
+          (click)="showResults.set(false)"
+        >
+          <mat-icon>close</mat-icon>
+        </button>
+      </header>
+      <p class="condition">{{ formula() }}</p>
+      <p class="result-scope">
+        All tensors and heads · {{ metricLabel() }} shown as max over matching heads
+      </p>
+      @if (findLoading()) {
+        <p class="detail-note" role="status">Searching all positions…</p>
+      }
+      @if (findError()) {
+        <p class="detail-note" role="alert">
+          {{ findError() }}
+          <button class="outlined" (click)="findRetry.set(findRetry() + 1)">Retry</button>
+        </p>
+      }
+      @if (findData()?.complete === false) {
+        <p class="detail-note">
+          Some tensors could not be compared. Results cover the available comparisons.
+        </p>
+      }
+      <div class="results-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>Layer</th>
+              <th>Position</th>
+              <th>K/V · Heads</th>
+              <th>{{ metricLabel() }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (
+              result of pageResults();
+              track result.kind + ':' + result.layer + ':' + result.position
+            ) {
+              <tr
+                tabindex="0"
+                [attr.aria-current]="
+                  result.layer === selectedLayer()?.layer &&
+                  result.position === selectedPosition() &&
+                  result.kind === kind()
+                "
+                (click)="selectResult(result, $index)"
+                (keydown.enter)="selectResult(result, $index)"
+              >
+                <th>L{{ result.layer }}</th>
+                <td>{{ result.position }}</td>
+                <td>{{ result.kind === 'key' ? 'K' : 'V' }} · H{{ result.heads.join(', H') }}</td>
+                <td>{{ format(result.metrics[metric()]) }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+        @if (!findLoading() && !findError() && !resultTotal()) {
+          <p class="no-results">No positions match this condition. Try a different threshold.</p>
+        }
+      </div>
+      <footer class="find-tools">
+        <button
+          aria-label="Previous result page"
+          [disabled]="resultPage() === 0 || findLoading()"
+          (click)="resultPage.set(resultPage() - 1)"
+        >
+          <mat-icon>chevron_left</mat-icon></button
+        ><span>{{ resultPage() + 1 }} / {{ resultPages() }}</span
+        ><button
+          aria-label="Next result page"
+          [disabled]="resultPage() >= resultPages() - 1 || findLoading()"
+          (click)="resultPage.set(resultPage() + 1)"
+        >
+          <mat-icon>chevron_right</mat-icon>
+        </button>
+      </footer>
+    </section>
+  }
+  <button
+    mat-icon-button
+    class="panel-toggle"
+    [style.right.px]="showDetails() ? actualPanelWidth() : 0"
+    [attr.aria-label]="showDetails() ? 'Hide details panel' : 'Show details panel'"
+    [matTooltip]="showDetails() ? 'Hide details panel' : 'Show details panel'"
+    [attr.aria-expanded]="showDetails()"
+    (click)="setDetails(!showDetails())"
+  >
+    <mat-icon>{{ showDetails() ? 'chevron_right' : 'chevron_left' }}</mat-icon>
+  </button>
+  @if (showDetails()) {
+    <aside class="details-panel" #detailsElement aria-label="KV comparison details">
+      <div
+        class="resize-handle"
+        resizeHandle
+        aria-label="Resize details panel"
+        title="Drag to resize · double-click to reset"
+        [size]="actualPanelWidth()"
+        [min]="panelMinWidth()"
+        [max]="panelMaxWidth()"
+        [reverse]="true"
+        [resetSize]="350"
+        (sizeChange)="panelWidth.set($event)"
+        (resizingChange)="resizing.set($event)"
+      ></div>
+      <div class="details-content">
+        <explorer-info-section
+          [label]="column() ? 'Column Info' : isRange() ? 'Range Info' : 'Cache Info'"
+          [expanded]="infoExpanded()"
+          (expandedChange)="infoExpanded.set($event)"
+          ><div class="info-content">
+            <table [attr.aria-label]="column() ? 'Selected KV column' : 'Selected KV cache'">
+              <tbody>
+                <tr>
+                  <th>Snapshot</th>
+                  <td><explorer-info-value label="Snapshot" [value]="snapshotLabel()" /></td>
+                </tr>
+                @for (snapshot of snapshotRows(); track snapshot.side) {
+                  <tr>
+                    <th>{{ snapshot.label }}</th>
+                    <td>
+                      <explorer-info-value
+                        [label]="snapshot.label + ' snapshot'"
+                        [value]="snapshot.value"
+                      />
+                    </td>
+                  </tr>
+                }
+                <tr>
+                  <th>Position</th>
+                  <td>{{ selectionLabel() }}</td>
+                </tr>
+                @if (isRange()) {
+                  <tr>
+                    <th>Positions</th>
+                    <td>{{ inspectedRange()!.end - inspectedRange()!.start }}</td>
+                  </tr>
+                }
+                @if (!column()) {
+                  <tr>
+                    <th>Layer</th>
+                    <td>{{ selectedLayer()?.layer ?? 'Not captured' }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div></explorer-info-section
+        >
+        <explorer-info-section
+          label="Actions"
+          [expanded]="actionsExpanded()"
+          (expandedChange)="actionsExpanded.set($event)"
+          ><div class="info-content actions">
+            <button [disabled]="!bookmarkSelection()" (click)="toggleBookmark()">
+              <mat-icon>{{ isSaved() ? 'bookmark' : 'bookmark_add' }}</mat-icon
+              >{{ isSaved() ? 'Remove bookmark' : 'Add bookmark' }}
+            </button>
+            @if (savedHere().length) {
+              <details
+                class="saved-points"
+                [open]="savedExpanded()"
+                (toggle)="savedExpanded.set($any($event.target).open)"
+              >
+                <summary>Bookmarks ({{ savedHere().length }})</summary>
+                @for (saved of savedHere(); track bookmarkKey(saved)) {
+                  <button (click)="openSaved(saved)">{{ bookmarkLabel(saved) }}</button>
+                }
+              </details>
+            }
+          </div></explorer-info-section
+        >
+        @if (isRange()) {
+          <p class="detail-note range-basis">Worst per-token K/V metrics across this range.</p>
+        }
+        @for (tensor of tokenTensors(); track tensor.kind) {
+          <explorer-info-section
+            [label]="tensor.label"
+            [expanded]="tensorExpanded()[tensor.kind]"
+            (expandedChange)="setTensorExpanded(tensor.kind, $event)"
+          >
+            @if (loading() || selectionLoading()) {
+              <p class="detail-note" role="status">Loading selected KV…</p>
+            } @else if (selectionError()) {
+              <p class="detail-note" role="alert">
+                {{ selectionError() }}
+                <button class="outlined" (click)="selectionRetry.set(selectionRetry() + 1)">
+                  Retry
+                </button>
+              </p>
+            } @else if (isRange()) {
+              @for (group of rangeTensors(); track group.kind) {
+                @if (group.kind === tensor.kind) {
+                  @if (column()) {
+                    <div
+                      class="column-metrics-scroll"
+                      role="region"
+                      [attr.aria-label]="tensor.label + ' layer range metrics'"
+                      tabindex="0"
+                    >
+                      <table
+                        class="column-metrics range-column-metrics"
+                        [attr.aria-label]="tensor.label + ' column range comparison'"
+                      >
+                        <thead>
+                          <tr>
+                            <th scope="col">Layer</th>
+                            @for (metric of detailMetrics; track metric.key) {
+                              <th scope="col">{{ metric.label }}</th>
+                            }
+                          </tr>
+                        </thead>
+                        <tbody>
+                          @for (row of group.rows; track row.layer) {
+                            <tr>
+                              <th scope="row">{{ row.layer }}</th>
+                              @for (metric of detailMetrics; track metric.key) {
+                                <td [title]="rangeMetricTitle(row, metric.key)">
+                                  <span>{{
+                                    formatDetailMetric(metric.key, row.metrics[metric.key].value)
+                                  }}</span>
+                                  @if (row.metrics[metric.key].position !== null) {
+                                    <small>Position {{ row.metrics[metric.key].position }}</small>
+                                  }
+                                  @if (
+                                    row.metrics[metric.key].valid_count <
+                                    inspectedRange()!.end - inspectedRange()!.start
+                                  ) {
+                                    <small>{{ row.metrics[metric.key].valid_count }} valid</small>
+                                  }
+                                </td>
+                              }
+                            </tr>
+                          }
+                        </tbody>
+                      </table>
+                    </div>
+                  } @else {
+                    @for (row of group.rows; track row.layer) {
+                      <table
+                        class="range-metrics"
+                        [attr.aria-label]="tensor.label + ' range numerical comparison'"
+                      >
+                        <thead>
+                          <tr>
+                            <th>Metric</th>
+                            <th>Worst</th>
+                            <th>Position</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          @for (metric of detailMetrics; track metric.key) {
+                            <tr>
+                              <th scope="row">
+                                <span [title]="metric.description">{{ metric.label }}</span>
+                              </th>
+                              <td [title]="rangeMetricTitle(row, metric.key)">
+                                {{ formatDetailMetric(metric.key, row.metrics[metric.key].value) }}
+                                @if (
+                                  row.metrics[metric.key].valid_count <
+                                  inspectedRange()!.end - inspectedRange()!.start
+                                ) {
+                                  <small>{{ row.metrics[metric.key].valid_count }} valid</small>
+                                }
+                              </td>
+                              <td>{{ row.metrics[metric.key].position ?? '—' }}</td>
+                            </tr>
+                          }
+                        </tbody>
+                      </table>
+                      @if (row.reason) {
+                        <p class="detail-note">{{ row.reason }}</p>
+                      }
+                    }
+                  }
+                }
+              }
+            } @else if (column()) {
+              <div
+                class="column-metrics-scroll"
+                role="region"
+                [attr.aria-label]="tensor.label + ' layer metrics'"
+                tabindex="0"
+              >
+                <table
+                  class="column-metrics"
+                  [attr.aria-label]="tensor.label + ' column numerical comparison'"
+                >
+                  <thead>
+                    <tr>
+                      <th scope="col">Layer</th>
+                      @for (metric of detailMetrics; track metric.key) {
+                        <th scope="col">
+                          <span [title]="metric.description">{{ metric.label }}</span>
+                        </th>
+                      }
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (row of columnRows(tensor.kind); track row.layer) {
+                      <tr>
+                        <th scope="row">{{ row.layer }}</th>
+                        @for (metric of detailMetrics; track metric.key) {
+                          <td
+                            [title]="
+                              (
+                                row.comparison?.metric_status?.[metric.key] ?? row.status
+                              ).replaceAll('_', ' ')
+                            "
+                          >
+                            {{
+                              formatDetailMetric(metric.key, row.comparison?.metrics?.[metric.key])
+                            }}
+                          </td>
+                        }
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            } @else {
+              <table class="token-structure" [attr.aria-label]="tensor.label + ' token structure'">
+                <thead>
+                  <tr>
+                    <th></th>
+                    <th>Reference</th>
+                    <th>Target</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <th>
+                      <span
+                        class="structure-shape-label"
+                        matTooltip="Shape of this token's KV tensor: KV heads × channels."
+                        tabindex="0"
+                        >Shape <mat-icon>info_outline</mat-icon></span
+                      >
+                    </th>
+                    @for (side of sides; track side) {
+                      <td>
+                        <explorer-info-value
+                          [label]="tensor.label + ' ' + side + ' token shape (KV heads × channels)'"
+                          [value]="structureShape(tensor.sources[side])"
+                        />
+                      </td>
+                    }
+                  </tr>
+                  <tr>
+                    <th>Dtype</th>
+                    @for (side of sides; track side) {
+                      <td>
+                        <explorer-info-value
+                          [label]="tensor.label + ' ' + side + ' dtype'"
+                          [value]="structureDtype(tensor.sources[side])"
+                        />
+                      </td>
+                    }
+                  </tr>
+                  @if (
+                    !structureAvailable(tensor.sources.ref) ||
+                    !structureAvailable(tensor.sources.target)
+                  ) {
+                    <tr>
+                      <th>Status</th>
+                      @for (side of sides; track side) {
+                        <td>
+                          <explorer-info-value
+                            [label]="tensor.label + ' ' + side + ' availability'"
+                            [value]="structureStatus(tensor.sources[side])"
+                          />
+                        </td>
+                      }
+                    </tr>
+                  }
+                </tbody>
+              </table>
+              <kv-metric-values
+                class="token-metrics"
+                [metrics]="tensor.comparison?.metrics ?? null"
+                [metricStatus]="tensor.comparison?.metric_status ?? null"
+                [label]="tensor.label + ' overall numerical comparison'"
+              />
+              @if (tensor.reason) {
+                <p class="detail-note">{{ tensor.reason }}</p>
+              }
+              <div class="head-list" [attr.aria-label]="tensor.label + ' heads'">
+                @for (id of visibleHeads(tensor.kind); track id) {
+                  <button
+                    class="head-row"
+                    [attr.aria-label]="
+                      (headOpen(tensor.kind, id) ? 'Collapse ' : 'Expand ') +
+                      tensor.label +
+                      ' Head ' +
+                      id
+                    "
+                    [attr.aria-expanded]="headOpen(tensor.kind, id)"
+                    [attr.aria-controls]="'kv-' + tensor.kind + '-head-' + id"
+                    (click)="toggleHead(tensor.kind, id)"
+                  >
+                    <mat-icon>{{
+                      headOpen(tensor.kind, id) ? 'expand_more' : 'chevron_right'
+                    }}</mat-icon
+                    ><span>Head {{ id }}</span>
+                  </button>
+                  @if (headOpen(tensor.kind, id)) {
+                    <div
+                      class="head-detail"
+                      [id]="'kv-' + tensor.kind + '-head-' + id"
+                      role="region"
+                      [attr.aria-label]="tensor.label + ' Head ' + id + ' details'"
+                    >
+                      <kv-head-inspector
+                        [selection]="headSelection(tensor.kind, id)"
+                        [active]="tensorExpanded()[tensor.kind]"
+                        [view]="headView(tensor.kind, id).view"
+                        (viewChange)="setHeadView(tensor.kind, id, {view: $event})"
+                        [numericalExpanded]="headView(tensor.kind, id).numericalExpanded"
+                        (numericalExpandedChange)="
+                          setHeadView(tensor.kind, id, {numericalExpanded: $event})
+                        "
+                        [channelsExpanded]="headView(tensor.kind, id).channelsExpanded"
+                        (channelsExpandedChange)="
+                          setHeadView(tensor.kind, id, {channelsExpanded: $event})
+                        "
+                      />
+                    </div>
+                  }
+                }
+              </div>
+              @if (headPages(tensor.kind) > 1) {
+                <nav class="head-pages" [attr.aria-label]="tensor.label + ' head pages'">
+                  <button
+                    class="icon-button"
+                    [attr.aria-label]="'Previous ' + tensor.label + ' heads'"
+                    [disabled]="headPage(tensor.kind) === 0"
+                    (click)="moveHeadPage(tensor.kind, -1)"
+                  >
+                    <mat-icon>chevron_left</mat-icon></button
+                  ><span>{{ headPage(tensor.kind) + 1 }} / {{ headPages(tensor.kind) }}</span
+                  ><button
+                    class="icon-button"
+                    [attr.aria-label]="'Next ' + tensor.label + ' heads'"
+                    [disabled]="headPage(tensor.kind) >= headPages(tensor.kind) - 1"
+                    (click)="moveHeadPage(tensor.kind, 1)"
+                  >
+                    <mat-icon>chevron_right</mat-icon>
+                  </button>
+                </nav>
+              }
+            }
+          </explorer-info-section>
+        }
+      </div>
+    </aside>
+  }
+</section>
+
+<ng-template #chartFooter>
+  <footer class="graph-footer" [class.matrix-footer]="view() === 'heatmap'">
+    <div
+      class="scale"
+      aria-label="Metric color scale"
+      title="Colors stay fixed while zooming. A range cell shows its maximum; this does not mean every position has that value."
+    >
+      <span
+        >{{ metricLabel() }}{{ metric() === 'relative_l2' ? ' (%)' : '' }} ·
+        {{ colorScale() === 'auto' ? 'snapshot range' : 'fixed thresholds' }}</span
+      >
+      <div class="bands" [class.continuous]="colorScale() === 'auto'">
+        @if (colorScale() === 'thresholds') {
+          @for (i of [0, 1, 2, 3, 4]; track i) {
+            <i [style.background]="paletteColor(i * 25)"></i>
+          }
+        }
+      </div>
+      <div class="scale-labels">
+        @for (value of scale(); track $index) {
+          <span>{{ value }}</span>
+        }
+      </div>
+      <small><i class="missing-swatch"></i> Not captured / undefined</small>
+    </div>
+  </footer>
+</ng-template>
+
+<ng-template
+  overlayDialog
+  [origin]="contextOrigin"
+  [open]="popup() === 'context'"
+  (closed)="closePopup()"
+>
+  <section class="kv-popup" overlayPanel aria-label="KV observation">
+    <header>
+      <strong>OBSERVATION</strong
+      ><button
+        mat-icon-button
+        class="popup-close"
+        aria-label="Close observation"
+        (click)="closePopup()"
+      >
+        <mat-icon>close</mat-icon>
+      </button>
+    </header>
+    <label
+      >Turn
+      <select
+        aria-label="KV turn"
+        cdkFocusInitial
+        [value]="selectedTurn()"
+        (change)="chooseTurn(+$any($event.target).value)"
+      >
+        @for (turn of state.session()?.turns ?? []; track turn.n) {
+          <option [value]="turn.n" [selected]="turn.n === selectedTurn()">Turn {{ turn.n }}</option>
+        }
+      </select></label
+    >
+    <div class="context-list">
+      @for (c of analysis()?.contexts ?? []; track c.id) {
+        <button [attr.aria-pressed]="context()?.id === c.id" (click)="chooseContext(c)">
+          <span>{{ c.label }}</span
+          ><small
+            >{{ c.layers.length }} tensors ·
+            {{ c.source === 'explicit' ? 'Explicit comparison' : c.runtime }}</small
+          >
+        </button>
+      }
+      @if (loading()) {
+        <p role="status">Loading observations…</p>
+      }
+    </div>
+  </section>
+</ng-template>
+<ng-template
+  overlayDialog
+  [origin]="displayOrigin"
+  [open]="popup() === 'display'"
+  (closed)="closePopup()"
+>
+  <section class="kv-popup" overlayPanel aria-label="Display">
+    <header>
+      <strong>DISPLAY</strong
+      ><button
+        mat-icon-button
+        class="popup-close"
+        aria-label="Close Display"
+        (click)="closePopup()"
+      >
+        <mat-icon>close</mat-icon>
+      </button>
+    </header>
+    <form (ngSubmit)="applyDisplay()">
+      <label
+        >Metric
+        <select name="metric" aria-label="Display metric" [(ngModel)]="draftMetric" cdkFocusInitial>
+          @for (m of metrics; track m.id) {
+            <option [value]="m.id">{{ m.label }}</option>
+          }
+        </select></label
+      ><label
+        >Tensor
+        <select name="kind" aria-label="Display tensor" [(ngModel)]="draftKind">
+          <option value="key">Key</option>
+          <option value="value">Value</option>
+        </select></label
+      ><label
+        >Head
+        <select name="head" aria-label="Display head" [(ngModel)]="draftHead">
+          <option value="max">Max over heads</option>
+          <option value="mean">Mean over heads</option>
+          @for (h of heads(); track h) {
+            <option [value]="'' + h">Head {{ h }}</option>
+          }
+        </select></label
+      ><label
+        >Color scale
+        <select name="scale" aria-label="Color scale" [(ngModel)]="draftScale">
+          <option value="auto">Snapshot range</option>
+          <option value="thresholds">Fixed thresholds</option>
+        </select></label
+      >
+      <p>
+        Snapshot range keeps colors fixed while zooming. Find conditions remain unchanged. Undefined
+        heads are excluded from aggregation.
+      </p>
+      <footer><button mat-flat-button color="primary" type="submit">Apply</button></footer>
+    </form>
+  </section>
+</ng-template>
+<ng-template
+  overlayDialog
+  [origin]="findOrigin"
+  [open]="popup() === 'find'"
+  (closed)="closePopup()"
+>
+  <section class="kv-popup find-popup" overlayPanel aria-label="Find">
+    <header>
+      <strong>FIND</strong
+      ><button mat-icon-button class="popup-close" aria-label="Close Find" (click)="closePopup()">
+        <mat-icon>close</mat-icon>
+      </button>
+    </header>
+    <form (ngSubmit)="applyFind()">
+      <label for="kv-formula">Formula</label
+      ><input
+        id="kv-formula"
+        name="formula"
+        aria-label="Find formula"
+        [(ngModel)]="draftFormula"
+        maxlength="1000"
+        autocomplete="off"
+        spellcheck="false"
+        cdkFocusInitial
+        (input)="queryError.set('')"
+      />
+      <p>
+        Find heads across this observation. Results group matches by Layer × Position × Tensor,
+        independently of Display.
+      </p>
+      @if (queryError()) {
+        <p role="alert">{{ queryError() }}</p>
+      }
+      <details>
+        <summary>Formula reference</summary>
+        <p><code>relative_l2</code> · <code>max_abs</code> · <code>cosine_distance</code></p>
+        <p>Compare &gt; &gt;= &lt; &lt;= == != · Combine AND OR NOT · Group with parentheses.</p>
+        <p>
+          Relative L2 uses ratios: 0.1 = 10%. Missing values remain unknown, including under NOT.
+        </p>
+      </details>
+      <div class="examples">
+        <button class="outlined" type="button" (click)="draftFormula = 'relative_l2 > 10%'">
+          Relative L2 &gt; 10%</button
+        ><button
+          class="outlined"
+          type="button"
+          (click)="draftFormula = 'relative_l2 > 10% AND cosine_distance > 0.01'"
+        >
+          L2 + cosine distance
+        </button>
+      </div>
+      <footer>
+        <button mat-button type="button" (click)="clearFind()">Clear</button
+        ><button mat-flat-button color="primary" type="submit">Apply</button>
+      </footer>
+    </form>
+  </section>
+</ng-template>

@@ -1,0 +1,113 @@
+{
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "$id": "model-debugger:capture-job",
+ "title": "CaptureJob",
+ "description": "One native execution request: built by runtime/runner_device.py, decoded and validated by Core/CaptureJob.swift.",
+ "type": "object",
+ "required": [
+  "formatVersion",
+  "id",
+  "modelSHA256",
+  "prompt",
+  "contextLength",
+  "maxOutputTokens",
+  "manifest"
+ ],
+ "additionalProperties": false,
+ "properties": {
+  "formatVersion": {
+   "const": 1
+  },
+  "id": {
+   "type": "string",
+   "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+  },
+  "modelSHA256": {
+   "type": "string",
+   "pattern": "^[0-9a-fA-F]{64}$"
+  },
+  "prompt": {
+   "type": "string",
+   "minLength": 1
+  },
+  "contextLength": {
+   "enum": [
+    1024,
+    4096
+   ]
+  },
+  "maxOutputTokens": {
+   "type": "integer",
+   "minimum": 1,
+   "maximum": 32
+  },
+  "backend": {
+   "enum": [
+    "CPU",
+    "GPU"
+   ]
+  },
+  "manifest": {
+   "$ref": "tap-manifest"
+  },
+  "messages": {
+   "type": "array",
+   "maxItems": 128,
+   "items": {
+    "type": "object",
+    "required": [
+     "role",
+     "content"
+    ],
+    "properties": {
+     "role": {
+      "enum": [
+       "user",
+       "assistant"
+      ]
+     },
+     "content": {
+      "type": "array",
+      "items": {
+       "type": "object",
+       "required": [
+        "type",
+        "text"
+       ],
+       "properties": {
+        "type": {
+         "const": "text"
+        },
+        "text": {
+         "type": "string"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "expect": {
+   "description": "Where the Server left this Conversation. The Runner refuses the message, before touching the KV cache, when its own state differs.",
+   "type": "object",
+   "required": [
+    "turnSequence",
+    "tokenCount"
+   ],
+   "additionalProperties": false,
+   "properties": {
+    "runtimeInstance": {
+     "type": "string"
+    },
+    "turnSequence": {
+     "type": "integer",
+     "minimum": 0
+    },
+    "tokenCount": {
+     "type": "integer",
+     "minimum": 0
+    }
+   }
+  }
+ }
+}

@@ -1,0 +1,81 @@
+/**
+ * @license
+ * Copyright 2026 The AI Edge Model Explorer Authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ==============================================================================
+ */
+
+@use '../../theme/explorer_controls' as controls;
+// Model Explorer settings_dialog typography and semantic surfaces;
+// header/body/footer geometry follows the approved appSettingsDialog HTML.
+// ME M2 titles and text buttons share the native foreground. Restore it locally
+// because the application dialog container overrides the title token.
+:host {
+  display: block;
+  font: 13px/24px var(--me-font-family);
+  color: var(--me-on-surface-color);
+  --mat-dialog-subhead-color: var(--mat-button-text-label-text-color);
+}
+header {
+  padding: 33px 24px 9px;
+  margin-bottom: 1px;
+  border-bottom: 1px solid var(--me-outline-variant-color);
+  background: var(--me-surface-container-high-color);
+}
+h2[mat-dialog-title] {
+  padding: 0;
+  margin: 0;
+  font: 500 24px/32px var(--me-font-family);
+  letter-spacing: 0.25px;
+  color: var(--mat-dialog-subhead-color);
+}
+h2[mat-dialog-title]::before {
+  display: none;
+}
+p {
+  margin: 6px 0 0;
+  font: 500 12px/32px var(--me-font-family);
+  letter-spacing: 0.25px;
+  color: var(--me-on-surface-variant-color);
+}
+mat-dialog-content {
+  padding: 20px 24px 34px !important;
+  box-sizing: border-box;
+  background: var(--me-surface-container-low-color);
+  color: inherit;
+}
+label {
+  display: block;
+  font: 400 13px/16px var(--me-font-family);
+  margin-bottom: 4px;
+  color: var(--me-on-surface-color);
+}
+.switch-line {
+  height: 24px;
+  display: flex;
+  align-items: center;
+}
+mat-dialog-actions {
+  min-height: 53px;
+  padding: 8px;
+  border-top: 1px solid var(--me-outline-variant-color);
+  background: var(--me-surface-container-high-color);
+}
+:host button[mat-button] {
+  font: 500 14px/20px var(--me-font-family);
+  letter-spacing: normal;
+  color: var(--me-on-surface-color);
+}
+
+@include controls.text-actions;

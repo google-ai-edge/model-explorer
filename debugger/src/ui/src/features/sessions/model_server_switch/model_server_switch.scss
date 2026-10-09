@@ -1,0 +1,101 @@
+/**
+ * @license
+ * Copyright 2026 The AI Edge Model Explorer Authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ==============================================================================
+ */
+
+:host {
+  display: inline-block;
+  max-width: 100%;
+}
+.model-server {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 28px;
+  box-sizing: border-box;
+  border: 1px solid var(--me-outline-variant-color);
+  border-radius: 14px;
+  padding: 2px 10px;
+  background: transparent;
+  color: var(--me-on-surface-color);
+  font: 500 12px/20px var(--me-font-family);
+  white-space: nowrap;
+  cursor: pointer;
+}
+.model-server:hover:not(:disabled),
+.model-server:focus-visible {
+  background: var(--me-surface-container-high-color);
+}
+.model-server:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+.name {
+  font-weight: 400;
+  color: var(--me-on-surface-variant-color);
+}
+.dot {
+  width: 8px;
+  height: 8px;
+  box-sizing: border-box;
+  border-radius: 50%;
+  border: 1.5px solid var(--me-on-surface-variant-color);
+}
+[data-state='off'] {
+  color: var(--me-on-surface-variant-color);
+}
+[data-state='on'] .dot {
+  border-color: var(--me-primary-color);
+  background: var(--me-primary-color);
+}
+[data-state='starting'] .dot {
+  border-color: var(--me-warning-text-color);
+  border-top-color: transparent;
+  animation: model-server-spin 0.9s linear infinite;
+}
+[data-state='failure'] {
+  border-color: var(--me-error-text-color);
+  color: var(--me-error-text-color);
+}
+[data-state='failure'] .dot {
+  border-color: var(--me-error-text-color);
+  background: var(--me-error-text-color);
+}
+mat-icon {
+  width: 14px;
+  height: 14px;
+  font-size: 14px;
+  color: var(--me-on-surface-variant-color);
+}
+.server-error {
+  display: block;
+  max-width: 220px;
+  margin-top: 2px;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  font: 12px/18px var(--me-font-family);
+  color: var(--me-error-text-color);
+}
+@keyframes model-server-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-state='starting'] .dot {
+    animation: none;
+  }
+}

@@ -1,0 +1,161 @@
+<!--
+ Copyright 2026 The AI Edge Model Explorer Authors.
+
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+ ==============================================================================
+-->
+@if (error()) {
+  <p class="error" role="alert">
+    Explicit comparison evidence could not be read. {{ error() }}
+    <button (click)="recheck()">Retry</button>
+  </p>
+}
+@if (loading()) {
+  <p class="loading" role="status">Checking explicit comparison evidence…</p>
+}
+@if (scope() === 'kv' && pairs().length) {
+  <div class="pair-picker">
+    <label
+      >Stored cache tensor
+      <select [value]="selected()?.pair_id" (change)="choose($event)">
+        @for (pair of pairs(); track pair.pair_id) {
+          <option [value]="pair.pair_id" [selected]="pair.pair_id === selected()?.pair_id">
+            Layer {{ pair.owner_layer }} · {{ pair.kind === 'key' ? 'K' : 'V' }}
+          </option>
+        }
+      </select></label
+    >
+  </div>
+}
+@for (pair of shown(); track pair.pair_id) {
+  <section aria-label="Explicit runtime comparison">
+    <header>
+      <div>
+        <h2>PyTorch / LiteRT-LM comparison</h2>
+        <p>Turn {{ pair.observation.turn }} · {{ pair.observation.phase }} · {{ pair.semantic }}</p>
+      </div>
+      <button (click)="recheck()" [disabled]="loading()">Recheck evidence</button>
+    </header>
+    <p>{{ pair.comparison_basis }}</p>
+    <div class="summary">
+      <span>Compared positions {{ range(pair) }}</span
+      ><span>Compared shape [{{ pair.shape.join(', ') }}]</span
+      ><span>Weight equivalence: {{ pair.weight_equivalence }}</span>
+    </div>
+    <div class="table-wrap">
+      <table aria-label="Explicit comparison metrics">
+        <thead>
+          <tr>
+            @for (metric of state.metrics; track metric) {
+              <th>{{ metric }}</th>
+            }
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            @for (metric of state.metrics; track metric) {
+              <td>{{ state.format(pair.metrics[metric]?.value) }}</td>
+            }
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <details>
+      <summary>Input correspondence and original tensors</summary>
+      <p>
+        {{ pair.accepted_token_count }} prompt tokens accepted by LiteRT. At this observation, it
+        has processed {{ pair.processed_token_count }} positions and token
+        {{ pair.pending_token_id }} remains pending. Only the explicitly selected common positions
+        enter this comparison.
+      </p>
+      <div class="runs">
+        @for (role of ['ref', 'target']; track role) {
+          @let run = pair.runs[role];
+          <article>
+            <h3>{{ role === 'ref' ? 'Reference' : 'Target' }} · {{ run.runtime }}</h3>
+            <dl>
+              @if (run.observation; as observation) {
+                <dt>Original execution</dt>
+                <dd>
+                  Turn {{ observation.turn }} · {{ observation.phase }} · step
+                  {{ observation.step ?? 'Unknown' }}
+                  @if (observation.forward_id !== undefined) {
+                    · forward {{ observation.forward_id }}
+                  }
+                  @if (observation.signature) {
+                    · {{ observation.signature }}
+                  }
+                </dd>
+              }
+              <dt>Original shape / dtype</dt>
+              <dd>
+                [{{ run.original_tensor.shape.join(', ') }}] · {{ run.original_tensor.dtype }}
+              </dd>
+              <dt>Axes</dt>
+              <dd>{{ run.layout.join(', ') }}</dd>
+              <dt>Explicit comparison view</dt>
+              <dd>[{{ view(run) }}]</dd>
+              @if (run.axis_order) {
+                <dt>Comparison axis order</dt>
+                <dd>[{{ run.axis_order.join(', ') }}]</dd>
+              }
+              @if (run.dequantization; as q) {
+                <dt>Comparison dequantization</dt>
+                <dd>{{ q.formula }} · scale {{ q.scale }} · zero point {{ q.zero_point }}</dd>
+              }
+              <dt>Raw file</dt>
+              <dd>{{ run.original_tensor.path }}</dd>
+              <dt>Tensor key</dt>
+              <dd>{{ run.original_tensor.key }}</dd>
+              <dt>Raw SHA256</dt>
+              <dd>{{ run.original_tensor.sha256 }}</dd>
+            </dl>
+          </article>
+        }
+      </div>
+      <p>LiteRT quantization: {{ profile(pair.quantization_profile) }}</p>
+    </details>
+    @if (scope() === 'kv') {
+      <div class="preview-controls">
+        <label
+          >Values
+          <select [value]="previewMode()" (change)="chooseMode($event)">
+            <option value="original">Original raw tensor</option>
+            <option value="comparison">Explicit comparison view</option>
+          </select></label
+        >
+        <nav aria-label="Pair value pages">
+          <button [disabled]="offset() === 0" (click)="previous()">Previous values</button
+          ><button [disabled]="!nextAvailable()" (click)="next()">Next values</button>
+        </nav>
+      </div>
+      <p>Flat preview from offset {{ offset() }} · up to 32 values per run.</p>
+      @if (previewError()) {
+        <p role="alert">{{ previewError() }}</p>
+      }
+      <div class="runs">
+        @for (preview of previews(); track $index) {
+          <article>
+            <h3>{{ $index === 0 ? 'Reference' : 'Target' }}</h3>
+            @if (preview) {
+              <p class="raw-shape">{{ preview.dtype }} [{{ preview.shape.join(', ') }}]</p>
+              <pre>{{ preview.values.join(', ') }}</pre>
+            } @else {
+              <p>{{ previewError() ? 'Preview unavailable' : 'Loading values…' }}</p>
+            }
+          </article>
+        }
+      </div>
+    }
+  </section>
+}

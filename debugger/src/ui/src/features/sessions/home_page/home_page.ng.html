@@ -1,0 +1,221 @@
+<!--
+ Copyright 2026 The AI Edge Model Explorer Authors.
+
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+ ==============================================================================
+-->
+<main class="session-home">
+  @if (preferences.showWelcome()) {
+    <welcome-card />
+  }
+  @if (editor(); as request) {
+    @defer (on immediate) {
+      <session-editor
+        [request]="request"
+        (finished)="finishEditor($event)"
+        (created)="sessionCreated()"
+      />
+    } @error {
+      <section class="sessions">
+        <div class="load-state" role="alert">
+          <h2>Session editor unavailable</h2>
+          <p>Reload the page to try again.</p>
+          <button mat-button (click)="reloadPage()">Reload</button>
+        </div>
+      </section>
+    }
+  } @else {
+    <section class="sessions" aria-labelledby="sessions-title">
+      <header>
+        <div>
+          <h2 id="sessions-title">Debug Sessions</h2>
+          <p>Create and manage comparison sessions.</p>
+        </div>
+        <button
+          mat-flat-button
+          class="new-session"
+          [disabled]="sessions.loading() || !sessions.listing()?.capabilities?.create"
+          (click)="newSession()"
+        >
+          <mat-icon>add</mat-icon>New session
+        </button>
+      </header>
+      @if (sessions.listing()?.unavailable_reason) {
+        <p class="capability-note" role="status">{{ sessions.listing()?.unavailable_reason }}</p>
+      }
+      @if (renameError()) {
+        <p role="alert">{{ renameError() }}</p>
+      }
+      @if (sessions.refreshError()) {
+        <p class="capability-note" role="status">
+          Status refresh unavailable. Showing the last known state.
+          <button mat-button (click)="sessions.load(true)">Retry</button>
+        </p>
+      }
+      @if (sessions.error()) {
+        <div class="load-state" role="alert">
+          <h3>Sessions unavailable</h3>
+          <p>{{ sessions.error() }}</p>
+          <button mat-button (click)="sessions.load()">Retry</button>
+        </div>
+      } @else if (sessions.loading()) {
+        <div class="load-state" role="status">
+          <mat-spinner diameter="24" /><span>Loading sessions…</span>
+        </div>
+      } @else if (sessions.items().length) {
+        <div class="table-scroll">
+          <table>
+            <colgroup>
+              <col class="id-col" />
+              <col class="name-col" />
+              <col class="created-col" />
+              <col class="model-col" />
+              <col class="server-col" />
+              <col class="open-col" />
+              <col class="more-col" />
+            </colgroup>
+            <thead>
+              <tr>
+                <th scope="col">ID</th>
+                <th scope="col">Name</th>
+                <th scope="col">Created</th>
+                <th scope="col">Model</th>
+                <th scope="col">Model Server</th>
+                <th scope="col" class="center">Open</th>
+                <th scope="col"><span class="sr-only">More actions</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (session of sessions.items(); track session.id) {
+                <tr [attr.data-session-id]="session.id">
+                  <td>
+                    <button
+                      mat-button
+                      class="id-button"
+                      aria-label="Copy session ID"
+                      [matTooltip]="session.id"
+                      (click)="copy(session)"
+                    >
+                      {{ session.id.slice(0, 8) }}
+                    </button>
+                  </td>
+                  <td>
+                    <div class="session-name-cell">
+                      @if (editing() === session.id) {
+                        <input
+                          class="session-name-input"
+                          aria-label="Session name"
+                          maxlength="80"
+                          #nameInput
+                          [value]="session.name"
+                          [readOnly]="saving()"
+                          (input)="nameInput.setCustomValidity('')"
+                          (keydown)="renameKey($event, session, nameInput)"
+                          (blur)="finishRename(session, nameInput, true)"
+                        />
+                      }
+                      <span [hidden]="editing() === session.id" [matTooltip]="session.name">{{
+                        session.name
+                      }}</span
+                      ><button
+                        mat-icon-button
+                        class="rename"
+                        [style.display]="editing() === session.id ? 'none' : null"
+                        #renameButton
+                        [attr.aria-label]="'Rename ' + session.name"
+                        matTooltip="Rename session"
+                        [disabled]="saving() || !sessions.listing()?.capabilities?.rename"
+                        (click)="startRename(session, renameButton)"
+                      >
+                        <mat-icon>edit</mat-icon>
+                      </button>
+                    </div>
+                  </td>
+                  <td
+                    class="created"
+                    [matTooltip]="
+                      session.created_at || 'Creation time was not recorded in this capture.'
+                    "
+                  >
+                    {{
+                      session.created_at
+                        ? (session.created_at | date: 'yyyy-MM-dd HH:mm')
+                        : 'Not captured'
+                    }}
+                  </td>
+                  <td class="model" [matTooltip]="session.model">{{ session.model }}</td>
+                  <td class="server-cell"><model-server-switch [session]="session" /></td>
+                  <td class="center">
+                    <!-- The hint sits on a wrapper: a disabled button shows no tooltip. -->
+                    <span [matTooltip]="openHint(session)"
+                      ><button
+                        mat-icon-button
+                        class="row-action"
+                        data-session-action="open"
+                        [disabled]="!canOpen(session)"
+                        [attr.aria-label]="'Open ' + session.name"
+                        [attr.aria-description]="canOpen(session) ? null : openHint(session)"
+                        (click)="openSession(session)"
+                      >
+                        <mat-icon>login</mat-icon>
+                      </button></span
+                    >
+                  </td>
+                  <td class="more">
+                    <button
+                      mat-icon-button
+                      class="row-action"
+                      data-session-action="more"
+                      #moreButton
+                      [attr.aria-label]="'More actions for ' + session.name"
+                      matTooltip="More actions"
+                      [matMenuTriggerFor]="actions"
+                    >
+                      <mat-icon>more_vert</mat-icon>
+                    </button>
+                    <mat-menu #actions="matMenu" xPosition="before" class="session-actions-menu"
+                      ><button mat-menu-item (click)="showConfiguration(session, moreButton)">
+                        <mat-icon>settings</mat-icon>Configuration
+                      </button>
+                      <div class="menu-divider" role="separator"></div>
+                      <button
+                        mat-menu-item
+                        [disabled]="
+                          sessions.active(session) || !sessions.listing()?.capabilities?.delete
+                        "
+                        (click)="deleteSession(session, moreButton)"
+                      >
+                        <mat-icon>delete_outline</mat-icon>Delete
+                      </button></mat-menu
+                    >
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+        <footer>
+          <span
+            >{{ sessions.items().length }}
+            {{ sessions.items().length === 1 ? 'session' : 'sessions' }}</span
+          >
+        </footer>
+      } @else {
+        <div class="load-state">
+          <mat-icon>folder_open</mat-icon>
+          <h3>No debug sessions yet</h3>
+        </div>
+      }
+    </section>
+  }
+</main>

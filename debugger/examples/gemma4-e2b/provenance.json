@@ -1,0 +1,10 @@
+{
+  "semantic_source": "examples/gemma4-e2b/semantic.json",
+  "execution_source": "examples/gemma4-e2b/execution.json:executions",
+  "sha256": {
+    "semantic.json": "fd12af3fbb2cfb672bb8f842ad7d3e786be56384108621c5dac4946d5e57ef45",
+    "execution.json": "20871e5e22ad4437c1bfe424bb76673f36fbd994eabd7be608f3b6b0fc41e995",
+    "session.json": "f213b5e65b523dca082f3253922a0edc9ad29d0f66f2fa345a5a489be6867def"
+  },
+  "raw_tensors_included": false
+}

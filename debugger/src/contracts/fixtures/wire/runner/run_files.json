@@ -1,0 +1,18 @@
+{
+  "type": "run_files",
+  "requestId": "3f6c2c9e-6c1a-4f7b-9d2e-1b7a9d5c0e21",
+  "manifestId": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+  "generationStatus": "succeeded",
+  "files": [
+    {
+      "path": "terminal.json",
+      "size": 41,
+      "sha256": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+    },
+    {
+      "path": "raw/000000.safetensors",
+      "size": 1048576,
+      "sha256": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+    }
+  ]
+}

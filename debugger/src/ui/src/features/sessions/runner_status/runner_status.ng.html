@@ -1,0 +1,90 @@
+<!--
+ Copyright 2026 The AI Edge Model Explorer Authors.
+
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+ ==============================================================================
+-->
+<button
+  mat-button
+  type="button"
+  class="runner-trigger"
+  cdkOverlayOrigin
+  #origin="cdkOverlayOrigin"
+  [attr.aria-label]="side() + ' Model Server · ' + status()"
+  aria-haspopup="dialog"
+  [attr.aria-expanded]="open()"
+  (click)="open.set(!open())"
+>
+  <strong>{{ side() }}</strong
+  ><span
+    class="runner-state"
+    [class.failure]="
+      status() === 'Failure' || status() === 'Disconnected' || status() === 'Unknown'
+    "
+    role="status"
+    >{{ status() }}</span
+  ><mat-icon iconPositionEnd>expand_more</mat-icon>
+</button>
+<ng-template
+  overlayDialog
+  [origin]="origin"
+  [open]="open()"
+  [gap]="6"
+  [viewportMargin]="12"
+  (closed)="open.set(false)"
+>
+  <section class="runner-details" [attr.aria-label]="side() + ' Model Server details'" overlayPanel>
+    <header>
+      <h3>{{ side() }} Model Server</h3>
+      <button
+        mat-icon-button
+        cdkFocusInitial
+        aria-label="Close Model Server details"
+        (click)="open.set(false)"
+      >
+        <mat-icon>close</mat-icon>
+      </button>
+    </header>
+    <dl>
+      <dt>State</dt>
+      <dd>{{ status() }}</dd>
+      <dt>Session</dt>
+      <dd>{{ runner()?.owner?.sessionName || 'Unknown' }}</dd>
+      <dt>Server</dt>
+      <dd>
+        {{ runner()?.owner?.serverName || 'Unknown' }}
+        @if (runner()?.owner?.isCurrentServer) {
+          · This server
+        }
+      </dd>
+      <dt>Device</dt>
+      <dd>{{ runner()?.deviceName || runner()?.deviceId || run().device || 'Unknown' }}</dd>
+      <dt>Running build</dt>
+      <dd>{{ runner()?.buildId || 'Unknown' }}</dd>
+      <dt>Runtime</dt>
+      <dd>{{ run().runtime || 'Unknown' }}</dd>
+      <dt>Backend</dt>
+      <dd>{{ run().backend || 'Unknown' }}</dd>
+      <dt>Connection</dt>
+      <dd>{{ connection() }}</dd>
+      <dt>Last response</dt>
+      <dd>{{ timestamp(runner()?.lastSeen) }}</dd>
+    </dl>
+    @if (runtime.execution()?.error) {
+      <p role="alert">{{ runtime.execution()?.error }}</p>
+    }
+    @if (uncertain()) {
+      <p role="status">Status refresh unavailable. Last reported details are shown.</p>
+    }
+  </section>
+</ng-template>

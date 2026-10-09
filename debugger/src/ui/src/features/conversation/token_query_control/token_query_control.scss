@@ -1,0 +1,173 @@
+/**
+ * @license
+ * Copyright 2026 The AI Edge Model Explorer Authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ==============================================================================
+ */
+
+@use '../../../theme/explorer_controls' as controls;
+:host {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+}
+:host > button.mat-mdc-button {
+  @include controls.find-trigger;
+  width: 100%;
+}
+:host > button ::ng-deep .mdc-button__label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  flex: 1;
+}
+:host > button mat-icon {
+  font-size: 20px;
+  height: 20px;
+  width: 20px;
+  flex: none;
+}
+.query-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--me-on-surface-variant-color);
+  font: 11px/20px monospace;
+}
+.query-panel {
+  @include controls.configuration-popup;
+  width: 360px;
+  max-width: calc(100vw - 24px);
+  max-height: 70vh;
+  overflow: auto;
+  padding: 12px;
+  font: 12px/20px var(--me-font-family);
+}
+header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  font: 500 11px/20px var(--me-font-family);
+  text-transform: uppercase;
+}
+header button {
+  @include controls.compact-icon;
+}
+.formula-label {
+  display: block;
+  margin-bottom: 4px;
+}
+input {
+  @include controls.configuration-input;
+  width: 100%;
+  height: 30px;
+  font: 12px/20px monospace;
+}
+.query-panel button[mat-button] {
+  height: 30px;
+  font: 400 12px/20px var(--me-font-family);
+  letter-spacing: normal;
+}
+footer {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 12px;
+}
+footer button {
+  height: 30px;
+  min-width: 64px;
+  padding: 0 8px;
+  font: 500 14px/20px var(--me-font-family);
+  letter-spacing: normal;
+  border-radius: 4px;
+}
+details {
+  margin-top: 12px;
+}
+p {
+  font: 12px/20px var(--me-font-family);
+}
+[role='alert'] {
+  color: var(--me-error-text-color);
+}
+.query-panel input {
+  border-color: var(--me-outline-variant-color);
+  border-radius: 3px;
+  padding: 4px 6px;
+}
+.query-panel summary {
+  color: var(--me-primary-color);
+  font: 12px/24px var(--me-font-family);
+  cursor: pointer;
+}
+
+.formula-reference-body {
+  max-height: 300px;
+  overflow: auto;
+  margin-top: 8px;
+  padding-right: 4px;
+  scrollbar-width: thin;
+}
+.reference-heading {
+  display: block;
+  margin: 10px 0 4px;
+  font: 500 11px/20px var(--me-font-family);
+  color: var(--me-on-surface-variant-color);
+}
+.query-panel button.field-button {
+  display: block;
+  width: 100%;
+  height: auto;
+  padding: 4px 6px;
+  text-align: left;
+  white-space: normal;
+}
+.field-button ::ng-deep .mdc-button__label {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+}
+.field-button code {
+  font: 12px/18px monospace;
+}
+.field-button span {
+  font: 11px/16px var(--me-font-family);
+  color: var(--me-on-surface-variant-color);
+}
+.formula-reference-body dl {
+  display: grid;
+  grid-template-columns: 64px 1fr;
+  margin: 4px 0;
+  gap: 4px;
+}
+.formula-reference-body dd {
+  margin: 0;
+}
+.formula-example {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 4px 0 8px;
+}
+.formula-example code {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.formula-example span {
+  font: 11px/16px var(--me-font-family);
+  color: var(--me-on-surface-variant-color);
+}

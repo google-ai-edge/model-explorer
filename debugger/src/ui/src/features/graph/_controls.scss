@@ -1,0 +1,156 @@
+/**
+ * @license
+ * Copyright 2026 The AI Edge Model Explorer Authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ==============================================================================
+ */
+
+// Controls shared by the batch and session axes of Graph Diff.
+@mixin coordinate {
+  .pname {
+    flex: none;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--on1);
+    font-family: var(--sans);
+    line-height: 20px;
+  }
+  .at {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    color: var(--on2);
+    white-space: nowrap;
+  }
+  .at b {
+    color: var(--on1);
+    font-weight: 500;
+  }
+}
+@mixin field {
+  .field {
+    position: relative;
+  }
+  .field select {
+    appearance: none;
+    font-family: var(--sans);
+    font-size: 13px;
+    color: var(--on1);
+    background: var(--surface);
+    border: 1px solid var(--outline-s);
+    border-radius: 4px;
+    padding: 7px 30px 7px 11px;
+    height: 34px;
+    box-sizing: border-box;
+  }
+  .field::after {
+    content: '\25be';
+    position: absolute;
+    right: 11px;
+    top: 7px;
+    color: var(--on2);
+    pointer-events: none;
+    font-size: 11px;
+  }
+  .field select:focus-visible {
+    outline: none;
+    border-color: var(--pri);
+    box-shadow: 0 0 0 1px var(--pri);
+  }
+}
+@mixin segmented {
+  .seg {
+    display: flex;
+    border: 1px solid var(--outline-s);
+    border-radius: 4px;
+    overflow: hidden;
+    height: 30px;
+    flex: none;
+  }
+  .seg button {
+    font-family: Roboto, Arial, sans-serif;
+    font-size: 12px;
+    padding: 0 12px;
+    border: 0;
+    border-right: 1px solid var(--outline-s);
+    background: var(--surface);
+    color: var(--on1);
+    line-height: 1;
+  }
+  .seg button:last-child {
+    border-right: 0;
+  }
+  .seg button[aria-pressed='true'] {
+    background: var(--pri);
+    color: var(--surface);
+    font-weight: 500;
+  }
+  .seg button:disabled {
+    color: var(--on3);
+    background: var(--bg);
+    cursor: default;
+  }
+}
+@mixin panel-heading {
+  .sect {
+    flex: none;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 0 16px;
+    border-bottom: 1px solid var(--outline);
+  }
+  .sect h2 {
+    font-size: 9.5px;
+    font-weight: 500;
+    margin: 0;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--on3);
+  }
+  .sect .r {
+    margin-left: auto;
+    font-size: 11px;
+    color: var(--on2);
+  }
+}
+@mixin button {
+  .btn {
+    border: 1px solid var(--outline-s);
+    background: var(--surface);
+    color: var(--pri);
+    border-radius: 4px;
+    font-size: 12px;
+    padding: 5px 11px;
+    margin-left: 12px;
+  }
+  .btn:hover {
+    background: var(--state);
+  }
+}
+@mixin code-block {
+  pre {
+    margin: 0;
+    font-family: var(--mono);
+    font-size: 11px;
+    line-height: 17px;
+    color: var(--on1);
+    background: var(--bg);
+    border: 1px solid var(--outline);
+    border-radius: 4px;
+    padding: 12px 14px;
+    overflow: auto;
+    max-height: 420px;
+  }
+}

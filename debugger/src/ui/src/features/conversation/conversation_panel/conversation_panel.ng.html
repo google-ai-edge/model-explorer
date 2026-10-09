@@ -1,0 +1,1679 @@
+<!--
+ Copyright 2026 The AI Edge Model Explorer Authors.
+
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+ ==============================================================================
+-->
+@if (workspace.mode() === 'Debug') {
+  <!-- The design study frames the Target column in Debug: a hairline from the pane split to the
+       details panel, rounded at the top, over the content and under the panel and the toolbar. -->
+  <div
+    class="target-frame"
+    aria-hidden="true"
+    [style.--inspector-width.px]="details() ? panelWidth() : 0"
+  ></div>
+}
+<div
+  class="reading"
+  [style.--token-line-height.px]="boundaries() && workspace.mode() === 'Debug' ? 28 : 26"
+  (wheel)="trackReadingIntent($event)"
+  (keydown)="trackReadingIntent($event)"
+  (pointerdown)="trackReadingIntent($event)"
+  (scroll)="readingScrolled()"
+  [class.virtual-reading]="usesVirtual()"
+  [class.chat-reading]="workspace.mode() === 'Chat'"
+  [class.with-inspector]="workspace.mode() === 'Debug' && details()"
+  [style.--inspector-width.px]="panelWidth()"
+>
+  <div class="column-headings">
+    @for (run of runs(); track run.id) {
+      <header>
+        <div class="runtime-name">
+          @if (workspace.mode() === 'Chat') {
+            <runner-status [run]="run" />
+          } @else {
+            <strong>{{ run.id === 'ref' ? 'Reference' : 'Target' }}</strong>
+          }
+          @if (workspace.mode() === 'Debug' && run.id === 'target') {
+            <span class="target-state" role="status">Debugging</span>
+          }
+        </div>
+        <span
+          [matTooltip]="
+            (run.runtime || 'Runtime not captured') +
+            ' · ' +
+            (run.backend || 'Backend not captured') +
+            ' · ' +
+            (run.precision || 'Precision not captured')
+          "
+          >{{
+            run.id === 'ref'
+              ? 'Baseline conversation'
+              : workspace.mode() === 'Debug'
+                ? 'Conversation under inspection'
+                : 'Comparison conversation'
+          }}</span
+        >
+      </header>
+    }
+  </div>
+  @if (!workspace.chatHasCapture() && !liveGeneration()) {
+    @if (workspace.mode() === 'Chat') {
+      <empty-chat-demo />
+    }
+  }
+  <div class="turns">
+    @if (longAlignmentUnavailable()) {
+      <p class="capture-note" role="status">
+        Content alignment unavailable for this long capture. Text remains readable; use Debug →
+        Steps to inspect recorded tokens.
+      </p>
+    }
+    @for (turn of turns(); track turn.n) {
+      <section
+        class="turn"
+        [class.debug-turn]="workspace.mode() === 'Debug'"
+        [attr.data-turn]="turn.n"
+        [attr.aria-label]="'Turn ' + turn.n"
+      >
+        @for (run of runs(); track run.id) {
+          <article
+            class="conversation-side"
+            [attr.data-runtime]="run.id"
+            [class.target]="run.id === 'target'"
+          >
+            @if (workspace.mode() === 'Debug') {
+              <div
+                class="phase-actions"
+                [class.stageActions]="run.id === 'target'"
+                [class.stageActionsSpacer]="run.id === 'ref'"
+                data-stage="start"
+              >
+                @if (run.id === 'target') {
+                  <span [matTooltip]="kvReason(turn.n, 'start')"
+                    ><button
+                      class="graph-link"
+                      [disabled]="!kvSnapshot(turn.n, 'start')"
+                      (click)="openKv(turn.n, 'start')"
+                      [attr.aria-label]="'KV Diff · Turn Start, turn ' + turn.n"
+                    >
+                      <span class="button-icon" aria-hidden="true">storage</span>KV Diff · Turn
+                      Start
+                    </button></span
+                  >
+                }
+              </div>
+            }
+            <section
+              [class.node-compact]="
+                workspace.mode() === 'Debug' && nodeCollapsed(turn.n, run.id, 'prefill')
+              "
+              class="phase-node inputNode"
+              [attr.role]="workspace.mode() === 'Debug' ? 'group' : null"
+              [attr.tabindex]="workspace.mode() === 'Debug' ? 0 : null"
+              [attr.aria-label]="
+                'Turn ' + turn.n + ' / Prefill · ' + (run.id === 'ref' ? 'Reference' : 'Target')
+              "
+              [attr.data-node-selected]="stageSelected(turn.n, 'prefill') ? '' : null"
+              (click)="selectStagePointer($event, turn.n, run.id, 'prefill')"
+              (keydown)="selectStageKey($event, turn.n, run.id, 'prefill')"
+              [attr.data-node-turn]="turn.n"
+              data-node-stage="prefill"
+              [attr.data-node-side]="run.id"
+              [class.debug-node]="workspace.mode() === 'Debug'"
+            >
+              @if (workspace.mode() === 'Debug') {
+                <div class="nodeTitleTrack">
+                  <header class="phase-title nodeTitle">
+                    <span class="nodeTitleMain"
+                      ><span class="nodeTitleLabel">Turn {{ turn.n }} / Prefill</span>
+                      @if (nodeCollapsed(turn.n, run.id, 'prefill')) {
+                        <span class="nodeCompactStatus">Compact</span>
+                      }</span
+                    ><span class="nodeTitleControls">
+                      @if (run.id === 'target') {
+                        <span class="nodeJumpControls" hidden>
+                          @for (action of ['previous', 'start', 'end', 'next']; track action) {
+                            <button
+                              type="button"
+                              [attr.data-node-jump]="action"
+                              [attr.data-node-index]="nodeIndex(turn.n, 'prefill')"
+                              [disabled]="
+                                (action === 'previous' && nodeIndex(turn.n, 'prefill') === 0) ||
+                                (action === 'next' &&
+                                  nodeIndex(turn.n, 'prefill') === turns().length * 2 - 1)
+                              "
+                              [attr.aria-label]="
+                                action === 'previous'
+                                  ? 'Previous node'
+                                  : action === 'next'
+                                    ? 'Next node'
+                                    : action === 'start'
+                                      ? 'Current node start'
+                                      : 'Current node end'
+                              "
+                            >
+                              <mat-icon>{{
+                                action === 'previous'
+                                  ? 'keyboard_arrow_up'
+                                  : action === 'next'
+                                    ? 'keyboard_arrow_down'
+                                    : action === 'start'
+                                      ? 'vertical_align_top'
+                                      : 'vertical_align_bottom'
+                              }}</mat-icon>
+                            </button>
+                          }
+                        </span>
+                      }
+                      <button
+                        mat-icon-button
+                        class="node-toggle"
+                        [attr.data-node-toggle]="''"
+                        [attr.data-node-index]="nodeIndex(turn.n, 'prefill')"
+                        [attr.aria-label]="
+                          nodeCollapsed(turn.n, run.id, 'prefill') ? 'Expand node' : 'Collapse node'
+                        "
+                        [attr.aria-expanded]="!nodeCollapsed(turn.n, run.id, 'prefill')"
+                      >
+                        <mat-icon>{{
+                          nodeCollapsed(turn.n, run.id, 'prefill') ? 'unfold_more' : 'unfold_less'
+                        }}</mat-icon>
+                      </button></span
+                    >
+                  </header>
+                </div>
+              }
+              @if (workspace.mode() === 'Debug' && nodeCollapsed(turn.n, run.id, 'prefill')) {
+                <div
+                  class="nodeContextPreview"
+                  [attr.aria-label]="'Compact Prefill preview · ' + run.id + ' · Turn ' + turn.n"
+                >
+                  <mat-icon aria-hidden="true">subject</mat-icon
+                  ><span class="nodeContextText"
+                    ><span class="nodePreviewTokens"
+                      ><span class="nodePreviewReadonly">{{
+                        compactInput(turn.n, run.id)
+                      }}</span></span
+                    ></span
+                  ><span class="nodeContextCount">{{
+                    compactCount(turn.n, run.id, 'prefill')
+                  }}</span>
+                </div>
+              }
+              <div
+                class="node-reveal"
+                [class.collapsed]="
+                  workspace.mode() === 'Debug' && nodeCollapsed(turn.n, run.id, 'prefill')
+                "
+                [attr.inert]="
+                  workspace.mode() === 'Debug' && nodeCollapsed(turn.n, run.id, 'prefill')
+                    ? ''
+                    : null
+                "
+              >
+                <div>
+                  @if (workspace.mode() === 'Debug' && historyStatus(turn.n); as history) {
+                    @if (history !== 'unknown') {
+                      <div class="input-context-head">
+                        <span
+                          class="input-context-note"
+                          role="status"
+                          [attr.data-history-status]="history"
+                          [matTooltip]="historyReason(history)"
+                          >History {{ history }}</span
+                        >
+                      </div>
+                    }
+                  }
+                  @if (
+                    workspace.mode() === 'Debug' && !virtualInput(turn.n) && inputPairRows(turn.n);
+                    as rows
+                  ) {
+                    <div class="captured-input input-rows" aria-label="Captured model input">
+                      @for (row of rows; track $index) {
+                        <div
+                          class="input-row"
+                          [attr.data-message-role]="row.role"
+                          [attr.aria-label]="roleLabel(row.role) + ' · admitted tokens'"
+                        >
+                          <mat-icon aria-hidden="true">{{ roleIcon(row.role) }}</mat-icon>
+                          <div class="input-tokens" [class.boundaries]="boundaries()">
+                            @if (row.leading.length) {
+                              <div class="marker-row">
+                                @for (pair of row.leading; track pair.index) {
+                                  <span
+                                    class="input-token marker-token"
+                                    role="button"
+                                    tabindex="0"
+                                    [class.missing]="!pairToken(pair, run.id)"
+                                    [class.mismatch]="pair.match === false"
+                                    [class.selected-token]="isInputSelected(turn.n, pair.index)"
+                                    [attr.aria-pressed]="isInputSelected(turn.n, pair.index)"
+                                    [attr.aria-label]="
+                                      run.id +
+                                      ' input position ' +
+                                      pair.index +
+                                      ': ' +
+                                      spokenToken(pairToken(pair, run.id))
+                                    "
+                                    data-kind="input"
+                                    [attr.data-turn]="turn.n"
+                                    [attr.data-side]="run.id"
+                                    [attr.data-row]="pair.index"
+                                    (click)="selectInput(turn.n, pair.index, $event)"
+                                    (keydown.enter)="selectInput(turn.n, pair.index, $event)"
+                                    (keydown.space)="
+                                      selectInput(turn.n, pair.index, $event);
+                                      $event.preventDefault()
+                                    "
+                                    [innerHTML]="inputTokenHtml(pair, run.id)"
+                                  ></span>
+                                }
+                              </div>
+                            }
+                            @if (row.text.length) {
+                              <div class="input-text">
+                                @for (pair of row.text; track pair.index) {
+                                  <span
+                                    class="input-token"
+                                    role="button"
+                                    tabindex="0"
+                                    [class.missing]="!pairToken(pair, run.id)"
+                                    [class.mismatch]="pair.match === false"
+                                    [class.selected-token]="isInputSelected(turn.n, pair.index)"
+                                    [attr.aria-pressed]="isInputSelected(turn.n, pair.index)"
+                                    [attr.aria-label]="
+                                      run.id +
+                                      ' input position ' +
+                                      pair.index +
+                                      ': ' +
+                                      spokenToken(pairToken(pair, run.id))
+                                    "
+                                    data-kind="input"
+                                    [attr.data-turn]="turn.n"
+                                    [attr.data-side]="run.id"
+                                    [attr.data-row]="pair.index"
+                                    (click)="selectInput(turn.n, pair.index, $event)"
+                                    (keydown.enter)="selectInput(turn.n, pair.index, $event)"
+                                    (keydown.space)="
+                                      selectInput(turn.n, pair.index, $event);
+                                      $event.preventDefault()
+                                    "
+                                    [innerHTML]="inputTokenHtml(pair, run.id)"
+                                  ></span>
+                                }
+                              </div>
+                            }
+                            @if (row.trailing.length) {
+                              <div class="marker-row">
+                                @for (pair of row.trailing; track pair.index) {
+                                  <span
+                                    class="input-token marker-token"
+                                    role="button"
+                                    tabindex="0"
+                                    [class.missing]="!pairToken(pair, run.id)"
+                                    [class.mismatch]="pair.match === false"
+                                    [class.selected-token]="isInputSelected(turn.n, pair.index)"
+                                    [attr.aria-pressed]="isInputSelected(turn.n, pair.index)"
+                                    [attr.aria-label]="
+                                      run.id +
+                                      ' input position ' +
+                                      pair.index +
+                                      ': ' +
+                                      spokenToken(pairToken(pair, run.id))
+                                    "
+                                    data-kind="input"
+                                    [attr.data-turn]="turn.n"
+                                    [attr.data-side]="run.id"
+                                    [attr.data-row]="pair.index"
+                                    (click)="selectInput(turn.n, pair.index, $event)"
+                                    (keydown.enter)="selectInput(turn.n, pair.index, $event)"
+                                    (keydown.space)="
+                                      selectInput(turn.n, pair.index, $event);
+                                      $event.preventDefault()
+                                    "
+                                    [innerHTML]="inputTokenHtml(pair, run.id)"
+                                  ></span>
+                                }
+                              </div>
+                            }
+                          </div>
+                        </div>
+                      }
+                    </div>
+                  } @else if (
+                    workspace.mode() === 'Debug' &&
+                    !virtualInput(turn.n) &&
+                    inputRows(turn.n, run.id)
+                  ) {
+                    <div class="captured-input input-rows" aria-label="Captured model input">
+                      @for (row of inputRows(turn.n, run.id)!; track $index) {
+                        <div
+                          class="input-row"
+                          [attr.data-message-role]="row.role"
+                          [attr.aria-label]="roleLabel(row.role) + ' · admitted tokens'"
+                        >
+                          <mat-icon aria-hidden="true">{{ roleIcon(row.role) }}</mat-icon>
+                          <div class="input-tokens" [class.boundaries]="boundaries()">
+                            @if (row.leading.length) {
+                              <div class="marker-row">
+                                @for (token of row.leading; track $index) {
+                                  <span
+                                    class="input-token marker-token"
+                                    [innerHTML]="tokenHtml(token)"
+                                  ></span>
+                                }
+                              </div>
+                            }
+                            @if (row.text.length) {
+                              <div class="input-text">
+                                @for (token of row.text; track $index) {
+                                  <span class="input-token" [innerHTML]="tokenHtml(token)"></span>
+                                }
+                              </div>
+                            }
+                            @if (row.trailing.length) {
+                              <div class="marker-row">
+                                @for (token of row.trailing; track $index) {
+                                  <span
+                                    class="input-token marker-token"
+                                    [innerHTML]="tokenHtml(token)"
+                                  ></span>
+                                }
+                              </div>
+                            }
+                          </div>
+                        </div>
+                      }
+                    </div>
+                  } @else if (workspace.mode() === 'Debug' && !virtualInput(turn.n)) {
+                    <div class="captured-input" aria-label="Captured model input">
+                      @for (segment of inputSegments(turn.n, run.id); track $index) {
+                        @if (segment.kind === 'template') {
+                          <span class="template-input" data-input-template>{{ segment.text }}</span>
+                        } @else {
+                          <section
+                            class="input-segment"
+                            [attr.data-message-role]="segment.role"
+                            [attr.aria-label]="
+                              segment.role === 'system'
+                                ? 'System'
+                                : segment.role === 'user'
+                                  ? 'User'
+                                  : segment.role === 'assistant'
+                                    ? 'Assistant'
+                                    : 'Serialized input'
+                            "
+                          >
+                            <strong>{{
+                              segment.role === 'system'
+                                ? 'System'
+                                : segment.role === 'user'
+                                  ? 'User'
+                                  : segment.role === 'assistant'
+                                    ? 'Assistant'
+                                    : 'Serialized input'
+                            }}</strong>
+                            <p>{{ segment.text }}</p>
+                          </section>
+                        }
+                      } @empty {
+                        <p>Input text not captured</p>
+                      }
+                    </div>
+                  } @else {
+                    <div class="user-message">
+                      <strong
+                        >{{
+                          workspace.mode() === 'Debug' &&
+                          captured(turn.n, run.id)?.serialized_input !== undefined
+                            ? 'Serialized input'
+                            : 'User'
+                        }}
+                        @if (workspace.mode() === 'Debug') {
+                          <span>· Turn {{ turn.n }}</span>
+                        }
+                      </strong>
+                      @if (virtualInput(turn.n)) {
+                        <button
+                          mat-button
+                          class="read-full"
+                          [attr.aria-label]="'Read full input · ' + run.id + ' · Turn ' + turn.n"
+                          (click)="readFullText(turn.n, run.id, 'input')"
+                        >
+                          Read full text
+                        </button>
+                        <div
+                          class="virtualTextHost virtual-input"
+                          [attr.data-v-side]="run.id"
+                          [attr.data-v-turn]="turn.n"
+                          data-v-stage="Prefill"
+                          data-v-kind="input"
+                        ></div>
+                      } @else {
+                        <p>{{ captured(turn.n, run.id)?.input ?? 'Input text not captured' }}</p>
+                      }
+                    </div>
+                  }
+                </div>
+              </div>
+            </section>
+            @if (workspace.mode() === 'Debug') {
+              <div
+                class="phase-actions"
+                [class.stageActions]="run.id === 'target'"
+                [class.stageActionsSpacer]="run.id === 'ref'"
+                data-stage="prefill"
+              >
+                @if (run.id === 'target') {
+                  <button
+                    class="graph-link"
+                    [disabled]="!stageBatch(turn.n, 'prefill')"
+                    (click)="stageGraph(turn.n, 'prefill')"
+                    [attr.aria-label]="'Graph Diff · Prefill, turn ' + turn.n"
+                  >
+                    <span class="button-icon" aria-hidden="true">account_tree</span>Graph Diff ·
+                    Prefill</button
+                  ><span [matTooltip]="kvReason(turn.n, 'prefill')"
+                    ><button
+                      class="graph-link"
+                      [disabled]="!kvSnapshot(turn.n, 'prefill')"
+                      (click)="openKv(turn.n, 'prefill')"
+                      [attr.aria-label]="'KV Diff · Prefill End, turn ' + turn.n"
+                    >
+                      <span class="button-icon" aria-hidden="true">storage</span>KV Diff · Prefill
+                      End
+                    </button></span
+                  >
+                }
+              </div>
+            }
+            <section
+              [class.node-compact]="
+                workspace.mode() === 'Debug' && nodeCollapsed(turn.n, run.id, 'decode')
+              "
+              class="phase-node decodeNode"
+              [attr.role]="workspace.mode() === 'Debug' ? 'group' : null"
+              [attr.tabindex]="workspace.mode() === 'Debug' ? 0 : null"
+              [attr.aria-label]="
+                'Turn ' + turn.n + ' / Decode · ' + (run.id === 'ref' ? 'Reference' : 'Target')
+              "
+              [attr.data-node-selected]="stageSelected(turn.n, 'decode') ? '' : null"
+              (click)="selectStagePointer($event, turn.n, run.id, 'decode')"
+              (keydown)="selectStageKey($event, turn.n, run.id, 'decode')"
+              [attr.data-node-turn]="turn.n"
+              data-node-stage="decode"
+              [attr.data-node-side]="run.id"
+              [class.debug-node]="workspace.mode() === 'Debug'"
+            >
+              @if (workspace.mode() === 'Debug') {
+                <div class="nodeTitleTrack">
+                  <header class="phase-title nodeTitle">
+                    <span class="nodeTitleMain"
+                      ><span class="nodeTitleLabel">Turn {{ turn.n }} / Decode</span>
+                      @if (nodeCollapsed(turn.n, run.id, 'decode')) {
+                        <span class="nodeCompactStatus">Compact</span>
+                      }</span
+                    ><span class="nodeTitleControls">
+                      @if (run.id === 'target') {
+                        <span class="nodeJumpControls" hidden>
+                          @for (action of ['previous', 'start', 'end', 'next']; track action) {
+                            <button
+                              type="button"
+                              [attr.data-node-jump]="action"
+                              [attr.data-node-index]="nodeIndex(turn.n, 'decode')"
+                              [disabled]="
+                                (action === 'previous' && nodeIndex(turn.n, 'decode') === 0) ||
+                                (action === 'next' &&
+                                  nodeIndex(turn.n, 'decode') === turns().length * 2 - 1)
+                              "
+                              [attr.aria-label]="
+                                action === 'previous'
+                                  ? 'Previous node'
+                                  : action === 'next'
+                                    ? 'Next node'
+                                    : action === 'start'
+                                      ? 'Current node start'
+                                      : 'Current node end'
+                              "
+                            >
+                              <mat-icon>{{
+                                action === 'previous'
+                                  ? 'keyboard_arrow_up'
+                                  : action === 'next'
+                                    ? 'keyboard_arrow_down'
+                                    : action === 'start'
+                                      ? 'vertical_align_top'
+                                      : 'vertical_align_bottom'
+                              }}</mat-icon>
+                            </button>
+                          }
+                        </span>
+                      }
+                      <button
+                        mat-icon-button
+                        class="node-toggle"
+                        [attr.data-node-toggle]="''"
+                        [attr.data-node-index]="nodeIndex(turn.n, 'decode')"
+                        [attr.aria-label]="
+                          nodeCollapsed(turn.n, run.id, 'decode') ? 'Expand node' : 'Collapse node'
+                        "
+                        [attr.aria-expanded]="!nodeCollapsed(turn.n, run.id, 'decode')"
+                      >
+                        <mat-icon>{{
+                          nodeCollapsed(turn.n, run.id, 'decode') ? 'unfold_more' : 'unfold_less'
+                        }}</mat-icon>
+                      </button></span
+                    >
+                  </header>
+                </div>
+              }
+              @if (workspace.mode() === 'Debug' && nodeCollapsed(turn.n, run.id, 'decode')) {
+                <div
+                  class="nodeContextPreview"
+                  [attr.aria-label]="'Compact Decode preview · ' + run.id + ' · Turn ' + turn.n"
+                >
+                  <mat-icon aria-hidden="true">subject</mat-icon
+                  ><span class="nodeContextText"
+                    ><span class="nodePreviewTokens">
+                      @for (
+                        token of compactTokens().get(turn.n + ':' + run.id);
+                        track token.index
+                      ) {
+                        @if (token.ellipsis) {
+                          <span class="nodePreviewEllipsis" aria-hidden="true">…</span>
+                        }
+                        <button
+                          type="button"
+                          class="nodePreviewToken"
+                          [class.changed]="token.match === false"
+                          [class.selected]="
+                            tokenSelection()?.turn === turn.n &&
+                            tokenSelection()?.index === token.index
+                          "
+                          [attr.aria-pressed]="
+                            tokenSelection()?.turn === turn.n &&
+                            tokenSelection()?.index === token.index
+                          "
+                          [attr.aria-label]="
+                            'Preview ' +
+                            run.id +
+                            ' generation step ' +
+                            token.step +
+                            ': ' +
+                            token.text
+                          "
+                          (click)="select(turn.n, token.index, $event)"
+                        >
+                          {{ token.text }}
+                        </button>
+                      } @empty {
+                        <span class="nodePreviewReadonly">{{ compactOutput(turn.n, run.id) }}</span>
+                      }
+                    </span></span
+                  ><span class="nodeContextCount">{{
+                    compactCount(turn.n, run.id, 'decode')
+                  }}</span>
+                </div>
+              }
+              <div
+                class="node-reveal"
+                [class.collapsed]="
+                  workspace.mode() === 'Debug' && nodeCollapsed(turn.n, run.id, 'decode')
+                "
+                [attr.inert]="
+                  workspace.mode() === 'Debug' && nodeCollapsed(turn.n, run.id, 'decode')
+                    ? ''
+                    : null
+                "
+              >
+                <div class="response">
+                  @if (workspace.mode() === 'Chat') {
+                    <strong>Model</strong>
+                    @if (captured(turn.n, run.id)?.thinking; as thinking) {
+                      <div class="chat-thinking">
+                        <button
+                          type="button"
+                          class="thinking-toggle"
+                          [attr.aria-label]="'Thinking · ' + run.id + ' · Turn ' + turn.n"
+                          [attr.aria-expanded]="thinkingOpen(turn.n, run.id)"
+                          (click)="toggleThinking(turn.n, run.id)"
+                        >
+                          <mat-icon>{{
+                            thinkingOpen(turn.n, run.id) ? 'expand_more' : 'chevron_right'
+                          }}</mat-icon
+                          >Thinking
+                        </button>
+                        <div
+                          class="thinking-reveal"
+                          [class.expanded]="thinkingOpen(turn.n, run.id)"
+                          [attr.inert]="thinkingOpen(turn.n, run.id) ? null : ''"
+                        >
+                          <div>
+                            <p>{{ thinking }}</p>
+                          </div>
+                        </div>
+                      </div>
+                    }
+                    @if (virtualOutput(turn.n)) {
+                      <button
+                        mat-button
+                        class="read-full"
+                        [attr.aria-label]="'Read full response · ' + run.id + ' · Turn ' + turn.n"
+                        (click)="readFullText(turn.n, run.id, 'output')"
+                      >
+                        Read full text
+                      </button>
+                      <div
+                        class="virtualTextHost virtual-output"
+                        [attr.data-v-side]="run.id"
+                        [attr.data-v-turn]="turn.n"
+                        data-v-stage="Output"
+                        data-v-kind="output"
+                      ></div>
+                    } @else {
+                      <p>
+                        @if (chatTokens(turn.n, run.id).length) {
+                          @for (token of chatTokens(turn.n, run.id); track $index) {
+                            <span [class.chat-mismatch]="token.mismatch">{{ token.text }}</span>
+                          }
+                        } @else {
+                          {{ captured(turn.n, run.id)?.output ?? 'Response text not captured' }}
+                        }
+                      </p>
+                    }
+                  } @else {
+                    @for (phase of tokenPhases; track phase) {
+                      @if (
+                        phase === 'response' ||
+                        phaseText(turn.n, 'ref', phase) ||
+                        phaseText(turn.n, 'target', phase)
+                      ) {
+                        <section
+                          class="generated-phase"
+                          [class.thinking]="phase === 'thinking'"
+                          [attr.data-token-phase]="phase"
+                          [attr.aria-label]="
+                            (phase === 'thinking' ? 'Thinking' : 'Response') +
+                            ' · ' +
+                            run.id +
+                            ' · Turn ' +
+                            turn.n
+                          "
+                        >
+                          <mat-icon
+                            class="phase-icon"
+                            aria-hidden="true"
+                            [matTooltip]="phase === 'thinking' ? 'Thinking' : 'Response'"
+                            >{{
+                              phase === 'thinking' ? 'lightbulb' : 'chat_bubble_outline'
+                            }}</mat-icon
+                          >
+                          <div class="phase-body">
+                            @if (hasTokenCapture(turn.n, run.id) && virtualPhase(turn.n, phase)) {
+                              <button
+                                mat-button
+                                class="read-full"
+                                [attr.aria-label]="
+                                  'Read full ' + phase + ' · ' + run.id + ' · Turn ' + turn.n
+                                "
+                                (click)="
+                                  readFullText(
+                                    turn.n,
+                                    run.id,
+                                    phase === 'thinking' ? 'thinking' : 'output'
+                                  )
+                                "
+                              >
+                                Read full text
+                              </button>
+                              <div
+                                class="virtualTextHost virtual-output"
+                                [attr.data-v-side]="run.id"
+                                [attr.data-v-turn]="turn.n"
+                                [attr.data-v-stage]="phase === 'thinking' ? 'Thinking' : 'Output'"
+                                data-v-kind="output"
+                              ></div>
+                            } @else if (
+                              hasTokenCapture(turn.n, run.id) &&
+                              rowsForPhase(turn.n, run.id, phase).length
+                            ) {
+                              <div
+                                class="tokens"
+                                [class.boundaries]="boundaries()"
+                                [attr.aria-label]="'Captured ' + phase + ' tokens'"
+                              >
+                                @for (
+                                  pair of rowsForPhase(turn.n, run.id, phase);
+                                  track pair.index
+                                ) {
+                                  <button
+                                    [class.empty-token]="
+                                      zeroWidthText(
+                                        tokenText(run.id === 'ref' ? pair.ref : pair.target)
+                                      )
+                                    "
+                                    [class.numeric-token]="tokenHeat(turn.n, pair, run.id) !== null"
+                                    [class.numeric-missing]="
+                                      run.id === 'target' &&
+                                      numericColor() &&
+                                      tokenHeat(turn.n, pair, run.id) === null
+                                    "
+                                    [style.--heat-level]="tokenHeat(turn.n, pair, run.id)"
+                                    [attr.data-palette]="heatPalette(color())"
+                                    [class.first-divergence]="
+                                      isFirstDivergence(turn.n, pair.index, run.id)
+                                    "
+                                    [class.step-partner]="isStepPartner(turn.n, pair.index, run.id)"
+                                    [class.template-token]="
+                                      isTemplateToken(run.id === 'ref' ? pair.ref : pair.target)
+                                    "
+                                    [attr.data-row]="pair.index"
+                                    [attr.data-turn]="turn.n"
+                                    [attr.data-side]="run.id"
+                                    [class.mismatch]="
+                                      color() === 'token_match' && pair.match === false
+                                    "
+                                    [class.missing]="!(run.id === 'ref' ? pair.ref : pair.target)"
+                                    [class.selected-token]="
+                                      selection()?.turn === turn.n &&
+                                      tokenSelection()?.index === pair.index
+                                    "
+                                    [attr.aria-label]="
+                                      run.id +
+                                      ' aligned position ' +
+                                      pair.index +
+                                      ': ' +
+                                      spokenToken(run.id === 'ref' ? pair.ref : pair.target) +
+                                      (isFirstDivergence(turn.n, pair.index, run.id)
+                                        ? ' · First divergence'
+                                        : '')
+                                    "
+                                    [attr.aria-pressed]="
+                                      selection()?.turn === turn.n &&
+                                      tokenSelection()?.index === pair.index
+                                    "
+                                    (click)="select(turn.n, pair.index, $event)"
+                                    [innerHTML]="
+                                      tokenHtml(run.id === 'ref' ? pair.ref : pair.target)
+                                    "
+                                  ></button>
+                                  <!-- A line break ends the line after its row for both runtimes. -->
+                                  @for (lineBreak of rowBreaks(pair); track lineBreak) {
+                                    <br class="row-break" />
+                                  }
+                                }
+                              </div>
+                            } @else {
+                              <p class="captured-text-fallback">
+                                {{
+                                  phaseText(turn.n, run.id, phase) ||
+                                    (phase === 'thinking'
+                                      ? 'Thinking text not captured'
+                                      : 'Response text not captured')
+                                }}
+                              </p>
+                            }
+                          </div>
+                        </section>
+                      }
+                    }
+                  }
+                  @if (workspace.mode() === 'Debug') {
+                    @if (alignmentError(turn.n)) {
+                      <p role="alert">{{ alignmentError(turn.n) }}</p>
+                    } @else if (!hasTokenCapture(turn.n, run.id) || !rows(turn.n).length) {
+                      <p class="capture-note">Token IDs and per-token comparisons: Not captured.</p>
+                    }
+                  }
+                </div>
+              </div>
+            </section>
+            @if (workspace.mode() === 'Debug') {
+              <div
+                class="phase-actions"
+                [class.stageActions]="run.id === 'target'"
+                [class.stageActionsSpacer]="run.id === 'ref'"
+                data-stage="decode"
+              >
+                @if (run.id === 'target') {
+                  <button
+                    class="graph-link"
+                    [attr.aria-label]="'Generated Token Trends for turn ' + turn.n"
+                    [attr.aria-expanded]="trendState(turn.n).open"
+                    [attr.aria-controls]="'turnTrend-' + turn.n"
+                    (click)="toggleTrend(turn.n)"
+                  >
+                    <span class="button-icon" aria-hidden="true">show_chart</span>Generated Token
+                    Trends</button
+                  ><button
+                    class="graph-link"
+                    [disabled]="!stageBatch(turn.n, 'decode')"
+                    (click)="stageGraph(turn.n, 'decode')"
+                    [attr.aria-label]="'Graph Diff · Decode, turn ' + turn.n"
+                  >
+                    <span class="button-icon" aria-hidden="true">account_tree</span>Graph Diff ·
+                    Decode</button
+                  ><span [matTooltip]="kvReason(turn.n, 'decode')"
+                    ><button
+                      class="graph-link"
+                      [disabled]="!kvSnapshot(turn.n, 'decode')"
+                      (click)="openKv(turn.n, 'decode')"
+                      [attr.aria-label]="'KV Diff · Decode End, turn ' + turn.n"
+                    >
+                      <span class="button-icon" aria-hidden="true">storage</span>KV Diff · Decode
+                      End
+                    </button></span
+                  >
+                }
+              </div>
+            }
+          </article>
+        }
+      </section>
+      @if (workspace.mode() === 'Debug' && trendState(turn.n).open) {
+        <token-trends
+          [id]="'turnTrend-' + turn.n"
+          [turn]="turn.n"
+          [rows]="rows(turn.n)"
+          [fork]="forks().get(turn.n) ?? null"
+          [alignment]="alignment()"
+          [analysis]="tokenAnalysis()"
+          [settings]="trendState(turn.n)"
+          [selected]="tokenSelection()?.turn === turn.n ? tokenSelection()!.index : null"
+          [loading]="analysisLoading()"
+          (settingsChange)="setTrend(turn.n, $event)"
+          (selectPosition)="select(turn.n, $event)"
+        />
+      }
+      @if (workspace.mode() === 'Debug') {
+        @let lastTurn = $last;@let nextTurn = turns()[$index + 1];
+        <div
+          class="turn-boundary"
+          role="group"
+          [attr.aria-label]="
+            lastTurn
+              ? 'Turn ' + turn.n + ' · ' + turnEnding(turn.n)
+              : 'Turn ' + turn.n + ' complete; context continues to Turn ' + nextTurn.n
+          "
+        >
+          @for (run of runs(); track run.id) {
+            <span class="turn-boundary-lane" aria-hidden="true"
+              ><span class="turn-boundary-label"
+                ><span>Turn {{ turn.n }}</span
+                ><mat-icon>{{
+                  !lastTurn
+                    ? 'arrow_forward'
+                    : turnEnding(turn.n) === 'Conversation complete'
+                      ? 'check_circle'
+                      : turnEnding(turn.n) === 'Generation failed'
+                        ? 'error_outline'
+                        : turnEnding(turn.n) === 'Generation stopped'
+                          ? 'pause_circle_outline'
+                          : 'last_page'
+                }}</mat-icon
+                ><span class="turn-boundary-destination">{{
+                  lastTurn ? turnEnding(turn.n) : 'Turn ' + nextTurn.n
+                }}</span></span
+              ></span
+            >
+          }
+        </div>
+      }
+    }
+    @if (workspace.mode() === 'Chat' && workspace.runtime.error()) {
+      <p class="runtime-error" role="alert">{{ workspace.runtime.error() }}</p>
+    }
+    @if (liveGeneration(); as job) {
+      <section class="turn live-turn" aria-label="Current generation">
+        @for (run of runs(); track run.id) {
+          <article
+            class="conversation-side"
+            [attr.data-runtime]="run.id"
+            [class.target]="run.id === 'target'"
+          >
+            <div class="user-message">
+              <strong>User</strong>
+              @if (virtualInput(job.turn)) {
+                <button
+                  mat-button
+                  class="read-full"
+                  [attr.aria-label]="'Read full current input · ' + run.id"
+                  (click)="readFullText(job.turn, run.id, 'input')"
+                >
+                  Read full text
+                </button>
+                <div
+                  class="virtualTextHost virtual-input"
+                  [attr.data-v-side]="run.id"
+                  [attr.data-v-turn]="job.turn"
+                  data-v-stage="Prefill"
+                  data-v-kind="input"
+                ></div>
+              } @else {
+                <p>{{ job.prompt ?? workspace.chatDraft() }}</p>
+              }
+            </div>
+            <div class="response">
+              <strong>Model</strong>
+              @if (virtualOutput(job.turn)) {
+                <button
+                  mat-button
+                  class="read-full"
+                  [attr.aria-label]="'Read full current response · ' + run.id"
+                  (click)="readFullText(job.turn, run.id, 'output')"
+                >
+                  Read full text
+                </button>
+                <div
+                  class="virtualTextHost virtual-output"
+                  [attr.data-v-side]="run.id"
+                  [attr.data-v-turn]="job.turn"
+                  data-v-stage="Output"
+                  data-v-kind="output"
+                ></div>
+              } @else {
+                <p [class.streaming]="workspace.runtime.busy()">
+                  {{
+                    job.output[run.id] ||
+                      (workspace.runtime.busy() ? 'Waiting for output…' : 'No output')
+                  }}
+                </p>
+              }
+              <span class="generation-status" role="status">{{
+                job.status === 'cancelled'
+                  ? 'Generation stopped'
+                  : job.status === 'failed'
+                    ? 'Generation failed'
+                    : workspace.runtime.busy()
+                      ? 'Generating…'
+                      : ''
+              }}</span>
+            </div>
+          </article>
+        }
+      </section>
+    }
+  </div>
+</div>
+@if (workspace.mode() === 'Debug') {
+  <button
+    mat-icon-button
+    class="panel-toggle"
+    [style.right.px]="details() ? panelWidth() : 0"
+    [attr.aria-label]="details() ? 'Hide details panel' : 'Show details panel'"
+    [attr.aria-expanded]="details()"
+    (click)="details.set(!details())"
+  >
+    <mat-icon>{{ details() ? 'chevron_right' : 'chevron_left' }}</mat-icon>
+  </button>
+  @if (details()) {
+    <div
+      class="resize-handle"
+      resizeHandle
+      aria-label="Resize details panel"
+      [style.right.px]="panelWidth() - 6"
+      [size]="panelWidth()"
+      [min]="panelBounds.min"
+      [max]="panelBounds.max"
+      [reverse]="true"
+      (sizeChange)="panelWidth.set($event)"
+    ></div>
+    <aside class="token-inspector" [style.width.px]="panelWidth()" aria-label="Comparison details">
+      @if (analysisError()) {
+        <div class="analysis-error" role="alert">
+          <p>{{ analysisError() }}</p>
+          <button mat-button (click)="analysisRetry.set(analysisRetry() + 1)">
+            Retry token metrics
+          </button>
+        </div>
+      }
+
+      @if (!selection()) {
+        <explorer-info-section label="Conversation Info" [(expanded)]="infoExpanded">
+          <table>
+            <thead>
+              <tr>
+                <th></th>
+                <th>Reference</th>
+                <th>Target</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <th>Turns</th>
+                <td>{{ turns().length }}</td>
+                <td>{{ turns().length }}</td>
+              </tr>
+              <tr>
+                <th>Generated tokens</th>
+                <td>{{ generatedCount('ref') }}</td>
+                <td>{{ generatedCount('target') }}</td>
+              </tr>
+            </tbody>
+          </table>
+          <table class="turn-index">
+            <thead>
+              <tr>
+                <th></th>
+                <th
+                  matTooltip="Whether both runtimes entered the turn alike: the same input tokens and the same history."
+                  matTooltipPosition="above"
+                >
+                  Prefill
+                </th>
+                <th
+                  matTooltip="Whether the generations are identical, or the first generation step where they differ."
+                  matTooltipPosition="above"
+                >
+                  Decode
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (row of turnIndex(); track row.turn) {
+                <tr>
+                  <th>Turn {{ row.turn }}</th>
+                  <td>
+                    <button
+                      type="button"
+                      class="index-link"
+                      [class.differs]="row.prefill !== 'Same'"
+                      [attr.aria-label]="'Turn ' + row.turn + ' Prefill: ' + row.prefill"
+                      (click)="openStage(row.turn, 'prefill', $event)"
+                    >
+                      {{ row.prefill }}
+                    </button>
+                  </td>
+                  <td>
+                    <button
+                      type="button"
+                      class="index-link"
+                      [class.differs]="row.decode !== 'Identical'"
+                      [attr.aria-label]="'Turn ' + row.turn + ' Decode: ' + row.decode"
+                      (click)="openStage(row.turn, 'decode', $event)"
+                    >
+                      {{ row.decode }}
+                    </button>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </explorer-info-section>
+      }
+      @if (selectedStage(); as stage) {
+        <explorer-info-section
+          label="Stage Info"
+          [expanded]="groupOpen('stage')"
+          (expandedChange)="setGroup('stage', $event)"
+        >
+          <table>
+            <tbody>
+              <tr>
+                <th>Turn</th>
+                <td colspan="2">{{ stage.turn }}</td>
+              </tr>
+              <tr>
+                <th
+                  matTooltip="Prefill consumes input context. Decode produces generated output."
+                  matTooltipPosition="above"
+                >
+                  Stage
+                </th>
+                <td colspan="2">{{ stage.stage === 'prefill' ? 'Prefill' : 'Decode' }}</td>
+              </tr>
+              <tr>
+                <th
+                  matTooltip="Captured content: Input context, Thinking, Response, Chat template or Special token."
+                  matTooltipPosition="above"
+                >
+                  Content
+                </th>
+                <td colspan="2">
+                  {{ stage.stage === 'prefill' ? 'Input context' : 'Generated output' }}
+                </td>
+              </tr>
+              @if (stagePrefill(); as prefill) {
+                <tr>
+                  <th
+                    matTooltip="Whether both runtimes' tokenizers turned the admitted input into the same tokens."
+                    matTooltipPosition="above"
+                  >
+                    Tokenized alike
+                  </th>
+                  <td colspan="2">{{ prefill.tokenized }}</td>
+                </tr>
+                <tr>
+                  <th [matTooltip]="prefill.historyReason" matTooltipPosition="above">History</th>
+                  <td colspan="2">{{ prefill.history }}</td>
+                </tr>
+              }
+              @if (stageDecode(); as decode) {
+                <tr>
+                  <th
+                    matTooltip="How the two generations relate: Identical, or the first generation step where the runtimes produced different tokens. Not comparable when token text is missing."
+                    matTooltipPosition="above"
+                  >
+                    Outcome
+                  </th>
+                  <td colspan="2">{{ decode.outcome }}</td>
+                </tr>
+                <tr>
+                  <th
+                    matTooltip="Generated tokens that both runtimes produced alike before the first difference."
+                    matTooltipPosition="above"
+                  >
+                    Identical prefix
+                  </th>
+                  <td colspan="2">{{ decode.prefix }}</td>
+                </tr>
+                <tr>
+                  <th
+                    matTooltip="Largest Kullback–Leibler divergence among the steps where the captures prove that both runtimes read the same context, and the step it occurred at."
+                    matTooltipPosition="above"
+                  >
+                    Peak KL
+                  </th>
+                  <td colspan="2">{{ decode.peak }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+          <table>
+            <thead>
+              <tr>
+                <th></th>
+                <th>Reference</th>
+                <th>Target</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <th>{{ stage.stage === 'prefill' ? 'Input tokens' : 'Generated tokens' }}</th>
+                <td>{{ stageCount(stage.turn, 'ref', stage.stage) }}</td>
+                <td>{{ stageCount(stage.turn, 'target', stage.stage) }}</td>
+              </tr>
+              @if (stageDecode(); as decode) {
+                @if (decode.fork; as fork) {
+                  <tr>
+                    <th
+                      matTooltip="The token each runtime produced at the first differing generation step."
+                      matTooltipPosition="above"
+                    >
+                      Differing token
+                    </th>
+                    @for (side of ['ref', 'target']; track side) {
+                      <td>
+                        <span
+                          class="info-token mismatch"
+                          [class.ref]="side === 'ref'"
+                          [class.target]="side === 'target'"
+                          [attr.title]="infoTokenTitle(fork.pair, side)"
+                          [innerHTML]="infoTokenHtml(fork.pair, side)"
+                        ></span>
+                      </td>
+                    }
+                  </tr>
+                  <tr>
+                    <th
+                      matTooltip="At the first differing step: probability of the most likely token minus the second most likely, in percentage points. A small margin means the step was close to choosing differently."
+                      matTooltipPosition="above"
+                    >
+                      Top-2 margin
+                    </th>
+                    <td>{{ decode.margin.ref }}</td>
+                    <td>{{ decode.margin.target }}</td>
+                  </tr>
+                }
+                <tr>
+                  <th
+                    matTooltip="Why each runtime stopped generating in this turn."
+                    matTooltipPosition="above"
+                  >
+                    Ending
+                  </th>
+                  <td>{{ stageEnding(stage.turn, 'ref') }}</td>
+                  <td>{{ stageEnding(stage.turn, 'target') }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </explorer-info-section>
+      }
+      @if (selectedStage(); as stage) {
+        <explorer-info-section
+          label="Actions"
+          [expanded]="groupOpen('actions')"
+          (expandedChange)="setGroup('actions', $event)"
+          ><div class="info-actions">
+            @if (stage.stage === 'decode') {
+              <span
+                [matTooltip]="
+                  forks().get(stage.turn) ? '' : 'This turn has no provable first differing step.'
+                "
+                ><button
+                  class="graph-link"
+                  [disabled]="!forks().get(stage.turn)"
+                  (click)="selectFork(stage.turn)"
+                >
+                  <span class="button-icon" aria-hidden="true">call_split</span>First differing step
+                </button></span
+              ><button
+                class="graph-link"
+                [attr.aria-expanded]="trendState(stage.turn).open"
+                (click)="toggleTrend(stage.turn)"
+              >
+                <span class="button-icon" aria-hidden="true">show_chart</span>Generated Token Trends
+              </button>
+            }
+            <button
+              class="graph-link"
+              [disabled]="!stageBatch(stage.turn, stage.stage)"
+              (click)="stageGraph(stage.turn, stage.stage)"
+            >
+              <span class="button-icon" aria-hidden="true">account_tree</span>Graph Diff ·
+              {{ stage.stage === 'prefill' ? 'Prefill' : 'Decode' }}</button
+            ><span [matTooltip]="kvReason(stage.turn, stage.stage)"
+              ><button
+                class="graph-link"
+                [disabled]="!kvSnapshot(stage.turn, stage.stage)"
+                (click)="openKv(stage.turn, stage.stage)"
+              >
+                <span class="button-icon" aria-hidden="true">storage</span>KV Diff ·
+                {{ stage.stage === 'prefill' ? 'Prefill End' : 'Decode End' }}
+              </button></span
+            ><button class="graph-link" (click)="bookmark(true)">
+              <span class="button-icon" aria-hidden="true">bookmark_add</span>Add bookmark
+            </button>
+          </div></explorer-info-section
+        >
+      }
+      @if (selectedInputPair(); as pair) {
+        <explorer-info-section
+          label="Token Info"
+          [expanded]="groupOpen('token')"
+          (expandedChange)="setGroup('token', $event)"
+        >
+          <table>
+            <tbody>
+              <tr>
+                <th>Turn</th>
+                <td colspan="2">{{ pair.turn }}</td>
+              </tr>
+              <tr>
+                <th matTooltip="Prefill consumes input context." matTooltipPosition="above">
+                  Stage
+                </th>
+                <td colspan="2">Prefill</td>
+              </tr>
+              <tr>
+                <th
+                  matTooltip="Whether both runtimes' tokenizers produced the same token at this aligned position."
+                  matTooltipPosition="above"
+                >
+                  Tokenized alike
+                </th>
+                <td colspan="2">
+                  {{ pair.match === null ? 'Unknown' : pair.match ? 'Same' : 'Different' }}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+          <table>
+            <thead>
+              <tr>
+                <th></th>
+                <th>Reference</th>
+                <th>Target</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <th>Token</th>
+                @for (side of ['ref', 'target']; track side) {
+                  <td>
+                    <span
+                      class="info-token"
+                      [class.ref]="side === 'ref'"
+                      [class.target]="side === 'target'"
+                      [class.mismatch]="pair.match === false"
+                      [class.missing]="!pairToken(pair, side)"
+                      [attr.title]="infoTokenTitle(pair, side)"
+                      [innerHTML]="infoTokenHtml(pair, side)"
+                    ></span>
+                  </td>
+                }
+              </tr>
+              <tr>
+                <th>Token ID</th>
+                <td>{{ pairToken(pair, 'ref')?.id ?? '∅' }}</td>
+                <td>{{ pairToken(pair, 'target')?.id ?? '∅' }}</td>
+              </tr>
+              <tr>
+                <th
+                  matTooltip="Captured content: Input context, Chat template or Special token."
+                  matTooltipPosition="above"
+                >
+                  Content
+                </th>
+                <td>
+                  <explorer-info-value
+                    label="Reference content"
+                    [value]="inputTokenContent(pair.ref)"
+                  />
+                </td>
+                <td>
+                  <explorer-info-value
+                    label="Target content"
+                    [value]="inputTokenContent(pair.target)"
+                  />
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </explorer-info-section>
+        <explorer-info-section
+          label="Actions"
+          [expanded]="groupOpen('actions')"
+          (expandedChange)="setGroup('actions', $event)"
+          ><div class="info-actions">
+            <button
+              class="graph-link"
+              [disabled]="!stageBatch(pair.turn, 'prefill')"
+              (click)="stageGraph(pair.turn, 'prefill')"
+            >
+              <span class="button-icon" aria-hidden="true">account_tree</span>Graph Diff</button
+            ><button class="graph-link" (click)="bookmark(true)">
+              <span class="button-icon" aria-hidden="true">bookmark_add</span>Add bookmark
+            </button>
+          </div></explorer-info-section
+        >
+      }
+      @if (detailPair(); as pair) {
+        <explorer-info-section
+          label="Token Info"
+          [expanded]="groupOpen('token')"
+          (expandedChange)="setGroup('token', $event)"
+        >
+          <table>
+            <tbody>
+              <tr>
+                <th>Turn</th>
+                <td colspan="2">{{ pair.turn }}</td>
+              </tr>
+              <tr>
+                <th
+                  matTooltip="Prefill consumes input context. Decode produces generated output."
+                  matTooltipPosition="above"
+                >
+                  Stage
+                </th>
+                <td colspan="2">Decode</td>
+              </tr>
+              @if (pair.filled) {
+                <tr>
+                  <th [matTooltip]="pairingTitle(pair.filled)" matTooltipPosition="above">
+                    Pairing
+                  </th>
+                  <td colspan="2">Same generation step</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+          <table>
+            <thead>
+              <tr>
+                <th></th>
+                <th>Reference</th>
+                <th>Target</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <th
+                  matTooltip="Generation index within this turn, starting at 0; includes Thinking. This is separate from the aligned position."
+                  matTooltipPosition="above"
+                >
+                  Generation step
+                </th>
+                <td>{{ pair.ref ? (pair.ref.step ?? 'Not captured') : '∅' }}</td>
+                <td>{{ pair.target ? (pair.target.step ?? 'Not captured') : '∅' }}</td>
+              </tr>
+              <tr>
+                <th
+                  matTooltip="Captured content: Input context, Thinking, Response, Chat template or Special token."
+                  matTooltipPosition="above"
+                >
+                  Content
+                </th>
+                <td>
+                  <explorer-info-value
+                    label="Reference content"
+                    [value]="pair.ref ? tokenContentFor(pair.turn, 'ref', pair.ref) : '∅'"
+                  />
+                </td>
+                <td>
+                  <explorer-info-value
+                    label="Target content"
+                    [value]="pair.target ? tokenContentFor(pair.turn, 'target', pair.target) : '∅'"
+                  />
+                </td>
+              </tr>
+              <tr>
+                <th>Token</th>
+                @for (side of ['ref', 'target']; track side) {
+                  <td>
+                    <span
+                      class="info-token"
+                      [class.ref]="side === 'ref'"
+                      [class.target]="side === 'target'"
+                      [class.mismatch]="pair.match === false"
+                      [class.missing]="!pairToken(pair, side)"
+                      [attr.title]="infoTokenTitle(pair, side)"
+                      [innerHTML]="infoTokenHtml(pair, side)"
+                    ></span>
+                  </td>
+                }
+              </tr>
+            </tbody>
+          </table>
+        </explorer-info-section>
+        <explorer-info-section
+          label="Actions"
+          [expanded]="groupOpen('actions')"
+          (expandedChange)="setGroup('actions', $event)"
+          ><div class="info-actions">
+            <button
+              class="graph-link"
+              [disabled]="!canInspect(pair.target)"
+              (click)="inspectToken(pair.target)"
+            >
+              <span class="button-icon" aria-hidden="true">account_tree</span>Graph Diff</button
+            ><span [matTooltip]="kvReason(pair.turn, 'decode', pair.target)"
+              ><button
+                class="graph-link"
+                [disabled]="!kvSnapshot(pair.turn, 'decode', pair.target)"
+                (click)="openKv(pair.turn, 'decode', pair.target)"
+              >
+                <span class="button-icon" aria-hidden="true">storage</span>KV Diff
+              </button></span
+            ><button class="graph-link" (click)="bookmark(true)">
+              <span class="button-icon" aria-hidden="true">bookmark_add</span>Add bookmark
+            </button>
+          </div></explorer-info-section
+        >
+        <explorer-info-section
+          label="Numerical Diff"
+          [expanded]="groupOpen('numerical')"
+          (expandedChange)="setGroup('numerical', $event)"
+          ><token-numerical-info
+            [analysis]="selectedAnalysis()"
+            [loading]="analysisLoading()"
+            [error]="analysisError()"
+        /></explorer-info-section>
+        <explorer-info-section
+          label="Token Distribution"
+          [expanded]="groupOpen('distribution')"
+          (expandedChange)="setGroup('distribution', $event)"
+          ><token-distribution
+            [analysis]="selectedAnalysis()"
+            [loading]="analysisLoading()"
+            [error]="analysisError()"
+        /></explorer-info-section>
+      }
+    </aside>
+  }
+}
+<span class="bookmark-notice" role="status">{{ bookmarkNotice() }}</span>
+@if (composer.promptError()) {
+  <p class="chat-warning" role="alert">{{ composer.promptError() }}</p>
+}
+@if (workspace.storageError()) {
+  <p class="chat-warning" role="alert">{{ workspace.storageError() }}</p>
+}
+@if (workspace.bookmarkError()) {
+  <p class="chat-warning" role="alert">{{ workspace.bookmarkError() }}</p>
+}
+<footer
+  [style.--inspector-width.px]="details() ? panelWidth() : 0"
+  class="composer"
+  [class.chat-composer]="workspace.mode() === 'Chat'"
+  [class.debug-composer]="workspace.mode() === 'Debug'"
+  aria-label="Message composer"
+>
+  @if (workspace.mode() === 'Chat') {
+    <textarea
+      aria-label="Message to both runtimes"
+      placeholder="Message both runtimes…"
+      rows="1"
+      [value]="workspace.chatDraft()"
+      (input)="composer.draftInput($event)"
+      (keydown)="composer.draftKey($event)"
+      [disabled]="workspace.runtime.busy()"
+    ></textarea>
+  }
+  @if (workspace.mode() === 'Debug') {
+    <div class="debug-primary">
+      <div class="alignment-field">
+        <span>Alignment</span
+        ><config-picker
+          label="Comparison alignment"
+          plural="alignments"
+          [compact]="true"
+          [popupWidth]="300"
+          [value]="alignment() === 'content' ? 'Context' : 'Steps'"
+          [options]="alignmentChoices"
+          [descriptions]="alignmentDescriptions"
+          (valueChange)="setAlignment($event === 'Context' ? 'content' : 'steps')"
+        />
+      </div>
+      <token-query-control
+        #queryControl
+        [formula]="formula()"
+        (formulaChange)="formula.set($event)"
+      />
+      <find-navigator
+        [index]="resultIndex()"
+        [total]="mismatches().length"
+        [pending]="numericFindPending()"
+        [countAction]="true"
+        [countLabel]="findResultLabel()"
+        [countTooltip]="numericFindPending() ? findResultLabel() : ''"
+        (first)="find(0)"
+        (previous)="find(-1)"
+        (next)="find(1)"
+        (count)="queryControl.show()"
+      />
+      <button
+        mat-icon-button
+        class="bookmark-current"
+        aria-label="Bookmark current location"
+        matTooltip="Bookmark current location"
+        [attr.aria-pressed]="isBookmarked()"
+        [disabled]="!selection()"
+        (click)="bookmark()"
+      >
+        <mat-icon>{{ isBookmarked() ? 'bookmark' : 'bookmark_add' }}</mat-icon>
+      </button>
+    </div>
+  }
+  <div class="composer-bottom">
+    <div class="mode-switch" role="group" aria-label="Workspace mode">
+      @for (mode of ['Chat', 'Debug']; track mode) {
+        <button
+          [disabled]="mode === 'Debug' && !workspace.chatHasCapture()"
+          [attr.aria-pressed]="workspace.mode() === mode"
+          (click)="workspace.mode.set($any(mode))"
+          [attr.data-mode]="mode.toLowerCase()"
+          [attr.aria-label]="mode"
+        >
+          <span class="button-icon" aria-hidden="true">{{
+            mode === 'Chat' ? 'chat_bubble_outline' : 'bug_report'
+          }}</span
+          ><span>{{ mode }}</span>
+        </button>
+      }
+    </div>
+    @if (workspace.mode() === 'Debug') {
+      <div class="applied-color" role="status">Color by: {{ colorLabel(color()) }}</div>
+      @if (color() === 'token_match') {
+        <div class="mismatch-legend" aria-label="Mismatch colors">
+          <span>Mismatch:</span><span class="legend-ref">Ref</span
+          ><span class="legend-target">Target</span>
+        </div>
+      }
+      <div
+        class="numeric-legend"
+        [attr.data-palette]="heatPalette(color())"
+        [hidden]="!numericColor()"
+      >
+        <span>0</span><i class="heat-scale" aria-hidden="true"></i
+        ><span>{{ colorMaximum() }} {{ colorUnit() }}</span>
+      </div>
+      <div class="display-group">
+        <token-display
+          [available]="metricAvailability()"
+          [preview]="displayPreview()"
+          [settings]="{color: color(), boundaries: boundaries()}"
+          (settingsChange)="color.set($event.color); boundaries.set($event.boundaries)"
+        />
+      </div>
+    }
+    @if (workspace.mode() === 'Chat') {
+      @if (workspace.runtime.generating() && workspace.runtime.execution()?.phase === 'active') {
+        <button mat-button [attr.aria-label]="composer.stopLabel()" (click)="composer.stop()">
+          <mat-icon>stop</mat-icon>Stop generation
+        </button>
+      }
+      <span id="chat-send-status" class="send-notice" role="status">{{
+        composer.sendNotice()
+      }}</span
+      ><button
+        mat-flat-button
+        type="button"
+        class="chat-send"
+        aria-label="Send to both runtimes"
+        aria-describedby="chat-send-status"
+        [title]="composer.sendNotice()"
+        [matTooltip]="composer.sendNotice()"
+        [disabled]="!composer.canSend()"
+        (click)="composer.send()"
+      >
+        {{ workspace.runtime.busy() ? 'Sending…' : 'Send' }}
+        <span aria-hidden="true">↑</span>
+      </button>
+    }
+  </div>
+</footer>

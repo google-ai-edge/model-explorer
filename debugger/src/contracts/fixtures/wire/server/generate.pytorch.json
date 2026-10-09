@@ -1,0 +1,17 @@
+{
+  "type": "generate",
+  "requestId": "3f6c2c9e-6c1a-4f7b-9d2e-1b7a9d5c0e21",
+  "runtime": "PyTorch",
+  "request": {
+    "operation": "generate",
+    "session_id": "6f1d2c3a-0b4e-4c5d-8e9f-a1b2c3d4e5f6",
+    "chat_id": "0a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d",
+    "model_sha256": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+    "prompt": "Hello",
+    "run": {
+      "id": "ref",
+      "runtime": "PyTorch",
+      "backend": "MPS"
+    }
+  }
+}

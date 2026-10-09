@@ -1,0 +1,5290 @@
+{
+  "executions": [
+    {
+      "id": "ref",
+      "runtime": "LiteRT-LM",
+      "artifact": "gemma-4-2p3b_probed_combined.litertlm",
+      "backend": "GPU",
+      "precision": "FP32",
+      "os": null,
+      "os_version": null,
+      "host": null,
+      "chip": null,
+      "graphs": [
+        {
+          "id": "prefill_1",
+          "nodes": [
+            {
+              "id": "Op12",
+              "label": "RMSNorm",
+              "namespace": "layer_0/norm.attn.in",
+              "incomingEdges": [],
+              "outputsMetadata": [
+                {
+                  "id": "0",
+                  "attrs": [
+                    {
+                      "key": "tensor_name",
+                      "value": "layer_0_norm_out"
+                    }
+                  ]
+                }
+              ],
+              "attrs": [
+                {
+                  "key": "layer",
+                  "value": "0"
+                },
+                {
+                  "key": "anchor",
+                  "value": "intermediate.1"
+                }
+              ]
+            },
+            {
+              "id": "Op16",
+              "label": "FullyConnected",
+              "namespace": "layer_0/attn",
+              "incomingEdges": [
+                {
+                  "sourceNodeId": "Op12",
+                  "sourceNodeOutputId": "0",
+                  "targetNodeInputId": "0"
+                }
+              ],
+              "outputsMetadata": [
+                {
+                  "id": "0",
+                  "attrs": [
+                    {
+                      "key": "tensor_name",
+                      "value": "layer_0_q_proj"
+                    }
+                  ]
+                }
+              ],
+              "attrs": [
+                {
+                  "key": "layer",
+                  "value": "0"
+                },
+                {
+                  "key": "anchor",
+                  "value": "intermediate.1"
+                }
+              ]
+            },
+            {
+              "id": "Op19",
+              "label": "FullyConnected",
+              "namespace": "layer_0/attn",
+              "incomingEdges": [
+                {
+                  "sourceNodeId": "Op12",
+                  "sourceNodeOutputId": "0",
+                  "targetNodeInputId": "0"
+                }
+              ],
+              "outputsMetadata": [
+                {
+                  "id": "0",
+                  "attrs": [
+                    {
+                      "key": "tensor_name",
+                      "value": "layer_0_k_proj"
+                    }
+                  ]
+                }
+              ],
+              "attrs": [
+                {
+                  "key": "layer",
+                  "value": "0"
+                },
+                {
+                  "key": "anchor",
+                  "value": "intermediate.1"
+                }
+              ]
+            },
+            {
+              "id": "Op22",
+              "label": "FullyConnected",
+              "namespace": "layer_0/attn",
+              "incomingEdges": [
+                {
+                  "sourceNodeId": "Op12",
+                  "sourceNodeOutputId": "0",
+                  "targetNodeInputId": "0"
+                }
+              ],
+              "outputsMetadata": [
+                {
+                  "id": "0",
+                  "attrs": [
+                    {
+                      "key": "tensor_name",
+                      "value": "layer_0_v_proj"
+                    }
+                  ]
+                }
+              ],
+              "attrs": [
+                {
+                  "key": "layer",
+                  "value": "0"
+                },
+                {
+                  "key": "anchor",
+                  "value": "intermediate.1"
+                }
+              ]
+            },
+            {
+              "id": "Op25",
+              "label": "Composite",
+              "namespace": "layer_0/attn",
+              "incomingEdges": [
+                {
+                  "sourceNodeId": "Op22",
+                  "sourceNodeOutputId": "0",
+                  "targetNodeInputId": "0"
+                }
+              ],
+              "outputsMetadata": [
+                {
+                  "id": "0",
+                  "attrs": [
+                    {
+                      "key": "tensor_name",
+                      "value": "layer_0_v_input_to_cache"
+                    }
+                  ]
+                }
+              ],
+              "attrs": [
+                {
+                  "key": "layer",
+                  "value": "0"
+                },
+                {
+                  "key": "anchor",
+                  "value": "intermediate.1"
+                }
+              ]
+            },
+            {
+              "id": "Op45",
+              "label": "Sub",
+              "namespace": "layer_0/attn",
+              "incomingEdges": [
+                {
+                  "sourceNodeId": "Op19",
+                  "sourceNodeOutputId": "0",
+                  "targetNodeInputId": "0"
+                }
+              ],
+              "outputsMetadata": [
+                {
+                  "id": "0",
+                  "attrs": [
+                    {
+                      "key": "tensor_name",
+                      "value": "layer_0_k_rope_sub"
+                    }
+                  ]
+                }
+              ],
+              "attrs": [
+                {
+                  "key": "layer",
+                  "value": "0"
+                },
+                {
+                  "key": "anchor",
+                  "value": "intermediate.1"
+                }
+              ]
+            },
+            {
+              "id": "Op48",
+              "label": "Add",
+              "namespace": "layer_0/attn",
+              "incomingEdges": [
+                {
+                  "sourceNodeId": "Op19",
+                  "sourceNodeOutputId": "0",
+                  "targetNodeInputId": "0"
+                }
+              ],
+              "outputsMetadata": [
+                {
+                  "id": "0",
+                  "attrs": [
+                    {
+                      "key": "tensor_name",
+                      "value": "layer_0_k_rope_add"
+                    }
+                  ]
+                }
+              ],
+              "attrs": [
+                {
+                  "key": "layer",
+                  "value": "0"
+                },
+                {
+                  "key": "anchor",
+                  "value": "intermediate.1"
+                }
+              ]
+            },
+            {
+              "id": "Op75",
+              "label": "Attention",
+              "namespace": "layer_0/attn",
+              "incomingEdges": [
+                {
+                  "sourceNodeId": "Op16",
+                  "sourceNodeOutputId": "0",
+                  "targetNodeInputId": "0"
+                },
+                {
+                  "sourceNodeId": "Op25",
+                  "sourceNodeOutputId": "0",
+                  "targetNodeInputId": "1"
+                },
+                {
+                  "sourceNodeId": "Op45",
+                  "sourceNodeOutputId": "0",
+                  "targetNodeInputId": "2"
+                },
+                {
+                  "sourceNodeId": "Op48",
+                  "sourceNodeOutputId": "0",
+                  "targetNodeInputId": "3"
+                }
+              ],
+              "outputsMetadata": [
+                {
+                  "id": "0",
+                  "attrs": [
+                    {
+                      "key": "tensor_name",
+                      "value": "layer_0_attn_out_raw"
+                    }
+                  ]
+                }
+              ],
+              "attrs": [
+                {
+                  "key": "layer",
+                  "value": "0"
+                },
+                {
+                  "key": "anchor",
+                  "value": "intermediate.1"
+                }
+              ]
+            },
+            {
+              "id": "Op85",
+              "label": "FullyConnected",
+              "namespace": "layer_0/attn",
+              "incomingEdges": [
+                {
+                  "sourceNodeId": "Op75",
+                  "sourceNodeOutputId": "0",
+                  "targetNodeInputId": "0"
+                }
+              ],
+              "outputsMetadata": [
+                {
+                  "id": "0",
+                  "attrs": [
+                    {
+                      "key": "tensor_name",
+                      "value": "layer_0_o_proj"
+                    }
+                  ]
+                }
+              ],
+              "attrs": [
+                {
+                  "key": "layer",
+                  "value": "0"
+                },
+                {
+                  "key": "anchor",
+                  "value": "intermediate.1"
+                }
+              ]
+            },
+            {
+              "id": "Op87",
+              "label": "Add",
+              "namespace": "layer_0",
+              "incomingEdges": [
+                {
+                  "sourceNodeId": "Op85",
+                  "sourceNodeOutputId": "0",
+                  "targetNodeInputId": "0"
+                }
+              ],
+              "outputsMetadata": [
+                {
+                  "id": "0",
+                  "attrs": [
+                    {
+                      "key": "tensor_name",
+                      "value": "layer_0_attn_block_out"
+                    }
+                  ]
+                }
+              ],
+              "attrs": [
+                {
+                  "key": "layer",
+                  "value": "0"
+                },
+                {
+                  "key": "anchor",
+                  "value": "intermediate.1"
+                },
+                {
+                  "key": "anchor_output",
+                  "value": "true"
+                }
+              ]
+            },
+            {
+              "id": "Op88",
+              "label": "RMSNorm",
+              "namespace": "layer_0/norm.ffn.in",
+              "incomingEdges": [
+                {
+                  "sourceNodeId": "Op87",
+                  "sourceNodeOutputId": "0",
+                  "targetNodeInputId": "0"
+                }
+              ],
+              "outputsMetadata": [
+                {
+                  "id": "0",
+                  "attrs": [
+                    {
+                      "key": "tensor_name",
+                      "value": "layer_0_mlp_input"
+                    }
+                  ]
+                }
+              ],
+              "attrs": [
+                {
+                  "key": "layer",
+                  "value": "0"
+                },
+                {
+                  "key": "anchor",
+                  "value": "intermediate.2"
+                }
+              ]
+            },
+            {
+              "id": "Op91",
+              "label": "FullyConnected",
+              "namespace": "layer_0/ffn",
+              "incomingEdges": [
+                {
+                  "sourceNodeId": "Op88",
+                  "sourceNodeOutputId": "0",
+                  "targetNodeInputId": "0"
+                }
+              ],
+              "outputsMetadata": [
+                {
+                  "id": "0",
+                  "attrs": [
+                    {
+                      "key": "tensor_name",
+                      "value": "layer_0_mlp_gate_proj"
+                    }
+                  ]
+                }
+              ],
+              "attrs": [
+                {
+                  "key": "layer",
+                  "value": "0"
+                },
+                {
+                  "key": "anchor",
+                  "value": "intermediate.2"
+                }
+              ]
+            },
+            {
+              "id": "Op93",
+              "label": "FullyConnected",
+              "namespace": "layer_0/ffn",
+              "incomingEdges": [
+                {
+                  "sourceNodeId": "Op88",
+                  "sourceNodeOutputId": "0",
+                  "targetNodeInputId": "0"
+                }
+              ],
+              "outputsMetadata": [
+                {
+                  "id": "0",
+                  "attrs": [
+                    {
+                      "key": "tensor_name",
+                      "value": "layer_0_mlp_up_proj"
+                    }
+                  ]
+                }
+              ],
+              "attrs": [
+                {
+                  "key": "layer",
+                  "value": "0"
+                },
+                {
+                  "key": "anchor",
+                  "value": "intermediate.2"
+                }
+              ]
+            },
+            {
+              "id": "Op94",
+              "label": "Gelu",
+              "namespace": "layer_0/ffn",
+              "incomingEdges": [
+                {
+                  "sourceNodeId": "Op91",
+                  "sourceNodeOutputId": "0",
+                  "targetNodeInputId": "0"
+                }
+              ],
+              "outputsMetadata": [
+                {
+                  "id": "0",
+                  "attrs": [
+                    {
+                      "key": "tensor_name",
+                      "value": "layer_0_mlp_gelu"
+                    }
+                  ]
+                }
+              ],
+              "attrs": [
+                {
+                  "key": "layer",
+                  "value": "0"
+                },
+                {
+                  "key": "anchor",
+                  "value": "intermediate.2"
+                }
+              ]
+            },
+            {
+              "id": "Op95",
+              "label": "Mul",
+              "namespace": "layer_0/ffn",
+              "incomingEdges": [
+                {
+                  "sourceNodeId": "Op94",
+                  "sourceNodeOutputId": "0",
+                  "targetNodeInputId": "0"
+                },
+                {
+                  "sourceNodeId": "Op93",
+                  "sourceNodeOutputId": "0",
+                  "targetNodeInputId": "1"
+                }
+              ],
+              "outputsMetadata": [
+                {
+                  "id": "0",
+                  "attrs": [
+                    {
+                      "key": "tensor_name",
+                      "value": "layer_0_mlp_gated"
+                    }
+                  ]
+                }
+              ],
+              "attrs": [
+                {
+                  "key": "layer",
+                  "value": "0"
+                },
+                {
+                  "key": "anchor",
+                  "value": "intermediate.2"
+                }
+              ]
+            },
+            {
+              "id": "Op98",
+              "label": "FullyConnected",
+              "namespace": "layer_0/ffn",
+              "incomingEdges": [
+                {
+                  "sourceNodeId": "Op95",
+                  "sourceNodeOutputId": "0",
+                  "targetNodeInputId": "0"
+                }
+              ],
+              "outputsMetadata": [
+                {
+                  "id": "0",
+                  "attrs": [
+                    {
+                      "key": "tensor_name",
+                      "value": "layer_0_mlp_down_proj"
+                    }
+                  ]
+                }
+              ],
+              "attrs": [
+                {
+                  "key": "layer",
+                  "value": "0"
+                },
+                {
+                  "key": "anchor",
+                  "value": "intermediate.2"
+                }
+              ]
+            },
+            {
+              "id": "Op100",
+              "label": "Add",
+              "namespace": "layer_0",
+              "incomingEdges": [
+                {
+                  "sourceNodeId": "Op87",
+                  "sourceNodeOutputId": "0",
+                  "targetNodeInputId": "0"
+                },
+                {
+                  "sourceNodeId": "Op98",
+                  "sourceNodeOutputId": "0",
+                  "targetNodeInputId": "1"
+                }
+              ],
+              "outputsMetadata": [
+                {
+                  "id": "0",
+                  "attrs": [
+                    {
+                      "key": "tensor_name",
+                      "value": "layer_0_mlp_block_out"
+                    }
+                  ]
+                }
+              ],
+              "attrs": [
+                {
+                  "key": "layer",
+                  "value": "0"
+                },
+                {
+                  "key": "anchor",
+                  "value": "intermediate.2"
+                },
+                {
+                  "key": "anchor_output",
+                  "value": "true"
+                }
+              ]
+            },
+            {
+              "id": "Op103",
+              "label": "FullyConnected",
+              "namespace": "layer_0/ple",
+              "incomingEdges": [
+                {
+                  "sourceNodeId": "Op100",
+                  "sourceNodeOutputId": "0",
+                  "targetNodeInputId": "0"
+                }
+              ],
+              "outputsMetadata": [
+                {
+                  "id": "0",
+                  "attrs": [
+                    {
+                      "key": "tensor_name",
+                      "value": "layer_0_ple_gate_proj"
+                    }
+                  ]
+                }
+              ],
+              "attrs": [
+                {
+                  "key": "layer",
+                  "value": "0"
+                },
+                {
+                  "key": "anchor",
+                  "value": "output"
+                }
+              ]
+            },
+            {
+              "id": "Op104",
+              "label": "Gelu",
+              "namespace": "layer_0/ple",
+              "incomingEdges": [
+                {
+                  "sourceNodeId": "Op103",
+                  "sourceNodeOutputId": "0",
+                  "targetNodeInputId": "0"
+                }
+              ],
+              "outputsMetadata": [
+                {
+                  "id": "0",
+                  "attrs": [
+                    {
+                      "key": "tensor_name",
+                      "value": "layer_0_ple_gelu"
+                    }
+                  ]
+                }
+              ],
+              "attrs": [
+                {
+                  "key": "layer",
+                  "value": "0"
+                },
+                {
+                  "key": "anchor",
+                  "value": "output"
+                }
+              ]
+            },
+            {
+              "id": "Op108",
+              "label": "FullyConnected",
+              "namespace": "layer_0/ple",
+              "incomingEdges": [
+                {
+                  "sourceNodeId": "layer_0_ple_mul",
+                  "sourceNodeOutputId": "0",
+                  "targetNodeInputId": "0"
+                }
+              ],
+              "outputsMetadata": [
+                {
+                  "id": "0",
+                  "attrs": [
+                    {
+                      "key": "tensor_name",
+                      "value": "layer_0_ple_proj"
+                    }
+                  ]
+                }
+              ],
+              "attrs": [
+                {
+                  "key": "layer",
+                  "value": "0"
+                },
+                {
+                  "key": "anchor",
+                  "value": "output"
+                }
+              ]
+            },
+            {
+              "id": "Op110",
+              "label": "Add",
+              "namespace": "layer_0/add_ple",
+              "incomingEdges": [
+                {
+                  "sourceNodeId": "Op100",
+                  "sourceNodeOutputId": "0",
+                  "targetNodeInputId": "0"
+                },
+                {
+                  "sourceNodeId": "Op108",
+                  "sourceNodeOutputId": "0",
+                  "targetNodeInputId": "1"
+                }
+              ],
+              "outputsMetadata": [
+                {
+                  "id": "0",
+                  "attrs": [
+                    {
+                      "key": "tensor_name",
+                      "value": "layer_0_final_add"
+                    }
+                  ]
+                }
+              ],
+              "attrs": [
+                {
+                  "key": "layer",
+                  "value": "0"
+                },
+                {
+                  "key": "anchor",
+                  "value": "output"
+                }
+              ]
+            },
+            {
+              "id": "Op111",
+              "label": "Mul",
+              "namespace": "layer_0",
+              "incomingEdges": [
+                {
+                  "sourceNodeId": "Op110",
+                  "sourceNodeOutputId": "0",
+                  "targetNodeInputId": "0"
+                }
+              ],
+              "outputsMetadata": [
+                {
+                  "id": "0",
+                  "attrs": [
+                    {
+                      "key": "tensor_name",
+                      "value": "layer_0_final_mul"
+                    }
+                  ]
+                }
+              ],
+              "attrs": [
+                {
+                  "key": "layer",
+                  "value": "0"
+                },
+                {
+                  "key": "anchor",
+                  "value": "output"
+                },
+                {
+                  "key": "anchor_output",
+                  "value": "true"
+                }
+              ]
+            },
+            {
+              "id": "layer_0_ple_mul",
+              "label": "Mul",
+              "namespace": "layer_0/ple",
+              "incomingEdges": [
+                {
+                  "sourceNodeId": "Op104",
+                  "sourceNodeOutputId": "0",
+                  "targetNodeInputId": "0"
+                },
+                {
+                  "sourceNodeId": "layer_0_ple_slice",
+                  "sourceNodeOutputId": "0",
+                  "targetNodeInputId": "1"
+                }
+              ],
+              "outputsMetadata": [
+                {
+                  "id": "0",
+                  "attrs": [
+                    {
+                      "key": "tensor_name",
+                      "value": "layer_0_ple_mul"
+                    }
+                  ]
+                }
+              ],
+              "attrs": [
+                {
+                  "key": "layer",
+                  "value": "0"
+                },
+                {
+                  "key": "anchor",
+                  "value": "output"
+                },
+                {
+                  "key": "edges_inferred",
+                  "value": "true"
+                }
+              ]
+            },
+            {
+              "id": "layer_0_ple_slice",
+              "label": "External",
+              "namespace": "layer_0/ple",
+              "incomingEdges": [],
+              "attrs": [
+                {
+                  "key": "layer",
+                  "value": "0"
+                },
+                {
+                  "key": "anchor",
+                  "value": "output"
+                },
+                {
+                  "key": "tensor",
+                  "value": "PLE slice"
+                },
+                {
+                  "key": "slice",
+                  "value": "layer 0"
+                },
+                {
+                  "key": "captured",
+                  "value": "false"
+                },
+                {
+                  "key": "note",
+                  "value": "per-layer embedding, built outside the block from token ids + an embedding projection"
+                }
+              ]
+            },
+            {
+              "id": "prefill_l10_out_0",
+              "label": "Probe",
+              "namespace": "layer_10",
+              "incomingEdges": [],
+              "outputsMetadata": [
+                {
+                  "id": "0",
+                  "attrs": [
+                    {
+                      "key": "tensor_name",
+                      "value": "prefill_l10_out_0"
+                    }
+                  ]
+                }
+              ],
+              "attrs": [
+                {
+                  "key": "layer",
+                  "value": "10"
+                },
+                {
+                  "key": "anchor",
+                  "value": "output"
+                },
+                {
+                  "key": "anchor_output",
+                  "value": "true"
+                }
+              ]
+            },
+            {
+              "id": "prefill_l11_out_0",
+              "label": "Probe",
+              "namespace": "layer_11",
+              "incomingEdges": [],
+              "outputsMetadata": [
+                {
+                  "id": "0",
+                  "attrs": [
+                    {
+                      "key": "tensor_name",
+                      "value": "prefill_l11_out_0"
+                    }
+                  ]
+                }
+              ],
+              "attrs": [
+                {
+                  "key": "layer",
+                  "value": "11"
+                },
+                {
+                  "key": "anchor",
+                  "value": "output"
+                },
+                {
+                  "key": "anchor_output",
+                  "value": "true"
+                }
+              ]
+            },
+            {
+              "id": "prefill_l12_out_0",
+              "label": "Probe",
+              "namespace": "layer_12",
+              "incomingEdges": [],
+              "outputsMetadata": [
+                {
+                  "id": "0",
+                  "attrs": [
+                    {
+                      "key": "tensor_name",
+                      "value": "prefill_l12_out_0"
+                    }
+                  ]
+                }
+              ],
+              "attrs": [
+                {
+                  "key": "layer",
+                  "value": "12"
+                },
+                {
+                  "key": "anchor",
+                  "value": "output"
+                },
+                {
+                  "key": "anchor_output",
+                  "value": "true"
+                }
+              ]
+            },
+            {
+              "id": "prefill_l13_out_0",
+              "label": "Probe",
+              "namespace": "layer_13",
+              "incomingEdges": [],
+              "outputsMetadata": [
+                {
+                  "id": "0",
+                  "attrs": [
+                    {
+                      "key": "tensor_name",
+                      "value": "prefill_l13_out_0"
+                    }
+                  ]
+                }
+              ],
+              "attrs": [
+                {
+                  "key": "layer",
+                  "value": "13"
+                },
+                {
+                  "key": "anchor",
+                  "value": "output"
+                },
+                {
+                  "key": "anchor_output",
+                  "value": "true"
+                }
+              ]
+            },
+            {
+              "id": "prefill_l1_out_0",
+              "label": "Probe",
+              "namespace": "layer_1",
+              "incomingEdges": [],
+              "outputsMetadata": [
+                {
+                  "id": "0",
+                  "attrs": [
+                    {
+                      "key": "tensor_name",
+                      "value": "prefill_l1_out_0"
+                    }
+                  ]
+                }
+              ],
+              "attrs": [
+                {
+                  "key": "layer",
+                  "value": "1"
+                },
+                {
+                  "key": "anchor",
+                  "value": "output"
+                },
+                {
+                  "key": "anchor_output",
+                  "value": "true"
+                }
+              ]
+            },
+            {
+              "id": "prefill_l2_out_0",
+              "label": "Probe",
+              "namespace": "layer_2",
+              "incomingEdges": [],
+              "outputsMetadata": [
+                {
+                  "id": "0",
+                  "attrs": [
+                    {
+                      "key": "tensor_name",
+                      "value": "prefill_l2_out_0"
+                    }
+                  ]
+                }
+              ],
+              "attrs": [
+                {
+                  "key": "layer",
+                  "value": "2"
+                },
+                {
+                  "key": "anchor",
+                  "value": "output"
+                },
+                {
+                  "key": "anchor_output",
+                  "value": "true"
+                }
+              ]
+            },
+            {
+              "id": "prefill_l3_out_0",
+              "label": "Probe",
+              "namespace": "layer_3",
+              "incomingEdges": [],
+              "outputsMetadata": [
+                {
+                  "id": "0",
+                  "attrs": [
+                    {
+                      "key": "tensor_name",
+                      "value": "prefill_l3_out_0"
+                    }
+                  ]
+                }
+              ],
+              "attrs": [
+                {
+                  "key": "layer",
+                  "value": "3"
+                },
+                {
+                  "key": "anchor",
+                  "value": "output"
+                },
+                {
+                  "key": "anchor_output",
+                  "value": "true"
+                }
+              ]
+            },
+            {
+              "id": "prefill_l4_out_0",
+              "label": "Probe",
+              "namespace": "layer_4",
+              "incomingEdges": [],
+              "outputsMetadata": [
+                {
+                  "id": "0",
+                  "attrs": [
+                    {
+                      "key": "tensor_name",
+                      "value": "prefill_l4_out_0"
+                    }
+                  ]
+                }
+              ],
+              "attrs": [
+                {
+                  "key": "layer",
+                  "value": "4"
+                },
+                {
+                  "key": "anchor",
+                  "value": "output"
+                },
+                {
+                  "key": "anchor_output",
+                  "value": "true"
+                }
+              ]
+            },
+            {
+              "id": "prefill_l5_out_0",
+              "label": "Probe",
+              "namespace": "layer_5",
+              "incomingEdges": [],
+              "outputsMetadata": [
+                {
+                  "id": "0",
+                  "attrs": [
+                    {
+                      "key": "tensor_name",
+                      "value": "prefill_l5_out_0"
+                    }
+                  ]
+                }
+              ],
+              "attrs": [
+                {
+                  "key": "layer",
+                  "value": "5"
+                },
+                {
+                  "key": "anchor",
+                  "value": "output"
+                },
+                {
+                  "key": "anchor_output",
+                  "value": "true"
+                }
+              ]
+            },
+            {
+              "id": "prefill_l6_out_0",
+              "label": "Probe",
+              "namespace": "layer_6",
+              "incomingEdges": [],
+              "outputsMetadata": [
+                {
+                  "id": "0",
+                  "attrs": [
+                    {
+                      "key": "tensor_name",
+                      "value": "prefill_l6_out_0"
+                    }
+                  ]
+                }
+              ],
+              "attrs": [
+                {
+                  "key": "layer",
+                  "value": "6"
+                },
+                {
+                  "key": "anchor",
+                  "value": "output"
+                },
+                {
+                  "key": "anchor_output",
+                  "value": "true"
+                }
+              ]
+            },
+            {
+              "id": "prefill_l7_out_0",
+              "label": "Probe",
+              "namespace": "layer_7",
+              "incomingEdges": [],
+              "outputsMetadata": [
+                {
+                  "id": "0",
+                  "attrs": [
+                    {
+                      "key": "tensor_name",
+                      "value": "prefill_l7_out_0"
+                    }
+                  ]
+                }
+              ],
+              "attrs": [
+                {
+                  "key": "layer",
+                  "value": "7"
+                },
+                {
+                  "key": "anchor",
+                  "value": "output"
+                },
+                {
+                  "key": "anchor_output",
+                  "value": "true"
+                }
+              ]
+            },
+            {
+              "id": "prefill_l8_out_0",
+              "label": "Probe",
+              "namespace": "layer_8",
+              "incomingEdges": [],
+              "outputsMetadata": [
+                {
+                  "id": "0",
+                  "attrs": [
+                    {
+                      "key": "tensor_name",
+                      "value": "prefill_l8_out_0"
+                    }
+                  ]
+                }
+              ],
+              "attrs": [
+                {
+                  "key": "layer",
+                  "value": "8"
+                },
+                {
+                  "key": "anchor",
+                  "value": "output"
+                },
+                {
+                  "key": "anchor_output",
+                  "value": "true"
+                }
+              ]
+            },
+            {
+              "id": "prefill_l9_out_0",
+              "label": "Probe",
+              "namespace": "layer_9",
+              "incomingEdges": [],
+              "outputsMetadata": [
+                {
+                  "id": "0",
+                  "attrs": [
+                    {
+                      "key": "tensor_name",
+                      "value": "prefill_l9_out_0"
+                    }
+                  ]
+                }
+              ],
+              "attrs": [
+                {
+                  "key": "layer",
+                  "value": "9"
+                },
+                {
+                  "key": "anchor",
+                  "value": "output"
+                },
+                {
+                  "key": "anchor_output",
+                  "value": "true"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "decode",
+          "nodes": [
+            {
+              "id": "Op3",
+              "label": "Add",
+              "namespace": "layer_0",
+              "incomingEdges": [],
+              "outputsMetadata": [
+                {
+                  "id": "0",
+                  "attrs": [
+                    {
+                      "key": "tensor_name",
+                      "value": "decode_l0_intermediate_1"
+                    }
+                  ]
+                }
+              ],
+              "attrs": [
+                {
+                  "key": "layer",
+                  "value": "0"
+                },
+                {
+                  "key": "anchor",
+                  "value": "intermediate.1"
+                },
+                {
+                  "key": "anchor_output",
+                  "value": "true"
+                }
+              ]
+            },
+            {
+              "id": "Op7",
+              "label": "Add",
+              "namespace": "layer_0",
+              "incomingEdges": [
+                {
+                  "sourceNodeId": "Op3",
+                  "sourceNodeOutputId": "0",
+                  "targetNodeInputId": "0"
+                }
+              ],
+              "outputsMetadata": [
+                {
+                  "id": "0",
+                  "attrs": [
+                    {
+                      "key": "tensor_name",
+                      "value": "decode_l0_intermediate_2"
+                    }
+                  ]
+                }
+              ],
+              "attrs": [
+                {
+                  "key": "layer",
+                  "value": "0"
+                },
+                {
+                  "key": "anchor",
+                  "value": "intermediate.2"
+                },
+                {
+                  "key": "anchor_output",
+                  "value": "true"
+                }
+              ]
+            },
+            {
+              "id": "Op11",
+              "label": "Mul",
+              "namespace": "layer_0",
+              "incomingEdges": [
+                {
+                  "sourceNodeId": "Op7",
+                  "sourceNodeOutputId": "0",
+                  "targetNodeInputId": "0"
+                }
+              ],
+              "outputsMetadata": [
+                {
+                  "id": "0",
+                  "attrs": [
+                    {
+                      "key": "tensor_name",
+                      "value": "decode_l0_out"
+                    }
+                  ]
+                }
+              ],
+              "attrs": [
+                {
+                  "key": "layer",
+                  "value": "0"
+                },
+                {
+                  "key": "anchor",
+                  "value": "output"
+                },
+                {
+                  "key": "anchor_output",
+                  "value": "true"
+                }
+              ]
+            },
+            {
+              "id": "Op15",
+              "label": "Mul",
+              "namespace": "layer_1",
+              "incomingEdges": [
+                {
+                  "sourceNodeId": "Op11",
+                  "sourceNodeOutputId": "0",
+                  "targetNodeInputId": "0"
+                }
+              ],
+              "outputsMetadata": [
+                {
+                  "id": "0",
+                  "attrs": [
+                    {
+                      "key": "tensor_name",
+                      "value": "decode_l1_out"
+                    }
+                  ]
+                }
+              ],
+              "attrs": [
+                {
+                  "key": "layer",
+                  "value": "1"
+                },
+                {
+                  "key": "anchor",
+                  "value": "output"
+                },
+                {
+                  "key": "anchor_output",
+                  "value": "true"
+                }
+              ]
+            },
+            {
+              "id": "Op19",
+              "label": "Mul",
+              "namespace": "layer_2",
+              "incomingEdges": [
+                {
+                  "sourceNodeId": "Op15",
+                  "sourceNodeOutputId": "0",
+                  "targetNodeInputId": "0"
+                }
+              ],
+              "outputsMetadata": [
+                {
+                  "id": "0",
+                  "attrs": [
+                    {
+                      "key": "tensor_name",
+                      "value": "decode_l2_out"
+                    }
+                  ]
+                }
+              ],
+              "attrs": [
+                {
+                  "key": "layer",
+                  "value": "2"
+                },
+                {
+                  "key": "anchor",
+                  "value": "output"
+                },
+                {
+                  "key": "anchor_output",
+                  "value": "true"
+                }
+              ]
+            },
+            {
+              "id": "Op23",
+              "label": "Mul",
+              "namespace": "layer_3",
+              "incomingEdges": [
+                {
+                  "sourceNodeId": "Op19",
+                  "sourceNodeOutputId": "0",
+                  "targetNodeInputId": "0"
+                }
+              ],
+              "outputsMetadata": [
+                {
+                  "id": "0",
+                  "attrs": [
+                    {
+                      "key": "tensor_name",
+                      "value": "decode_l3_out"
+                    }
+                  ]
+                }
+              ],
+              "attrs": [
+                {
+                  "key": "layer",
+                  "value": "3"
+                },
+                {
+                  "key": "anchor",
+                  "value": "output"
+                },
+                {
+                  "key": "anchor_output",
+                  "value": "true"
+                }
+              ]
+            },
+            {
+              "id": "Op27",
+              "label": "Mul",
+              "namespace": "layer_4",
+              "incomingEdges": [
+                {
+                  "sourceNodeId": "Op23",
+                  "sourceNodeOutputId": "0",
+                  "targetNodeInputId": "0"
+                }
+              ],
+              "outputsMetadata": [
+                {
+                  "id": "0",
+                  "attrs": [
+                    {
+                      "key": "tensor_name",
+                      "value": "decode_l4_out"
+                    }
+                  ]
+                }
+              ],
+              "attrs": [
+                {
+                  "key": "layer",
+                  "value": "4"
+                },
+                {
+                  "key": "anchor",
+                  "value": "output"
+                },
+                {
+                  "key": "anchor_output",
+                  "value": "true"
+                }
+              ]
+            },
+            {
+              "id": "Op31",
+              "label": "Mul",
+              "namespace": "layer_5",
+              "incomingEdges": [
+                {
+                  "sourceNodeId": "Op27",
+                  "sourceNodeOutputId": "0",
+                  "targetNodeInputId": "0"
+                }
+              ],
+              "outputsMetadata": [
+                {
+                  "id": "0",
+                  "attrs": [
+                    {
+                      "key": "tensor_name",
+                      "value": "decode_l5_out"
+                    }
+                  ]
+                }
+              ],
+              "attrs": [
+                {
+                  "key": "layer",
+                  "value": "5"
+                },
+                {
+                  "key": "anchor",
+                  "value": "output"
+                },
+                {
+                  "key": "anchor_output",
+                  "value": "true"
+                }
+              ]
+            },
+            {
+              "id": "Op35",
+              "label": "Mul",
+              "namespace": "layer_6",
+              "incomingEdges": [
+                {
+                  "sourceNodeId": "Op31",
+                  "sourceNodeOutputId": "0",
+                  "targetNodeInputId": "0"
+                }
+              ],
+              "outputsMetadata": [
+                {
+                  "id": "0",
+                  "attrs": [
+                    {
+                      "key": "tensor_name",
+                      "value": "decode_l6_out"
+                    }
+                  ]
+                }
+              ],
+              "attrs": [
+                {
+                  "key": "layer",
+                  "value": "6"
+                },
+                {
+                  "key": "anchor",
+                  "value": "output"
+                },
+                {
+                  "key": "anchor_output",
+                  "value": "true"
+                }
+              ]
+            },
+            {
+              "id": "Op39",
+              "label": "Mul",
+              "namespace": "layer_7",
+              "incomingEdges": [
+                {
+                  "sourceNodeId": "Op35",
+                  "sourceNodeOutputId": "0",
+                  "targetNodeInputId": "0"
+                }
+              ],
+              "outputsMetadata": [
+                {
+                  "id": "0",
+                  "attrs": [
+                    {
+                      "key": "tensor_name",
+                      "value": "decode_l7_out"
+                    }
+                  ]
+                }
+              ],
+              "attrs": [
+                {
+                  "key": "layer",
+                  "value": "7"
+                },
+                {
+                  "key": "anchor",
+                  "value": "output"
+                },
+                {
+                  "key": "anchor_output",
+                  "value": "true"
+                }
+              ]
+            },
+            {
+              "id": "Op43",
+              "label": "Mul",
+              "namespace": "layer_8",
+              "incomingEdges": [
+                {
+                  "sourceNodeId": "Op39",
+                  "sourceNodeOutputId": "0",
+                  "targetNodeInputId": "0"
+                }
+              ],
+              "outputsMetadata": [
+                {
+                  "id": "0",
+                  "attrs": [
+                    {
+                      "key": "tensor_name",
+                      "value": "decode_l8_out"
+                    }
+                  ]
+                }
+              ],
+              "attrs": [
+                {
+                  "key": "layer",
+                  "value": "8"
+                },
+                {
+                  "key": "anchor",
+                  "value": "output"
+                },
+                {
+                  "key": "anchor_output",
+                  "value": "true"
+                }
+              ]
+            },
+            {
+              "id": "Op47",
+              "label": "Mul",
+              "namespace": "layer_9",
+              "incomingEdges": [
+                {
+                  "sourceNodeId": "Op43",
+                  "sourceNodeOutputId": "0",
+                  "targetNodeInputId": "0"
+                }
+              ],
+              "outputsMetadata": [
+                {
+                  "id": "0",
+                  "attrs": [
+                    {
+                      "key": "tensor_name",
+                      "value": "decode_l9_out"
+                    }
+                  ]
+                }
+              ],
+              "attrs": [
+                {
+                  "key": "layer",
+                  "value": "9"
+                },
+                {
+                  "key": "anchor",
+                  "value": "output"
+                },
+                {
+                  "key": "anchor_output",
+                  "value": "true"
+                }
+              ]
+            },
+            {
+              "id": "Op51",
+              "label": "Mul",
+              "namespace": "layer_10",
+              "incomingEdges": [
+                {
+                  "sourceNodeId": "Op47",
+                  "sourceNodeOutputId": "0",
+                  "targetNodeInputId": "0"
+                }
+              ],
+              "outputsMetadata": [
+                {
+                  "id": "0",
+                  "attrs": [
+                    {
+                      "key": "tensor_name",
+                      "value": "decode_l10_out"
+                    }
+                  ]
+                }
+              ],
+              "attrs": [
+                {
+                  "key": "layer",
+                  "value": "10"
+                },
+                {
+                  "key": "anchor",
+                  "value": "output"
+                },
+                {
+                  "key": "anchor_output",
+                  "value": "true"
+                }
+              ]
+            },
+            {
+              "id": "Op55",
+              "label": "Mul",
+              "namespace": "layer_11",
+              "incomingEdges": [
+                {
+                  "sourceNodeId": "Op51",
+                  "sourceNodeOutputId": "0",
+                  "targetNodeInputId": "0"
+                }
+              ],
+              "outputsMetadata": [
+                {
+                  "id": "0",
+                  "attrs": [
+                    {
+                      "key": "tensor_name",
+                      "value": "decode_l11_out"
+                    }
+                  ]
+                }
+              ],
+              "attrs": [
+                {
+                  "key": "layer",
+                  "value": "11"
+                },
+                {
+                  "key": "anchor",
+                  "value": "output"
+                },
+                {
+                  "key": "anchor_output",
+                  "value": "true"
+                }
+              ]
+            },
+            {
+              "id": "Op59",
+              "label": "Mul",
+              "namespace": "layer_12",
+              "incomingEdges": [
+                {
+                  "sourceNodeId": "Op55",
+                  "sourceNodeOutputId": "0",
+                  "targetNodeInputId": "0"
+                }
+              ],
+              "outputsMetadata": [
+                {
+                  "id": "0",
+                  "attrs": [
+                    {
+                      "key": "tensor_name",
+                      "value": "decode_l12_out"
+                    }
+                  ]
+                }
+              ],
+              "attrs": [
+                {
+                  "key": "layer",
+                  "value": "12"
+                },
+                {
+                  "key": "anchor",
+                  "value": "output"
+                },
+                {
+                  "key": "anchor_output",
+                  "value": "true"
+                }
+              ]
+            },
+            {
+              "id": "Op63",
+              "label": "Mul",
+              "namespace": "layer_13",
+              "incomingEdges": [
+                {
+                  "sourceNodeId": "Op59",
+                  "sourceNodeOutputId": "0",
+                  "targetNodeInputId": "0"
+                }
+              ],
+              "outputsMetadata": [
+                {
+                  "id": "0",
+                  "attrs": [
+                    {
+                      "key": "tensor_name",
+                      "value": "decode_l13_out"
+                    }
+                  ]
+                }
+              ],
+              "attrs": [
+                {
+                  "key": "layer",
+                  "value": "13"
+                },
+                {
+                  "key": "anchor",
+                  "value": "output"
+                },
+                {
+                  "key": "anchor_output",
+                  "value": "true"
+                }
+              ]
+            },
+            {
+              "id": "Op67",
+              "label": "Mul",
+              "namespace": "layer_14",
+              "incomingEdges": [
+                {
+                  "sourceNodeId": "Op63",
+                  "sourceNodeOutputId": "0",
+                  "targetNodeInputId": "0"
+                }
+              ],
+              "outputsMetadata": [
+                {
+                  "id": "0",
+                  "attrs": [
+                    {
+                      "key": "tensor_name",
+                      "value": "decode_l14_out"
+                    }
+                  ]
+                }
+              ],
+              "attrs": [
+                {
+                  "key": "layer",
+                  "value": "14"
+                },
+                {
+                  "key": "anchor",
+                  "value": "output"
+                },
+                {
+                  "key": "anchor_output",
+                  "value": "true"
+                }
+              ]
+            },
+            {
+              "id": "Op71",
+              "label": "Mul",
+              "namespace": "layer_15",
+              "incomingEdges": [
+                {
+                  "sourceNodeId": "Op67",
+                  "sourceNodeOutputId": "0",
+                  "targetNodeInputId": "0"
+                }
+              ],
+              "outputsMetadata": [
+                {
+                  "id": "0",
+                  "attrs": [
+                    {
+                      "key": "tensor_name",
+                      "value": "decode_l15_out"
+                    }
+                  ]
+                }
+              ],
+              "attrs": [
+                {
+                  "key": "layer",
+                  "value": "15"
+                },
+                {
+                  "key": "anchor",
+                  "value": "output"
+                },
+                {
+                  "key": "anchor_output",
+                  "value": "true"
+                }
+              ]
+            },
+            {
+              "id": "Op75",
+              "label": "Mul",
+              "namespace": "layer_16",
+              "incomingEdges": [
+                {
+                  "sourceNodeId": "Op71",
+                  "sourceNodeOutputId": "0",
+                  "targetNodeInputId": "0"
+                }
+              ],
+              "outputsMetadata": [
+                {
+                  "id": "0",
+                  "attrs": [
+                    {
+                      "key": "tensor_name",
+                      "value": "decode_l16_out"
+                    }
+                  ]
+                }
+              ],
+              "attrs": [
+                {
+                  "key": "layer",
+                  "value": "16"
+                },
+                {
+                  "key": "anchor",
+                  "value": "output"
+                },
+                {
+                  "key": "anchor_output",
+                  "value": "true"
+                }
+              ]
+            },
+            {
+              "id": "Op79",
+              "label": "Mul",
+              "namespace": "layer_17",
+              "incomingEdges": [
+                {
+                  "sourceNodeId": "Op75",
+                  "sourceNodeOutputId": "0",
+                  "targetNodeInputId": "0"
+                }
+              ],
+              "outputsMetadata": [
+                {
+                  "id": "0",
+                  "attrs": [
+                    {
+                      "key": "tensor_name",
+                      "value": "decode_l17_out"
+                    }
+                  ]
+                }
+              ],
+              "attrs": [
+                {
+                  "key": "layer",
+                  "value": "17"
+                },
+                {
+                  "key": "anchor",
+                  "value": "output"
+                },
+                {
+                  "key": "anchor_output",
+                  "value": "true"
+                }
+              ]
+            },
+            {
+              "id": "Op83",
+              "label": "Mul",
+              "namespace": "layer_18",
+              "incomingEdges": [
+                {
+                  "sourceNodeId": "Op79",
+                  "sourceNodeOutputId": "0",
+                  "targetNodeInputId": "0"
+                }
+              ],
+              "outputsMetadata": [
+                {
+                  "id": "0",
+                  "attrs": [
+                    {
+                      "key": "tensor_name",
+                      "value": "decode_l18_out"
+                    }
+                  ]
+                }
+              ],
+              "attrs": [
+                {
+                  "key": "layer",
+                  "value": "18"
+                },
+                {
+                  "key": "anchor",
+                  "value": "output"
+                },
+                {
+                  "key": "anchor_output",
+                  "value": "true"
+                }
+              ]
+            },
+            {
+              "id": "Op87",
+              "label": "Mul",
+              "namespace": "layer_19",
+              "incomingEdges": [
+                {
+                  "sourceNodeId": "Op83",
+                  "sourceNodeOutputId": "0",
+                  "targetNodeInputId": "0"
+                }
+              ],
+              "outputsMetadata": [
+                {
+                  "id": "0",
+                  "attrs": [
+                    {
+                      "key": "tensor_name",
+                      "value": "decode_l19_out"
+                    }
+                  ]
+                }
+              ],
+              "attrs": [
+                {
+                  "key": "layer",
+                  "value": "19"
+                },
+                {
+                  "key": "anchor",
+                  "value": "output"
+                },
+                {
+                  "key": "anchor_output",
+                  "value": "true"
+                }
+              ]
+            },
+            {
+              "id": "Op91",
+              "label": "Mul",
+              "namespace": "layer_20",
+              "incomingEdges": [
+                {
+                  "sourceNodeId": "Op87",
+                  "sourceNodeOutputId": "0",
+                  "targetNodeInputId": "0"
+                }
+              ],
+              "outputsMetadata": [
+                {
+                  "id": "0",
+                  "attrs": [
+                    {
+                      "key": "tensor_name",
+                      "value": "decode_l20_out"
+                    }
+                  ]
+                }
+              ],
+              "attrs": [
+                {
+                  "key": "layer",
+                  "value": "20"
+                },
+                {
+                  "key": "anchor",
+                  "value": "output"
+                },
+                {
+                  "key": "anchor_output",
+                  "value": "true"
+                }
+              ]
+            },
+            {
+              "id": "Op95",
+              "label": "Mul",
+              "namespace": "layer_21",
+              "incomingEdges": [
+                {
+                  "sourceNodeId": "Op91",
+                  "sourceNodeOutputId": "0",
+                  "targetNodeInputId": "0"
+                }
+              ],
+              "outputsMetadata": [
+                {
+                  "id": "0",
+                  "attrs": [
+                    {
+                      "key": "tensor_name",
+                      "value": "decode_l21_out"
+                    }
+                  ]
+                }
+              ],
+              "attrs": [
+                {
+                  "key": "layer",
+                  "value": "21"
+                },
+                {
+                  "key": "anchor",
+                  "value": "output"
+                },
+                {
+                  "key": "anchor_output",
+                  "value": "true"
+                }
+              ]
+            },
+            {
+              "id": "Op99",
+              "label": "Mul",
+              "namespace": "layer_22",
+              "incomingEdges": [
+                {
+                  "sourceNodeId": "Op95",
+                  "sourceNodeOutputId": "0",
+                  "targetNodeInputId": "0"
+                }
+              ],
+              "outputsMetadata": [
+                {
+                  "id": "0",
+                  "attrs": [
+                    {
+                      "key": "tensor_name",
+                      "value": "decode_l22_out"
+                    }
+                  ]
+                }
+              ],
+              "attrs": [
+                {
+                  "key": "layer",
+                  "value": "22"
+                },
+                {
+                  "key": "anchor",
+                  "value": "output"
+                },
+                {
+                  "key": "anchor_output",
+                  "value": "true"
+                }
+              ]
+            },
+            {
+              "id": "Op103",
+              "label": "Mul",
+              "namespace": "layer_23",
+              "incomingEdges": [
+                {
+                  "sourceNodeId": "Op99",
+                  "sourceNodeOutputId": "0",
+                  "targetNodeInputId": "0"
+                }
+              ],
+              "outputsMetadata": [
+                {
+                  "id": "0",
+                  "attrs": [
+                    {
+                      "key": "tensor_name",
+                      "value": "decode_l23_out"
+                    }
+                  ]
+                }
+              ],
+              "attrs": [
+                {
+                  "key": "layer",
+                  "value": "23"
+                },
+                {
+                  "key": "anchor",
+                  "value": "output"
+                },
+                {
+                  "key": "anchor_output",
+                  "value": "true"
+                }
+              ]
+            },
+            {
+              "id": "Op107",
+              "label": "Mul",
+              "namespace": "layer_24",
+              "incomingEdges": [
+                {
+                  "sourceNodeId": "Op103",
+                  "sourceNodeOutputId": "0",
+                  "targetNodeInputId": "0"
+                }
+              ],
+              "outputsMetadata": [
+                {
+                  "id": "0",
+                  "attrs": [
+                    {
+                      "key": "tensor_name",
+                      "value": "decode_l24_out"
+                    }
+                  ]
+                }
+              ],
+              "attrs": [
+                {
+                  "key": "layer",
+                  "value": "24"
+                },
+                {
+                  "key": "anchor",
+                  "value": "output"
+                },
+                {
+                  "key": "anchor_output",
+                  "value": "true"
+                }
+              ]
+            },
+            {
+              "id": "Op111",
+              "label": "Mul",
+              "namespace": "layer_25",
+              "incomingEdges": [
+                {
+                  "sourceNodeId": "Op107",
+                  "sourceNodeOutputId": "0",
+                  "targetNodeInputId": "0"
+                }
+              ],
+              "outputsMetadata": [
+                {
+                  "id": "0",
+                  "attrs": [
+                    {
+                      "key": "tensor_name",
+                      "value": "decode_l25_out"
+                    }
+                  ]
+                }
+              ],
+              "attrs": [
+                {
+                  "key": "layer",
+                  "value": "25"
+                },
+                {
+                  "key": "anchor",
+                  "value": "output"
+                },
+                {
+                  "key": "anchor_output",
+                  "value": "true"
+                }
+              ]
+            },
+            {
+              "id": "Op115",
+              "label": "Mul",
+              "namespace": "layer_26",
+              "incomingEdges": [
+                {
+                  "sourceNodeId": "Op111",
+                  "sourceNodeOutputId": "0",
+                  "targetNodeInputId": "0"
+                }
+              ],
+              "outputsMetadata": [
+                {
+                  "id": "0",
+                  "attrs": [
+                    {
+                      "key": "tensor_name",
+                      "value": "decode_l26_out"
+                    }
+                  ]
+                }
+              ],
+              "attrs": [
+                {
+                  "key": "layer",
+                  "value": "26"
+                },
+                {
+                  "key": "anchor",
+                  "value": "output"
+                },
+                {
+                  "key": "anchor_output",
+                  "value": "true"
+                }
+              ]
+            },
+            {
+              "id": "Op119",
+              "label": "Mul",
+              "namespace": "layer_27",
+              "incomingEdges": [
+                {
+                  "sourceNodeId": "Op115",
+                  "sourceNodeOutputId": "0",
+                  "targetNodeInputId": "0"
+                }
+              ],
+              "outputsMetadata": [
+                {
+                  "id": "0",
+                  "attrs": [
+                    {
+                      "key": "tensor_name",
+                      "value": "decode_l27_out"
+                    }
+                  ]
+                }
+              ],
+              "attrs": [
+                {
+                  "key": "layer",
+                  "value": "27"
+                },
+                {
+                  "key": "anchor",
+                  "value": "output"
+                },
+                {
+                  "key": "anchor_output",
+                  "value": "true"
+                }
+              ]
+            },
+            {
+              "id": "Op123",
+              "label": "Mul",
+              "namespace": "layer_28",
+              "incomingEdges": [
+                {
+                  "sourceNodeId": "Op119",
+                  "sourceNodeOutputId": "0",
+                  "targetNodeInputId": "0"
+                }
+              ],
+              "outputsMetadata": [
+                {
+                  "id": "0",
+                  "attrs": [
+                    {
+                      "key": "tensor_name",
+                      "value": "decode_l28_out"
+                    }
+                  ]
+                }
+              ],
+              "attrs": [
+                {
+                  "key": "layer",
+                  "value": "28"
+                },
+                {
+                  "key": "anchor",
+                  "value": "output"
+                },
+                {
+                  "key": "anchor_output",
+                  "value": "true"
+                }
+              ]
+            },
+            {
+              "id": "Op127",
+              "label": "Mul",
+              "namespace": "layer_29",
+              "incomingEdges": [
+                {
+                  "sourceNodeId": "Op123",
+                  "sourceNodeOutputId": "0",
+                  "targetNodeInputId": "0"
+                }
+              ],
+              "outputsMetadata": [
+                {
+                  "id": "0",
+                  "attrs": [
+                    {
+                      "key": "tensor_name",
+                      "value": "decode_l29_out"
+                    }
+                  ]
+                }
+              ],
+              "attrs": [
+                {
+                  "key": "layer",
+                  "value": "29"
+                },
+                {
+                  "key": "anchor",
+                  "value": "output"
+                },
+                {
+                  "key": "anchor_output",
+                  "value": "true"
+                }
+              ]
+            },
+            {
+              "id": "Op131",
+              "label": "Mul",
+              "namespace": "layer_30",
+              "incomingEdges": [
+                {
+                  "sourceNodeId": "Op127",
+                  "sourceNodeOutputId": "0",
+                  "targetNodeInputId": "0"
+                }
+              ],
+              "outputsMetadata": [
+                {
+                  "id": "0",
+                  "attrs": [
+                    {
+                      "key": "tensor_name",
+                      "value": "decode_l30_out"
+                    }
+                  ]
+                }
+              ],
+              "attrs": [
+                {
+                  "key": "layer",
+                  "value": "30"
+                },
+                {
+                  "key": "anchor",
+                  "value": "output"
+                },
+                {
+                  "key": "anchor_output",
+                  "value": "true"
+                }
+              ]
+            },
+            {
+              "id": "Op135",
+              "label": "Mul",
+              "namespace": "layer_31",
+              "incomingEdges": [
+                {
+                  "sourceNodeId": "Op131",
+                  "sourceNodeOutputId": "0",
+                  "targetNodeInputId": "0"
+                }
+              ],
+              "outputsMetadata": [
+                {
+                  "id": "0",
+                  "attrs": [
+                    {
+                      "key": "tensor_name",
+                      "value": "decode_l31_out"
+                    }
+                  ]
+                }
+              ],
+              "attrs": [
+                {
+                  "key": "layer",
+                  "value": "31"
+                },
+                {
+                  "key": "anchor",
+                  "value": "output"
+                },
+                {
+                  "key": "anchor_output",
+                  "value": "true"
+                }
+              ]
+            },
+            {
+              "id": "Op139",
+              "label": "Mul",
+              "namespace": "layer_32",
+              "incomingEdges": [
+                {
+                  "sourceNodeId": "Op135",
+                  "sourceNodeOutputId": "0",
+                  "targetNodeInputId": "0"
+                }
+              ],
+              "outputsMetadata": [
+                {
+                  "id": "0",
+                  "attrs": [
+                    {
+                      "key": "tensor_name",
+                      "value": "decode_l32_out"
+                    }
+                  ]
+                }
+              ],
+              "attrs": [
+                {
+                  "key": "layer",
+                  "value": "32"
+                },
+                {
+                  "key": "anchor",
+                  "value": "output"
+                },
+                {
+                  "key": "anchor_output",
+                  "value": "true"
+                }
+              ]
+            },
+            {
+              "id": "Op143",
+              "label": "Mul",
+              "namespace": "layer_33",
+              "incomingEdges": [
+                {
+                  "sourceNodeId": "Op139",
+                  "sourceNodeOutputId": "0",
+                  "targetNodeInputId": "0"
+                }
+              ],
+              "outputsMetadata": [
+                {
+                  "id": "0",
+                  "attrs": [
+                    {
+                      "key": "tensor_name",
+                      "value": "decode_l33_out"
+                    }
+                  ]
+                }
+              ],
+              "attrs": [
+                {
+                  "key": "layer",
+                  "value": "33"
+                },
+                {
+                  "key": "anchor",
+                  "value": "output"
+                },
+                {
+                  "key": "anchor_output",
+                  "value": "true"
+                }
+              ]
+            },
+            {
+              "id": "Op147",
+              "label": "Mul",
+              "namespace": "layer_34",
+              "incomingEdges": [
+                {
+                  "sourceNodeId": "Op143",
+                  "sourceNodeOutputId": "0",
+                  "targetNodeInputId": "0"
+                }
+              ],
+              "outputsMetadata": [
+                {
+                  "id": "0",
+                  "attrs": [
+                    {
+                      "key": "tensor_name",
+                      "value": "decode_l34_out"
+                    }
+                  ]
+                }
+              ],
+              "attrs": [
+                {
+                  "key": "layer",
+                  "value": "34"
+                },
+                {
+                  "key": "anchor",
+                  "value": "output"
+                },
+                {
+                  "key": "anchor_output",
+                  "value": "true"
+                }
+              ]
+            },
+            {
+              "id": "decode_final",
+              "label": "Probe",
+              "namespace": "",
+              "incomingEdges": [],
+              "outputsMetadata": [
+                {
+                  "id": "0",
+                  "attrs": [
+                    {
+                      "key": "tensor_name",
+                      "value": "decode_final"
+                    }
+                  ]
+                }
+              ],
+              "attrs": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "target",
+      "runtime": "LiteRT-LM",
+      "artifact": "gemma-4-2p3b_probed_combined.litertlm",
+      "backend": "GPU",
+      "precision": "FP16",
+      "os": null,
+      "os_version": null,
+      "host": null,
+      "chip": null,
+      "graphs": [
+        {
+          "id": "prefill_1",
+          "nodes": [
+            {
+              "id": "Op12",
+              "label": "RMSNorm",
+              "namespace": "layer_0/norm.attn.in",
+              "incomingEdges": [],
+              "outputsMetadata": [
+                {
+                  "id": "0",
+                  "attrs": [
+                    {
+                      "key": "tensor_name",
+                      "value": "layer_0_norm_out"
+                    }
+                  ]
+                }
+              ],
+              "attrs": [
+                {
+                  "key": "layer",
+                  "value": "0"
+                },
+                {
+                  "key": "anchor",
+                  "value": "intermediate.1"
+                }
+              ]
+            },
+            {
+              "id": "Op16",
+              "label": "FullyConnected",
+              "namespace": "layer_0/attn",
+              "incomingEdges": [
+                {
+                  "sourceNodeId": "Op12",
+                  "sourceNodeOutputId": "0",
+                  "targetNodeInputId": "0"
+                }
+              ],
+              "outputsMetadata": [
+                {
+                  "id": "0",
+                  "attrs": [
+                    {
+                      "key": "tensor_name",
+                      "value": "layer_0_q_proj"
+                    }
+                  ]
+                }
+              ],
+              "attrs": [
+                {
+                  "key": "layer",
+                  "value": "0"
+                },
+                {
+                  "key": "anchor",
+                  "value": "intermediate.1"
+                }
+              ]
+            },
+            {
+              "id": "Op19",
+              "label": "FullyConnected",
+              "namespace": "layer_0/attn",
+              "incomingEdges": [
+                {
+                  "sourceNodeId": "Op12",
+                  "sourceNodeOutputId": "0",
+                  "targetNodeInputId": "0"
+                }
+              ],
+              "outputsMetadata": [
+                {
+                  "id": "0",
+                  "attrs": [
+                    {
+                      "key": "tensor_name",
+                      "value": "layer_0_k_proj"
+                    }
+                  ]
+                }
+              ],
+              "attrs": [
+                {
+                  "key": "layer",
+                  "value": "0"
+                },
+                {
+                  "key": "anchor",
+                  "value": "intermediate.1"
+                }
+              ]
+            },
+            {
+              "id": "Op22",
+              "label": "FullyConnected",
+              "namespace": "layer_0/attn",
+              "incomingEdges": [
+                {
+                  "sourceNodeId": "Op12",
+                  "sourceNodeOutputId": "0",
+                  "targetNodeInputId": "0"
+                }
+              ],
+              "outputsMetadata": [
+                {
+                  "id": "0",
+                  "attrs": [
+                    {
+                      "key": "tensor_name",
+                      "value": "layer_0_v_proj"
+                    }
+                  ]
+                }
+              ],
+              "attrs": [
+                {
+                  "key": "layer",
+                  "value": "0"
+                },
+                {
+                  "key": "anchor",
+                  "value": "intermediate.1"
+                }
+              ]
+            },
+            {
+              "id": "Op25",
+              "label": "Composite",
+              "namespace": "layer_0/attn",
+              "incomingEdges": [
+                {
+                  "sourceNodeId": "Op22",
+                  "sourceNodeOutputId": "0",
+                  "targetNodeInputId": "0"
+                }
+              ],
+              "outputsMetadata": [
+                {
+                  "id": "0",
+                  "attrs": [
+                    {
+                      "key": "tensor_name",
+                      "value": "layer_0_v_input_to_cache"
+                    }
+                  ]
+                }
+              ],
+              "attrs": [
+                {
+                  "key": "layer",
+                  "value": "0"
+                },
+                {
+                  "key": "anchor",
+                  "value": "intermediate.1"
+                }
+              ]
+            },
+            {
+              "id": "Op45",
+              "label": "Sub",
+              "namespace": "layer_0/attn",
+              "incomingEdges": [
+                {
+                  "sourceNodeId": "Op19",
+                  "sourceNodeOutputId": "0",
+                  "targetNodeInputId": "0"
+                }
+              ],
+              "outputsMetadata": [
+                {
+                  "id": "0",
+                  "attrs": [
+                    {
+                      "key": "tensor_name",
+                      "value": "layer_0_k_rope_sub"
+                    }
+                  ]
+                }
+              ],
+              "attrs": [
+                {
+                  "key": "layer",
+                  "value": "0"
+                },
+                {
+                  "key": "anchor",
+                  "value": "intermediate.1"
+                }
+              ]
+            },
+            {
+              "id": "Op48",
+              "label": "Add",
+              "namespace": "layer_0/attn",
+              "incomingEdges": [
+                {
+                  "sourceNodeId": "Op19",
+                  "sourceNodeOutputId": "0",
+                  "targetNodeInputId": "0"
+                }
+              ],
+              "outputsMetadata": [
+                {
+                  "id": "0",
+                  "attrs": [
+                    {
+                      "key": "tensor_name",
+                      "value": "layer_0_k_rope_add"
+                    }
+                  ]
+                }
+              ],
+              "attrs": [
+                {
+                  "key": "layer",
+                  "value": "0"
+                },
+                {
+                  "key": "anchor",
+                  "value": "intermediate.1"
+                }
+              ]
+            },
+            {
+              "id": "Op75",
+              "label": "Attention",
+              "namespace": "layer_0/attn",
+              "incomingEdges": [
+                {
+                  "sourceNodeId": "Op16",
+                  "sourceNodeOutputId": "0",
+                  "targetNodeInputId": "0"
+                },
+                {
+                  "sourceNodeId": "Op25",
+                  "sourceNodeOutputId": "0",
+                  "targetNodeInputId": "1"
+                },
+                {
+                  "sourceNodeId": "Op45",
+                  "sourceNodeOutputId": "0",
+                  "targetNodeInputId": "2"
+                },
+                {
+                  "sourceNodeId": "Op48",
+                  "sourceNodeOutputId": "0",
+                  "targetNodeInputId": "3"
+                }
+              ],
+              "outputsMetadata": [
+                {
+                  "id": "0",
+                  "attrs": [
+                    {
+                      "key": "tensor_name",
+                      "value": "layer_0_attn_out_raw"
+                    }
+                  ]
+                }
+              ],
+              "attrs": [
+                {
+                  "key": "layer",
+                  "value": "0"
+                },
+                {
+                  "key": "anchor",
+                  "value": "intermediate.1"
+                }
+              ]
+            },
+            {
+              "id": "Op85",
+              "label": "FullyConnected",
+              "namespace": "layer_0/attn",
+              "incomingEdges": [
+                {
+                  "sourceNodeId": "Op75",
+                  "sourceNodeOutputId": "0",
+                  "targetNodeInputId": "0"
+                }
+              ],
+              "outputsMetadata": [
+                {
+                  "id": "0",
+                  "attrs": [
+                    {
+                      "key": "tensor_name",
+                      "value": "layer_0_o_proj"
+                    }
+                  ]
+                }
+              ],
+              "attrs": [
+                {
+                  "key": "layer",
+                  "value": "0"
+                },
+                {
+                  "key": "anchor",
+                  "value": "intermediate.1"
+                }
+              ]
+            },
+            {
+              "id": "Op87",
+              "label": "Add",
+              "namespace": "layer_0",
+              "incomingEdges": [
+                {
+                  "sourceNodeId": "Op85",
+                  "sourceNodeOutputId": "0",
+                  "targetNodeInputId": "0"
+                }
+              ],
+              "outputsMetadata": [
+                {
+                  "id": "0",
+                  "attrs": [
+                    {
+                      "key": "tensor_name",
+                      "value": "layer_0_attn_block_out"
+                    }
+                  ]
+                }
+              ],
+              "attrs": [
+                {
+                  "key": "layer",
+                  "value": "0"
+                },
+                {
+                  "key": "anchor",
+                  "value": "intermediate.1"
+                },
+                {
+                  "key": "anchor_output",
+                  "value": "true"
+                }
+              ]
+            },
+            {
+              "id": "Op88",
+              "label": "RMSNorm",
+              "namespace": "layer_0/norm.ffn.in",
+              "incomingEdges": [
+                {
+                  "sourceNodeId": "Op87",
+                  "sourceNodeOutputId": "0",
+                  "targetNodeInputId": "0"
+                }
+              ],
+              "outputsMetadata": [
+                {
+                  "id": "0",
+                  "attrs": [
+                    {
+                      "key": "tensor_name",
+                      "value": "layer_0_mlp_input"
+                    }
+                  ]
+                }
+              ],
+              "attrs": [
+                {
+                  "key": "layer",
+                  "value": "0"
+                },
+                {
+                  "key": "anchor",
+                  "value": "intermediate.2"
+                }
+              ]
+            },
+            {
+              "id": "Op91",
+              "label": "FullyConnected",
+              "namespace": "layer_0/ffn",
+              "incomingEdges": [
+                {
+                  "sourceNodeId": "Op88",
+                  "sourceNodeOutputId": "0",
+                  "targetNodeInputId": "0"
+                }
+              ],
+              "outputsMetadata": [
+                {
+                  "id": "0",
+                  "attrs": [
+                    {
+                      "key": "tensor_name",
+                      "value": "layer_0_mlp_gate_proj"
+                    }
+                  ]
+                }
+              ],
+              "attrs": [
+                {
+                  "key": "layer",
+                  "value": "0"
+                },
+                {
+                  "key": "anchor",
+                  "value": "intermediate.2"
+                }
+              ]
+            },
+            {
+              "id": "Op93",
+              "label": "FullyConnected",
+              "namespace": "layer_0/ffn",
+              "incomingEdges": [
+                {
+                  "sourceNodeId": "Op88",
+                  "sourceNodeOutputId": "0",
+                  "targetNodeInputId": "0"
+                }
+              ],
+              "outputsMetadata": [
+                {
+                  "id": "0",
+                  "attrs": [
+                    {
+                      "key": "tensor_name",
+                      "value": "layer_0_mlp_up_proj"
+                    }
+                  ]
+                }
+              ],
+              "attrs": [
+                {
+                  "key": "layer",
+                  "value": "0"
+                },
+                {
+                  "key": "anchor",
+                  "value": "intermediate.2"
+                }
+              ]
+            },
+            {
+              "id": "Op94",
+              "label": "Gelu",
+              "namespace": "layer_0/ffn",
+              "incomingEdges": [
+                {
+                  "sourceNodeId": "Op91",
+                  "sourceNodeOutputId": "0",
+                  "targetNodeInputId": "0"
+                }
+              ],
+              "outputsMetadata": [
+                {
+                  "id": "0",
+                  "attrs": [
+                    {
+                      "key": "tensor_name",
+                      "value": "layer_0_mlp_gelu"
+                    }
+                  ]
+                }
+              ],
+              "attrs": [
+                {
+                  "key": "layer",
+                  "value": "0"
+                },
+                {
+                  "key": "anchor",
+                  "value": "intermediate.2"
+                }
+              ]
+            },
+            {
+              "id": "Op95",
+              "label": "Mul",
+              "namespace": "layer_0/ffn",
+              "incomingEdges": [
+                {
+                  "sourceNodeId": "Op94",
+                  "sourceNodeOutputId": "0",
+                  "targetNodeInputId": "0"
+                },
+                {
+                  "sourceNodeId": "Op93",
+                  "sourceNodeOutputId": "0",
+                  "targetNodeInputId": "1"
+                }
+              ],
+              "outputsMetadata": [
+                {
+                  "id": "0",
+                  "attrs": [
+                    {
+                      "key": "tensor_name",
+                      "value": "layer_0_mlp_gated"
+                    }
+                  ]
+                }
+              ],
+              "attrs": [
+                {
+                  "key": "layer",
+                  "value": "0"
+                },
+                {
+                  "key": "anchor",
+                  "value": "intermediate.2"
+                }
+              ]
+            },
+            {
+              "id": "Op98",
+              "label": "FullyConnected",
+              "namespace": "layer_0/ffn",
+              "incomingEdges": [
+                {
+                  "sourceNodeId": "Op95",
+                  "sourceNodeOutputId": "0",
+                  "targetNodeInputId": "0"
+                }
+              ],
+              "outputsMetadata": [
+                {
+                  "id": "0",
+                  "attrs": [
+                    {
+                      "key": "tensor_name",
+                      "value": "layer_0_mlp_down_proj"
+                    }
+                  ]
+                }
+              ],
+              "attrs": [
+                {
+                  "key": "layer",
+                  "value": "0"
+                },
+                {
+                  "key": "anchor",
+                  "value": "intermediate.2"
+                }
+              ]
+            },
+            {
+              "id": "Op100",
+              "label": "Add",
+              "namespace": "layer_0",
+              "incomingEdges": [
+                {
+                  "sourceNodeId": "Op87",
+                  "sourceNodeOutputId": "0",
+                  "targetNodeInputId": "0"
+                },
+                {
+                  "sourceNodeId": "Op98",
+                  "sourceNodeOutputId": "0",
+                  "targetNodeInputId": "1"
+                }
+              ],
+              "outputsMetadata": [
+                {
+                  "id": "0",
+                  "attrs": [
+                    {
+                      "key": "tensor_name",
+                      "value": "layer_0_mlp_block_out"
+                    }
+                  ]
+                }
+              ],
+              "attrs": [
+                {
+                  "key": "layer",
+                  "value": "0"
+                },
+                {
+                  "key": "anchor",
+                  "value": "intermediate.2"
+                },
+                {
+                  "key": "anchor_output",
+                  "value": "true"
+                }
+              ]
+            },
+            {
+              "id": "Op103",
+              "label": "FullyConnected",
+              "namespace": "layer_0/ple",
+              "incomingEdges": [
+                {
+                  "sourceNodeId": "Op100",
+                  "sourceNodeOutputId": "0",
+                  "targetNodeInputId": "0"
+                }
+              ],
+              "outputsMetadata": [
+                {
+                  "id": "0",
+                  "attrs": [
+                    {
+                      "key": "tensor_name",
+                      "value": "layer_0_ple_gate_proj"
+                    }
+                  ]
+                }
+              ],
+              "attrs": [
+                {
+                  "key": "layer",
+                  "value": "0"
+                },
+                {
+                  "key": "anchor",
+                  "value": "output"
+                }
+              ]
+            },
+            {
+              "id": "Op104",
+              "label": "Gelu",
+              "namespace": "layer_0/ple",
+              "incomingEdges": [
+                {
+                  "sourceNodeId": "Op103",
+                  "sourceNodeOutputId": "0",
+                  "targetNodeInputId": "0"
+                }
+              ],
+              "outputsMetadata": [
+                {
+                  "id": "0",
+                  "attrs": [
+                    {
+                      "key": "tensor_name",
+                      "value": "layer_0_ple_gelu"
+                    }
+                  ]
+                }
+              ],
+              "attrs": [
+                {
+                  "key": "layer",
+                  "value": "0"
+                },
+                {
+                  "key": "anchor",
+                  "value": "output"
+                }
+              ]
+            },
+            {
+              "id": "Op108",
+              "label": "FullyConnected",
+              "namespace": "layer_0/ple",
+              "incomingEdges": [
+                {
+                  "sourceNodeId": "layer_0_ple_mul",
+                  "sourceNodeOutputId": "0",
+                  "targetNodeInputId": "0"
+                }
+              ],
+              "outputsMetadata": [
+                {
+                  "id": "0",
+                  "attrs": [
+                    {
+                      "key": "tensor_name",
+                      "value": "layer_0_ple_proj"
+                    }
+                  ]
+                }
+              ],
+              "attrs": [
+                {
+                  "key": "layer",
+                  "value": "0"
+                },
+                {
+                  "key": "anchor",
+                  "value": "output"
+                }
+              ]
+            },
+            {
+              "id": "Op110",
+              "label": "Add",
+              "namespace": "layer_0/add_ple",
+              "incomingEdges": [
+                {
+                  "sourceNodeId": "Op100",
+                  "sourceNodeOutputId": "0",
+                  "targetNodeInputId": "0"
+                },
+                {
+                  "sourceNodeId": "Op108",
+                  "sourceNodeOutputId": "0",
+                  "targetNodeInputId": "1"
+                }
+              ],
+              "outputsMetadata": [
+                {
+                  "id": "0",
+                  "attrs": [
+                    {
+                      "key": "tensor_name",
+                      "value": "layer_0_final_add"
+                    }
+                  ]
+                }
+              ],
+              "attrs": [
+                {
+                  "key": "layer",
+                  "value": "0"
+                },
+                {
+                  "key": "anchor",
+                  "value": "output"
+                }
+              ]
+            },
+            {
+              "id": "Op111",
+              "label": "Mul",
+              "namespace": "layer_0",
+              "incomingEdges": [
+                {
+                  "sourceNodeId": "Op110",
+                  "sourceNodeOutputId": "0",
+                  "targetNodeInputId": "0"
+                }
+              ],
+              "outputsMetadata": [
+                {
+                  "id": "0",
+                  "attrs": [
+                    {
+                      "key": "tensor_name",
+                      "value": "layer_0_final_mul"
+                    }
+                  ]
+                }
+              ],
+              "attrs": [
+                {
+                  "key": "layer",
+                  "value": "0"
+                },
+                {
+                  "key": "anchor",
+                  "value": "output"
+                },
+                {
+                  "key": "anchor_output",
+                  "value": "true"
+                }
+              ]
+            },
+            {
+              "id": "layer_0_ple_mul",
+              "label": "Mul",
+              "namespace": "layer_0/ple",
+              "incomingEdges": [
+                {
+                  "sourceNodeId": "Op104",
+                  "sourceNodeOutputId": "0",
+                  "targetNodeInputId": "0"
+                },
+                {
+                  "sourceNodeId": "layer_0_ple_slice",
+                  "sourceNodeOutputId": "0",
+                  "targetNodeInputId": "1"
+                }
+              ],
+              "outputsMetadata": [
+                {
+                  "id": "0",
+                  "attrs": [
+                    {
+                      "key": "tensor_name",
+                      "value": "layer_0_ple_mul"
+                    }
+                  ]
+                }
+              ],
+              "attrs": [
+                {
+                  "key": "layer",
+                  "value": "0"
+                },
+                {
+                  "key": "anchor",
+                  "value": "output"
+                },
+                {
+                  "key": "edges_inferred",
+                  "value": "true"
+                }
+              ]
+            },
+            {
+              "id": "layer_0_ple_slice",
+              "label": "External",
+              "namespace": "layer_0/ple",
+              "incomingEdges": [],
+              "attrs": [
+                {
+                  "key": "layer",
+                  "value": "0"
+                },
+                {
+                  "key": "anchor",
+                  "value": "output"
+                },
+                {
+                  "key": "tensor",
+                  "value": "PLE slice"
+                },
+                {
+                  "key": "slice",
+                  "value": "layer 0"
+                },
+                {
+                  "key": "captured",
+                  "value": "false"
+                },
+                {
+                  "key": "note",
+                  "value": "per-layer embedding, built outside the block from token ids + an embedding projection"
+                }
+              ]
+            },
+            {
+              "id": "prefill_l10_out_0",
+              "label": "Probe",
+              "namespace": "layer_10",
+              "incomingEdges": [],
+              "outputsMetadata": [
+                {
+                  "id": "0",
+                  "attrs": [
+                    {
+                      "key": "tensor_name",
+                      "value": "prefill_l10_out_0"
+                    }
+                  ]
+                }
+              ],
+              "attrs": [
+                {
+                  "key": "layer",
+                  "value": "10"
+                },
+                {
+                  "key": "anchor",
+                  "value": "output"
+                },
+                {
+                  "key": "anchor_output",
+                  "value": "true"
+                }
+              ]
+            },
+            {
+              "id": "prefill_l11_out_0",
+              "label": "Probe",
+              "namespace": "layer_11",
+              "incomingEdges": [],
+              "outputsMetadata": [
+                {
+                  "id": "0",
+                  "attrs": [
+                    {
+                      "key": "tensor_name",
+                      "value": "prefill_l11_out_0"
+                    }
+                  ]
+                }
+              ],
+              "attrs": [
+                {
+                  "key": "layer",
+                  "value": "11"
+                },
+                {
+                  "key": "anchor",
+                  "value": "output"
+                },
+                {
+                  "key": "anchor_output",
+                  "value": "true"
+                }
+              ]
+            },
+            {
+              "id": "prefill_l12_out_0",
+              "label": "Probe",
+              "namespace": "layer_12",
+              "incomingEdges": [],
+              "outputsMetadata": [
+                {
+                  "id": "0",
+                  "attrs": [
+                    {
+                      "key": "tensor_name",
+                      "value": "prefill_l12_out_0"
+                    }
+                  ]
+                }
+              ],
+              "attrs": [
+                {
+                  "key": "layer",
+                  "value": "12"
+                },
+                {
+                  "key": "anchor",
+                  "value": "output"
+                },
+                {
+                  "key": "anchor_output",
+                  "value": "true"
+                }
+              ]
+            },
+            {
+              "id": "prefill_l13_out_0",
+              "label": "Probe",
+              "namespace": "layer_13",
+              "incomingEdges": [],
+              "outputsMetadata": [
+                {
+                  "id": "0",
+                  "attrs": [
+                    {
+                      "key": "tensor_name",
+                      "value": "prefill_l13_out_0"
+                    }
+                  ]
+                }
+              ],
+              "attrs": [
+                {
+                  "key": "layer",
+                  "value": "13"
+                },
+                {
+                  "key": "anchor",
+                  "value": "output"
+                },
+                {
+                  "key": "anchor_output",
+                  "value": "true"
+                }
+              ]
+            },
+            {
+              "id": "prefill_l1_out_0",
+              "label": "Probe",
+              "namespace": "layer_1",
+              "incomingEdges": [],
+              "outputsMetadata": [
+                {
+                  "id": "0",
+                  "attrs": [
+                    {
+                      "key": "tensor_name",
+                      "value": "prefill_l1_out_0"
+                    }
+                  ]
+                }
+              ],
+              "attrs": [
+                {
+                  "key": "layer",
+                  "value": "1"
+                },
+                {
+                  "key": "anchor",
+                  "value": "output"
+                },
+                {
+                  "key": "anchor_output",
+                  "value": "true"
+                }
+              ]
+            },
+            {
+              "id": "prefill_l2_out_0",
+              "label": "Probe",
+              "namespace": "layer_2",
+              "incomingEdges": [],
+              "outputsMetadata": [
+                {
+                  "id": "0",
+                  "attrs": [
+                    {
+                      "key": "tensor_name",
+                      "value": "prefill_l2_out_0"
+                    }
+                  ]
+                }
+              ],
+              "attrs": [
+                {
+                  "key": "layer",
+                  "value": "2"
+                },
+                {
+                  "key": "anchor",
+                  "value": "output"
+                },
+                {
+                  "key": "anchor_output",
+                  "value": "true"
+                }
+              ]
+            },
+            {
+              "id": "prefill_l3_out_0",
+              "label": "Probe",
+              "namespace": "layer_3",
+              "incomingEdges": [],
+              "outputsMetadata": [
+                {
+                  "id": "0",
+                  "attrs": [
+                    {
+                      "key": "tensor_name",
+                      "value": "prefill_l3_out_0"
+                    }
+                  ]
+                }
+              ],
+              "attrs": [
+                {
+                  "key": "layer",
+                  "value": "3"
+                },
+                {
+                  "key": "anchor",
+                  "value": "output"
+                },
+                {
+                  "key": "anchor_output",
+                  "value": "true"
+                }
+              ]
+            },
+            {
+              "id": "prefill_l4_out_0",
+              "label": "Probe",
+              "namespace": "layer_4",
+              "incomingEdges": [],
+              "outputsMetadata": [
+                {
+                  "id": "0",
+                  "attrs": [
+                    {
+                      "key": "tensor_name",
+                      "value": "prefill_l4_out_0"
+                    }
+                  ]
+                }
+              ],
+              "attrs": [
+                {
+                  "key": "layer",
+                  "value": "4"
+                },
+                {
+                  "key": "anchor",
+                  "value": "output"
+                },
+                {
+                  "key": "anchor_output",
+                  "value": "true"
+                }
+              ]
+            },
+            {
+              "id": "prefill_l5_out_0",
+              "label": "Probe",
+              "namespace": "layer_5",
+              "incomingEdges": [],
+              "outputsMetadata": [
+                {
+                  "id": "0",
+                  "attrs": [
+                    {
+                      "key": "tensor_name",
+                      "value": "prefill_l5_out_0"
+                    }
+                  ]
+                }
+              ],
+              "attrs": [
+                {
+                  "key": "layer",
+                  "value": "5"
+                },
+                {
+                  "key": "anchor",
+                  "value": "output"
+                },
+                {
+                  "key": "anchor_output",
+                  "value": "true"
+                }
+              ]
+            },
+            {
+              "id": "prefill_l6_out_0",
+              "label": "Probe",
+              "namespace": "layer_6",
+              "incomingEdges": [],
+              "outputsMetadata": [
+                {
+                  "id": "0",
+                  "attrs": [
+                    {
+                      "key": "tensor_name",
+                      "value": "prefill_l6_out_0"
+                    }
+                  ]
+                }
+              ],
+              "attrs": [
+                {
+                  "key": "layer",
+                  "value": "6"
+                },
+                {
+                  "key": "anchor",
+                  "value": "output"
+                },
+                {
+                  "key": "anchor_output",
+                  "value": "true"
+                }
+              ]
+            },
+            {
+              "id": "prefill_l7_out_0",
+              "label": "Probe",
+              "namespace": "layer_7",
+              "incomingEdges": [],
+              "outputsMetadata": [
+                {
+                  "id": "0",
+                  "attrs": [
+                    {
+                      "key": "tensor_name",
+                      "value": "prefill_l7_out_0"
+                    }
+                  ]
+                }
+              ],
+              "attrs": [
+                {
+                  "key": "layer",
+                  "value": "7"
+                },
+                {
+                  "key": "anchor",
+                  "value": "output"
+                },
+                {
+                  "key": "anchor_output",
+                  "value": "true"
+                }
+              ]
+            },
+            {
+              "id": "prefill_l8_out_0",
+              "label": "Probe",
+              "namespace": "layer_8",
+              "incomingEdges": [],
+              "outputsMetadata": [
+                {
+                  "id": "0",
+                  "attrs": [
+                    {
+                      "key": "tensor_name",
+                      "value": "prefill_l8_out_0"
+                    }
+                  ]
+                }
+              ],
+              "attrs": [
+                {
+                  "key": "layer",
+                  "value": "8"
+                },
+                {
+                  "key": "anchor",
+                  "value": "output"
+                },
+                {
+                  "key": "anchor_output",
+                  "value": "true"
+                }
+              ]
+            },
+            {
+              "id": "prefill_l9_out_0",
+              "label": "Probe",
+              "namespace": "layer_9",
+              "incomingEdges": [],
+              "outputsMetadata": [
+                {
+                  "id": "0",
+                  "attrs": [
+                    {
+                      "key": "tensor_name",
+                      "value": "prefill_l9_out_0"
+                    }
+                  ]
+                }
+              ],
+              "attrs": [
+                {
+                  "key": "layer",
+                  "value": "9"
+                },
+                {
+                  "key": "anchor",
+                  "value": "output"
+                },
+                {
+                  "key": "anchor_output",
+                  "value": "true"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "decode",
+          "nodes": [
+            {
+              "id": "Op3",
+              "label": "Add",
+              "namespace": "layer_0",
+              "incomingEdges": [],
+              "outputsMetadata": [
+                {
+                  "id": "0",
+                  "attrs": [
+                    {
+                      "key": "tensor_name",
+                      "value": "decode_l0_intermediate_1"
+                    }
+                  ]
+                }
+              ],
+              "attrs": [
+                {
+                  "key": "layer",
+                  "value": "0"
+                },
+                {
+                  "key": "anchor",
+                  "value": "intermediate.1"
+                },
+                {
+                  "key": "anchor_output",
+                  "value": "true"
+                }
+              ]
+            },
+            {
+              "id": "Op7",
+              "label": "Add",
+              "namespace": "layer_0",
+              "incomingEdges": [
+                {
+                  "sourceNodeId": "Op3",
+                  "sourceNodeOutputId": "0",
+                  "targetNodeInputId": "0"
+                }
+              ],
+              "outputsMetadata": [
+                {
+                  "id": "0",
+                  "attrs": [
+                    {
+                      "key": "tensor_name",
+                      "value": "decode_l0_intermediate_2"
+                    }
+                  ]
+                }
+              ],
+              "attrs": [
+                {
+                  "key": "layer",
+                  "value": "0"
+                },
+                {
+                  "key": "anchor",
+                  "value": "intermediate.2"
+                },
+                {
+                  "key": "anchor_output",
+                  "value": "true"
+                }
+              ]
+            },
+            {
+              "id": "Op11",
+              "label": "Mul",
+              "namespace": "layer_0",
+              "incomingEdges": [
+                {
+                  "sourceNodeId": "Op7",
+                  "sourceNodeOutputId": "0",
+                  "targetNodeInputId": "0"
+                }
+              ],
+              "outputsMetadata": [
+                {
+                  "id": "0",
+                  "attrs": [
+                    {
+                      "key": "tensor_name",
+                      "value": "decode_l0_out"
+                    }
+                  ]
+                }
+              ],
+              "attrs": [
+                {
+                  "key": "layer",
+                  "value": "0"
+                },
+                {
+                  "key": "anchor",
+                  "value": "output"
+                },
+                {
+                  "key": "anchor_output",
+                  "value": "true"
+                }
+              ]
+            },
+            {
+              "id": "Op15",
+              "label": "Mul",
+              "namespace": "layer_1",
+              "incomingEdges": [
+                {
+                  "sourceNodeId": "Op11",
+                  "sourceNodeOutputId": "0",
+                  "targetNodeInputId": "0"
+                }
+              ],
+              "outputsMetadata": [
+                {
+                  "id": "0",
+                  "attrs": [
+                    {
+                      "key": "tensor_name",
+                      "value": "decode_l1_out"
+                    }
+                  ]
+                }
+              ],
+              "attrs": [
+                {
+                  "key": "layer",
+                  "value": "1"
+                },
+                {
+                  "key": "anchor",
+                  "value": "output"
+                },
+                {
+                  "key": "anchor_output",
+                  "value": "true"
+                }
+              ]
+            },
+            {
+              "id": "Op19",
+              "label": "Mul",
+              "namespace": "layer_2",
+              "incomingEdges": [
+                {
+                  "sourceNodeId": "Op15",
+                  "sourceNodeOutputId": "0",
+                  "targetNodeInputId": "0"
+                }
+              ],
+              "outputsMetadata": [
+                {
+                  "id": "0",
+                  "attrs": [
+                    {
+                      "key": "tensor_name",
+                      "value": "decode_l2_out"
+                    }
+                  ]
+                }
+              ],
+              "attrs": [
+                {
+                  "key": "layer",
+                  "value": "2"
+                },
+                {
+                  "key": "anchor",
+                  "value": "output"
+                },
+                {
+                  "key": "anchor_output",
+                  "value": "true"
+                }
+              ]
+            },
+            {
+              "id": "Op23",
+              "label": "Mul",
+              "namespace": "layer_3",
+              "incomingEdges": [
+                {
+                  "sourceNodeId": "Op19",
+                  "sourceNodeOutputId": "0",
+                  "targetNodeInputId": "0"
+                }
+              ],
+              "outputsMetadata": [
+                {
+                  "id": "0",
+                  "attrs": [
+                    {
+                      "key": "tensor_name",
+                      "value": "decode_l3_out"
+                    }
+                  ]
+                }
+              ],
+              "attrs": [
+                {
+                  "key": "layer",
+                  "value": "3"
+                },
+                {
+                  "key": "anchor",
+                  "value": "output"
+                },
+                {
+                  "key": "anchor_output",
+                  "value": "true"
+                }
+              ]
+            },
+            {
+              "id": "Op27",
+              "label": "Mul",
+              "namespace": "layer_4",
+              "incomingEdges": [
+                {
+                  "sourceNodeId": "Op23",
+                  "sourceNodeOutputId": "0",
+                  "targetNodeInputId": "0"
+                }
+              ],
+              "outputsMetadata": [
+                {
+                  "id": "0",
+                  "attrs": [
+                    {
+                      "key": "tensor_name",
+                      "value": "decode_l4_out"
+                    }
+                  ]
+                }
+              ],
+              "attrs": [
+                {
+                  "key": "layer",
+                  "value": "4"
+                },
+                {
+                  "key": "anchor",
+                  "value": "output"
+                },
+                {
+                  "key": "anchor_output",
+                  "value": "true"
+                }
+              ]
+            },
+            {
+              "id": "Op31",
+              "label": "Mul",
+              "namespace": "layer_5",
+              "incomingEdges": [
+                {
+                  "sourceNodeId": "Op27",
+                  "sourceNodeOutputId": "0",
+                  "targetNodeInputId": "0"
+                }
+              ],
+              "outputsMetadata": [
+                {
+                  "id": "0",
+                  "attrs": [
+                    {
+                      "key": "tensor_name",
+                      "value": "decode_l5_out"
+                    }
+                  ]
+                }
+              ],
+              "attrs": [
+                {
+                  "key": "layer",
+                  "value": "5"
+                },
+                {
+                  "key": "anchor",
+                  "value": "output"
+                },
+                {
+                  "key": "anchor_output",
+                  "value": "true"
+                }
+              ]
+            },
+            {
+              "id": "Op35",
+              "label": "Mul",
+              "namespace": "layer_6",
+              "incomingEdges": [
+                {
+                  "sourceNodeId": "Op31",
+                  "sourceNodeOutputId": "0",
+                  "targetNodeInputId": "0"
+                }
+              ],
+              "outputsMetadata": [
+                {
+                  "id": "0",
+                  "attrs": [
+                    {
+                      "key": "tensor_name",
+                      "value": "decode_l6_out"
+                    }
+                  ]
+                }
+              ],
+              "attrs": [
+                {
+                  "key": "layer",
+                  "value": "6"
+                },
+                {
+                  "key": "anchor",
+                  "value": "output"
+                },
+                {
+                  "key": "anchor_output",
+                  "value": "true"
+                }
+              ]
+            },
+            {
+              "id": "Op39",
+              "label": "Mul",
+              "namespace": "layer_7",
+              "incomingEdges": [
+                {
+                  "sourceNodeId": "Op35",
+                  "sourceNodeOutputId": "0",
+                  "targetNodeInputId": "0"
+                }
+              ],
+              "outputsMetadata": [
+                {
+                  "id": "0",
+                  "attrs": [
+                    {
+                      "key": "tensor_name",
+                      "value": "decode_l7_out"
+                    }
+                  ]
+                }
+              ],
+              "attrs": [
+                {
+                  "key": "layer",
+                  "value": "7"
+                },
+                {
+                  "key": "anchor",
+                  "value": "output"
+                },
+                {
+                  "key": "anchor_output",
+                  "value": "true"
+                }
+              ]
+            },
+            {
+              "id": "Op43",
+              "label": "Mul",
+              "namespace": "layer_8",
+              "incomingEdges": [
+                {
+                  "sourceNodeId": "Op39",
+                  "sourceNodeOutputId": "0",
+                  "targetNodeInputId": "0"
+                }
+              ],
+              "outputsMetadata": [
+                {
+                  "id": "0",
+                  "attrs": [
+                    {
+                      "key": "tensor_name",
+                      "value": "decode_l8_out"
+                    }
+                  ]
+                }
+              ],
+              "attrs": [
+                {
+                  "key": "layer",
+                  "value": "8"
+                },
+                {
+                  "key": "anchor",
+                  "value": "output"
+                },
+                {
+                  "key": "anchor_output",
+                  "value": "true"
+                }
+              ]
+            },
+            {
+              "id": "Op47",
+              "label": "Mul",
+              "namespace": "layer_9",
+              "incomingEdges": [
+                {
+                  "sourceNodeId": "Op43",
+                  "sourceNodeOutputId": "0",
+                  "targetNodeInputId": "0"
+                }
+              ],
+              "outputsMetadata": [
+                {
+                  "id": "0",
+                  "attrs": [
+                    {
+                      "key": "tensor_name",
+                      "value": "decode_l9_out"
+                    }
+                  ]
+                }
+              ],
+              "attrs": [
+                {
+                  "key": "layer",
+                  "value": "9"
+                },
+                {
+                  "key": "anchor",
+                  "value": "output"
+                },
+                {
+                  "key": "anchor_output",
+                  "value": "true"
+                }
+              ]
+            },
+            {
+              "id": "Op51",
+              "label": "Mul",
+              "namespace": "layer_10",
+              "incomingEdges": [
+                {
+                  "sourceNodeId": "Op47",
+                  "sourceNodeOutputId": "0",
+                  "targetNodeInputId": "0"
+                }
+              ],
+              "outputsMetadata": [
+                {
+                  "id": "0",
+                  "attrs": [
+                    {
+                      "key": "tensor_name",
+                      "value": "decode_l10_out"
+                    }
+                  ]
+                }
+              ],
+              "attrs": [
+                {
+                  "key": "layer",
+                  "value": "10"
+                },
+                {
+                  "key": "anchor",
+                  "value": "output"
+                },
+                {
+                  "key": "anchor_output",
+                  "value": "true"
+                }
+              ]
+            },
+            {
+              "id": "Op55",
+              "label": "Mul",
+              "namespace": "layer_11",
+              "incomingEdges": [
+                {
+                  "sourceNodeId": "Op51",
+                  "sourceNodeOutputId": "0",
+                  "targetNodeInputId": "0"
+                }
+              ],
+              "outputsMetadata": [
+                {
+                  "id": "0",
+                  "attrs": [
+                    {
+                      "key": "tensor_name",
+                      "value": "decode_l11_out"
+                    }
+                  ]
+                }
+              ],
+              "attrs": [
+                {
+                  "key": "layer",
+                  "value": "11"
+                },
+                {
+                  "key": "anchor",
+                  "value": "output"
+                },
+                {
+                  "key": "anchor_output",
+                  "value": "true"
+                }
+              ]
+            },
+            {
+              "id": "Op59",
+              "label": "Mul",
+              "namespace": "layer_12",
+              "incomingEdges": [
+                {
+                  "sourceNodeId": "Op55",
+                  "sourceNodeOutputId": "0",
+                  "targetNodeInputId": "0"
+                }
+              ],
+              "outputsMetadata": [
+                {
+                  "id": "0",
+                  "attrs": [
+                    {
+                      "key": "tensor_name",
+                      "value": "decode_l12_out"
+                    }
+                  ]
+                }
+              ],
+              "attrs": [
+                {
+                  "key": "layer",
+                  "value": "12"
+                },
+                {
+                  "key": "anchor",
+                  "value": "output"
+                },
+                {
+                  "key": "anchor_output",
+                  "value": "true"
+                }
+              ]
+            },
+            {
+              "id": "Op63",
+              "label": "Mul",
+              "namespace": "layer_13",
+              "incomingEdges": [
+                {
+                  "sourceNodeId": "Op59",
+                  "sourceNodeOutputId": "0",
+                  "targetNodeInputId": "0"
+                }
+              ],
+              "outputsMetadata": [
+                {
+                  "id": "0",
+                  "attrs": [
+                    {
+                      "key": "tensor_name",
+                      "value": "decode_l13_out"
+                    }
+                  ]
+                }
+              ],
+              "attrs": [
+                {
+                  "key": "layer",
+                  "value": "13"
+                },
+                {
+                  "key": "anchor",
+                  "value": "output"
+                },
+                {
+                  "key": "anchor_output",
+                  "value": "true"
+                }
+              ]
+            },
+            {
+              "id": "Op67",
+              "label": "Mul",
+              "namespace": "layer_14",
+              "incomingEdges": [
+                {
+                  "sourceNodeId": "Op63",
+                  "sourceNodeOutputId": "0",
+                  "targetNodeInputId": "0"
+                }
+              ],
+              "outputsMetadata": [
+                {
+                  "id": "0",
+                  "attrs": [
+                    {
+                      "key": "tensor_name",
+                      "value": "decode_l14_out"
+                    }
+                  ]
+                }
+              ],
+              "attrs": [
+                {
+                  "key": "layer",
+                  "value": "14"
+                },
+                {
+                  "key": "anchor",
+                  "value": "output"
+                },
+                {
+                  "key": "anchor_output",
+                  "value": "true"
+                }
+              ]
+            },
+            {
+              "id": "Op71",
+              "label": "Mul",
+              "namespace": "layer_15",
+              "incomingEdges": [
+                {
+                  "sourceNodeId": "Op67",
+                  "sourceNodeOutputId": "0",
+                  "targetNodeInputId": "0"
+                }
+              ],
+              "outputsMetadata": [
+                {
+                  "id": "0",
+                  "attrs": [
+                    {
+                      "key": "tensor_name",
+                      "value": "decode_l15_out"
+                    }
+                  ]
+                }
+              ],
+              "attrs": [
+                {
+                  "key": "layer",
+                  "value": "15"
+                },
+                {
+                  "key": "anchor",
+                  "value": "output"
+                },
+                {
+                  "key": "anchor_output",
+                  "value": "true"
+                }
+              ]
+            },
+            {
+              "id": "Op75",
+              "label": "Mul",
+              "namespace": "layer_16",
+              "incomingEdges": [
+                {
+                  "sourceNodeId": "Op71",
+                  "sourceNodeOutputId": "0",
+                  "targetNodeInputId": "0"
+                }
+              ],
+              "outputsMetadata": [
+                {
+                  "id": "0",
+                  "attrs": [
+                    {
+                      "key": "tensor_name",
+                      "value": "decode_l16_out"
+                    }
+                  ]
+                }
+              ],
+              "attrs": [
+                {
+                  "key": "layer",
+                  "value": "16"
+                },
+                {
+                  "key": "anchor",
+                  "value": "output"
+                },
+                {
+                  "key": "anchor_output",
+                  "value": "true"
+                }
+              ]
+            },
+            {
+              "id": "Op79",
+              "label": "Mul",
+              "namespace": "layer_17",
+              "incomingEdges": [
+                {
+                  "sourceNodeId": "Op75",
+                  "sourceNodeOutputId": "0",
+                  "targetNodeInputId": "0"
+                }
+              ],
+              "outputsMetadata": [
+                {
+                  "id": "0",
+                  "attrs": [
+                    {
+                      "key": "tensor_name",
+                      "value": "decode_l17_out"
+                    }
+                  ]
+                }
+              ],
+              "attrs": [
+                {
+                  "key": "layer",
+                  "value": "17"
+                },
+                {
+                  "key": "anchor",
+                  "value": "output"
+                },
+                {
+                  "key": "anchor_output",
+                  "value": "true"
+                }
+              ]
+            },
+            {
+              "id": "Op83",
+              "label": "Mul",
+              "namespace": "layer_18",
+              "incomingEdges": [
+                {
+                  "sourceNodeId": "Op79",
+                  "sourceNodeOutputId": "0",
+                  "targetNodeInputId": "0"
+                }
+              ],
+              "outputsMetadata": [
+                {
+                  "id": "0",
+                  "attrs": [
+                    {
+                      "key": "tensor_name",
+                      "value": "decode_l18_out"
+                    }
+                  ]
+                }
+              ],
+              "attrs": [
+                {
+                  "key": "layer",
+                  "value": "18"
+                },
+                {
+                  "key": "anchor",
+                  "value": "output"
+                },
+                {
+                  "key": "anchor_output",
+                  "value": "true"
+                }
+              ]
+            },
+            {
+              "id": "Op87",
+              "label": "Mul",
+              "namespace": "layer_19",
+              "incomingEdges": [
+                {
+                  "sourceNodeId": "Op83",
+                  "sourceNodeOutputId": "0",
+                  "targetNodeInputId": "0"
+                }
+              ],
+              "outputsMetadata": [
+                {
+                  "id": "0",
+                  "attrs": [
+                    {
+                      "key": "tensor_name",
+                      "value": "decode_l19_out"
+                    }
+                  ]
+                }
+              ],
+              "attrs": [
+                {
+                  "key": "layer",
+                  "value": "19"
+                },
+                {
+                  "key": "anchor",
+                  "value": "output"
+                },
+                {
+                  "key": "anchor_output",
+                  "value": "true"
+                }
+              ]
+            },
+            {
+              "id": "Op91",
+              "label": "Mul",
+              "namespace": "layer_20",
+              "incomingEdges": [
+                {
+                  "sourceNodeId": "Op87",
+                  "sourceNodeOutputId": "0",
+                  "targetNodeInputId": "0"
+                }
+              ],
+              "outputsMetadata": [
+                {
+                  "id": "0",
+                  "attrs": [
+                    {
+                      "key": "tensor_name",
+                      "value": "decode_l20_out"
+                    }
+                  ]
+                }
+              ],
+              "attrs": [
+                {
+                  "key": "layer",
+                  "value": "20"
+                },
+                {
+                  "key": "anchor",
+                  "value": "output"
+                },
+                {
+                  "key": "anchor_output",
+                  "value": "true"
+                }
+              ]
+            },
+            {
+              "id": "Op95",
+              "label": "Mul",
+              "namespace": "layer_21",
+              "incomingEdges": [
+                {
+                  "sourceNodeId": "Op91",
+                  "sourceNodeOutputId": "0",
+                  "targetNodeInputId": "0"
+                }
+              ],
+              "outputsMetadata": [
+                {
+                  "id": "0",
+                  "attrs": [
+                    {
+                      "key": "tensor_name",
+                      "value": "decode_l21_out"
+                    }
+                  ]
+                }
+              ],
+              "attrs": [
+                {
+                  "key": "layer",
+                  "value": "21"
+                },
+                {
+                  "key": "anchor",
+                  "value": "output"
+                },
+                {
+                  "key": "anchor_output",
+                  "value": "true"
+                }
+              ]
+            },
+            {
+              "id": "Op99",
+              "label": "Mul",
+              "namespace": "layer_22",
+              "incomingEdges": [
+                {
+                  "sourceNodeId": "Op95",
+                  "sourceNodeOutputId": "0",
+                  "targetNodeInputId": "0"
+                }
+              ],
+              "outputsMetadata": [
+                {
+                  "id": "0",
+                  "attrs": [
+                    {
+                      "key": "tensor_name",
+                      "value": "decode_l22_out"
+                    }
+                  ]
+                }
+              ],
+              "attrs": [
+                {
+                  "key": "layer",
+                  "value": "22"
+                },
+                {
+                  "key": "anchor",
+                  "value": "output"
+                },
+                {
+                  "key": "anchor_output",
+                  "value": "true"
+                }
+              ]
+            },
+            {
+              "id": "Op103",
+              "label": "Mul",
+              "namespace": "layer_23",
+              "incomingEdges": [
+                {
+                  "sourceNodeId": "Op99",
+                  "sourceNodeOutputId": "0",
+                  "targetNodeInputId": "0"
+                }
+              ],
+              "outputsMetadata": [
+                {
+                  "id": "0",
+                  "attrs": [
+                    {
+                      "key": "tensor_name",
+                      "value": "decode_l23_out"
+                    }
+                  ]
+                }
+              ],
+              "attrs": [
+                {
+                  "key": "layer",
+                  "value": "23"
+                },
+                {
+                  "key": "anchor",
+                  "value": "output"
+                },
+                {
+                  "key": "anchor_output",
+                  "value": "true"
+                }
+              ]
+            },
+            {
+              "id": "Op107",
+              "label": "Mul",
+              "namespace": "layer_24",
+              "incomingEdges": [
+                {
+                  "sourceNodeId": "Op103",
+                  "sourceNodeOutputId": "0",
+                  "targetNodeInputId": "0"
+                }
+              ],
+              "outputsMetadata": [
+                {
+                  "id": "0",
+                  "attrs": [
+                    {
+                      "key": "tensor_name",
+                      "value": "decode_l24_out"
+                    }
+                  ]
+                }
+              ],
+              "attrs": [
+                {
+                  "key": "layer",
+                  "value": "24"
+                },
+                {
+                  "key": "anchor",
+                  "value": "output"
+                },
+                {
+                  "key": "anchor_output",
+                  "value": "true"
+                }
+              ]
+            },
+            {
+              "id": "Op111",
+              "label": "Mul",
+              "namespace": "layer_25",
+              "incomingEdges": [
+                {
+                  "sourceNodeId": "Op107",
+                  "sourceNodeOutputId": "0",
+                  "targetNodeInputId": "0"
+                }
+              ],
+              "outputsMetadata": [
+                {
+                  "id": "0",
+                  "attrs": [
+                    {
+                      "key": "tensor_name",
+                      "value": "decode_l25_out"
+                    }
+                  ]
+                }
+              ],
+              "attrs": [
+                {
+                  "key": "layer",
+                  "value": "25"
+                },
+                {
+                  "key": "anchor",
+                  "value": "output"
+                },
+                {
+                  "key": "anchor_output",
+                  "value": "true"
+                }
+              ]
+            },
+            {
+              "id": "Op115",
+              "label": "Mul",
+              "namespace": "layer_26",
+              "incomingEdges": [
+                {
+                  "sourceNodeId": "Op111",
+                  "sourceNodeOutputId": "0",
+                  "targetNodeInputId": "0"
+                }
+              ],
+              "outputsMetadata": [
+                {
+                  "id": "0",
+                  "attrs": [
+                    {
+                      "key": "tensor_name",
+                      "value": "decode_l26_out"
+                    }
+                  ]
+                }
+              ],
+              "attrs": [
+                {
+                  "key": "layer",
+                  "value": "26"
+                },
+                {
+                  "key": "anchor",
+                  "value": "output"
+                },
+                {
+                  "key": "anchor_output",
+                  "value": "true"
+                }
+              ]
+            },
+            {
+              "id": "Op119",
+              "label": "Mul",
+              "namespace": "layer_27",
+              "incomingEdges": [
+                {
+                  "sourceNodeId": "Op115",
+                  "sourceNodeOutputId": "0",
+                  "targetNodeInputId": "0"
+                }
+              ],
+              "outputsMetadata": [
+                {
+                  "id": "0",
+                  "attrs": [
+                    {
+                      "key": "tensor_name",
+                      "value": "decode_l27_out"
+                    }
+                  ]
+                }
+              ],
+              "attrs": [
+                {
+                  "key": "layer",
+                  "value": "27"
+                },
+                {
+                  "key": "anchor",
+                  "value": "output"
+                },
+                {
+                  "key": "anchor_output",
+                  "value": "true"
+                }
+              ]
+            },
+            {
+              "id": "Op123",
+              "label": "Mul",
+              "namespace": "layer_28",
+              "incomingEdges": [
+                {
+                  "sourceNodeId": "Op119",
+                  "sourceNodeOutputId": "0",
+                  "targetNodeInputId": "0"
+                }
+              ],
+              "outputsMetadata": [
+                {
+                  "id": "0",
+                  "attrs": [
+                    {
+                      "key": "tensor_name",
+                      "value": "decode_l28_out"
+                    }
+                  ]
+                }
+              ],
+              "attrs": [
+                {
+                  "key": "layer",
+                  "value": "28"
+                },
+                {
+                  "key": "anchor",
+                  "value": "output"
+                },
+                {
+                  "key": "anchor_output",
+                  "value": "true"
+                }
+              ]
+            },
+            {
+              "id": "Op127",
+              "label": "Mul",
+              "namespace": "layer_29",
+              "incomingEdges": [
+                {
+                  "sourceNodeId": "Op123",
+                  "sourceNodeOutputId": "0",
+                  "targetNodeInputId": "0"
+                }
+              ],
+              "outputsMetadata": [
+                {
+                  "id": "0",
+                  "attrs": [
+                    {
+                      "key": "tensor_name",
+                      "value": "decode_l29_out"
+                    }
+                  ]
+                }
+              ],
+              "attrs": [
+                {
+                  "key": "layer",
+                  "value": "29"
+                },
+                {
+                  "key": "anchor",
+                  "value": "output"
+                },
+                {
+                  "key": "anchor_output",
+                  "value": "true"
+                }
+              ]
+            },
+            {
+              "id": "Op131",
+              "label": "Mul",
+              "namespace": "layer_30",
+              "incomingEdges": [
+                {
+                  "sourceNodeId": "Op127",
+                  "sourceNodeOutputId": "0",
+                  "targetNodeInputId": "0"
+                }
+              ],
+              "outputsMetadata": [
+                {
+                  "id": "0",
+                  "attrs": [
+                    {
+                      "key": "tensor_name",
+                      "value": "decode_l30_out"
+                    }
+                  ]
+                }
+              ],
+              "attrs": [
+                {
+                  "key": "layer",
+                  "value": "30"
+                },
+                {
+                  "key": "anchor",
+                  "value": "output"
+                },
+                {
+                  "key": "anchor_output",
+                  "value": "true"
+                }
+              ]
+            },
+            {
+              "id": "Op135",
+              "label": "Mul",
+              "namespace": "layer_31",
+              "incomingEdges": [
+                {
+                  "sourceNodeId": "Op131",
+                  "sourceNodeOutputId": "0",
+                  "targetNodeInputId": "0"
+                }
+              ],
+              "outputsMetadata": [
+                {
+                  "id": "0",
+                  "attrs": [
+                    {
+                      "key": "tensor_name",
+                      "value": "decode_l31_out"
+                    }
+                  ]
+                }
+              ],
+              "attrs": [
+                {
+                  "key": "layer",
+                  "value": "31"
+                },
+                {
+                  "key": "anchor",
+                  "value": "output"
+                },
+                {
+                  "key": "anchor_output",
+                  "value": "true"
+                }
+              ]
+            },
+            {
+              "id": "Op139",
+              "label": "Mul",
+              "namespace": "layer_32",
+              "incomingEdges": [
+                {
+                  "sourceNodeId": "Op135",
+                  "sourceNodeOutputId": "0",
+                  "targetNodeInputId": "0"
+                }
+              ],
+              "outputsMetadata": [
+                {
+                  "id": "0",
+                  "attrs": [
+                    {
+                      "key": "tensor_name",
+                      "value": "decode_l32_out"
+                    }
+                  ]
+                }
+              ],
+              "attrs": [
+                {
+                  "key": "layer",
+                  "value": "32"
+                },
+                {
+                  "key": "anchor",
+                  "value": "output"
+                },
+                {
+                  "key": "anchor_output",
+                  "value": "true"
+                }
+              ]
+            },
+            {
+              "id": "Op143",
+              "label": "Mul",
+              "namespace": "layer_33",
+              "incomingEdges": [
+                {
+                  "sourceNodeId": "Op139",
+                  "sourceNodeOutputId": "0",
+                  "targetNodeInputId": "0"
+                }
+              ],
+              "outputsMetadata": [
+                {
+                  "id": "0",
+                  "attrs": [
+                    {
+                      "key": "tensor_name",
+                      "value": "decode_l33_out"
+                    }
+                  ]
+                }
+              ],
+              "attrs": [
+                {
+                  "key": "layer",
+                  "value": "33"
+                },
+                {
+                  "key": "anchor",
+                  "value": "output"
+                },
+                {
+                  "key": "anchor_output",
+                  "value": "true"
+                }
+              ]
+            },
+            {
+              "id": "Op147",
+              "label": "Mul",
+              "namespace": "layer_34",
+              "incomingEdges": [
+                {
+                  "sourceNodeId": "Op143",
+                  "sourceNodeOutputId": "0",
+                  "targetNodeInputId": "0"
+                }
+              ],
+              "outputsMetadata": [
+                {
+                  "id": "0",
+                  "attrs": [
+                    {
+                      "key": "tensor_name",
+                      "value": "decode_l34_out"
+                    }
+                  ]
+                }
+              ],
+              "attrs": [
+                {
+                  "key": "layer",
+                  "value": "34"
+                },
+                {
+                  "key": "anchor",
+                  "value": "output"
+                },
+                {
+                  "key": "anchor_output",
+                  "value": "true"
+                }
+              ]
+            },
+            {
+              "id": "decode_final",
+              "label": "Probe",
+              "namespace": "",
+              "incomingEdges": [],
+              "outputsMetadata": [
+                {
+                  "id": "0",
+                  "attrs": [
+                    {
+                      "key": "tensor_name",
+                      "value": "decode_final"
+                    }
+                  ]
+                }
+              ],
+              "attrs": []
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

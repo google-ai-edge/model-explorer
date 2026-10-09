@@ -1,0 +1,306 @@
+/**
+ * @license
+ * Copyright 2026 The AI Edge Model Explorer Authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ==============================================================================
+ */
+
+@use '../../../shared/styles/data_table' as data-table;
+@use '../../../theme/explorer_controls' as controls;
+@include data-table.defaults;
+
+// Layout copied from approved debugger-shell.html configurationSheet.
+.configurationSheet {
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100dvh - 32px);
+  margin: 0;
+  padding: 0;
+  background: var(--me-surface-container-low-color);
+}
+.configurationSheet .configurationScroll {
+  overflow: auto;
+  min-height: 0;
+  padding: 20px 24px;
+}
+.configurationSheet .dialogHead {
+  flex: none;
+  margin: 0;
+  height: auto;
+  min-height: 0;
+  box-sizing: border-box;
+}
+.configurationSheet .dialogFoot {
+  flex: none;
+  margin: 0;
+  gap: 8px;
+  box-sizing: border-box;
+}
+.configurationSheet header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 24px;
+}
+.configurationSheet h1 {
+  font: 500 20px/28px var(--me-font-family);
+  margin: 0;
+}
+.configurationSheet h2,
+.configurationSheet h3 {
+  font: 500 15px/24px var(--me-font-family);
+  margin: 0;
+}
+.configurationIdentity {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 24px;
+}
+.configurationIdentity dl {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 80px 1fr;
+  gap: 6px;
+  margin: 0;
+}
+.configurationSheet dt,
+.configurationNote {
+  color: var(--me-on-surface-variant-color);
+}
+.configurationSheet dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+  user-select: text;
+}
+.configurationReadTable {
+  border-collapse: collapse;
+  width: 100%;
+  table-layout: fixed;
+}
+.configurationReadTable th,
+.configurationReadTable td {
+  text-align: left;
+  vertical-align: top;
+  padding: 8px 12px;
+  border-bottom: 0;
+  font-weight: 400;
+  overflow-wrap: anywhere;
+  user-select: text;
+}
+.configurationReadTable th:first-child {
+  width: 28%;
+}
+.configurationReadTable thead th {
+  color: var(--me-on-surface-variant-color);
+  font-weight: 500;
+  border-bottom: 1px solid var(--me-surface-variant-color);
+}
+.configurationReadTable .different {
+  font-weight: 600;
+}
+.configurationSectionHeading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 20px;
+  padding-top: 16px;
+  gap: 4px 16px;
+  flex-wrap: wrap;
+}
+.configurationSectionHeading > button,
+.configurationSectionHeading > mat-checkbox {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+.configurationSectionHeading label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font: 400 13px/20px var(--me-font-family);
+  color: var(--me-on-surface-color);
+  cursor: pointer;
+}
+.configurationSheet details {
+  margin: 12px 0;
+  border: 0;
+  padding: 0;
+}
+.configurationSheet summary {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 32px;
+  padding: 0;
+  list-style: none;
+  cursor: pointer;
+  font: 500 13px/20px var(--me-font-family);
+  color: var(--me-on-surface-color);
+  background: transparent;
+}
+.configurationSheet summary::-webkit-details-marker {
+  display: none;
+}
+:host {
+  display: block;
+  color: var(--me-on-surface-color);
+  font: 13px/20px var(--me-font-family);
+}
+* {
+  box-sizing: border-box;
+}
+.dialogHead {
+  padding: 24px 24px 10px;
+  background: var(--me-surface-container-high-color);
+  border-bottom: 1px solid var(--me-surface-variant-color);
+}
+.configurationSheet .dialogHead {
+  margin-bottom: 0;
+}
+.dialogFoot {
+  display: flex;
+  justify-content: flex-end;
+  padding: 8px;
+  background: var(--me-surface-container-high-color);
+  border-top: 1px solid var(--me-surface-variant-color);
+}
+.configurationSheet .dialogHead h1 {
+  font: 500 24px/32px var(--me-font-family);
+}
+.configurationSectionHeading input {
+  accent-color: var(--me-primary-color);
+}
+.status {
+  display: inline-flex;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: var(--me-surface-container-color);
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+.configurationReadTable {
+  font: 13px/20px var(--me-font-family);
+}
+.configurationReadTable th,
+.configurationReadTable td {
+  position: static;
+  background: transparent;
+  color: inherit;
+  white-space: normal;
+}
+// Prevent the legacy tensor table's monospace cell styles leaking into this sheet.
+.configurationReadTable th,
+.configurationReadTable td {
+  font: 400 13px/20px var(--me-font-family);
+  letter-spacing: normal;
+}
+.configurationReadTable thead th {
+  font-weight: 500;
+  color: var(--me-on-surface-variant-color);
+}
+.configurationReadTable td.different {
+  font-weight: 600;
+}
+:host .dialogFoot button {
+  font: 500 14px/20px var(--me-font-family);
+  letter-spacing: normal;
+  color: var(--me-on-surface-color);
+}
+
+@include controls.text-actions;
+
+// Disabled management actions retain their reason tooltip on the focusable wrapper.
+:host .dialogFoot button.mat-mdc-button-base:disabled {
+  color: var(--me-disabled-button-color);
+}
+
+// The same read-only session sheet is also used in the toolbar configuration bubble.
+.configurationSheet.embedded {
+  max-height: none;
+  background: transparent;
+  font: 12px/18px var(--me-font-family);
+}
+.embedded .configurationScroll {
+  padding: 8px 16px 16px;
+  overflow: visible;
+}
+.embedded .configurationIdentity {
+  margin-bottom: 12px;
+}
+.embedded .configurationIdentity dl {
+  grid-template-columns: 28% minmax(0, 1fr);
+  gap: 0 12px;
+}
+.embedded .configurationIdentity dt,
+.embedded .configurationIdentity dd {
+  padding: 5px 0;
+  font: 13px/20px var(--me-font-family);
+}
+.embedded .configurationIdentity dd {
+  margin: 2px 0 0;
+}
+.embedded .configurationIdentity dd + dt {
+  margin-top: 8px;
+}
+.embedded .status {
+  padding: 0;
+  background: transparent;
+}
+.embedded .configurationReadTable th,
+.embedded .configurationReadTable td {
+  padding: 6px 8px;
+  font: 12px/20px var(--me-font-family);
+  border-bottom: 1px solid var(--me-surface-variant-color);
+}
+.embedded .configurationReadTable thead th {
+  padding-top: 0;
+  padding-bottom: 10px;
+  font-weight: 500;
+}
+.embedded .configurationReadTable tr > :first-child {
+  padding-left: 0;
+}
+.embedded .configurationReadTable tr > :last-child {
+  padding-right: 0;
+}
+.embedded .configurationSectionHeading {
+  gap: 8px;
+  padding-top: 12px;
+  border-top: 1px solid var(--me-surface-variant-color);
+}
+:host .embedded .configurationSectionHeading button {
+  padding: 0;
+  font: 500 12px/20px var(--me-font-family);
+  letter-spacing: normal;
+}
+
+@media (max-width: 520px) {
+  .configurationSheet:not(.embedded) .dialogHead {
+    padding: 20px 16px 12px;
+  }
+  .configurationSheet .dialogHead h1 {
+    font-size: 20px;
+    line-height: 28px;
+  }
+  .configurationSheet:not(.embedded) .configurationScroll {
+    padding: 16px;
+  }
+}

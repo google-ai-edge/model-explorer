@@ -1,0 +1,237 @@
+/**
+ * @license
+ * Copyright 2026 The AI Edge Model Explorer Authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ==============================================================================
+ */
+
+@use '../../../theme/explorer_controls' as controls;
+@include controls.action-tooltips;
+:host {
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100dvh - 32px);
+  overflow: hidden;
+  color: var(--me-on-surface-color);
+  font: 13px/20px var(--me-font-family);
+}
+* {
+  box-sizing: border-box;
+}
+header {
+  flex: none;
+  padding: 24px 24px 10px;
+  background: var(--me-surface-container-high-color);
+  border-bottom: 1px solid var(--me-outline-variant-color);
+}
+h2 {
+  font: 500 24px/32px var(--me-font-family);
+  margin: 0;
+}
+.context {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+  margin-top: 12px;
+  flex-wrap: wrap;
+  color: var(--me-on-surface-variant-color);
+}
+.runtime-label {
+  white-space: nowrap;
+}
+.copy-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-left: auto;
+}
+:host .context button.mat-mdc-button-base.mat-mdc-button {
+  height: 28px;
+  padding: 0 4px;
+  font: 400 13px/20px var(--me-font-family);
+  letter-spacing: normal;
+  &:not(:disabled) {
+    color: var(--me-primary-color);
+  }
+}
+.context ::ng-deep .mat-mdc-button-touch-target {
+  height: 100%;
+}
+.context mat-icon {
+  font-size: 16px;
+  width: 16px;
+  height: 16px;
+}
+form {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+.body {
+  padding: 6px 24px 20px;
+  background: var(--me-surface-container-low-color);
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+:host > p.context {
+  display: block;
+  flex: none;
+  margin: 0;
+  padding: 12px 24px 10px;
+  background: var(--me-surface-container-low-color);
+  font: 400 12px/18px var(--me-font-family);
+}
+h3 {
+  font: 500 13px/20px var(--me-font-family);
+  margin: 0 0 16px;
+  padding: 8px 10px;
+  background: var(--me-surface-container-high-color);
+  border-radius: 4px;
+}
+section + section {
+  margin-top: 24px;
+}
+section:first-of-type h3 {
+  margin-bottom: 12px;
+}
+.backends {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+// Match Model Explorer's setting-item flow: 4px before the field, 2px before Reset.
+label {
+  display: flex;
+  flex-direction: column;
+  font: 13px/20px var(--me-font-family);
+}
+label > input,
+label > config-picker {
+  margin-top: 4px;
+}
+label + label {
+  margin-top: 12px;
+}
+input {
+  @include controls.configuration-input;
+  width: 100%;
+  min-width: 0;
+}
+input:disabled {
+  opacity: 0.5;
+}
+input[type='number'] {
+  appearance: textfield;
+}
+input::-webkit-inner-spin-button,
+input::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.reset {
+  height: 24px;
+  display: flex;
+  align-items: center;
+  align-self: flex-start;
+  border: 0;
+  background: transparent;
+  color: var(--me-on-surface-variant-color);
+  text-decoration: underline;
+  padding: 0;
+  font: 400 13px/24px var(--me-font-family);
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  margin-top: 2px;
+  user-select: none;
+}
+.reset:disabled {
+  opacity: 0.45;
+  cursor: default;
+  text-decoration: none;
+}
+.reset:not(:disabled):hover {
+  opacity: 0.6;
+}
+.caption {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.help {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 16px;
+  width: 16px;
+  height: 16px;
+  margin-left: 12px;
+  border: 0;
+  background: transparent;
+  color: var(--me-on-surface-color);
+  padding: 0;
+  opacity: 0.6;
+  cursor: pointer;
+}
+.help:hover {
+  opacity: 0.8;
+}
+.help:focus-visible,
+.reset:focus-visible {
+  outline: 2px solid var(--me-primary-color);
+  outline-offset: 2px;
+}
+.help mat-icon {
+  font-size: 16px;
+  width: 16px;
+  height: 16px;
+}
+footer {
+  flex: none;
+  display: flex;
+  justify-content: flex-end;
+  padding: 8px;
+  background: var(--me-surface-container-high-color);
+  border-top: 1px solid var(--me-outline-variant-color);
+}
+:host footer button.mat-mdc-button-base.mat-mdc-button {
+  height: 36px;
+  border-radius: 4px;
+  font: 500 14px/20px var(--me-font-family);
+  letter-spacing: normal;
+  color: var(--mat-button-text-label-text-color);
+}
+@media (max-width: 520px) {
+  header {
+    padding: 20px 16px 12px;
+  }
+  h2 {
+    font-size: 20px;
+    line-height: 28px;
+  }
+  :host > p.context {
+    padding: 12px 16px 10px;
+  }
+  .body {
+    padding: 6px 16px 16px;
+  }
+  .backends {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+}

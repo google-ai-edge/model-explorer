@@ -1,0 +1,16 @@
+<!-- Derived from Google Model Explorer, Apache-2.0. Modified front glyph for Model Debugger with a custom geometric D glyph. -->
+<svg width="256" height="256" viewBox="0 0 256 256" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <path d="M229 64.5V192.5L128 248.5L127.5 115.5L229 64.5Z" fill="url(#front-30)"/>
+  <path d="M26 61L47.5 72.5V200L26 187V61Z" fill="#FBBC05"/>
+  <path d="M125.5 10.5L145.5 21V60.5L125.5 56.5V10.5Z" fill="#DCA810"/>
+  <path d="M164 31L184 41.5V81L164 78V31Z" fill="#D33D30"/>
+  <path d="M164 31L184 41.5L87 94L65 82L164 31Z" fill="#B3261E"/>
+  <path d="M208 54.5L229 64.5L128 116L107 105L208 54.5Z" fill="#2C5CAC"/>
+  <path d="M125.5 10.5L145.5 21L47.5 72.5L26 61L125.5 10.5Z" fill="#C78B15"/>
+  <path d="M65 82L87 94V224L65 210.5V82Z" fill="#EA4335"/>
+  <path d="M107 105L128 116V248.5L107 236V105Z" fill="#4285F4"/>
+  <!-- E-aligned affine basis from original Model Explorer: (128,116) to (208,76), vertical edges retained. -->
+  <g transform="matrix(1 -0.5 0 1 128 116)">
+    <path fill="#FFFFFF" fill-rule="evenodd" d="M0 0H58Q80 0 80 22V86Q80 108 58 108H0ZM20 20V88H51Q60 88 60 79V29Q60 20 51 20Z"/>
+  </g>
+<defs><linearGradient id="front-30" x1="144.5" y1="232" x2="219" y2="69.5" gradientUnits="userSpaceOnUse"><stop stop-color="#4285F4"/><stop offset="1" stop-color="#2C5CAC"/></linearGradient></defs></svg>

@@ -1,0 +1,147 @@
+<!--
+ Copyright 2026 The AI Edge Model Explorer Authors.
+
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+ ==============================================================================
+-->
+<div class="model-heading">
+  <strong>{{ label() }}</strong
+  ><span role="status">{{
+    scan().status === 'scanning'
+      ? 'Scanning model…'
+      : scan().status === 'completed'
+        ? 'Model parsed'
+        : 'Scan unavailable'
+  }}</span>
+</div>
+@if (scan().status === 'failed') {
+  <p role="alert">{{ scan().error }}</p>
+  <button mat-button type="button" [disabled]="disabled()" (click)="start()">Retry scan</button>
+}
+@if (enabled()) {
+  <div class="picker-actions">
+    <button
+      mat-button
+      type="button"
+      [disabled]="disabled() || scan().status !== 'completed'"
+      [attr.aria-expanded]="expanded()"
+      (click)="expanded.set(!expanded())"
+    >
+      <mat-icon>add</mat-icon>{{ selected().length ? 'Edit capture points' : 'Add capture points' }}
+    </button>
+    @if (scan().recommended?.length) {
+      <button mat-button type="button" [disabled]="disabled()" (click)="recommended()">
+        Use recommended · Layer 0 RMSNorm
+      </button>
+    }
+  </div>
+  @if (chosen().length) {
+    <ul class="chosen" aria-label="Selected capture points">
+      @for (point of chosen(); track point.id) {
+        <li>
+          <span [title]="point.tensor_name"
+            >{{ labelFor(point) }} <small>{{ point.signature }}</small></span
+          ><button
+            mat-icon-button
+            type="button"
+            [disabled]="disabled()"
+            [attr.aria-label]="'Remove ' + point.id"
+            (click)="toggle(point)"
+          >
+            <mat-icon>close</mat-icon>
+          </button>
+        </li>
+      }
+    </ul>
+  }
+  @if (expanded()) {
+    <div class="picker" role="group" [attr.aria-label]="'Capture points for ' + label()">
+      <div class="search">
+        <input
+          type="search"
+          aria-label="Search tensor outputs"
+          placeholder="Search tensor name, operator or index"
+          [ngModelOptions]="{standalone: true}"
+          [ngModel]="query()"
+          (ngModelChange)="query.set($event)"
+          [disabled]="disabled()"
+        /><select
+          aria-label="Signature"
+          [ngModelOptions]="{standalone: true}"
+          [ngModel]="signature()"
+          (ngModelChange)="signature.set($event)"
+          [disabled]="disabled()"
+        >
+          <option value="">All signatures</option>
+          @for (sig of signatures(); track sig) {
+            <option [value]="sig">{{ sig }}</option>
+          }
+        </select>
+      </div>
+      <p class="hint">
+        Text model outputs · Select up to 16 per model. Each signature is selected separately.
+      </p>
+      <div class="results">
+        @for (point of visible(); track point.id) {
+          <div class="point">
+            <label
+              ><input
+                type="checkbox"
+                [checked]="selected().includes(point.id)"
+                [disabled]="
+                  disabled() ||
+                  !point.selectable ||
+                  (selected().length >= 16 && !selected().includes(point.id))
+                "
+                [attr.aria-label]="
+                  labelFor(point) +
+                  ' · ' +
+                  point.signature +
+                  ' · op ' +
+                  point.op +
+                  ' output ' +
+                  point.output
+                "
+                (change)="toggle(point)"
+              /><span
+                ><strong>{{ labelFor(point) }}</strong
+                ><small
+                  >{{ point.signature }} · op {{ point.op }} · output {{ point.output }} ·
+                  {{ point.shape.join(' × ') }} · {{ point.dtype }}</small
+                ></span
+              ></label
+            >
+            <details>
+              <summary>Details</summary>
+              <p>{{ point.tensor_name }}</p>
+              <p>{{ point.operator }} · tensor {{ point.tensor }}</p>
+              @if (point.reason) {
+                <p>{{ point.reason }}</p>
+              }
+            </details>
+          </div>
+        } @empty {
+          <p>No matching outputs.</p>
+        }
+      </div>
+      <div class="picker-footer">
+        <span
+          >{{ selected().length }} selected · {{ matches().length }} matches
+          @if (matches().length > 80) {
+            · First 80 shown; refine search
+          }</span
+        ><button mat-button type="button" (click)="expanded.set(false)">Done</button>
+      </div>
+    </div>
+  }
+}

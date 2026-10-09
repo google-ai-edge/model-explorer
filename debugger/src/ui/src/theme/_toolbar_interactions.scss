@@ -1,0 +1,163 @@
+/**
+ * @license
+ * Copyright 2026 The AI Edge Model Explorer Authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ==============================================================================
+ */
+
+// Toolbar interaction layers. Keep global shell specificity when moving between views.
+report-app .debugger-shell {
+  .theme-button::before,
+  .session-name::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: var(--button-hover);
+    pointer-events: none;
+    opacity: 0;
+  }
+  .theme-button:hover::before,
+  .session-name:hover::before {
+    opacity: 1;
+  }
+  .theme-button:active::before,
+  .session-name:active::before {
+    opacity: 1;
+    background: var(--button-press);
+  }
+  .topbar .mode-switch {
+    flex: 0 0 72px;
+    width: 72px;
+    min-width: 72px;
+    padding: 2px;
+  }
+  .topbar .mode-switch button {
+    width: 34px;
+    min-width: 34px;
+    flex-basis: 34px;
+    height: 28px;
+    padding: 0;
+    gap: 0;
+  }
+  .topbar .mode-switch .button-icon {
+    width: 24px;
+    height: 24px;
+    font-size: 24px;
+    line-height: 24px;
+  }
+  .topbar .theme-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    box-sizing: border-box;
+    flex: 0 0 48px;
+    width: 48px;
+    height: 48px;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    color: var(--button-secondary);
+  }
+  .theme-button .button-icon {
+    width: 24px;
+    height: 24px;
+    font-size: 24px;
+    line-height: 24px;
+  }
+  .topbar .session-name {
+    position: relative;
+    box-sizing: border-box;
+    flex: 0 1 164px;
+    width: 164px;
+    height: 32px;
+    padding: 0 6px;
+    border: 0;
+    border-radius: 4px;
+    background: transparent;
+    color: var(--button-text);
+    font:
+      500 13px/20px Roboto,
+      Arial,
+      sans-serif;
+  }
+  .topbar .brand {
+    height: 32px;
+    min-height: 32px;
+    border: 0;
+    border-radius: 4px;
+    background: transparent;
+    color: var(--button-text);
+    font-weight: 400;
+  }
+  .topbar .brand:disabled {
+    opacity: 1;
+    background: transparent;
+  }
+}
+
+report-app .debugger-shell {
+  .topbar .brand {
+    gap: 6px;
+    line-height: normal;
+  }
+  .topbar .brand img {
+    width: 24px;
+    height: 24px;
+  }
+  .topbar .brand:focus-visible {
+    outline-offset: 3px;
+  }
+  .theme-button::before,
+  .session-name::before {
+    background: rgba(0, 0, 0, 0.87);
+    transition: opacity 15ms linear;
+  }
+  .theme-button:hover::before,
+  .session-name:hover::before {
+    opacity: 0.04;
+  }
+  .theme-button:focus-visible,
+  .session-name:focus-visible {
+    outline: 0;
+  }
+  .theme-button:focus-visible::before,
+  .session-name:focus-visible::before,
+  .theme-button:active::before,
+  .session-name:active::before,
+  .theme-button[aria-expanded='true']::before,
+  .session-name[aria-expanded='true']::before {
+    background: rgba(0, 0, 0, 0.87);
+    opacity: 0.12;
+  }
+}
+
+:root[data-theme='dark'] report-app .debugger-shell {
+  .theme-button::before,
+  .session-name::before,
+  .theme-button:active::before,
+  .session-name:active::before,
+  .theme-button:focus-visible::before,
+  .session-name:focus-visible::before,
+  .theme-button[aria-expanded='true']::before,
+  .session-name[aria-expanded='true']::before {
+    background: white;
+  }
+}
+
+:root:not([data-theme='dark']) report-app .debugger-shell app-toolbar .brand {
+  color: #202124;
+}

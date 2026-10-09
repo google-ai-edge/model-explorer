@@ -1,0 +1,26 @@
+/**
+ * @license
+ * Copyright 2026 The AI Edge Model Explorer Authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ==============================================================================
+ */
+
+:root{color-scheme:light;--bg:#fff;--surface:#f7f9fc;--line:#cbd3de;--text:#27364b;--muted:#607087;--accent:#1a73e8;--wash:#e8f0fe;--shadow:0 3px 12px #22334b20;--sans:Arial,Helvetica,sans-serif;--mono:ui-monospace,SFMono-Regular,Menlo,monospace}
+:root[data-theme="dark"]{color-scheme:dark;--bg:#202124;--surface:#131314;--line:#3c4043;--text:#e3e3e3;--muted:#c4c7c5;--accent:#a8c7fa;--wash:#303134;--shadow:0 3px 12px #0006}
+/* The renderer injects a global body background; the frame owns its theme. */
+html[data-theme] body{background:var(--bg)}
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden}body{display:flex;flex-direction:column;background:var(--bg);color:var(--text);font:12px/1.4 var(--sans)}button,input,select{font:inherit;color:inherit}button{cursor:pointer;border:1px solid var(--line);border-radius:4px;background:var(--bg)}button:hover{background:var(--wash)}:focus-visible{outline:2px solid var(--accent);outline-offset:2px}[hidden]{display:none!important}
+#panes{display:grid;grid-template-columns:1fr 1fr;flex:none;border-bottom:1px solid var(--line);background:var(--surface)}.paneLabel{display:flex;align-items:center;gap:8px;min-width:0;padding:6px 12px;height:34px}.paneLabel+.paneLabel{border-left:1px solid var(--line)}.paneLabel strong{font-weight:600}.paneLabel small{color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.paneLabel select{min-width:0;max-width:65%;margin-left:auto;border:0;background:transparent;text-overflow:ellipsis;font:11px var(--mono)}
+#canvas{position:relative;flex:1;min-height:0;overflow:hidden}#host,model-explorer-visualizer{display:block;width:100%;height:100%}#empty{position:absolute;inset:35% 18px auto;text-align:center;color:var(--muted)}footer{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:4px 12px;border-top:1px solid var(--line);font-size:10px;color:var(--muted);min-height:23px}#metric{font-family:var(--mono);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#tooltip{position:absolute;z-index:3;pointer-events:none;white-space:pre-line;max-width:340px;padding:8px 10px;background:var(--bg);border:1px solid var(--line);border-radius:4px;box-shadow:var(--shadow)}#closeSearch{border:0;font-size:20px;width:28px}

@@ -1,0 +1,353 @@
+/**
+ * @license
+ * Copyright 2026 The AI Edge Model Explorer Authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ==============================================================================
+ */
+
+@use '../../theme/explorer_controls' as controls;
+:host {
+  font-family: var(--me-font-family);
+  color: var(--me-on-surface-color);
+  display: block;
+  flex: none;
+}
+.topbar {
+  height: 48px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--me-surface-variant-color);
+  color: var(--me-on-surface-color);
+}
+.topbar.home {
+  border-bottom-color: transparent;
+}
+.spacer {
+  flex: 1;
+  min-width: 0;
+}
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  color: inherit;
+  font: 400 20px var(--me-font-family);
+  white-space: nowrap;
+}
+.brand img {
+  width: 24px;
+  height: 24px;
+}
+.global-tools {
+  display: flex;
+  align-items: center;
+  color: var(--me-on-surface-variant-color);
+  flex: none;
+}
+.global-tools a,
+.global-tools button {
+  color: inherit;
+}
+.session-name {
+  border: 0;
+  background: transparent;
+  color: inherit;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.version {
+  padding: 8px 16px;
+  color: var(--me-on-surface-variant-color);
+  font: 12px var(--me-font-family);
+}
+select {
+  font: inherit;
+  color: inherit;
+  background: var(--me-surface-color);
+  border: 1px solid var(--me-surface-variant-color);
+  border-radius: 4px;
+  padding: 6px;
+}
+@media (max-width: 800px) {
+  .topbar:not(.home) {
+    overflow-x: auto;
+    overflow-y: hidden;
+    flex-wrap: nowrap;
+  }
+  .topbar:not(.home) .brand-label {
+    display: none;
+  }
+  .topbar:not(.home) .spacer {
+    display: none;
+  }
+}
+@media (max-width: 500px) {
+  .topbar.home {
+    height: auto;
+    min-height: 48px;
+    flex-wrap: wrap;
+  }
+  .topbar.home .global-tools {
+    margin-left: auto;
+  }
+  .brand {
+    font-size: 18px;
+  }
+  .topbar {
+    gap: 4px;
+  }
+}
+
+.topbar .chat-select {
+  height: 32px;
+  width: 180px;
+  max-width: 180px;
+  min-width: 180px;
+  flex: none;
+  border: 1px solid var(--me-surface-variant-color);
+  border-radius: 3px;
+  font: 13px/20px var(--me-font-family);
+  letter-spacing: normal;
+  color: var(--me-on-surface-color);
+  overflow: hidden;
+}
+.chat-select .mdc-button__label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chat-select-label {
+  display: inline-block;
+  max-width: 130px;
+  vertical-align: middle;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.session-context {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex: none;
+  min-width: 0;
+}
+:host .topbar:not(.home) {
+  gap: 12px;
+}
+:host .topbar .mode-switch {
+  margin: 0;
+}
+.chat-picker {
+  @include controls.configuration-popup;
+  box-sizing: border-box;
+  width: 300px;
+  max-width: calc(100vw - 16px);
+  max-height: calc(100dvh - 64px);
+  padding: 8px;
+  overflow: auto;
+  font: 13px/20px var(--me-font-family);
+}
+.chat-picker input {
+  @include controls.configuration-input;
+  width: 100%;
+  margin-bottom: 8px;
+}
+.chat-option.mat-mdc-button-base.mat-mdc-button {
+  display: flex;
+  justify-content: flex-start;
+  width: 100%;
+  height: 32px;
+  min-height: 32px;
+  padding: 0 8px;
+  border-radius: 0;
+  font: 13px/20px var(--me-font-family);
+  letter-spacing: normal;
+  color: var(--mat-button-text-label-text-color);
+}
+.chat-option[aria-selected='true'] {
+  background: var(--me-secondary-container-color);
+}
+.chat-option ::ng-deep .mdc-button__label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  flex: 1;
+}
+.chat-option ::ng-deep .mat-mdc-button-touch-target {
+  height: 100%;
+}
+.chat-option mat-icon {
+  font-size: 18px;
+  width: 18px;
+  height: 18px;
+}
+.chat-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+  text-align: left;
+}
+.chat-option small {
+  font: 11px/16px var(--me-font-family);
+  color: var(--me-on-surface-variant-color);
+  margin-left: auto;
+}
+.chat-picker p {
+  margin: 12px 8px;
+  color: var(--me-on-surface-variant-color);
+}
+
+@media (max-width: 1300px) {
+  .topbar:not(.home) .brand-label {
+    display: none;
+  }
+}
+@media (max-width: 1100px) {
+  :host .topbar .session-name {
+    width: 112px;
+    flex-basis: 112px;
+  }
+  :host .topbar .chat-select {
+    width: 146px;
+    min-width: 146px;
+    max-width: 146px;
+  }
+}
+@media (max-width: 800px) {
+  .topbar:not(.home) .brand {
+    margin-right: -12px;
+  }
+}
+
+.view-select.mat-mdc-button-base.mat-mdc-button {
+  height: 32px;
+  min-width: 0;
+  padding: 0 4px 0 0;
+  font: 500 20px/30px var(--me-font-family);
+  letter-spacing: normal;
+  color: var(--button-focus);
+  flex: none;
+}
+.view-triangle {
+  font: 400 10px/10px var(--me-font-family);
+  margin-left: 8px;
+  vertical-align: middle;
+}
+.title-divider {
+  flex: none;
+  margin: 0 -4px;
+  font: 400 20px/30px var(--me-font-family);
+  color: var(--me-on-surface-variant-color);
+  opacity: 0.5;
+}
+@media (max-width: 800px) {
+  .topbar.debug .brand {
+    margin-right: 0;
+  }
+}
+@media (max-width: 800px) {
+  .topbar.debug .bookmark-select {
+    margin-left: -12px;
+  }
+}
+
+// Model Explorer font/state layer; candidates selector geometry.
+:host .topbar .session-name {
+  font: 400 13px/20px var(--me-font-family);
+}
+:host .topbar .chat-select {
+  padding: 2px 4px;
+  border-color: var(--me-outline-variant-color);
+}
+.chat-select ::ng-deep .mdc-button__label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  min-width: 0;
+  gap: 6px;
+}
+.chat-select-label {
+  max-width: none;
+  flex: 1;
+  text-align: left;
+}
+.chat-triangle {
+  flex: none;
+  font: 400 10px/10px var(--me-font-family);
+}
+
+.topbar.debug {
+  background: var(--debug-dock-bg);
+  border-bottom: 1.5px solid var(--debug-dock-border);
+}
+.bookmark-select.mat-mdc-button-base.mat-mdc-button {
+  height: 32px;
+  min-width: 0;
+  flex: none;
+  padding: 0 8px;
+  border-radius: 4px;
+  font: 400 13px/20px var(--me-font-family);
+  letter-spacing: normal;
+  color: var(--me-on-surface-color);
+}
+.bookmark-select.mat-mdc-button-base > mat-icon {
+  width: 24px;
+  height: 24px;
+  font-size: 24px;
+  margin: 0 4px 0 0;
+}
+.bookmark-select ::ng-deep .mat-mdc-button-touch-target {
+  height: 32px;
+}
+.topbar {
+  --bar-divider: var(--toolbar-divider);
+}
+.topbar.debug {
+  --bar-divider: var(--debug-toolbar-divider);
+}
+.toolbar-divider {
+  width: 1px;
+  height: 24px;
+  flex: 0 0 1px;
+  background: var(--bar-divider);
+  margin: 0 -2px;
+}
+.toolbar-actions {
+  display: flex;
+  align-items: center;
+  flex: none;
+}
+.topbar:not(.home) .toolbar-actions {
+  margin-left: -2px;
+}
+.toolbar-end-divider {
+  margin: 0 4px 0 10px;
+}
+@media (max-width: 500px) {
+  .topbar.home .toolbar-actions {
+    margin-left: auto;
+  }
+}

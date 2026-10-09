@@ -1,0 +1,125 @@
+/**
+ * @license
+ * Copyright 2026 The AI Edge Model Explorer Authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ==============================================================================
+ */
+
+// Debug tokens keep their real characters and always draw the invisible ones. Every space owns
+// a fixed slot (the virtualizer's width model counts 0.65em per space) with a bracket, a line
+// break owns the same slot with a return arrow, a tab draws its glyph and anything else spells
+// its code point. All marks are one quiet gray hairline tone: they are always drawn, so they
+// must stay behind the text and the mismatch colors. The markup comes from tokenMarkup via
+// innerHTML, so these rules live outside Angular encapsulation.
+// The Display settings panel renders in the CDK overlay, outside its component element.
+$mark: color-mix(
+  in srgb,
+  var(--on2, var(--me-on-surface-variant-color)) 70%,
+  transparent
+);
+$stroke: 0.85px;
+
+conversation-panel .tokens button,
+conversation-panel .input-tokens .input-token,
+conversation-panel .virtualTextLine .token,
+conversation-panel .virtualTextLine .readingToken,
+.settings-panel .preview-tokens span,
+.token-inspector .info-token,
+.token-inspector .candidate-token {
+  .invisible-char {
+    position: relative;
+    white-space: inherit;
+  }
+  .invisible-char.space-char,
+  .invisible-char.line-break-char {
+    display: inline-block;
+    width: 0.65em;
+    vertical-align: baseline;
+  }
+  .invisible-char .whitespace-glyph {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+    font-size: 0.8em;
+    font-weight: 400;
+    line-height: inherit;
+    color: $mark;
+    pointer-events: none;
+    user-select: none;
+  }
+  // The bracket under a space.
+  .invisible-char.marked-space::after {
+    content: '';
+    position: absolute;
+    left: 20%;
+    top: 13px;
+    width: 60%;
+    height: 4px;
+    border: solid $mark;
+    border-width: 0 $stroke $stroke;
+    box-sizing: content-box;
+    pointer-events: none;
+  }
+  // The return arrow is drawn with the bracket's strokes instead of typeset: the glyph comes from
+  // a fallback symbol font, a full em wide, heavier than anything around it, and its metrics
+  // make the line taller. The empty slot stands on the baseline, where the bracket's base is.
+  .invisible-char.line-break-char {
+    height: 1em;
+  }
+  .invisible-char.line-break-char .whitespace-glyph {
+    display: none;
+  }
+  .invisible-char.line-break-char::before {
+    content: '';
+    position: absolute;
+    right: 18%;
+    bottom: 0;
+    width: 46%;
+    height: 7px;
+    border: solid $mark;
+    border-width: 0 $stroke $stroke 0;
+    box-sizing: content-box;
+    pointer-events: none;
+  }
+  .invisible-char.line-break-char::after {
+    content: '';
+    position: absolute;
+    left: 16%;
+    bottom: -1.4px;
+    width: 3px;
+    height: 3px;
+    border: solid $mark;
+    border-width: 0 0 $stroke $stroke;
+    box-sizing: content-box;
+    transform: rotate(45deg);
+    pointer-events: none;
+  }
+  // Invisible characters without a mark of their own spell their code point.
+  .invisible-char.code-char .whitespace-code {
+    display: inline-block;
+    margin: 0 1px;
+    padding: 0 2px;
+    border: $stroke solid $mark;
+    border-radius: 2px;
+    font:
+      400 10px/14px 'Roboto Mono',
+      ui-monospace,
+      monospace;
+    color: $mark;
+    vertical-align: middle;
+  }
+}

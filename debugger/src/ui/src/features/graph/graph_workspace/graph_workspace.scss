@@ -1,0 +1,610 @@
+/**
+ * @license
+ * Copyright 2026 The AI Edge Model Explorer Authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ==============================================================================
+ */
+
+@use '../../../theme/explorer_controls' as controls;
+@use '../../../theme/token_diff' as token-diff;
+@use '../../../theme/explorer_info' as info;
+:host {
+  @include token-diff.activation-colors;
+  --graph-text: var(--me-on-surface-color);
+  --graph-muted: var(--me-on-surface-variant-color);
+  --graph-line: var(--me-outline-hairline-color);
+  --graph-panel: var(--me-surface-color);
+  --graph-accent: var(--me-primary-color);
+  --graph-hover: var(--me-surface-container-highest-color);
+  --graph-canvas: #f2f4f8;
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  color: var(--graph-text);
+  font: 12px/20px var(--me-font-family);
+}
+:host-context([data-theme='dark']) {
+  --graph-canvas: #202124;
+}
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+[hidden] {
+  display: none !important;
+}
+button,
+input,
+select {
+  font: inherit;
+  color: inherit;
+}
+button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-height: 28px;
+  padding: 2px 7px;
+  background: transparent;
+  border: 0;
+  border-radius: 4px;
+  cursor: pointer;
+}
+button:hover:not(:disabled) {
+  background: var(--graph-hover);
+}
+button:disabled {
+  opacity: 0.38;
+  cursor: default;
+}
+button[aria-current='true'] {
+  background: var(--me-primary-container-color);
+  color: var(--me-on-primary-container-color);
+}
+:focus-visible {
+  outline: 2px solid var(--graph-accent);
+  outline-offset: 2px;
+}
+.icon-button {
+  width: 28px;
+  min-width: 28px;
+  height: 28px;
+  flex: none;
+  padding: 3px;
+}
+mat-icon {
+  width: 18px;
+  height: 18px;
+  font-size: 18px;
+  line-height: 18px;
+  flex: none;
+}
+input,
+select {
+  min-width: 0;
+  min-height: 30px;
+  border: 1px solid var(--me-outline-variant-color);
+  border-radius: 4px;
+  background: var(--me-runtime-field-color);
+  padding: 3px 7px;
+}
+input[type='checkbox'] {
+  width: 15px;
+  height: 15px;
+  min-height: 0;
+  accent-color: var(--graph-accent);
+}
+h2,
+p {
+  margin: 0;
+}
+h2 {
+  font-size: 13px;
+  font-weight: 500;
+}
+.muted,
+small {
+  color: var(--graph-muted);
+}
+small {
+  font-size: 10px;
+  line-height: 16px;
+}
+.filler {
+  flex: 1;
+}
+.outlined {
+  border: 1px solid var(--me-outline-variant-color);
+}
+.primary {
+  background: var(--graph-accent);
+  color: var(--me-on-primary-color);
+}
+.primary:hover:not(:disabled) {
+  background: var(--me-primary-color);
+  filter: brightness(0.95);
+}
+.graph-shell {
+  display: flex;
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  padding-bottom: 24px;
+  background: var(--graph-canvas);
+  overflow: hidden;
+}
+.analysis-main {
+  min-width: 0;
+  min-height: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+.dock-area {
+  position: relative;
+  z-index: 8;
+  padding: 8px 12px 4px;
+  flex: none;
+  align-self: flex-start;
+  max-width: 100%;
+}
+.debug-dock {
+  @include controls.debug-dock-surface;
+  min-height: 50px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 10px;
+  flex-wrap: wrap;
+}
+.debug-dock button {
+  white-space: nowrap;
+}
+.debug-dock .observation {
+  font-size: 11px;
+}
+.count {
+  border-radius: 10px;
+  min-width: 16px;
+  font-size: 10px;
+  background: var(--me-primary-container-color);
+  color: var(--me-on-primary-container-color);
+}
+.match-nav {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  font-variant-numeric: tabular-nums;
+  font-size: 11px;
+}
+.popup {
+  position: absolute;
+  top: calc(100% + 2px);
+  left: 12px;
+  width: 330px;
+  max-width: calc(100vw - 24px);
+  max-height: min(600px, 70vh);
+  overflow: auto;
+  padding: 12px;
+  background: var(--graph-panel);
+  border: 1px solid var(--graph-line);
+  box-shadow: 0 5px 20px #0002;
+  border-radius: 8px;
+}
+.popup header,
+.results-rail header,
+.explicit-dialog header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.popup label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 12px 0;
+}
+.popup label.check {
+  flex-direction: row;
+  align-items: center;
+  gap: 9px;
+}
+.popup footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 16px;
+}
+.condition {
+  display: flex;
+  gap: 8px;
+}
+.condition input {
+  width: 100%;
+}
+.bookmark-row {
+  display: flex;
+  align-items: center;
+  border-top: 1px solid var(--graph-line);
+  padding: 6px 0;
+}
+.bookmark-row > button:first-child {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+}
+.trends-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 14px;
+  height: 32px;
+  flex: none;
+  font-size: 11px;
+}
+.trends {
+  position: relative;
+  flex: none;
+  min-height: 80px;
+}
+.plot {
+  width: 100%;
+  height: 100%;
+}
+.plot-status {
+  position: absolute;
+  inset: 10px 24px auto auto;
+  padding: 3px 8px;
+  background: var(--graph-panel);
+  font-size: 11px;
+}
+.trends-resize {
+  height: 5px;
+  cursor: row-resize;
+  flex: none;
+  touch-action: none;
+}
+.trends-resize:hover {
+  background: var(--graph-line);
+}
+.visual-workspace {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  margin: 0 12px 10px;
+}
+.architecture-surface,
+.execution-surface {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--graph-line);
+  border-radius: 6px;
+  background: var(--graph-panel);
+}
+.graph-header {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  min-height: 40px;
+  padding: 4px 8px;
+  border-bottom: 1px solid var(--graph-line);
+  flex: none;
+}
+.graph-header h2 {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.graph-header label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.graph-header select {
+  max-width: 230px;
+  height: 28px;
+  min-height: 28px;
+}
+graph-architecture-view,
+app-execution-graph {
+  display: block;
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+}
+graph-architecture-view {
+  display: flex;
+}
+.execution-surface.floating {
+  position: fixed;
+  z-index: 15;
+  inset: 150px 70px 60px 70px;
+  box-shadow: 0 12px 36px #0003;
+  resize: both;
+  min-height: 300px;
+  min-width: 320px;
+}
+.mapping-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 7px 12px;
+  border-bottom: 1px solid var(--graph-line);
+  background: var(--me-primary-container-color);
+  color: var(--me-on-primary-container-color);
+}
+.mapping-banner span {
+  flex: 1;
+  min-width: 100px;
+}
+.execution-search {
+  position: absolute;
+  z-index: 6;
+  right: 8px;
+  top: 42px;
+  width: 360px;
+  max-width: calc(100% - 16px);
+  max-height: 75%;
+  display: flex;
+  flex-direction: column;
+  padding: 10px;
+  background: var(--graph-panel);
+  border: 1px solid var(--graph-line);
+  border-radius: 6px;
+  box-shadow: 0 6px 20px #0002;
+}
+.execution-search header {
+  display: flex;
+  gap: 5px;
+}
+.execution-search input {
+  flex: 1;
+}
+.execution-search p {
+  font-size: 11px;
+  padding: 5px 0;
+}
+.search-results {
+  overflow: auto;
+}
+.search-results button {
+  display: flex;
+  width: 100%;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+  padding: 6px;
+}
+.search-results strong {
+  font-size: 11px;
+  font-weight: 400;
+  overflow-wrap: anywhere;
+}
+.graph-empty {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  text-align: center;
+}
+.graph-status {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 4px 10px;
+  border-top: 1px solid var(--graph-line);
+  font-size: 10px;
+  min-height: 26px;
+}
+.results-rail {
+  display: flex;
+  flex-direction: column;
+  flex: 0 0 270px;
+  min-width: 0;
+  border-left: 1px solid var(--graph-line);
+  background: var(--graph-panel);
+  padding: 8px 10px;
+}
+.results-rail header {
+  margin: 0;
+}
+.results-rail > p {
+  font-size: 11px;
+  margin-bottom: 8px;
+}
+.results-list {
+  overflow: auto;
+  min-height: 0;
+}
+.result-row {
+  width: 100%;
+  display: flex;
+  text-align: left;
+  justify-content: space-between;
+  padding: 8px;
+  gap: 8px;
+  border-bottom: 1px solid var(--graph-line);
+}
+.result-row > span:first-child {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.result-row strong {
+  font-size: 12px;
+  font-weight: 400;
+  overflow-wrap: anywhere;
+}
+.metric-value {
+  font-variant-numeric: tabular-nums;
+  font-size: 11px;
+  white-space: nowrap;
+}
+.details-rail {
+  position: relative;
+  flex: 0 0 var(--details-width);
+  min-width: 0;
+  overflow: hidden;
+  @include info.panel-chrome;
+}
+.details-rail graph-details {
+  display: block;
+  height: 100%;
+  overflow: auto;
+}
+.details-resize {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 5px;
+  z-index: 4;
+  cursor: col-resize;
+  touch-action: none;
+}
+.details-resize:hover {
+  background: var(--graph-line);
+}
+.details-toggle {
+  position: absolute;
+  z-index: 7;
+  bottom: 30px;
+  right: 0;
+  border: 1px solid var(--graph-line);
+  background: var(--graph-panel);
+  border-radius: 12px 0 0 12px;
+}
+.details-open .details-toggle {
+  right: var(--details-width);
+}
+.workspace-status {
+  position: absolute;
+  inset: auto 0 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 24px;
+  padding: 0 12px;
+  border-top: 1px solid var(--graph-line);
+  background: var(--graph-panel);
+  font-size: 10px;
+}
+.workspace-status button {
+  font-size: 10px;
+  min-height: 22px;
+}
+.inline-error {
+  padding: 4px 12px;
+  color: var(--me-error-color);
+}
+.explicit-dialog {
+  color: var(--graph-text);
+  background: var(--graph-panel);
+  border: 1px solid var(--graph-line);
+  border-radius: 8px;
+  width: min(1000px, 94vw);
+  max-height: 85vh;
+  padding: 16px;
+}
+.explicit-dialog::backdrop {
+  background: #0005;
+}
+@media (max-width: 1100px) {
+  .results-rail {
+    position: absolute;
+    inset: var(--dock-height, 66px) 0 24px auto;
+    width: 270px;
+    z-index: 9;
+    box-shadow: -4px 0 14px #0002;
+  }
+  .details-open .results-rail {
+    right: var(--details-width);
+  }
+  .pairs-label {
+    display: none;
+  }
+  .graph-header h2 {
+    font-size: 12px;
+  }
+}
+@media (max-width: 800px) {
+  .details-open .results-rail {
+    right: 0;
+  }
+  .dock-area {
+    padding-left: 8px;
+    padding-right: 8px;
+  }
+  .debug-dock {
+    gap: 4px;
+    padding: 8px;
+  }
+  .results-rail,
+  .details-rail {
+    position: absolute;
+    inset: var(--dock-height, 66px) 0 24px auto;
+    width: min(var(--details-width), calc(100vw - 32px));
+    z-index: 9;
+    box-shadow: -4px 0 14px #0002;
+  }
+  .results-rail {
+    width: min(320px, calc(100vw - 32px));
+  }
+  .details-open .details-toggle {
+    right: min(var(--details-width), calc(100vw - 32px));
+    z-index: 10;
+  }
+  .visual-workspace {
+    margin: 0 8px 8px;
+  }
+  .graph-header {
+    gap: 2px;
+    padding: 4px;
+  }
+  .graph-header .outlined {
+    font-size: 10px;
+    gap: 2px;
+    padding: 2px 3px;
+  }
+  .graph-header .outlined mat-icon {
+    display: none;
+  }
+  .graph-header h2 {
+    font-size: 10px;
+  }
+  .execution-surface.floating {
+    inset: 110px 8px 36px;
+  }
+  .graph-header select {
+    max-width: 180px;
+  }
+  .match-nav {
+    flex-basis: 100%;
+  }
+  .popup {
+    left: 8px;
+  }
+}

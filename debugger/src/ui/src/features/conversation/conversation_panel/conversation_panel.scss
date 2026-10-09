@@ -1,0 +1,1696 @@
+/**
+ * @license
+ * Copyright 2026 The AI Edge Model Explorer Authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ==============================================================================
+ */
+
+@use '../../../shared/styles/data_table' as data-table;
+@use '../../../theme/token_diff' as token;
+@use '../../../theme/explorer_controls' as controls;
+@use '../../../theme/explorer_info' as info;
+
+// A gap added for alignment is not a token: hatched and neutral like the design study, never
+// tinted as a mismatch.
+$gap-hatch: repeating-linear-gradient(
+  135deg,
+  transparent 0 4px,
+  color-mix(in srgb, var(--on2) 38%, transparent) 4px 5px
+);
+@include data-table.defaults;
+
+:host {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  position: relative;
+}
+.reading {
+  flex: 1;
+  overflow: auto;
+  // The last turn, and a trend chart opened under it, must be able to scroll clear of the toolbar.
+  padding-bottom: max(110px, var(--composer-clearance, 110px));
+  background: linear-gradient(to right, var(--bg) 50%, var(--surface) 50%);
+}
+.column-headings,
+.turn {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
+.column-headings {
+  position: sticky;
+  top: 0;
+  background: var(--surface);
+  z-index: 1;
+}
+.column-headings header {
+  padding: 12px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.column-headings header:first-child {
+  background: var(--bg);
+}
+.column-headings span,
+.capture-note {
+  font-size: 12px;
+  color: var(--on2);
+}
+.turn article {
+  padding: 14px 40px 24px;
+  min-width: 0;
+}
+.user-message {
+  border-radius: 8px;
+  background: var(--hover);
+  padding: 16px 18px;
+}
+.user-message strong span {
+  font-weight: 400;
+  color: var(--on2);
+}
+strong {
+  font-weight: 500;
+}
+p {
+  white-space: pre-wrap;
+  line-height: 24px;
+  margin: 10px 0 0;
+  overflow-wrap: anywhere;
+}
+.response {
+  padding: 18px;
+}
+.phase-title {
+  font-size: 12px;
+  color: var(--on2);
+  padding: 10px 0;
+}
+.graph-link {
+  display: block;
+  margin: 8px 0 8px auto;
+  border: 1px solid var(--outline);
+  border-radius: 4px;
+  padding: 7px 12px;
+  background: var(--surface);
+  color: var(--pri);
+  font: inherit;
+}
+.graph-link:hover {
+  background: var(--pri-c);
+}
+details {
+  margin: 14px 0;
+  color: var(--on2);
+}
+summary {
+  cursor: pointer;
+}
+.composer {
+  position: absolute;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(720px, calc(100% - 48px));
+  box-sizing: border-box;
+  padding: 14px;
+  background: var(--surface);
+  border: 1px solid var(--outline);
+  border-radius: 12px;
+  box-shadow: 0 4px 16px #0002;
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+.composer span {
+  font-size: 12px;
+  color: var(--on2);
+}
+@media (max-width: 1000px) {
+  .turn article {
+    padding: 12px 20px;
+  }
+  .column-headings header {
+    padding: 12px 20px;
+  }
+}
+@media (max-width: 650px) {
+  .turn article {
+    padding: 10px;
+  }
+  .user-message,
+  .response {
+    padding: 12px;
+  }
+  .composer {
+    bottom: 12px;
+    gap: 8px;
+  }
+  .composer span {
+    font-size: 11px;
+  }
+  .column-headings header {
+    padding: 12px;
+  }
+  .capture-note {
+    line-height: 18px;
+  }
+}
+
+.tokens {
+  margin-top: 10px;
+  line-height: 28px;
+}
+.tokens button {
+  border: 0;
+  padding: 2px 0;
+  background: transparent;
+  color: var(--on1);
+  font: inherit;
+  white-space: pre-wrap;
+}
+.tokens button:hover:not(.selected-token),
+.tokens button.pair-hover:not(.selected-token),
+.tokens button.step-partner:not(.selected-token) {
+  @include token.token-pair-hover;
+}
+.tokens button.hover-origin:not(.selected-token) {
+  @include token.token-pair-hover(20%);
+}
+.tokens .mismatch {
+  background: var(--b0);
+}
+.target .tokens .mismatch {
+  background: var(--b4);
+}
+.tokens .selected-token {
+  outline: 2px solid var(--pri);
+  border-radius: 2px;
+}
+.with-inspector {
+  margin-right: 320px;
+}
+.token-inspector {
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  box-sizing: border-box;
+  width: 320px;
+  border-left: 1px solid var(--outline);
+  background: var(--surface);
+  padding: 18px;
+  overflow: auto;
+}
+.token-inspector header {
+  display: flex;
+  justify-content: space-between;
+}
+.find-tools {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.composer {
+  flex-wrap: wrap;
+}
+.composer > span {
+  flex-basis: 100%;
+}
+.token-inspector button:disabled {
+  opacity: 0.5;
+}
+@media (max-width: 1000px) {
+  .with-inspector {
+    margin-right: 0;
+  }
+  .token-inspector {
+    top: auto;
+    bottom: 120px;
+    max-height: 45%;
+    box-shadow: 0 4px 20px #0002;
+  }
+}
+
+// Native Material menus supply their own focus, ripple and overlay animation.
+:host {
+  font-family: var(--me-font-family);
+  color: var(--me-on-surface-color);
+  --surface: var(--me-surface-color);
+  --on1: var(--me-on-surface-color);
+  --on2: var(--me-on-surface-variant-color);
+  --outline: var(--me-surface-variant-color);
+}
+.with-inspector {
+  margin-right: var(--inspector-width, 370px);
+}
+.phase-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.debug-node {
+  border: 1px solid var(--outline);
+  border-radius: 8px;
+  margin: 12px 0;
+  padding: 0 12px;
+}
+.node-reveal {
+  display: grid;
+  grid-template-rows: 1fr;
+}
+.node-reveal > div {
+  min-height: 0;
+  overflow: hidden;
+}
+.node-reveal.collapsed {
+  grid-template-rows: 0fr;
+}
+.tokens.boundaries button {
+  box-shadow: inset 0 0 0 1px var(--outline);
+  border-radius: 2px;
+}
+.tokens .missing {
+  color: var(--on2);
+  padding: 0 4px;
+  text-align: center;
+}
+.tokens button.missing,
+.target .tokens button.missing {
+  background: $gap-hatch;
+}
+.token-inspector {
+  padding: 12px 18px;
+}
+.token-inspector header {
+  align-items: center;
+}
+.token-inspector button {
+  border: 0;
+}
+.resize-handle {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 5px;
+  cursor: col-resize;
+  touch-action: none;
+}
+.resize-handle:hover,
+.resize-handle:focus-visible {
+  background: var(--me-primary-color);
+}
+.panel-toggle {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  z-index: 3;
+}
+.composer {
+  width: max-content;
+  max-width: calc(100% - 48px);
+  gap: 8px;
+  z-index: 4;
+}
+.composer > span {
+  flex-basis: auto;
+}
+.token-inspector {
+  z-index: 2;
+}
+.node-toggle {
+  flex: none;
+}
+// The demo changes reading geometry immediately; its mode transition only
+// fades the newly visible composer controls, avoiding reflow while scrolling.
+@media (max-width: 1000px) {
+  .with-inspector {
+    margin-right: 0;
+  }
+  .token-inspector {
+    max-width: calc(100% - 24px);
+  }
+  .composer {
+    width: calc(100% - 24px);
+    max-width: none;
+  }
+}
+
+.node-reveal.collapsed > .response {
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+// Chat-specific composition from the candidates reference; Debug keeps its own controls.
+.chat-reading {
+  padding-bottom: max(180px, var(--composer-clearance, 180px));
+}
+.chat-reading .column-headings header {
+  box-sizing: border-box;
+  min-height: 60px;
+  padding: 8px 24px;
+  justify-content: center;
+}
+.chat-reading .column-headings strong {
+  font-size: 14px;
+  line-height: 20px;
+}
+.chat-reading .column-headings span {
+  font-size: 12px;
+  line-height: 20px;
+}
+.chat-reading .turn article {
+  padding: 12px 40px 20px;
+}
+.chat-reading .user-message {
+  padding: 14px 18px;
+  font: 14px/24px var(--me-font-family);
+}
+.chat-reading .user-message p {
+  margin-top: 6px;
+}
+.chat-reading .response {
+  padding: 8px 18px 12px;
+  font: 14px/24px var(--me-font-family);
+}
+.chat-reading .response > p {
+  margin-top: 10px;
+}
+.chat-thinking {
+  margin: 8px 0 12px;
+}
+.thinking-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  border-radius: 4px;
+  padding: 3px 0;
+  font: 500 12px/18px var(--me-font-family);
+  cursor: pointer;
+}
+.thinking-toggle mat-icon {
+  font-size: 14px;
+  width: 14px;
+  height: 14px;
+}
+.thinking-toggle:hover {
+  background: var(--me-surface-container-color);
+}
+.thinking-toggle:focus-visible {
+  outline: 2px solid var(--me-primary-color);
+  outline-offset: 2px;
+}
+.thinking-reveal {
+  display: grid;
+  grid-template-rows: 0fr;
+}
+.thinking-reveal.expanded {
+  grid-template-rows: 1fr;
+}
+.thinking-reveal > div {
+  overflow: hidden;
+  min-height: 0;
+}
+.thinking-reveal p {
+  font-size: 13px;
+  line-height: 24px;
+  color: var(--on2);
+  margin: 8px 0;
+}
+.chat-mismatch {
+  background: var(--b0);
+  border-radius: 2px;
+}
+.target .chat-mismatch {
+  background: var(--b4);
+}
+.composer.chat-composer {
+  width: min(760px, calc(100% - 48px));
+  padding: 11px 12px 9px;
+  gap: 8px;
+  border-color: var(--me-surface-variant-color);
+  box-shadow:
+    0 10px 30px #23283029,
+    0 3px 8px #2328301a;
+}
+.chat-composer:focus-within {
+  border-color: var(--me-primary-color);
+}
+.chat-composer textarea {
+  box-sizing: border-box;
+  display: block;
+  flex: 0 0 100%;
+  width: 100%;
+  min-height: 46px;
+  max-height: 120px;
+  resize: none;
+  overflow: auto;
+  background: transparent;
+  color: var(--on1);
+  border: 0;
+  outline: 0;
+  padding: 2px;
+  font: 14px/24px var(--me-font-family);
+}
+.chat-composer textarea::placeholder {
+  color: var(--on2);
+}
+.chat-composer .send-notice {
+  margin-left: auto;
+  min-width: 0;
+  font: 11px/16px var(--me-font-family);
+}
+.chat-send.mat-mdc-button-base {
+  height: 32px;
+  padding: 5px 12px;
+  border: 1px solid var(--me-surface-variant-color);
+  border-radius: 5px;
+  font: 500 12px/20px var(--me-font-family);
+  background: var(--me-secondary-container-color);
+  color: var(--me-on-secondary-container-color);
+  cursor: pointer;
+}
+.chat-send.mat-mdc-button-base:disabled {
+  background: var(--me-surface-container-low-color);
+  color: var(--on2);
+  cursor: default;
+  opacity: 0.65;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .chat-composer textarea,
+  .debug-primary {
+    animation: chat-appear 140ms ease-out;
+  }
+  @keyframes chat-appear {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+}
+.chat-reading {
+  background-origin: padding-box;
+  background-clip: padding-box;
+}
+.composer.chat-composer {
+  min-height: 102px;
+}
+.chat-composer textarea {
+  min-height: 28px;
+  margin: 4px 0 8px;
+}
+.chat-composer .send-notice {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.chat-send {
+  min-width: 76px;
+  margin-left: auto;
+}
+
+.chat-warning {
+  position: absolute;
+  bottom: 140px;
+  left: 24px;
+  right: 24px;
+  z-index: 5;
+  padding: 8px;
+  background: var(--me-error-container-color);
+  color: var(--me-error-text-color);
+}
+
+.debug-composer button {
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.debug-composer token-query-control {
+  flex: none;
+}
+.debug-composer .find-tools {
+  min-width: 0;
+  flex-wrap: wrap;
+}
+@media (max-width: 650px) {
+  .debug-composer {
+    box-sizing: border-box;
+  }
+  .debug-composer .find-tools {
+    width: 100%;
+  }
+  .debug-composer .find-tools token-query-control {
+    flex-basis: 100%;
+  }
+  .reading:not(.chat-reading) {
+    padding-bottom: 280px;
+  }
+  .token-inspector {
+    bottom: 250px;
+  }
+}
+
+.debug-turn {
+  grid-template-rows: repeat(4, auto);
+}
+.debug-turn > article {
+  display: grid;
+  grid-template-rows: subgrid;
+  grid-row: span 4;
+}
+.phase-actions {
+  min-width: 0;
+}
+.phase-actions .graph-link {
+  max-width: 100%;
+}
+
+// A single recorded token can contain a long unbroken string. Keep it selectable within its column.
+.tokens button {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  text-align: left;
+  vertical-align: top;
+}
+
+.composer.chat-composer {
+  bottom: 24px;
+  max-width: calc(100% - 48px);
+}
+
+.generation-status {
+  font: 12px/20px var(--me-font-family);
+  color: var(--on2);
+}
+.streaming::after {
+  content: '';
+  display: inline-block;
+  width: 2px;
+  height: 1em;
+  margin-left: 3px;
+  background: currentColor;
+  vertical-align: text-bottom;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .streaming::after {
+    animation: chat-caret 1s step-end infinite;
+  }
+  @keyframes chat-caret {
+    50% {
+      opacity: 0;
+    }
+  }
+}
+
+.runtime-error {
+  position: absolute;
+  bottom: var(--composer-clearance, 140px);
+  left: 24px;
+  right: 24px;
+  z-index: 5;
+  margin: 0;
+  padding: 8px 12px;
+  border-radius: 4px;
+  background: var(--me-error-container-color);
+  color: var(--me-error-text-color);
+  font: 13px/20px var(--me-font-family);
+}
+
+.chat-composer {
+  @include controls.text-actions;
+}
+
+.chat-send.mat-mdc-button-base {
+  letter-spacing: normal;
+  box-shadow: none;
+}
+.chat-send ::ng-deep .mat-mdc-button-touch-target {
+  height: 32px;
+}
+
+// Avoid repacking a long capture on every intermediate width of the sidebar animation.
+.reading.virtual-reading {
+  transition: none;
+}
+
+.composer-bottom {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-width: 0;
+}
+.composer.debug-composer {
+  width: 760px;
+  max-width: calc(100% - var(--inspector-width) - 48px);
+  left: calc((100% - var(--inspector-width)) / 2);
+  min-height: 102px;
+  display: block;
+  padding: 0;
+  background: var(--debug-dock-bg);
+  border-color: var(--debug-dock-border);
+  box-shadow:
+    0 10px 30px #23283029,
+    0 3px 8px #2328301a;
+}
+.debug-primary {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 50px;
+  padding: 0 12px;
+  box-sizing: border-box;
+}
+.alignment-field {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: none;
+  padding-right: 8px;
+  border-right: 1px solid var(--debug-dock-divider);
+  font: 12px/20px var(--me-font-family);
+}
+.alignment-field > span {
+  font: 700 12px/20px var(--me-font-family);
+}
+.alignment-field config-picker {
+  width: 82px;
+}
+.alignment-field config-picker ::ng-deep :host > button,
+.alignment-field
+  config-picker
+  ::ng-deep
+  button[aria-label='Comparison alignment'] {
+  font: 12px/14px var(--me-font-family);
+  padding: 2px 4px;
+}
+.debug-primary token-query-control {
+  flex: 1;
+  min-width: 0;
+}
+.debug-primary .find-tools {
+  flex: none;
+  flex-wrap: nowrap;
+  gap: 0;
+}
+.debug-primary .bookmark-current {
+  width: 32px;
+  height: 32px;
+  padding: 6px;
+}
+.debug-primary .bookmark-current mat-icon {
+  font-size: 20px;
+  width: 20px;
+  height: 20px;
+}
+.debug-composer .composer-bottom {
+  position: relative;
+  height: 50px;
+  padding: 7px 12px 8px;
+  box-sizing: border-box;
+  border-top: 1px solid transparent;
+}
+.debug-composer .composer-bottom::before {
+  content: '';
+  position: absolute;
+  top: -1px;
+  left: 12px;
+  right: 12px;
+  height: 1px;
+  background: var(--debug-dock-divider);
+  pointer-events: none;
+}
+.display-group {
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
+  flex: 0 0 37px;
+  width: 37px;
+  height: 30px;
+  padding-left: 8px;
+  margin-left: 4px;
+  border-left: 1px solid var(--debug-dock-divider);
+}
+// Preserve the reference divider and icon center around the shared 36px Material hit area.
+.display-group token-display {
+  margin-left: -4px;
+}
+.applied-color {
+  margin-left: auto;
+  font: 12px/16px var(--me-font-family);
+  white-space: nowrap;
+}
+.mismatch-legend {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  white-space: nowrap;
+}
+.mismatch-legend span {
+  font: 11px/16px var(--me-font-family);
+}
+.legend-ref {
+  background: var(--b0);
+  padding: 1px 4px;
+  border-radius: 2px;
+}
+.legend-target {
+  background: var(--b4);
+  padding: 1px 4px;
+  border-radius: 2px;
+}
+@media (max-width: 1000px) {
+  .composer.debug-composer {
+    left: 50%;
+    max-width: calc(100% - 24px);
+  }
+  .debug-primary {
+    flex-wrap: wrap;
+    padding: 8px 12px;
+    row-gap: 8px;
+  }
+  .debug-composer .composer-bottom {
+    height: auto;
+    min-height: 50px;
+    flex-wrap: wrap;
+  }
+  .applied-color {
+    margin-left: auto;
+  }
+  .reading:not(.chat-reading) {
+    padding-bottom: 200px;
+  }
+}
+@media (max-width: 650px) {
+  .debug-primary token-query-control {
+    flex: 1 1 150px;
+  }
+  .debug-primary .find-tools {
+    width: auto;
+  }
+  .mismatch-legend {
+    margin-left: auto;
+  }
+  .debug-composer .composer-bottom {
+    gap: 8px;
+  }
+  .applied-color {
+    font-size: 11px;
+  }
+  .reading:not(.chat-reading) {
+    padding-bottom: 240px;
+  }
+}
+
+:host.demoRunning textarea::placeholder {
+  color: transparent;
+}
+.alignment-field
+  config-picker
+  ::ng-deep
+  button[aria-label='Comparison alignment'] {
+  background: transparent;
+  border-color: var(--me-outline-variant-color);
+}
+
+.debug-node {
+  position: relative;
+  padding-top: 40px;
+}
+.nodeTitleTrack {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+}
+.debug-node > .node-reveal {
+  position: relative;
+  z-index: 0;
+}
+.nodeTitle {
+  height: 40px;
+  box-sizing: border-box;
+  margin: 0 12px;
+  pointer-events: auto;
+  position: sticky;
+  top: 60px;
+}
+.nodeTitle.isPinned {
+  background: var(--pinned-node-surface, var(--surface));
+  border-bottom: 1px solid var(--outline);
+}
+.debug-node[data-node-selected] {
+  outline: 1px solid var(--pri);
+  outline-offset: -1px;
+}
+.debug-node:focus-visible {
+  outline: 2px solid var(--pri);
+  outline-offset: 2px;
+}
+.debug-node[data-node-selected] > .nodeTitleTrack > .nodeTitle.isPinned {
+  border-color: var(--pri);
+}
+.captured-input {
+  padding: 8px 4px 16px;
+}
+.input-segment {
+  padding-left: 16px;
+}
+.input-segment strong {
+  font-size: 12px;
+  color: var(--on2);
+}
+.input-segment p {
+  margin-top: 0;
+}
+.input-rows {
+  display: grid;
+  gap: 6px;
+}
+.input-context-head {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 2px;
+}
+.input-context-note {
+  font: 10px/16px var(--me-font-family);
+  color: var(--on2);
+  border-bottom: 1px dotted var(--outline);
+  margin-bottom: -4px;
+}
+.input-context-note[data-history-status='differs'] {
+  color: var(--me-color-error, #c5221f);
+}
+.input-row {
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr);
+  gap: 8px;
+  align-items: start;
+}
+.input-row mat-icon {
+  font-size: 16px;
+  width: 16px;
+  height: 16px;
+  margin-top: 4px;
+  color: var(--on2);
+}
+.input-tokens {
+  min-width: 0;
+  color: var(--on1);
+}
+// A Prefill row is three lines of the same token element: the opening markers, the message
+// text and the closing markers. Tokens sit next to each other exactly as in the admitted
+// input; markers differ only in color. Geometry, hover, selection and outlines are the Decode
+// token's, so both stages read and measure alike.
+.input-text,
+.marker-row {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font: 14px/24px var(--me-font-family);
+  line-height: 28px;
+}
+.input-token {
+  display: inline-block;
+  border-radius: 2px;
+  white-space: pre-wrap;
+  @include token.token-type;
+}
+.marker-token {
+  color: light-dark(#8293a8, #9aaec5);
+}
+.input-tokens .mismatch {
+  background: var(--b0);
+}
+.target .input-tokens .mismatch {
+  background: var(--b4);
+}
+.input-tokens .missing,
+.target .input-tokens .missing {
+  color: var(--on2);
+  text-align: center;
+  padding: 0 4px;
+  background: $gap-hatch;
+}
+.input-token[role='button'] {
+  cursor: pointer;
+}
+.input-token:hover:not(.selected-token),
+.input-token.pair-hover:not(.selected-token) {
+  @include token.token-pair-hover;
+}
+.input-token.hover-origin:not(.selected-token) {
+  @include token.token-pair-hover(20%);
+}
+.input-token.selected-token,
+.input-token:focus-visible {
+  @include token.token-selection;
+}
+.input-tokens.boundaries .input-token {
+  @include token.token-outline;
+}
+.template-input {
+  display: block;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  margin-left: 16px;
+  color: light-dark(#8293a8, #9aaec5);
+  font: 14px/24px var(--me-font-family);
+}
+.nodeTitleControls,
+.nodeJumpControls {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+.nodeJumpControls[hidden] {
+  display: none;
+}
+.nodeJumpControls button {
+  border: 0;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 28px;
+  padding: 0;
+  color: var(--on2);
+}
+.nodeJumpControls button:hover {
+  background: var(--button-hover);
+}
+.nodeJumpControls button:disabled {
+  opacity: 0.3;
+}
+.nodeJumpControls mat-icon {
+  font-size: 18px;
+  width: 18px;
+  height: 18px;
+}
+
+@media (max-width: 650px) {
+  .column-headings,
+  .turn {
+    min-width: 680px;
+  }
+  .reading {
+    background: var(--bg);
+  }
+  .turn article.target {
+    background: var(--surface);
+  }
+  .chat-reading .turn article {
+    padding: 12px 16px 20px;
+  }
+  .chat-reading .column-headings header {
+    padding: 8px 16px;
+  }
+}
+
+.read-full.mat-mdc-button {
+  display: block;
+  height: 28px;
+  font: 12px/20px var(--me-font-family);
+  letter-spacing: normal;
+  padding: 0 4px;
+  margin: 4px 0;
+}
+
+.chat-composer .composer-bottom {
+  flex-wrap: wrap;
+}
+
+.tokens button.template-token {
+  display: block;
+  width: max-content;
+  max-width: 100%;
+  margin: 4px 0 0;
+  padding: 0 4px;
+  border-radius: 4px;
+  font: 400 14px/24px var(--me-font-family);
+  color: light-dark(#8293a8, #9aaec5);
+}
+
+.token-inspector {
+  padding: 0;
+  @include info.metadata;
+}
+
+// Model Explorer info_panel resizer and hide-toggle geometry.
+.panel-toggle.mat-mdc-button-base {
+  top: auto;
+  bottom: 2px;
+  width: 24px;
+  height: 26px;
+  padding: 0;
+  border: 1px solid var(--me-outline-variant-color);
+  border-right: 0;
+  border-radius: 99px 0 0 99px;
+  box-sizing: border-box;
+  background: var(--me-surface-container-lowest-color);
+  color: var(--me-on-surface-variant-color);
+  z-index: 3;
+}
+.panel-toggle.mat-mdc-button-base:hover {
+  background: var(--me-surface-container-low-color);
+}
+.panel-toggle mat-icon {
+  width: 24px;
+  height: 24px;
+  font-size: 24px;
+}
+.panel-toggle ::ng-deep .mat-mdc-button-touch-target {
+  display: none;
+}
+.resize-handle {
+  left: auto;
+  width: 6px;
+  z-index: 3;
+  background: transparent;
+  cursor: ew-resize;
+}
+.resize-handle:hover,
+.resize-handle:focus-visible {
+  background: var(--me-surface-container-low-color);
+}
+.resize-handle:focus-visible {
+  outline: 1px solid var(--me-primary-color);
+  outline-offset: -1px;
+}
+
+.token-inspector .info-key {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+// The selected pair's tokens read like the conversation tokens, mismatch colors included.
+.token-inspector .info-token {
+  display: inline-block;
+  max-width: 100%;
+  padding: 0 4px;
+  border-radius: 2px;
+  font: 12px/18px var(--me-font-family);
+  white-space: pre;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  vertical-align: top;
+}
+.token-inspector .info-token.mismatch.ref {
+  background: var(--b0);
+}
+.token-inspector .info-token.mismatch.target {
+  background: var(--b4);
+}
+.token-inspector .info-token.missing {
+  color: var(--me-on-surface-variant-color);
+}
+.token-inspector {
+  @include info.comparison-grid;
+}
+// Model Explorer metadata rows: a fixed key column, values beside it, one divider per section.
+.token-inspector table:not(:has(colgroup)) tr > :first-child {
+  width: 104px;
+}
+.token-inspector table:not(:has(colgroup)) tr > :nth-child(2):not([colspan]),
+.token-inspector table:not(:has(colgroup)) tr > :nth-child(3) {
+  width: auto;
+}
+.token-inspector {
+  @include info.panel-chrome;
+  @include info.section-dividers;
+}
+.token-inspector th[mattooltip] {
+  cursor: help;
+}
+.token-inspector button.property-help {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 18px;
+  padding: 0;
+  background: transparent;
+  color: var(--me-on-surface-variant-color);
+}
+.property-help mat-icon {
+  font-size: 12px;
+  width: 12px;
+  height: 12px;
+}
+.property-help:focus-visible {
+  outline: 1px solid var(--me-primary-color);
+}
+
+.reading:not(.chat-reading) {
+  scrollbar-width: none;
+  scrollbar-gutter: auto;
+}
+.reading:not(.chat-reading)::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+.reading:not(.chat-reading) .column-headings header {
+  box-sizing: border-box;
+  height: 60px;
+  min-height: 60px;
+  padding: 8px 24px;
+  justify-content: center;
+  gap: 0;
+}
+.column-headings .runtime-name {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.reading:not(.chat-reading) .column-headings strong {
+  font: 500 14px/20px var(--me-font-family);
+}
+.reading:not(.chat-reading) .column-headings span {
+  font: 12px/20px var(--me-font-family);
+}
+.reading:not(.chat-reading) .column-headings .target-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: light-dark(#85621b, #d6b66c);
+  font: 500 14px/20px var(--me-font-family);
+}
+.target-state::before {
+  content: '';
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+// Candidate flow node geometry, scoped to Token Diff.
+:host {
+  --node-pinned-height: 40px;
+  --reference-surface: light-dark(#fafbfd, #26292e);
+  --reference-message: light-dark(#f1f3f6, #30343b);
+  --target-debug-surface: light-dark(#fffefa, #292824);
+}
+.reading:not(.chat-reading) {
+  background: linear-gradient(
+    to right,
+    var(--reference-surface) 50%,
+    var(--target-debug-surface) 50%
+  );
+}
+.target-frame {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: calc((100% - var(--inspector-width, 0px)) / 2);
+  right: var(--inspector-width, 0px);
+  border: 1px solid light-dark(#d8d5cd, #4a4741);
+  border-radius: 5px 5px 0 0;
+  pointer-events: none;
+  // Over the sticky column headings, under the details panel's resize handle and the toolbar.
+  z-index: 4;
+}
+.reading:not(.chat-reading) .column-headings header:first-child {
+  background: var(--reference-surface);
+}
+.reading:not(.chat-reading) .column-headings header:last-child {
+  background: var(--target-debug-surface);
+}
+.debug-turn > article {
+  padding: 0 24px 28px;
+}
+.debug-node {
+  margin: 0;
+  padding: 48px 16px 16px;
+  border: 0;
+  border-radius: 6px;
+  box-shadow: inset 0 0 0 1px var(--outline);
+}
+.debug-node.inputNode {
+  background: var(--reference-message);
+}
+.debug-node .captured-input {
+  padding: 0;
+}
+.debug-node .input-segment {
+  padding-left: 0;
+}
+.debug-node .input-segment strong {
+  font: 500 12px/18px var(--me-font-family);
+  color: var(--on1);
+}
+.debug-node .input-segment p {
+  font: 14px/24px var(--me-font-family);
+  margin: 4px 0 0;
+}
+.debug-node .template-input {
+  margin-left: 0;
+}
+.debug-node .user-message {
+  padding: 0;
+  border-radius: 0;
+  background: transparent;
+}
+.debug-node .response {
+  padding: 0;
+}
+.debug-node .nodeTitle {
+  font: 500 14px/20px var(--me-font-family);
+  color: var(--on1);
+}
+.debug-node .nodeTitle:not(.isPinned) {
+  position: absolute;
+  top: 12px;
+  left: 16px;
+  right: 16px;
+  margin: 0;
+  height: 28px;
+  padding: 0;
+}
+.debug-node .nodeTitle.isPinned {
+  height: var(--node-pinned-height);
+  top: 60px;
+  margin: 0;
+  padding: 0 15px;
+  border: 1px solid var(--outline);
+  border-bottom: 0;
+  border-radius: 6px 6px 0 0;
+  box-shadow: inset 0 -1px var(--outline);
+}
+.debug-node .nodeTitleControls button.mat-mdc-button-base {
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border-radius: 3px;
+}
+.debug-node .nodeTitleControls button mat-icon {
+  width: 17px;
+  height: 17px;
+  font-size: 17px;
+}
+.debug-node .nodeTitleControls button ::ng-deep .mat-mdc-button-touch-target {
+  display: none;
+}
+
+.reading:not(.chat-reading) .tokens {
+  font: 14px/26px var(--me-font-family);
+  margin-top: 4px;
+}
+.reading:not(.chat-reading) .tokens button {
+  @include token.token-type;
+}
+.reading:not(.chat-reading) .tokens button.selected-token {
+  @include token.token-selection;
+}
+.reading:not(.chat-reading) [data-runtime='ref'] .tokens button.selected-token {
+  outline-width: 1px;
+}
+.generated-phase {
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr);
+  gap: 8px;
+  align-items: start;
+}
+.generated-phase .phase-icon {
+  font-size: 16px;
+  width: 16px;
+  height: 16px;
+  margin-top: 6px;
+  color: var(--on2);
+}
+.generated-phase .phase-body {
+  min-width: 0;
+}
+.generated-phase .phase-body .tokens {
+  margin-top: 0;
+}
+.generated-phase .phase-body .captured-text-fallback {
+  margin-top: 0;
+}
+.generated-phase + .generated-phase {
+  margin-top: 12px;
+}
+.generated-phase .captured-text-fallback {
+  font: 14px/24px var(--me-font-family);
+  margin-top: 4px;
+}
+.reading:not(.chat-reading),
+.debug-composer {
+  @include token.semantic-colors;
+}
+.composer.debug-composer {
+  @include controls.debug-dock-surface;
+}
+// Keep the Model Explorer side-by-side inspector through tablet widths.
+@media (min-width: 651px) and (max-width: 1000px) {
+  .with-inspector {
+    margin-right: var(--inspector-width, 370px);
+  }
+  .token-inspector {
+    top: 0;
+    bottom: 0;
+    max-height: none;
+    max-width: none;
+    box-shadow: none;
+  }
+  .composer.debug-composer {
+    left: calc((100% - var(--inspector-width)) / 2);
+    max-width: calc(100% - var(--inspector-width) - 48px);
+  }
+}
+// Horizontal reading on narrow screens needs a separate scrollbar gutter:
+// the overlay track otherwise intercepts tokens at the visible right edge.
+@media (max-width: 650px) {
+  .reading,
+  .reading.with-inspector {
+    margin-right: 12px;
+  }
+}
+
+.reading:not(.chat-reading) .tokens.boundaries button {
+  @include token.token-outline;
+}
+
+/* Compact node contract inherited from candidates nodeContextPreview. */
+.nodeTitleMain {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.nodeTitleLabel {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.nodeCompactStatus {
+  flex: none;
+  color: var(--on2);
+  font: 400 12px/18px var(--me-font-family);
+}
+.debug-node.node-compact {
+  box-sizing: border-box;
+  height: 84px;
+  min-height: 84px;
+  overflow: hidden;
+  padding-top: 84px;
+}
+.debug-node.node-compact > .node-reveal {
+  display: none;
+}
+.debug-node.node-compact .nodeTitle {
+  position: absolute !important;
+  top: 12px !important;
+  left: 16px !important;
+  right: 16px !important;
+  height: 28px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  background: transparent !important;
+}
+.nodeContextPreview {
+  position: absolute;
+  left: 16px;
+  right: 48px;
+  top: 40px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  height: 28px;
+  color: var(--on2);
+  font: 400 14px/24px var(--me-font-family);
+}
+.nodeContextPreview > mat-icon {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  font-size: 16px;
+}
+.nodeContextText,
+.nodePreviewTokens {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+}
+.nodePreviewToken,
+.nodePreviewReadonly {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  height: 24px;
+  padding: 0 1px;
+  border: 0;
+  border-radius: 2px;
+  background: transparent;
+  font: 400 14px/24px var(--me-font-family);
+  color: var(--on2);
+  white-space: pre;
+}
+.nodePreviewToken:hover {
+  background: var(--me-surface-container-high);
+  color: var(--on1);
+}
+.nodePreviewToken.changed {
+  color: var(--pri);
+}
+.nodePreviewToken.selected {
+  outline: 1px solid var(--pri);
+  background: var(--pri-c);
+  color: var(--pri);
+}
+.nodePreviewEllipsis {
+  padding: 0 3px;
+}
+.nodeContextCount {
+  flex: none;
+  padding-left: 8px;
+  border-left: 1px solid var(--outline);
+  font: 400 12px/20px var(--me-font-family);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* The demo's paired Turn boundary uses the same two-column reading grid. */
+.turn-boundary {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  margin: 8px 0 16px;
+  pointer-events: none;
+}
+.turn-boundary-lane {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  margin: 0 24px;
+  color: color-mix(in srgb, var(--on2) 70%, transparent);
+  font: 400 11px/18px var(--me-font-family);
+  white-space: nowrap;
+}
+.turn-boundary-lane::before,
+.turn-boundary-lane::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(
+    to right,
+    transparent,
+    color-mix(in srgb, var(--on2) 30%, transparent)
+  );
+}
+.turn-boundary-lane::after {
+  transform: scaleX(-1);
+}
+.turn-boundary-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+}
+.turn-boundary-label mat-icon {
+  width: 13px;
+  height: 13px;
+  font-size: 13px;
+  line-height: 13px;
+  opacity: 0.78;
+  flex: none;
+}
+.turn-boundary-destination {
+  color: color-mix(in srgb, var(--on1) 58%, var(--on2));
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Exact stage action order and elbow geometry from the candidates flow. */
+.debug-turn {
+  grid-template-rows: repeat(5, auto);
+}
+.debug-turn > article {
+  grid-row: span 5;
+}
+.phase-actions {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 4px 0 0;
+  padding: 0 0 0 26px;
+  min-height: 30px;
+  box-sizing: border-box;
+  flex-wrap: wrap;
+}
+.phase-actions[data-stage='start'] {
+  margin: 0 0 4px;
+}
+.phase-actions[data-stage='prefill'] {
+  margin: 4px 0 24px;
+}
+.phase-actions .graph-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  padding: 6px 8px;
+  min-height: 30px;
+  box-sizing: border-box;
+  border: 0;
+  border-radius: 4px;
+  font: 500 12px/18px var(--me-font-family);
+  white-space: nowrap;
+}
+.phase-actions.stageActions::before {
+  content: '';
+  position: absolute;
+  left: 16px;
+  top: -4px;
+  width: 10px;
+  height: 19px;
+  border-left: 1px solid var(--pri);
+  border-bottom: 1px solid var(--pri);
+  border-bottom-left-radius: 3px;
+  pointer-events: none;
+}
+.phase-actions.stageActions[data-stage='start']::before {
+  top: 15px;
+  height: 19px;
+  border-bottom: 0;
+  border-top: 1px solid var(--pri);
+  border-radius: 3px 0 0 0;
+}
+@media (max-width: 1200px) {
+  .phase-actions .graph-link {
+    padding-left: 6px;
+    padding-right: 6px;
+    gap: 4px;
+  }
+}
+
+// Conversation Info's turn index: each cell opens its stage. A differing cell reads in the
+// regular text color, an unremarkable one stays muted, so the eye lands on what changed.
+.turn-index .index-link {
+  margin: 0 0 0 -4px;
+  border: 0;
+  border-radius: 3px;
+  padding: 1px 4px;
+  background: transparent;
+  color: var(--me-on-surface-variant-color);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.turn-index .index-link.differs {
+  color: var(--me-on-surface-color);
+  font-weight: 500;
+}
+.turn-index .index-link:hover,
+.turn-index .index-link:focus-visible {
+  background: var(--me-surface-container-high);
+  color: var(--me-primary-color);
+}
+.info-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  // The link's own 6px padding completes the indent, so its icon sits under the title.
+  margin: 0 12px 0 calc(var(--info-indent, 12px) - 6px);
+}
+.info-actions .graph-link {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  min-height: 24px;
+  box-sizing: border-box;
+  justify-content: flex-start;
+  margin: 0;
+  padding: 3px 4px;
+  border: 0;
+  border-radius: 3px;
+  background: transparent;
+  color: var(--pri);
+  font: 400 12px/18px var(--me-font-family);
+  text-align: left;
+}
+.info-actions .graph-link:not(:disabled):hover {
+  background: var(--me-surface-container-high);
+}
+
+.bookmark-notice {
+  position: absolute;
+  bottom: 0;
+  left: 12px;
+  font: 12px/18px var(--me-font-family);
+  color: var(--me-on-surface-variant-color);
+  z-index: 3;
+  background: var(--surface);
+}
+
+@include token.numeric-colors;
+// Runtime column headings must occlude node title tracks and in-flow charts.
+.column-headings {
+  z-index: 3;
+}
+
+.analysis-error {
+  padding: 8px 12px;
+  font: 12px/18px var(--me-font-family);
+}
+.analysis-error p {
+  margin: 0;
+  line-height: 18px;
+}
+.analysis-error button {
+  min-width: 0;
+  height: 24px;
+  padding: 0 4px;
+  font: 12px/18px var(--me-font-family);
+  color: var(--me-primary-color);
+}

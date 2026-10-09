@@ -1,0 +1,107 @@
+<!--
+ Copyright 2026 The AI Edge Model Explorer Authors.
+
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+ ==============================================================================
+-->
+<ng-template #actions>
+  <explorer-info-section label="Actions" [expanded]="true"
+    ><div class="info-actions">
+      @if (inspection.mapping()) {
+        <button type="button" [disabled]="!inspection.canSave()" (click)="inspection.saveMapping()">
+          <mat-icon aria-hidden="true">save</mat-icon
+          >{{ inspection.saving() ? 'Saving…' : 'Save mapping' }}
+        </button>
+        <button type="button" [disabled]="inspection.saving()" (click)="inspection.cancelMapping()">
+          <mat-icon aria-hidden="true">close</mat-icon>Cancel
+        </button>
+      } @else {
+        <button type="button" [disabled]="!inspection.canMap()" (click)="inspection.beginMapping()">
+          <mat-icon aria-hidden="true">link</mat-icon>Map tensors
+        </button>
+        @if (inspection.details()?.saved?.status !== 'not_saved' && !inspection.operation()) {
+          <button
+            type="button"
+            [disabled]="inspection.saving()"
+            (click)="inspection.removeMapping()"
+          >
+            <mat-icon aria-hidden="true">link_off</mat-icon>Remove mapping
+          </button>
+        }
+      }
+    </div></explorer-info-section
+  >
+</ng-template>
+<div class="details-content">
+  @if (!inspection.context()) {
+    <p class="info-note">
+      Select a tensor pair, tensor, or operation to inspect its recorded evidence.
+    </p>
+  } @else if (inspection.loading()) {
+    <p class="info-note" role="status">Loading details…</p>
+  } @else if (inspection.error()) {
+    <p class="info-note" role="alert">{{ inspection.error() }}</p>
+    <button mat-button (click)="retry()">Retry</button>
+  } @else {
+    @if (inspection.comparisonError()) {
+      <p class="info-note" role="alert">{{ inspection.comparisonError() }}</p>
+    }
+    @if (inspection.message()) {
+      <p class="info-note" role="status">{{ inspection.message() }}</p>
+    }
+    @if (!sections().length) {
+      <ng-container [ngTemplateOutlet]="actions" />
+    }
+    @for (section of sections(); track section.id; let first = $first) {
+      <explorer-info-section [label]="section.title" [expanded]="section.expanded">
+        <table [class.comparison]="section.comparison" [attr.aria-label]="section.title">
+          @if (section.comparison) {
+            <thead>
+              <tr>
+                <th>Property</th>
+                <th>Reference</th>
+                <th>Target</th>
+              </tr>
+            </thead>
+          }
+          <tbody>
+            @for (row of section.rows; track $index) {
+              <tr [class.active-metric]="row.metric === state.metric()">
+                <th><explorer-info-value [label]="row.label + ' label'" [value]="row.label" /></th>
+                @if (section.comparison) {
+                  <td>
+                    <explorer-info-value
+                      [label]="'Reference ' + row.label"
+                      [value]="text(row.reference)"
+                    />
+                  </td>
+                  <td>
+                    <explorer-info-value
+                      [label]="'Target ' + row.label"
+                      [value]="text(row.target)"
+                    />
+                  </td>
+                } @else {
+                  <td><explorer-info-value [label]="row.label" [value]="text(row.value)" /></td>
+                }
+              </tr>
+            }
+          </tbody>
+        </table>
+      </explorer-info-section>
+      @if (first) {
+        <ng-container [ngTemplateOutlet]="actions" />
+      }
+    }
+  }
+</div>

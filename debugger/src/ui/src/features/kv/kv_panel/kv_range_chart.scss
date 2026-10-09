@@ -1,0 +1,155 @@
+/**
+ * @license
+ * Copyright 2026 The AI Edge Model Explorer Authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ==============================================================================
+ */
+
+:host {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  padding: 0;
+  box-sizing: border-box;
+  color: var(--kv-text, var(--me-on-surface-color));
+  background: var(--kv-canvas, var(--me-surface-container-low-color));
+  font: 400 12px/20px var(--me-font-family);
+}
+.chart-viewport {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+}
+.range-chart {
+  display: block;
+  max-width: none;
+  margin: 0;
+  overflow: hidden;
+  user-select: none;
+  touch-action: pan-y;
+}
+.range-chart:focus-visible {
+  outline: 2px solid var(--kv-accent, var(--me-primary-color));
+  outline-offset: -2px;
+  border-radius: 3px;
+}
+.range-chart[aria-disabled='true'] {
+  cursor: progress;
+}
+.range-chart[aria-disabled='true'] .heat-cell,
+.range-chart[aria-disabled='true'] .column-target,
+.range-chart[aria-disabled='true'] .trend-hit,
+.range-chart[aria-disabled='true'] .trend-point {
+  cursor: progress;
+}
+.axis-label,
+.position-tick {
+  fill: var(--kv-muted, var(--me-on-surface-variant-color));
+  font: 11px var(--me-font-family);
+}
+.position-tick {
+  font: 10px var(--mono, monospace);
+}
+.column-target,
+.trend-hit {
+  fill: transparent;
+  cursor: pointer;
+}
+.column-target:hover,
+.trend-hit:hover {
+  fill: var(--kv-accent, var(--me-primary-color));
+  fill-opacity: 0.08;
+}
+.heat-cell {
+  cursor: pointer;
+  stroke: none;
+  shape-rendering: crispEdges;
+}
+.heat-cell:hover {
+  stroke: var(--kv-text, var(--me-on-surface-color));
+  stroke-width: 1;
+}
+.layer-boundary {
+  stroke: var(--kv-canvas, var(--me-surface-container-low-color));
+  stroke-width: 1;
+  pointer-events: none;
+  shape-rendering: crispEdges;
+}
+.dimmed {
+  opacity: 0.23;
+}
+.match-dot {
+  fill: var(--kv-text, var(--me-on-surface-color));
+  pointer-events: none;
+}
+.selection-underlay,
+.selection {
+  fill: none;
+  pointer-events: none;
+  vector-effect: non-scaling-stroke;
+}
+.selection-underlay {
+  stroke: var(--kv-canvas, var(--me-surface-container-low-color));
+  stroke-width: 3px;
+}
+.selection {
+  stroke: var(--kv-text, var(--me-on-surface-color));
+  stroke-width: 1.5px;
+}
+.grid-line {
+  stroke: var(--kv-grid, var(--me-outline-hairline-color));
+  stroke-width: 1px;
+  pointer-events: none;
+}
+.trend-line {
+  fill: none;
+  stroke: var(--kv-accent, var(--me-primary-color));
+  stroke-width: 1.8px;
+  vector-effect: non-scaling-stroke;
+  pointer-events: none;
+}
+.trend-point {
+  cursor: pointer;
+  stroke: var(--kv-canvas, var(--me-surface-container-low-color));
+  stroke-width: 1.5;
+}
+.trend-point:hover,
+.trend-point.current {
+  stroke: var(--kv-text, var(--me-on-surface-color));
+  stroke-width: 2.5;
+}
+.brush {
+  fill: var(--kv-accent, var(--me-primary-color));
+  fill-opacity: 0.16;
+  stroke: var(--kv-accent, var(--me-primary-color));
+  stroke-width: 1;
+  pointer-events: none;
+}
+.brushing {
+  cursor: crosshair;
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}

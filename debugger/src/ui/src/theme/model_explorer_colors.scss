@@ -1,0 +1,55 @@
+/**
+ * @license
+ * Copyright 2026 The AI Edge Model Explorer Authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ==============================================================================
+ */
+
+// Written once: light-dark() picks the value from the element's color-scheme, which
+// _tokens.scss derives from data-theme.
+@mixin colors {
+  --me-primary-color: light-dark(#0b57d0, #a8c7fa);
+  --me-on-primary-color: light-dark(#fff, #062e6f);
+  --me-surface-container-highest-color: light-dark(#dde3ea, #333537);
+  --me-surface-container-high-color: light-dark(#e9eef6, #282a2c);
+  --me-surface-container-color: light-dark(#f0f4f9, #1e1f20);
+  --me-surface-container-low-color: light-dark(#f8fafd, #1b1b1b);
+  --me-surface-container-lowest-color: light-dark(#fff, #0e0e0e);
+  --me-on-surface-color: light-dark(#1f1f1f, #e3e3e3);
+  --me-on-surface-variant-color: light-dark(#444746, #c4c7c5);
+  --me-on-surface-low-color: light-dark(#999, #888);
+  --me-surface-color: light-dark(#fff, #131314);
+  --me-runtime-field-color: light-dark(#fff, #1f1f1f);
+  --me-surface-variant-color: light-dark(#e1e3e1, #444746);
+  --me-primary-container-color: light-dark(#d3e3fd, #0842a0);
+  --me-on-primary-container-color: light-dark(#0842a0, #d3e3fd);
+  --me-secondary-container-color: light-dark(#c2e7ff, #004a77);
+  --me-on-secondary-container-color: light-dark(#004a77, #c2e7ff);
+  --me-outline-color: light-dark(#747775, #8e918f);
+  --me-outline-variant-color: light-dark(#c4c7c5, #444746);
+  --me-outline-hairline-color: light-dark(#dadce0, #3c4043);
+  --me-link-color: light-dark(#0b57d0, #a8c7fa);
+  --me-disabled-button-bg-color: light-dark(#1f1f1f1f, #bebebe1f);
+  --me-disabled-button-color: light-dark(#1f1f1f61, #767676);
+  --me-warning-container-color: light-dark(#fef7e0, #554c33);
+  --me-warning-text-color: light-dark(#e37400, #fcc934);
+  --me-error-container-color: light-dark(#fce8e6, #523a3b);
+  --me-error-text-color: light-dark(#d93025, #ee675c);
+  --me-bubble-shadow: light-dark(
+    0 1px 2px 0 rgba(60, 64, 67, 0.3),
+    0 1px 3px 1px rgba(60, 64, 67, 0.15),
+    0 1px 2px 0 rgba(0, 0, 0, 0.3),
+    0 1px 3px 1px rgba(0, 0, 0, 0.15)
+  );
+}

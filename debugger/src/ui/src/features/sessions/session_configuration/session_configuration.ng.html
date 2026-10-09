@@ -1,0 +1,139 @@
+<!--
+ Copyright 2026 The AI Edge Model Explorer Authors.
+
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+ ==============================================================================
+-->
+<main class="configurationSheet" [class.embedded]="embedded()">
+  @if (!embedded()) {
+    <header class="dialogHead">
+      <h1 id="configuration-title" tabindex="-1" cdkFocusInitial>Debug Session Configuration</h1>
+    </header>
+  }
+  <div class="configurationScroll">
+    <div class="configurationIdentity">
+      <dl>
+        <dt>Name</dt>
+        <dd>{{ session.name }}</dd>
+        <dt>Model</dt>
+        <dd>{{ session.model }}</dd>
+        <dt>ID</dt>
+        <dd>{{ session.id }}</dd>
+        <dt>Created</dt>
+        <dd>
+          {{
+            session.created_at ? (session.created_at | date: 'yyyy-MM-dd HH:mm') : 'Not captured'
+          }}
+        </dd>
+        <dt>Status</dt>
+        <dd>
+          <span
+            class="status"
+            tabindex="0"
+            [matTooltip]="session.execution?.error || session.notice || 'Saved capture'"
+            >{{ statusLabel(session) }}</span
+          >
+        </dd>
+      </dl>
+    </div>
+    <table class="configurationReadTable">
+      <thead>
+        <tr>
+          <th scope="col"><span class="sr-only">Configuration</span></th>
+          <th scope="col">Reference</th>
+          <th scope="col">Target</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (field of identityFields; track field.key) {
+          <tr>
+            <th scope="row">{{ field.label }}</th>
+            <td>{{ value('ref', field.key) }}</td>
+            <td>{{ value('target', field.key) }}</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+    <div class="configurationSectionHeading">
+      <button
+        mat-button
+        [attr.aria-expanded]="expanded()"
+        aria-controls="runtime-configuration"
+        (click)="expanded.set(!expanded())"
+      >
+        <mat-icon>{{ expanded() ? 'expand_more' : 'chevron_right' }}</mat-icon
+        >Runtime configuration
+      </button>
+      @if (sameRuntime) {
+        <mat-checkbox [checked]="onlyDifferences()" (change)="onlyDifferences.set($event.checked)"
+          >Only differences</mat-checkbox
+        >
+      }
+    </div>
+    @if (expanded()) {
+      <section id="runtime-configuration">
+        @if (visibleRuntimeFields().length) {
+          <table class="configurationReadTable">
+            <thead>
+              <tr>
+                <th scope="col"><span class="sr-only">Configuration</span></th>
+                <th scope="col">Reference</th>
+                <th scope="col">Target</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (field of visibleRuntimeFields(); track field.key) {
+                <tr>
+                  <th scope="row">{{ field.label }}</th>
+                  <td [class.different]="value('ref', field.key) !== value('target', field.key)">
+                    {{ value('ref', field.key) }}
+                  </td>
+                  <td [class.different]="value('ref', field.key) !== value('target', field.key)">
+                    {{ value('target', field.key) }}
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        } @else {
+          <p class="configurationNote">No recorded configuration differences.</p>
+        }
+      </section>
+    }
+  </div>
+  @if (!embedded()) {
+    <footer class="dialogFoot">
+      <span [matTooltip]="editUnavailableReason" [attr.tabindex]="canEdit ? null : 0"
+        ><button
+          mat-button
+          [disabled]="!canEdit"
+          [mat-dialog-close]="'update'"
+          [aria-label]="canEdit ? 'Edit' : 'Edit: ' + editUnavailableReason"
+        >
+          Edit
+        </button></span
+      >
+      <span [matTooltip]="duplicateUnavailableReason" [attr.tabindex]="canDuplicate ? null : 0"
+        ><button
+          mat-button
+          [disabled]="!canDuplicate"
+          [mat-dialog-close]="'duplicate'"
+          [aria-label]="canDuplicate ? 'Duplicate' : 'Duplicate: ' + duplicateUnavailableReason"
+        >
+          Duplicate
+        </button></span
+      >
+      <button mat-button mat-dialog-close>Close</button>
+    </footer>
+  }
+</main>

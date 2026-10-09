@@ -1,0 +1,31 @@
+<!--
+ Copyright 2026 The AI Edge Model Explorer Authors.
+
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+ ==============================================================================
+-->
+<header>
+  <h2 mat-dialog-title>Advanced settings</h2>
+  <p>Settings are stored in current browser's local storage</p>
+</header>
+<mat-dialog-content
+  ><label id="welcome-setting-label">Show welcome card</label>
+  <div class="switch-line">
+    <mat-slide-toggle
+      aria-labelledby="welcome-setting-label"
+      [checked]="preferences.showWelcome()"
+      (change)="preferences.setShowWelcome($event.checked)" /></div
+></mat-dialog-content>
+<mat-dialog-actions align="end"
+  ><button mat-button mat-dialog-close>Close</button></mat-dialog-actions
+>

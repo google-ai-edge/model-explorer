@@ -1,0 +1,294 @@
+<!doctype html>
+<!--
+ Copyright 2026 The AI Edge Model Explorer Authors.
+
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+ ==============================================================================
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src data:; font-src data:; style-src 'unsafe-inline'; script-src 'unsafe-inline'; base-uri 'none'; form-action 'none'">
+<title>Model Debugger · Runner</title>
+<!-- Shared production renderer. Native host supplies state and owns execution.
+     Gallery reference: google-ai-edge/gallery e9f66fdf2e191e9442686aae08a31440ff985f98,
+     Android Color.kt, Type.kt and HomeScreen.kt. Shared host contract remains v1.
+     Session ownership is supplied by the native coordinator. -->
+<style>
+:root {
+  color-scheme:light; --bg:#fff; --surface:#f0f4f9; --inset:#e9eef6; --rule:#dde3ea;
+  --text:#1f1f1f; --secondary:#444746; --muted:#62676f;
+  --accent:#0b57d0; --accent-wash:#d3e3fd; --on-accent:#fff;
+  --positive:#146c2e; --positive-wash:#e2f2e5; --negative:#b3261e; --negative-wash:#fce8e6;
+  --overlay:rgba(19,19,20,.38); --shadow:0 8px 32px rgba(19,19,20,.10);
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans SC",sans-serif;
+  --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
+  --radius:24px; --space:24px;
+}
+@media(prefers-color-scheme:dark){:root{
+  color-scheme:dark;--bg:#131314;--surface:#1e1f20;--inset:#282a2c;--rule:#3c4043;
+  --text:#e3e3e3;--secondary:#c4c7c5;--muted:#a0a5ad;--accent:#a8c7fa;--accent-wash:#0842a0;--on-accent:#062e6f;
+  --positive:#8ad99e;--positive-wash:#183a25;--negative:#f2b8b5;--negative-wash:#482523;
+  --overlay:rgba(0,0,0,.55);--shadow:0 8px 32px rgba(0,0,0,.25);
+}}
+:root[data-theme="dark"]{
+  color-scheme:dark;--bg:#131314;--surface:#1e1f20;--inset:#282a2c;--rule:#3c4043;
+  --text:#e3e3e3;--secondary:#c4c7c5;--muted:#a0a5ad;--accent:#a8c7fa;--accent-wash:#0842a0;--on-accent:#062e6f;
+  --positive:#8ad99e;--positive-wash:#183a25;--negative:#f2b8b5;--negative-wash:#482523;
+  --overlay:rgba(0,0,0,.55);--shadow:0 8px 32px rgba(0,0,0,.25);
+}
+:root[data-theme="light"]{
+  color-scheme:light;--bg:#fff;--surface:#f0f4f9;--inset:#e9eef6;--rule:#dde3ea;
+  --text:#1f1f1f;--secondary:#444746;--muted:#62676f;--accent:#0b57d0;--accent-wash:#d3e3fd;--on-accent:#fff;
+  --positive:#146c2e;--positive-wash:#e2f2e5;--negative:#b3261e;--negative-wash:#fce8e6;
+  --overlay:rgba(19,19,20,.38);--shadow:0 8px 32px rgba(19,19,20,.10);
+}
+*{box-sizing:border-box} [hidden]{display:none!important}
+html,body{height:100%;margin:0} body{background:var(--bg);color:var(--text);font:15px/1.5 var(--sans);-webkit-font-smoothing:antialiased;overflow:hidden}
+button,select{font:inherit;color:inherit} button,summary,select{ -webkit-tap-highlight-color:transparent }
+button{border:0;background:transparent;cursor:pointer;min-height:44px;padding:10px 20px;border-radius:100px;font-weight:600;transition:background .14s,transform .14s}
+button:hover:not(:disabled){background:var(--inset)} button:active:not(:disabled){transform:scale(.98)}
+button:disabled,select:disabled{opacity:.45;cursor:default} :focus-visible{outline:2px solid var(--accent);outline-offset:4px}
+button.primary{background:var(--accent);color:var(--on-accent)} button.primary:hover:not(:disabled){filter:brightness(.94);background:var(--accent)}
+button.secondary{background:var(--inset);color:var(--accent)} button.text{color:var(--accent);padding-inline:14px}
+.icon-button{display:grid;place-items:center;flex:none;width:44px;height:44px;padding:10px}
+svg{width:24px;height:24px;display:block;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;flex:none}
+h1,h2,h3,p{margin:0} h1{font-size:20px;font-weight:600;line-height:1.2} h2{font-size:24px;line-height:1.3;font-weight:600} h3{font-size:15px;font-weight:600}
+.app{height:100%;height:100dvh;display:flex;flex-direction:column;padding-top:env(safe-area-inset-top)}
+.appbar{display:flex;align-items:center;gap:12px;flex:none;padding:18px var(--space) 12px;max-width:688px;width:100%;margin:auto}
+.logo{width:30px;height:30px;flex:none}.brand{flex:1;min-width:0}.brand h1{display:flex;align-items:center;gap:8px;white-space:nowrap}.brand-divider{color:var(--muted);font-weight:400}.brand-section{color:var(--accent)}
+.runner-context{display:grid;grid-template-columns:80px minmax(90px,.6fr) minmax(0,1.6fr) minmax(0,1fr);gap:12px 20px;flex:none;margin:0;padding:12px var(--space) 14px;border-bottom:1px solid var(--rule);background:var(--bg)}
+.runner-context>div{min-width:0}.runner-context dt{font:10px/16px var(--mono);color:var(--muted)}.runner-context dd{margin:3px 0 0;font:12px/18px var(--mono);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.runner-context .context-role{color:var(--accent);font-weight:600}.runner-context [data-unavailable="true"]{color:var(--muted)}
+@media(min-width:760px){.runner-context{padding-inline:28px}}
+@media(max-width:600px){.runner-context{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px 20px}}
+.scroll{flex:1;min-height:0;overflow:auto}.content{padding:24px var(--space) 28px;max-width:640px;margin:0 auto}
+.device{display:flex;align-items:center;gap:12px;margin-bottom:22px}.device>svg{color:var(--secondary);width:22px;height:22px}
+.device-copy{flex:1;min-width:0}.device-name{font-weight:600;font-size:16px;overflow-wrap:anywhere}.device-platform{font-size:12px;color:var(--muted);margin-top:2px}
+.status-card{background:var(--surface);border-radius:var(--radius);padding:20px 24px 26px;text-align:center}
+.connection-line{display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:12px;color:var(--secondary);text-align:left}
+.connection-label{display:flex;align-items:center;gap:7px}.dot{width:7px;height:7px;border-radius:50%;background:var(--muted);flex:none}
+.connection-label[data-tone="connected"] .dot{background:var(--positive)}.connection-label[data-tone="failed"] .dot{background:var(--negative)}
+.transport{font-size:12px;color:var(--muted)}
+.status-symbol{width:76px;height:76px;margin:32px auto 22px;border-radius:24px;background:var(--accent-wash);color:var(--accent);display:grid;place-items:center}
+.status-symbol svg{width:36px;height:36px;stroke-width:1.5}
+.status-card[data-tone="failed"] .status-symbol{background:var(--negative-wash);color:var(--negative)}
+.status-card h2{font-size:28px;letter-spacing:-.4px;text-wrap:balance;max-width:360px;margin:auto}
+.status-copy{color:var(--secondary);font-size:14px;line-height:1.6;max-width:330px;margin:12px auto 0;overflow-wrap:anywhere}
+.status-card .primary{margin-top:24px}.status-card[data-busy="true"] .status-symbol svg{animation:turn 2s linear infinite}
+.status-card[data-busy="true"] .status-symbol .fixed{animation:none}
+@keyframes turn{to{transform:rotate(360deg)}}
+.transfer{margin:24px auto 0;max-width:340px}.transfer progress{display:block;width:100%;height:5px;border:0;border-radius:99px;overflow:hidden;background:var(--inset);accent-color:var(--accent)}
+progress::-webkit-progress-bar{background:var(--inset);border-radius:99px}progress::-webkit-progress-value{background:var(--accent);border-radius:99px}
+.transfer p{margin-top:10px;color:var(--secondary);font:11px/1.6 var(--mono)}
+.next-step{font-size:13px;color:var(--muted);text-align:center;margin:18px auto 0;max-width:330px;line-height:1.65}
+.details-block{margin-top:16px;border-radius:20px;background:var(--surface);padding:0 20px}
+summary{list-style:none;cursor:pointer;min-height:56px;display:flex;align-items:center;gap:12px;font-size:14px;font-weight:600}
+summary::-webkit-details-marker{display:none}
+summary .chevron{margin-left:auto;width:18px;height:18px;transition:transform .18s}
+details[open]>summary>.chevron{transform:rotate(180deg)}
+.resident{padding:16px 0;border-top:1px solid var(--rule)}.resident-head{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.resident-head h3{font-size:14px}.role{padding:3px 9px;border-radius:100px;background:var(--inset);font-size:11px;color:var(--secondary);margin-left:auto}
+.resident-runtime{font-size:13px;color:var(--secondary);margin-top:5px}.metrics{display:flex;gap:8px 20px;flex-wrap:wrap;color:var(--muted);font-size:12px;margin-top:12px}.metrics strong{font:11px var(--mono);color:var(--text)}
+.resident details{margin-top:8px}.resident summary{min-height:36px;font-size:12px;color:var(--muted);font-weight:400}.hash{font:10px/1.7 var(--mono);color:var(--muted);overflow-wrap:anywhere;user-select:text}
+.response-text{white-space:pre-wrap;overflow-wrap:anywhere;font-size:14px;max-height:180px;overflow:auto;padding:0 0 16px}.capture-count{font-size:12px;color:var(--muted);padding-bottom:16px}
+.footer{max-width:640px;width:100%;margin:auto;padding:16px var(--space) max(20px,env(safe-area-inset-bottom));flex:none;text-align:center}
+.foreground{font-size:12px;color:var(--muted);margin-bottom:6px}
+dialog{background:var(--bg);color:var(--text);padding:0;border:0;border-radius:28px;width:min(440px,calc(100% - 32px));max-height:calc(100dvh - 40px);box-shadow:var(--shadow)}
+dialog::backdrop{background:var(--overlay)}.dialog-head{display:flex;align-items:center;gap:12px;padding:16px 16px 12px 24px;position:sticky;top:0;background:var(--bg);z-index:1}.dialog-head h2{flex:1;font-size:22px}.dialog-body{padding:4px 24px 24px}
+.setting-section{padding:8px 0;border-bottom:1px solid var(--rule)}.setting-section:last-child{border-bottom:0}.setting-section>summary{min-height:48px;font-size:15px}.setting-section>summary>svg:first-child{width:20px;height:20px;color:var(--secondary)}
+.setting-content{padding:8px 0 16px}.setting-content p{font-size:13px;color:var(--secondary);line-height:1.6;margin-bottom:12px}.setting-content label{font-size:12px;color:var(--secondary);display:block;margin-bottom:6px}
+select{width:100%;min-height:44px;padding:10px 12px;border:1px solid var(--rule);border-radius:12px;background:var(--surface)}
+.buttons{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}.buttons button{font-size:13px;padding:10px 14px}.note{color:var(--muted)!important;font-size:12px!important;margin-top:12px}
+.environment-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.2fr);gap:12px 16px;margin:0 0 16px;font-size:12px}.environment-grid dt{color:var(--muted)}.environment-grid dd{margin:0;overflow-wrap:anywhere;font:11px/1.6 var(--mono)}
+.manual-step{padding-top:12px}.manual-step+.manual-step{margin-top:12px;border-top:1px solid var(--rule)}.manual-step h3{font-size:13px;margin-bottom:10px}.job-info{background:var(--surface);padding:12px;border-radius:12px;margin-top:12px}.job-info p{white-space:pre-wrap;overflow-wrap:anywhere;max-height:100px;overflow:auto}
+.theme-field{padding:16px 0}.theme-field label{font-size:14px;display:block;margin-bottom:10px}
+.capability-list{margin:0 0 20px}.capability-list h3{font-size:13px;margin:0 0 8px}.capability-row{display:flex;gap:12px;justify-content:space-between;padding:8px 0;font-size:12px;color:var(--secondary)}.capability-row span:last-child{color:var(--muted)}
+@media(max-width:480px){.brand h1{font-size:17px;gap:6px}.appbar{gap:9px;padding-inline:20px}.logo{width:26px;height:26px}}
+@media(max-width:370px){:root{--space:20px}.appbar{gap:10px}h1{font-size:18px}.status-card{padding-inline:20px}.status-card h2{font-size:26px}}
+@media(min-width:760px){.content{padding-top:36px}.status-card{padding-block:24px 32px}.status-symbol{margin-top:36px}.status-card h2{font-size:30px}.appbar{padding-top:24px}}
+@media(max-height:660px){.content{padding-top:12px;padding-bottom:16px}.device{margin-bottom:16px}.status-card{padding:16px 20px 20px}.status-symbol{width:64px;height:64px;margin:20px auto 16px;border-radius:20px}.status-symbol svg{width:32px;height:32px}.status-card h2{font-size:25px}.status-copy{font-size:13px;margin-top:10px}.status-card .primary{margin-top:20px}.footer{padding-top:10px;padding-bottom:14px}}
+@media(min-width:760px){.appbar{max-width:none;padding-inline:28px}.content{max-width:800px;padding-top:32px}.status-card{display:grid;grid-template-columns:76px minmax(0,1fr);column-gap:24px;padding:24px 28px 28px;text-align:left}.connection-line{grid-column:1/-1}.status-symbol{grid-column:1;grid-row:2;margin:28px 0 0;width:76px;height:76px;border-radius:24px}.status-card>[aria-live]{grid-column:2;grid-row:2;margin-top:28px}.status-card h2{font-size:28px;max-width:none;margin:0;text-wrap:initial}.status-copy{margin:10px 0 0;max-width:490px;font-size:14px}.status-card .primary{grid-column:2;justify-self:start;margin-top:24px}.transfer{grid-column:2;width:100%;max-width:430px;margin:24px 0 0}.next-step{text-align:left;max-width:none;margin-left:28px}}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+  .owner-card{display:flex;align-items:center;gap:16px;padding:20px 24px;margin-bottom:16px;background:var(--surface);border-radius:24px;min-width:0}
+  .owner-copy{flex:1;min-width:0}.owner-copy h2{font-size:18px;line-height:26px;margin:3px 0}.owner-copy p{margin:0;overflow-wrap:anywhere}
+  .owner-role{font-size:12px;font-weight:600;color:var(--accent)}.owner-server,.runner-build{font-size:12px;color:var(--secondary)}
+  .runner-build{margin:0 0 12px;overflow-wrap:anywhere}.task-actions{display:flex;justify-content:center;gap:12px;margin-top:20px;grid-column:2;justify-self:start}
+  @media(max-width:440px){.owner-card{padding:18px;gap:10px;align-items:flex-start}.owner-card button{padding:8px 12px;flex:none}.owner-copy h2{font-size:16px}}
+</style>
+</head>
+<body>
+<svg aria-hidden="true" width="0" height="0" style="position:absolute;overflow:hidden"><defs>
+<symbol id="i-settings" viewBox="0 0 24 24"><path d="M4 7h16M4 17h16"/><circle cx="9" cy="7" r="3" fill="var(--bg)"/><circle cx="15" cy="17" r="3" fill="var(--bg)"/></symbol>
+<symbol id="i-computer" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8m-4-4v4"/></symbol>
+<symbol id="i-phone" viewBox="0 0 24 24"><rect x="6" y="2" width="12" height="20" rx="3"/><path d="M10 5h4m-3 14h2"/></symbol>
+<symbol id="i-connect" viewBox="0 0 24 24"><path d="M8 2v5m8-5v5M6 7h12v3a6 6 0 0 1-12 0V7Zm6 9v6"/></symbol>
+<symbol id="i-check" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/></symbol>
+<symbol id="i-busy" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-9-9"/><path d="M16 3h5v5"/></symbol>
+<symbol id="i-transfer" viewBox="0 0 24 24"><path d="M12 3v12m-5-5 5 5 5-5M4 16v4a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-4"/></symbol>
+<symbol id="i-error" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v6m0 4h.01"/></symbol>
+<symbol id="i-chevron" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
+<symbol id="i-close" viewBox="0 0 24 24"><path d="m6 6 12 12M6 18 18 6"/></symbol>
+<symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6m0-10h.01"/></symbol>
+<symbol id="i-capture" viewBox="0 0 24 24"><path d="M8 3H3v5m13-5h5v5M3 16v5h5m13-5v5h-5"/><rect x="7" y="7" width="10" height="10" rx="2"/></symbol>
+</defs></svg>
+<div class="app">
+  <header class="appbar"><img class="logo" src="data:image/svg+xml;base64,PCEtLSBEZXJpdmVkIGZyb20gR29vZ2xlIE1vZGVsIEV4cGxvcmVyLCBBcGFjaGUtMi4wLiBNb2RpZmllZCBmcm9udCBnbHlwaCBmb3IgTW9kZWwgRGVidWdnZXIgd2l0aCBhIGN1c3RvbSBnZW9tZXRyaWMgRCBnbHlwaC4gLS0+Cjxzdmcgd2lkdGg9IjI1NiIgaGVpZ2h0PSIyNTYiIHZpZXdCb3g9IjAgMCAyNTYgMjU2IiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPgogIDxwYXRoIGQ9Ik0yMjkgNjQuNVYxOTIuNUwxMjggMjQ4LjVMMTI3LjUgMTE1LjVMMjI5IDY0LjVaIiBmaWxsPSJ1cmwoI2Zyb250LTMwKSIvPgogIDxwYXRoIGQ9Ik0yNiA2MUw0Ny41IDcyLjVWMjAwTDI2IDE4N1Y2MVoiIGZpbGw9IiNGQkJDMDUiLz4KICA8cGF0aCBkPSJNMTI1LjUgMTAuNUwxNDUuNSAyMVY2MC41TDEyNS41IDU2LjVWMTAuNVoiIGZpbGw9IiNEQ0E4MTAiLz4KICA8cGF0aCBkPSJNMTY0IDMxTDE4NCA0MS41VjgxTDE2NCA3OFYzMVoiIGZpbGw9IiNEMzNEMzAiLz4KICA8cGF0aCBkPSJNMTY0IDMxTDE4NCA0MS41TDg3IDk0TDY1IDgyTDE2NCAzMVoiIGZpbGw9IiNCMzI2MUUiLz4KICA8cGF0aCBkPSJNMjA4IDU0LjVMMjI5IDY0LjVMMTI4IDExNkwxMDcgMTA1TDIwOCA1NC41WiIgZmlsbD0iIzJDNUNBQyIvPgogIDxwYXRoIGQ9Ik0xMjUuNSAxMC41TDE0NS41IDIxTDQ3LjUgNzIuNUwyNiA2MUwxMjUuNSAxMC41WiIgZmlsbD0iI0M3OEIxNSIvPgogIDxwYXRoIGQ9Ik02NSA4Mkw4NyA5NFYyMjRMNjUgMjEwLjVWODJaIiBmaWxsPSIjRUE0MzM1Ii8+CiAgPHBhdGggZD0iTTEwNyAxMDVMMTI4IDExNlYyNDguNUwxMDcgMjM2VjEwNVoiIGZpbGw9IiM0Mjg1RjQiLz4KICA8IS0tIEUtYWxpZ25lZCBhZmZpbmUgYmFzaXMgZnJvbSBvcmlnaW5hbCBNb2RlbCBFeHBsb3JlcjogKDEyOCwxMTYpIHRvICgyMDgsNzYpLCB2ZXJ0aWNhbCBlZGdlcyByZXRhaW5lZC4gLS0+CiAgPGcgdHJhbnNmb3JtPSJtYXRyaXgoMSAtMC41IDAgMSAxMjggMTE2KSI+CiAgICA8cGF0aCBmaWxsPSIjRkZGRkZGIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiIGQ9Ik0wIDBINThRODAgMCA4MCAyMlY4NlE4MCAxMDggNTggMTA4SDBaTTIwIDIwVjg4SDUxUTYwIDg4IDYwIDc5VjI5UTYwIDIwIDUxIDIwWiIvPgogIDwvZz4KPGRlZnM+PGxpbmVhckdyYWRpZW50IGlkPSJmcm9udC0zMCIgeDE9IjE0NC41IiB5MT0iMjMyIiB4Mj0iMjE5IiB5Mj0iNjkuNSIgZ3JhZGllbnRVbml0cz0idXNlclNwYWNlT25Vc2UiPjxzdG9wIHN0b3AtY29sb3I9IiM0Mjg1RjQiLz48c3RvcCBvZmZzZXQ9IjEiIHN0b3AtY29sb3I9IiMyQzVDQUMiLz48L2xpbmVhckdyYWRpZW50PjwvZGVmcz48L3N2Zz4K" alt=""><div class="brand"><h1><span>Model Debugger</span><span class="brand-divider">·</span><span class="brand-section">Runner</span></h1></div><button id="settings-button" class="icon-button" aria-label="Runner settings" title="Runner settings"><svg aria-hidden="true"><use href="#i-settings"/></svg></button></header>
+  <dl class="runner-context" aria-label="Current Runner context">
+    <div><dt>Role</dt><dd class="context-role" id="runner-role">Unassigned</dd></div>
+    <div><dt>Backend</dt><dd id="runner-backend" data-unavailable="true">Not loaded</dd></div>
+    <div><dt>Session</dt><dd id="runner-session" data-unavailable="true">Not assigned</dd></div>
+    <div><dt>Status</dt><dd id="runner-state">Waiting for connection</dd></div>
+  </dl>
+  <main class="scroll"><div class="content">
+    <div class="device"><svg aria-hidden="true"><use id="device-icon" href="#i-computer"/></svg><div class="device-copy"><p class="device-name" id="device-name">This device</p><p class="device-platform" id="platform">Runner</p></div></div>
+    <p class="runner-build" id="runner-build" hidden></p>
+    <section class="owner-card" id="owner-card" aria-labelledby="owner-session" hidden>
+      <div class="owner-copy"><p class="owner-role" id="owner-role"></p><h2 id="owner-session"></h2><p class="owner-server" id="owner-server"></p></div>
+      <button class="text" data-action="endSession">End Session</button>
+    </section>
+    <section class="status-card" id="status-card" aria-labelledby="status-title">
+      <div class="connection-line"><span class="connection-label" id="connection-label"><span class="dot"></span><span id="connection-title">Not connected</span></span><span class="transport" id="transport">Local device</span></div>
+      <div class="status-symbol"><svg id="status-symbol" aria-hidden="true"><use id="status-icon" href="#i-connect"/></svg></div>
+      <div aria-live="polite" aria-atomic="true"><h2 id="status-title">Waiting for connection</h2><p class="status-copy" id="status-copy">Open Model Debugger on your computer and select this device.</p></div>
+      <div class="transfer" id="transfer" hidden><progress id="transfer-progress" aria-label="Model transfer"></progress><p id="transfer-label"></p></div>
+      <button class="primary" id="connection-button">Connection setup</button>
+      <div class="task-actions" id="task-actions" hidden><button class="secondary" data-action="stopGeneration">Stop generation</button></div>
+    </section>
+    <p class="next-step" id="next-step" hidden></p>
+    <details class="details-block" id="residents" hidden><summary>Loaded model<svg class="chevron" aria-hidden="true"><use href="#i-chevron"/></svg></summary><div id="sessions"></div></details>
+    <details class="details-block" id="response" hidden><summary>Latest result<svg class="chevron" aria-hidden="true"><use href="#i-chevron"/></svg></summary><p class="response-text" id="output" hidden></p><p class="capture-count" id="capture-count" hidden></p></details>
+  </div></main>
+  <footer class="footer" id="footer" hidden><p class="foreground">Keep Runner open in the foreground.</p></footer>
+</div>
+<dialog id="settings" aria-labelledby="settings-title"><header class="dialog-head"><h2 id="settings-title">Runner settings</h2><button class="icon-button" id="close-settings" aria-label="Close settings"><svg aria-hidden="true"><use href="#i-close"/></svg></button></header><div class="dialog-body">
+  <details class="setting-section" id="connection-settings"><summary><svg aria-hidden="true"><use href="#i-connect"/></svg>Connection<svg class="chevron" aria-hidden="true"><use href="#i-chevron"/></svg></summary><div class="setting-content">
+    <p id="connection-help"></p><div id="interface-controls"><label for="interface">Accept connections from</label><select id="interface"></select><div class="buttons"><button class="secondary" data-action="refreshInterfaces">Refresh</button><button class="text" data-action="exportConnection">Export connection…</button></div></div>
+    <p class="hash" id="address"></p><p class="note" id="connection-lock" hidden>Connection settings are locked while Model Debugger is connected or a task is active.</p>
+  </div></details>
+  <details class="setting-section"><summary><svg aria-hidden="true"><use href="#i-info"/></svg>Device &amp; environment<svg class="chevron" aria-hidden="true"><use href="#i-chevron"/></svg></summary><div class="setting-content"><div class="capability-list"><h3>Supported runtimes &amp; backends</h3><div id="runtime-capabilities"></div></div><p id="environment-note">Not provided by this host.</p><dl class="environment-grid" id="environment-values"></dl><button class="secondary" data-action="refreshEnvironment">Refresh readings</button></div></details>
+  <div class="theme-field"><label for="theme">Appearance</label><select id="theme"><option value="system">System</option><option value="light">Light</option><option value="dark">Dark</option></select></div>
+  <details class="setting-section"><summary><svg aria-hidden="true"><use href="#i-capture"/></svg>Manual capture<svg class="chevron" aria-hidden="true"><use href="#i-chevron"/></svg></summary><div class="setting-content">
+    <p id="manual-help">Run a prepared capture directly on this device.</p>
+    <div class="manual-step"><h3>1. Prepared job</h3><button class="secondary" data-action="importJob">Import job JSON…</button><div class="job-info" id="job-info" hidden><p id="job-prompt"></p><p id="job-metrics"></p><div class="hash" id="job-hash"></div></div></div>
+    <div class="manual-step"><h3>2. Model</h3><button class="secondary" data-action="importModel" id="import-model">Import matching model…</button><p class="note" id="model-available">Import the job first.</p></div>
+    <div class="manual-step"><h3>3. Capture</h3><div class="buttons"><button class="primary" data-action="run">Run capture</button><button class="secondary" data-action="stop">Stop</button><button class="text" data-action="exportCapture">Export capture…</button></div><p class="note" id="manual-status"></p></div>
+  </div></details>
+</div></dialog>
+<script>
+(() => {
+  "use strict";
+  const $=id=>document.getElementById(id);
+  const text=(id,value)=>{const next=String(value??"");if($(id).textContent!==next)$(id).textContent=next;};
+  const show=(id,visible)=>{$(id).hidden=!visible;};
+  const node=(tag,cls,value)=>{const el=document.createElement(tag);el.className=cls;if(value!=null)el.textContent=value;return el;};
+  const phaseTitles={importing:"Importing files",verifying:"Verifying model",loading:"Loading model",generating:"Generating",validating:"Validating capture",stopping:"Stopping",releasing:"Releasing model",failed:"Task needs attention"};
+  const roleLabel=role=>role==="ref"?"Ref":role==="target"?"Debug":"Unassigned";
+  let snapshot=null,sessionKey="",interfaceKey="",environmentKey="";
+  function send(action,payload={}){
+    if(action!=="ready"&&!snapshot?.actions[action])return;
+    window.RunnerHost?.postMessage(JSON.stringify({version:1,action,...payload}));
+  }
+  function renderSessions(sessions){
+    const key=JSON.stringify(sessions);if(key===sessionKey)return;sessionKey=key;
+    const existing=new Map([...$("sessions").children].map(row=>[row.dataset.key,row]));
+    for(const s of sessions){
+      let row=existing.get(s.key);existing.delete(s.key);
+      if(!row){row=node("article","resident");row.dataset.key=s.key;
+        const head=node("div","resident-head");head.append(node("h3","resident-title"),node("span","role"));
+        const identity=node("details","");identity.append(node("summary","","Model identity"),node("div","hash"));
+        row.append(head,node("p","resident-runtime"),node("div","metrics"),identity);$("sessions").append(row);}
+      row.querySelector(".resident-title").textContent=[s.runtime,s.backend].filter(Boolean).join(" · ")||"Loaded runtime";
+      row.querySelector(".role").textContent=roleLabel(s.role);
+      row.querySelector(".hash").textContent=s.modelHash;
+      row.querySelector(".resident-runtime").textContent="Model loaded for this Session";
+      const tokens=node("span","");tokens.append(node("strong","",s.tokens==null?"Not captured":`${s.tokens}${s.contextLength==null?"":` / ${s.contextLength}`}`),document.createTextNode(" context tokens"));
+      const capture=node("span","");capture.append(node("strong","",s.capturePoints==null?(s.runtime==="PyTorch"?"Eager capture":"Not provided"):s.capturePoints),document.createTextNode(s.capturePoints==null?"":" capture points"));
+      row.querySelector(".metrics").replaceChildren(tokens,capture);
+    }
+    for(const row of existing.values())row.remove();
+  }
+  function update(s){
+    if(s?.version!==1||!s.connection||!s.activity||!s.actions)return;
+    snapshot=s;
+    const sessions=s.sessions||[],connection=s.connection.phase,phase=s.activity.phase,transfer=s.activity.transfer;
+    const owner=s.owner, lifecycle=s.lifecycle?.phase||"waiting";
+    const role=owner?.runId||s.slot,roleName=roleLabel(role);
+    // Only a successful resident record proves a backend is loaded. Advertised
+    // capabilities and a prepared job do not establish active execution.
+    const resident=sessions.find(item=>item.role===role&&(!owner?.sessionId||String(item.id).toLowerCase()===String(owner.sessionId).toLowerCase()));
+    const backend=resident?(resident.backend||"Unknown"):"Not loaded";
+    text("runner-role",roleName);text("runner-backend",backend);$("runner-backend").dataset.unavailable=String(!resident||!resident.backend);
+    text("runner-session",owner?.sessionName||"Not assigned");$("runner-session").title=owner?.sessionName||"Not assigned";$("runner-session").dataset.unavailable=String(!owner);
+    document.title=roleName==="Unassigned"?"Model Debugger · Runner":`Model Debugger · ${roleName} Runner`;
+    show("owner-card",!!owner);text("owner-role",`${roleName} Runner`);
+    text("owner-session",owner?.sessionName);text("owner-server",owner?`Server · ${owner.serverName}`:"");
+    const build=s.build;show("runner-build",!!build?.id||!!build?.version);
+    text("runner-build",[build?.cl?`CL ${build.cl}`:build?.label,build?.version?`Version ${build.version}`:null].filter(Boolean).join(" · "));
+    show("task-actions",!!s.actions.stopGeneration||phase==="stopping"&&!!owner);
+    const connected=connection==="connected",connectionFailed=connection==="failed",failed=connectionFailed||phase==="failed";
+    const busy=!!transfer||(!["idle","failed"].includes(phase));
+    text("device-name",s.device.name);text("platform",s.device.platform);$("device-icon").setAttribute("href",s.device.foregroundRequired?"#i-phone":"#i-computer");
+    text("connection-title",connected?"Connected":connectionFailed?"Connection unavailable":"Not connected");
+    text("transport",s.connection.transport);$("connection-label").dataset.tone=connected?"connected":connectionFailed?"failed":"waiting";
+    let title="Runner not active",copy="Start a Session from the Session list in Model Debugger.",icon="connect",next="";
+    if(connection==="unconfigured"){title="Set up this device";copy="Connect this Runner to Model Debugger to get started.";}
+    if(connected){title=owner?(sessions.length?"Ready":"Starting Session"):"Activating Runner";copy=owner?"Waiting for this Session's next request.":"Waiting for Model Debugger to assign this Runner.";icon=owner&&sessions.length?"check":"busy";}
+    if(phase!=="idle"){title=phaseTitles[phase]||"Working";copy=s.activity.detail;icon=phase==="failed"?"error":"busy";}
+    if(transfer&&phase!=="failed"){title="Receiving model";copy="Transferring the model to this device.";icon="transfer";}
+    if(phase==="failed")next=connected?"Review the error in Model Debugger before initializing the Session again.":"Review the job and model in Manual capture before running again.";
+    if(connectionFailed){title="Connection needs attention";copy=s.connection.detail;icon="error";next="Check the connection settings, then reconnect from Model Debugger.";}
+    if(phase==="idle"&&connected&&sessions.length){copy="Your model is loaded. Continue this Session in Model Debugger.";}
+    if(lifecycle==="ending"){title="Ending Session";copy="Stopping work and releasing this device. The device stays occupied until cleanup finishes.";icon="busy";next="";}
+    if(lifecycle==="ended"){title="Session ended";copy="Runtime resources have been released. Saved models and captures remain on this device.";icon="check";next="";}
+    text("status-title",title);text("status-copy",copy);$("status-icon").setAttribute("href",`#i-${icon}`);
+    text("runner-state",title);$("runner-state").title=title;
+    $("status-card").dataset.tone=failed?"failed":"normal";$("status-card").dataset.busy=String(busy&&!failed);$("status-symbol").classList.toggle("fixed",icon!=="busy");
+    show("connection-button",!owner&&lifecycle!=="ended"&&!connected&&!busy);text("connection-button",connectionFailed?"Connection settings":"Connection setup");
+    show("next-step",!!next);text("next-step",next);show("transfer",!!transfer);
+    if(transfer){$("transfer-progress").max=transfer.total;$("transfer-progress").value=transfer.received;text("transfer-label",`${(transfer.received/1048576).toFixed(1)} / ${(transfer.total/1048576).toFixed(1)} MiB received`);}
+    show("residents",sessions.length>0);renderSessions(sessions);
+    const captured=s.activity.capturedTensors,output=s.activity.output;
+    show("response",!!output||captured!=null);show("output",!!output);text("output",output);show("capture-count",captured!=null);text("capture-count",`${captured} tensors captured in the latest run`);
+    show("footer",s.device.foregroundRequired);
+    $("runtime-capabilities").replaceChildren(...(s.runtimes||[]).map(runtime=>{const row=node("div","capability-row");row.append(node("span","",runtime.id),node("span","",runtime.backends.join(" / ")));return row;}));
+    if(!s.runtimes?.length)$("runtime-capabilities").append(node("p","note","Not provided by this host."));
+    text("connection-help","setAddress" in s.actions?"Use this computer locally, or select its Thunderbolt address to connect from another computer.":"Connect this device by USB, then pair it from Model Debugger on your computer.");
+    show("interface-controls","setAddress" in s.actions);text("address",s.connection.address);show("address",!!s.connection.address);
+    const interfaces=JSON.stringify(s.interfaces||[]);if(interfaces!==interfaceKey){interfaceKey=interfaces;$("interface").replaceChildren(...(s.interfaces||[]).map(i=>new Option(i.label,i.address)));}
+    const current=s.connection.address?.replace(/:\d+$/,"");if(current)$("interface").value=current;$("interface").disabled=!s.actions.setAddress;
+    show("connection-lock","setAddress" in s.actions&&!s.actions.setAddress);
+    const envKey=JSON.stringify([s.environment,s.environmentState]);if(envKey!==environmentKey){
+      environmentKey=envKey;const e=s.environment||{},r=s.environmentState||{},memory=n=>typeof n==="number"?`${(n/1073741824).toLocaleString(undefined,{maximumFractionDigits:2})} GiB`:undefined;
+      const rows=[["Device model",e.modelIdentifier],["Chip",e.chip],["OS",e.operatingSystem],["Architecture",e.architecture],["Physical memory",memory(e.physicalMemoryBytes)],["Logical processors",e.logicalProcessorCount],["App version",e.appVersion],["App build",e.appBuild],["Runtime commit",e.runtimeCommit],["Process memory",memory(r.processResidentBytes)],["Memory headroom",memory(r.processMemoryHeadroomBytes)],["Thermal state",r.thermalState],["Low power mode",typeof r.lowPowerMode==="boolean"?(r.lowPowerMode?"On":"Off"):undefined],["Sampled at",r.capturedAt]];
+      $("environment-values").replaceChildren(...rows.filter(([,value])=>value!=null).flatMap(([label,value])=>[node("dt","",label),node("dd","",value)]));
+      text("environment-note",s.environment?"Device readings are snapshots. Unavailable values are omitted.":"Not provided by this host.");
+    }
+    const manual=s.manual||{};text("manual-help",connected?"Model Debugger controls this Runner. Disconnect it before starting a manual capture.":"Run a prepared capture directly on this device.");
+    show("job-info",manual.hasJob);text("job-prompt",manual.prompt);text("job-hash",manual.modelHash);text("job-metrics",[manual.capturePoints==null?null:`${manual.capturePoints} capture points`,manual.outputLimit==null?null:`${manual.outputLimit} output tokens`].filter(Boolean).join(" · "));
+    text("import-model",manual.hasModel?"Replace model…":"Import matching model…");text("model-available",manual.hasModel?"Matching model available on this device.":manual.hasJob?"Choose the .litertlm file matching this job.":"Import the job first.");text("manual-status",s.activity.detail);
+    document.querySelectorAll("[data-action]").forEach(el=>{el.hidden=!(el.dataset.action in s.actions);el.disabled=!s.actions[el.dataset.action];});
+  }
+  window.RunnerUI=Object.freeze({update});
+  const openSettings=connection=>{if(connection)$("connection-settings").open=true;$("theme").value=document.documentElement.dataset.theme||"system";$("settings").showModal();};
+  $("settings-button").onclick=()=>openSettings(false);$("connection-button").onclick=()=>openSettings(true);$("close-settings").onclick=()=>$("settings").close();
+  const THEME_KEY="runner.theme";
+  const applyTheme=value=>{if(value==="light"||value==="dark")document.documentElement.dataset.theme=value;else delete document.documentElement.dataset.theme;};
+  try{applyTheme(localStorage.getItem(THEME_KEY));}catch{}
+  $("theme").onchange=event=>{applyTheme(event.target.value);try{localStorage.setItem(THEME_KEY,event.target.value);}catch{}};
+  $("interface").onchange=event=>send("setAddress",{address:event.target.value});
+  document.querySelectorAll("[data-action]").forEach(el=>{el.disabled=true;el.onclick=()=>send(el.dataset.action);});
+  send("ready");
+})();
+</script>
+</body>
+</html>

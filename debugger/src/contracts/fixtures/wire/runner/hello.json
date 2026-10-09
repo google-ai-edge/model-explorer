@@ -1,0 +1,23 @@
+{
+  "type": "hello",
+  "protocolVersion": 5,
+  "platform": "macOS",
+  "debuggerEnabled": true,
+  "fileTransfer": true,
+  "fileLink": true,
+  "runtimes": [
+    "LiteRT-LM"
+  ],
+  "runnerInstance": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+  "buildId": "1@a0f1e97361155c8bb9cd3d6aa045c04320d4334b",
+  "capabilities": {
+    "backends": [
+      "CPU",
+      "GPU"
+    ],
+    "contextLengths": [
+      1024,
+      4096
+    ]
+  }
+}

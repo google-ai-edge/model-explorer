@@ -1,0 +1,69 @@
+# Copyright 2026 The AI Edge Model Explorer Authors.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ai-edge-debugger"
+version = "0.2.0"
+description = "AI Edge Debugger: Multi-runtime numerical comparison workbench for LiteRT and PyTorch"
+readme = "README.md"
+license = "Apache-2.0"
+license-files = ["LICENSE"]
+authors = [{ name = "The AI Edge Model Explorer Authors" }]
+requires-python = ">=3.10"
+dependencies = [
+    "numpy>=1.26,<3",
+    "safetensors>=0.8,<1",
+    "ml_dtypes>=0.5,<1",
+    "fastapi>=0.115,<1",
+    "uvicorn>=0.30,<1",
+    "psutil>=5.9,<8",
+    "sentencepiece>=0.2,<1",
+]
+
+[project.optional-dependencies]
+test = [
+    "httpx>=0.28,<1",
+    "pytest>=8",
+]
+apple = [
+    "websockets>=15,<17",
+    "flatbuffers>=25,<26",
+]
+
+[project.urls]
+Homepage = "https://github.com/google-ai-edge/model-explorer/tree/ai-edge-debugger"
+Repository = "https://github.com/google-ai-edge/model-explorer/tree/ai-edge-debugger"
+
+[tool.setuptools]
+packages = [
+    "ai_edge_debugger_pytorch",
+    "model_debugger_contracts",
+    "model_debugger_runner",
+    "model_explorer_debugger",
+    "model_explorer_debugger.runtime",
+]
+
+[tool.setuptools.package-dir]
+ai_edge_debugger_pytorch = "src/capture/pytorch/package/ai_edge_debugger_pytorch"
+model_debugger_contracts = "src/contracts/python/package/model_debugger_contracts"
+model_debugger_runner = "src/runner/python/package/model_debugger_runner"
+model_explorer_debugger = "src/server/package/model_explorer_debugger"
+
+[tool.setuptools.package-data]
+model_debugger_contracts = ["schemas/*.json"]
+"model_explorer_debugger.runtime" = ["*.json"]

@@ -1,0 +1,244 @@
+<!--
+ Copyright 2026 The AI Edge Model Explorer Authors.
+
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+ ==============================================================================
+-->
+<header>
+  <h2>{{ data.side }} configuration</h2>
+  <div class="context">
+    <span class="runtime-label">Runtime: {{ data.runtime }}</span>
+    <div class="copy-actions">
+      <button
+        mat-button
+        [attr.aria-label]="'Copy all settings from ' + data.other"
+        [disabled]="!canCopy()"
+        matTooltip="Copy supported settings from the other side"
+        (click)="copy()"
+      >
+        <mat-icon>content_copy</mat-icon>Copy from {{ data.other }}
+      </button>
+      @if (copied()) {
+        <span role="status">Copied</span
+        ><button
+          mat-button
+          matTooltip="Restore settings from before the last copy"
+          (click)="undo()"
+        >
+          Undo
+        </button>
+      }
+    </div>
+  </div>
+</header>
+@if (data.native) {
+  <p class="context">
+    Native Runner: text {{ backendOptions('backend').join('/') }}, context
+    {{ contextOptions().join(' or ') }} and default CPU threads.
+  </p>
+} @else if (pytorch) {
+  <p class="context">PyTorch eager: local model, text backend and model dtype.</p>
+} @else if (data.local) {
+  <p class="context">
+    Local adapter: text CPU/GPU, CPU threads and context capacity. Other options are unavailable.
+  </p>
+}
+<form (ngSubmit)="close()">
+  <div class="body">
+    <section aria-label="Backends">
+      <h3>Backends</h3>
+      <div class="backends">
+        @for (b of backends; track b.key) {
+          <div>
+            <label
+              >{{ b.label
+              }}<config-picker
+                [label]="b.label + ' backend'"
+                [value]="draft[b.key] || 'Default'"
+                [options]="backendOptions(b.key)"
+                [disabled]="!supported(b.key)"
+                (valueChange)="selectBackend(b.key, $event)"
+              /><button
+                type="button"
+                class="reset"
+                matTooltip="Restore this setting to the runtime default"
+                [disabled]="!supported(b.key) || !!data.ios"
+                (click)="reset(b.key)"
+              >
+                Reset to default
+              </button></label
+            ><label
+              >CPU threads
+              @if (b.threads; as key) {
+                <input
+                  type="number"
+                  [name]="key"
+                  [(ngModel)]="draft[key]"
+                  min="1"
+                  max="2147483647"
+                  step="1"
+                  placeholder="Default"
+                  [disabled]="!supported(key) || draft[b.key] !== 'CPU'"
+                /><button
+                  type="button"
+                  class="reset"
+                  matTooltip="Restore this setting to the runtime default"
+                  [disabled]="!supported(key) || draft[b.key] !== 'CPU'"
+                  (click)="reset(key)"
+                >
+                  Reset to default
+                </button>
+              } @else {
+                <input
+                  type="number"
+                  disabled
+                  placeholder="Not available"
+                  matTooltip="Vision CPU threads cannot be configured by this adapter."
+                /><button
+                  type="button"
+                  class="reset"
+                  matTooltip="Restore this setting to the runtime default"
+                  disabled
+                >
+                  Reset to default
+                </button>
+              }
+            </label>
+          </div>
+        }
+      </div>
+    </section>
+    <section aria-label="Precision">
+      <h3>Precision</h3>
+      @if (pytorch) {
+        <label
+          ><span class="caption"
+            >Model dtype<button
+              type="button"
+              class="help"
+              matTooltip="Choose the dtype used to load floating-point model weights. Default preserves the model's configured dtype. Raw captures retain their actual dtype."
+              aria-label="Model dtype help"
+            >
+              <mat-icon>help_outline</mat-icon>
+            </button></span
+          ><config-picker
+            label="Model dtype"
+            [value]="draft.precision || 'Default'"
+            [options]="precisionOptions()"
+            [disabled]="!supported('precision')"
+            (valueChange)="draft.precision = $event === 'Default' ? '' : $event"
+          /><button
+            type="button"
+            class="reset"
+            matTooltip="Restore this setting to the runtime default"
+            [disabled]="!supported('precision')"
+            (click)="reset('precision')"
+          >
+            Reset to default
+          </button></label
+        >
+      } @else {
+        <label
+          ><span class="caption"
+            >Activation dtype<button
+              type="button"
+              class="help"
+              matTooltip="Default preserves runtime behavior. FP32 requests force_f32 for activations; it does not change stored weights. Backend support requires server validation."
+              aria-label="Activation dtype help"
+            >
+              <mat-icon>help_outline</mat-icon>
+            </button></span
+          ><config-picker
+            label="Activation dtype"
+            [value]="draft.forceF32 ? 'FP32' : 'Default'"
+            [options]="['Default', 'FP32']"
+            [disabled]="!supported('forceF32')"
+            (valueChange)="draft.forceF32 = $event === 'FP32'"
+          /><button
+            type="button"
+            class="reset"
+            matTooltip="Restore this setting to the runtime default"
+            [disabled]="!supported('forceF32')"
+            (click)="reset('forceF32')"
+          >
+            Reset to default
+          </button></label
+        >
+      }
+    </section>
+    @for (f of extras; track f.key) {
+      <section [attr.aria-label]="f.group">
+        <h3>{{ f.group }}</h3>
+        <label
+          ><span class="caption"
+            >{{ f.label
+            }}<button
+              type="button"
+              class="help"
+              [matTooltip]="f.help"
+              [attr.aria-label]="f.label + ' help'"
+            >
+              <mat-icon>help_outline</mat-icon>
+            </button></span
+          >
+          @if (f.key === 'contextLength') {
+            @if (data.native) {
+              <config-picker
+                [label]="f.label"
+                [value]="draft.contextLength || '1024'"
+                [options]="contextOptions()"
+                (valueChange)="draft.contextLength = $event"
+              />
+            } @else {
+              <input
+                type="number"
+                [attr.aria-label]="f.label"
+                [disabled]="!supported(f.key)"
+                [name]="f.key"
+                [(ngModel)]="draft[f.key]"
+                min="1"
+                max="2147483647"
+                step="1"
+                placeholder="Default"
+              />
+            }
+          } @else {
+            <input
+              [disabled]="!supported(f.key)"
+              data-batch-sizes
+              [attr.aria-label]="f.label"
+              [name]="f.key"
+              [(ngModel)]="draft[f.key]"
+              placeholder="Default"
+            />
+          }
+          <button
+            type="button"
+            class="reset"
+            matTooltip="Restore this setting to the runtime default"
+            [disabled]="!supported(f.key)"
+            (click)="reset(f.key)"
+          >
+            Reset to default
+          </button></label
+        >
+      </section>
+    }
+  </div>
+  <footer>
+    <button type="button" mat-button matTooltip="Discard changes" (click)="cancel()">Cancel</button>
+    <button type="submit" mat-button matTooltip="Apply settings and return to the session">
+      Apply
+    </button>
+  </footer>
+</form>

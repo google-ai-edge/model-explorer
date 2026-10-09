@@ -1,0 +1,137 @@
+/**
+ * @license
+ * Copyright 2026 The AI Edge Model Explorer Authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ==============================================================================
+ */
+
+:host {
+  display: block;
+  position: relative;
+  z-index: 1;
+  margin: 0 0 16px;
+  // Published by the conversation panel: the floating toolbar's footprint above the bottom edge.
+  scroll-margin-bottom: var(--composer-clearance, 140px);
+  scroll-margin-top: 16px;
+}
+.turnTrendPanel {
+  border-top: 1px solid var(--me-outline-variant-color);
+  border-bottom: 1px solid var(--me-outline-variant-color);
+  padding: 12px 24px 14px;
+  background: var(--trend-surface);
+  font: 12px/20px var(--me-font-family);
+  color: var(--me-on-surface-color);
+}
+.turnPlotly {
+  height: 360px;
+  width: 100%;
+  min-width: 0;
+  outline-offset: -2px;
+}
+.turnPlotly:focus-visible {
+  outline: 2px solid var(--me-primary-color);
+}
+.trendGraphTools {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  font: 12px/20px var(--me-font-family);
+  padding: 2px 0 8px;
+}
+label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+input {
+  box-sizing: content-box;
+  width: 64px;
+  min-width: 0;
+  height: 24px;
+  border: 1px solid var(--me-outline-variant-color);
+  border-radius: 3px;
+  background: var(--me-surface-color);
+  color: inherit;
+  font: 12px/20px var(--me-font-family);
+  text-align: center;
+  padding: 2px 4px;
+}
+.trendMetricChoice {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  max-width: 100%;
+  border-right: 1px solid var(--me-outline-variant-color);
+  padding-right: 10px;
+  margin-right: 4px;
+}
+config-picker {
+  width: clamp(190px, 23vw, 320px);
+  min-width: 0;
+  max-width: 100%;
+}
+config-picker ::ng-deep button {
+  min-width: 0;
+  font: 12px/14px var(--me-font-family);
+}
+button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 2px;
+  border: 0;
+  background: transparent;
+  border-radius: 4px;
+  color: var(--me-on-surface-variant-color);
+  cursor: pointer;
+}
+button mat-icon {
+  width: 20px;
+  height: 20px;
+  font-size: 20px;
+}
+button:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+button:hover:not(:disabled) {
+  background: var(--me-surface-container-high-color);
+}
+input:focus-visible,
+button:focus-visible {
+  outline: 2px solid var(--me-primary-color);
+  outline-offset: 2px;
+}
+.trendSelectionNotice {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font: 12px/20px var(--me-font-family);
+}
+.trendSelectionNotice button,
+p button {
+  width: auto;
+  color: var(--me-primary-color);
+  font: inherit;
+}
+
+// Per-runtime lines use the mismatch hues at line strength.
+:host {
+  --trend-ref: light-dark(#188038, #81c995);
+  --trend-target: light-dark(#d93025, #f28b82);
+}

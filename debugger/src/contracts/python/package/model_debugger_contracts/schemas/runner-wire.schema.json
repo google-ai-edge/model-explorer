@@ -1,0 +1,1244 @@
+{
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "$id": "model-debugger:runner-wire",
+ "title": "RunnerWire",
+ "description": "Every message of the Server <-> Runner WebSocket protocol, v4 and v5, under $defs as \"<sender>.<type>\". A text frame is one message. A v5 binary frame is a 4-byte big-endian header length, the message as its JSON header, then raw bytes in place of `data` (server.upload_chunk, runner.file_chunk). Written by runtime/runner_channel.py and RunnerCommandCodec.swift; fixtures/wire holds one example per message.",
+ "type": "object",
+ "required": [
+  "type"
+ ],
+ "properties": {
+  "type": {
+   "type": "string"
+  }
+ },
+ "$defs": {
+  "uuid": {
+   "type": "string",
+   "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+  },
+  "sha256": {
+   "type": "string",
+   "pattern": "^[0-9a-fA-F]{64}$"
+  },
+  "fileRecord": {
+   "type": "object",
+   "required": [
+    "path",
+    "size",
+    "sha256"
+   ],
+   "additionalProperties": false,
+   "properties": {
+    "path": {
+     "type": "string",
+     "minLength": 1
+    },
+    "size": {
+     "type": "integer",
+     "minimum": 0
+    },
+    "sha256": {
+     "type": "string",
+     "pattern": "^[0-9a-fA-F]{64}$"
+    }
+   }
+  },
+  "server.activate": {
+   "type": "object",
+   "required": [
+    "type",
+    "requestId",
+    "serverId",
+    "sessionId",
+    "runId"
+   ],
+   "properties": {
+    "type": {
+     "const": "activate"
+    },
+    "requestId": {
+     "$ref": "#/$defs/uuid"
+    },
+    "serverId": {
+     "type": "string",
+     "minLength": 1,
+     "maxLength": 256
+    },
+    "serverName": {
+     "type": "string"
+    },
+    "sessionId": {
+     "$ref": "#/$defs/uuid"
+    },
+    "sessionName": {
+     "type": "string"
+    },
+    "runId": {
+     "enum": [
+      "ref",
+      "target"
+     ]
+    },
+    "buildId": {
+     "type": "string"
+    }
+   },
+   "additionalProperties": false
+  },
+  "server.heartbeat": {
+   "type": "object",
+   "required": [
+    "type",
+    "serverId",
+    "sessionId",
+    "sequence"
+   ],
+   "properties": {
+    "type": {
+     "const": "heartbeat"
+    },
+    "serverId": {
+     "type": "string"
+    },
+    "sessionId": {
+     "$ref": "#/$defs/uuid"
+    },
+    "sequence": {
+     "type": "integer",
+     "minimum": 1
+    }
+   },
+   "additionalProperties": false
+  },
+  "server.model_info": {
+   "type": "object",
+   "required": [
+    "type",
+    "requestId",
+    "modelSHA256"
+   ],
+   "properties": {
+    "type": {
+     "const": "model_info"
+    },
+    "requestId": {
+     "$ref": "#/$defs/uuid"
+    },
+    "modelSHA256": {
+     "type": "string",
+     "pattern": "^[0-9a-fA-F]{64}$"
+    }
+   },
+   "additionalProperties": false
+  },
+  "server.model_commit": {
+   "type": "object",
+   "required": [
+    "type",
+    "requestId",
+    "modelSHA256"
+   ],
+   "properties": {
+    "type": {
+     "const": "model_commit"
+    },
+    "requestId": {
+     "$ref": "#/$defs/uuid"
+    },
+    "modelSHA256": {
+     "type": "string",
+     "pattern": "^[0-9a-fA-F]{64}$"
+    }
+   },
+   "additionalProperties": false
+  },
+  "server.model_link": {
+   "type": "object",
+   "required": [
+    "type",
+    "requestId",
+    "modelSHA256",
+    "path"
+   ],
+   "properties": {
+    "type": {
+     "const": "model_link"
+    },
+    "requestId": {
+     "$ref": "#/$defs/uuid"
+    },
+    "modelSHA256": {
+     "type": "string",
+     "pattern": "^[0-9a-fA-F]{64}$"
+    },
+    "path": {
+     "type": "string",
+     "pattern": "^/"
+    }
+   },
+   "additionalProperties": false
+  },
+  "server.upload_begin": {
+   "type": "object",
+   "required": [
+    "type",
+    "requestId",
+    "modelSHA256",
+    "size"
+   ],
+   "properties": {
+    "type": {
+     "const": "upload_begin"
+    },
+    "requestId": {
+     "$ref": "#/$defs/uuid"
+    },
+    "modelSHA256": {
+     "type": "string",
+     "pattern": "^[0-9a-fA-F]{64}$"
+    },
+    "size": {
+     "type": "integer",
+     "minimum": 1,
+     "maximum": 34359738368
+    }
+   },
+   "additionalProperties": false
+  },
+  "server.upload_chunk": {
+   "type": "object",
+   "required": [
+    "type",
+    "requestId",
+    "offset"
+   ],
+   "properties": {
+    "type": {
+     "const": "upload_chunk"
+    },
+    "requestId": {
+     "$ref": "#/$defs/uuid"
+    },
+    "offset": {
+     "type": "integer",
+     "minimum": 0
+    },
+    "data": {
+     "type": "string",
+     "minLength": 1
+    }
+   },
+   "additionalProperties": false
+  },
+  "server.upload_finish": {
+   "type": "object",
+   "required": [
+    "type",
+    "requestId"
+   ],
+   "properties": {
+    "type": {
+     "const": "upload_finish"
+    },
+    "requestId": {
+     "$ref": "#/$defs/uuid"
+    }
+   },
+   "additionalProperties": false
+  },
+  "server.upload_abort": {
+   "type": "object",
+   "required": [
+    "type",
+    "requestId"
+   ],
+   "properties": {
+    "type": {
+     "const": "upload_abort"
+    },
+    "requestId": {
+     "$ref": "#/$defs/uuid"
+    }
+   },
+   "additionalProperties": false
+  },
+  "server.run_files": {
+   "type": "object",
+   "required": [
+    "type",
+    "requestId",
+    "run"
+   ],
+   "properties": {
+    "type": {
+     "const": "run_files"
+    },
+    "requestId": {
+     "$ref": "#/$defs/uuid"
+    },
+    "run": {
+     "$ref": "#/$defs/uuid"
+    },
+    "link": {
+     "type": "boolean"
+    }
+   },
+   "additionalProperties": false
+  },
+  "server.file_chunk": {
+   "type": "object",
+   "required": [
+    "type",
+    "requestId",
+    "run",
+    "manifestId",
+    "path",
+    "offset"
+   ],
+   "properties": {
+    "type": {
+     "const": "file_chunk"
+    },
+    "requestId": {
+     "$ref": "#/$defs/uuid"
+    },
+    "run": {
+     "$ref": "#/$defs/uuid"
+    },
+    "manifestId": {
+     "$ref": "#/$defs/uuid"
+    },
+    "path": {
+     "type": "string"
+    },
+    "offset": {
+     "type": "integer",
+     "minimum": 0
+    },
+    "encoding": {
+     "const": "binary"
+    }
+   },
+   "additionalProperties": false
+  },
+  "server.run_received": {
+   "type": "object",
+   "required": [
+    "type",
+    "requestId",
+    "run",
+    "manifestId"
+   ],
+   "properties": {
+    "type": {
+     "const": "run_received"
+    },
+    "requestId": {
+     "$ref": "#/$defs/uuid"
+    },
+    "run": {
+     "$ref": "#/$defs/uuid"
+    },
+    "manifestId": {
+     "$ref": "#/$defs/uuid"
+    }
+   },
+   "additionalProperties": false
+  },
+  "server.initialize": {
+   "anyOf": [
+    {
+     "type": "object",
+     "required": [
+      "type",
+      "requestId",
+      "sessionId",
+      "runId",
+      "chatId",
+      "job"
+     ],
+     "properties": {
+      "type": {
+       "const": "initialize"
+      },
+      "requestId": {
+       "$ref": "#/$defs/uuid"
+      },
+      "sessionId": {
+       "$ref": "#/$defs/uuid"
+      },
+      "runId": {
+       "enum": [
+        "ref",
+        "target"
+       ]
+      },
+      "chatId": {
+       "$ref": "#/$defs/uuid"
+      },
+      "job": {
+       "$ref": "capture-job"
+      }
+     },
+     "additionalProperties": false
+    },
+    {
+     "type": "object",
+     "required": [
+      "type",
+      "requestId",
+      "runtime",
+      "request"
+     ],
+     "properties": {
+      "type": {
+       "const": "initialize"
+      },
+      "requestId": {
+       "$ref": "#/$defs/uuid"
+      },
+      "runtime": {
+       "const": "PyTorch"
+      },
+      "request": {
+       "type": "object",
+       "required": [
+        "operation",
+        "session_id",
+        "run",
+        "chat_id",
+        "model_sha256"
+       ]
+      }
+     },
+     "additionalProperties": false
+    }
+   ]
+  },
+  "server.generate": {
+   "anyOf": [
+    {
+     "type": "object",
+     "required": [
+      "type",
+      "requestId",
+      "sessionId",
+      "runId",
+      "chatId",
+      "job"
+     ],
+     "properties": {
+      "type": {
+       "const": "generate"
+      },
+      "requestId": {
+       "$ref": "#/$defs/uuid"
+      },
+      "sessionId": {
+       "$ref": "#/$defs/uuid"
+      },
+      "runId": {
+       "enum": [
+        "ref",
+        "target"
+       ]
+      },
+      "chatId": {
+       "$ref": "#/$defs/uuid"
+      },
+      "job": {
+       "$ref": "capture-job"
+      }
+     },
+     "additionalProperties": false
+    },
+    {
+     "type": "object",
+     "required": [
+      "type",
+      "requestId",
+      "runtime",
+      "request"
+     ],
+     "properties": {
+      "type": {
+       "const": "generate"
+      },
+      "requestId": {
+       "$ref": "#/$defs/uuid"
+      },
+      "runtime": {
+       "const": "PyTorch"
+      },
+      "request": {
+       "type": "object",
+       "required": [
+        "operation",
+        "session_id",
+        "run",
+        "chat_id",
+        "model_sha256"
+       ]
+      }
+     },
+     "additionalProperties": false
+    }
+   ]
+  },
+  "server.preflight": {
+   "anyOf": [
+    {
+     "type": "object",
+     "required": [
+      "type",
+      "requestId",
+      "sessionId",
+      "runId",
+      "chatId",
+      "job"
+     ],
+     "properties": {
+      "type": {
+       "const": "preflight"
+      },
+      "requestId": {
+       "$ref": "#/$defs/uuid"
+      },
+      "sessionId": {
+       "$ref": "#/$defs/uuid"
+      },
+      "runId": {
+       "enum": [
+        "ref",
+        "target"
+       ]
+      },
+      "chatId": {
+       "$ref": "#/$defs/uuid"
+      },
+      "job": {
+       "$ref": "capture-job"
+      }
+     },
+     "additionalProperties": false
+    },
+    {
+     "type": "object",
+     "required": [
+      "type",
+      "requestId",
+      "runtime",
+      "request"
+     ],
+     "properties": {
+      "type": {
+       "const": "preflight"
+      },
+      "requestId": {
+       "$ref": "#/$defs/uuid"
+      },
+      "runtime": {
+       "const": "PyTorch"
+      },
+      "request": {
+       "type": "object",
+       "required": [
+        "operation",
+        "session_id",
+        "run",
+        "chat_id",
+        "model_sha256"
+       ]
+      }
+     },
+     "additionalProperties": false
+    }
+   ]
+  },
+  "server.cancel": {
+   "type": "object",
+   "required": [
+    "type",
+    "requestId"
+   ],
+   "properties": {
+    "type": {
+     "const": "cancel"
+    },
+    "requestId": {
+     "$ref": "#/$defs/uuid"
+    }
+   },
+   "additionalProperties": false
+  },
+  "server.reset": {
+   "type": "object",
+   "required": [
+    "type",
+    "requestId",
+    "sessionId"
+   ],
+   "properties": {
+    "type": {
+     "const": "reset"
+    },
+    "requestId": {
+     "$ref": "#/$defs/uuid"
+    },
+    "sessionId": {
+     "$ref": "#/$defs/uuid"
+    }
+   },
+   "additionalProperties": false
+  },
+  "server.close": {
+   "type": "object",
+   "required": [
+    "type",
+    "requestId",
+    "sessionId"
+   ],
+   "properties": {
+    "type": {
+     "const": "close"
+    },
+    "requestId": {
+     "$ref": "#/$defs/uuid"
+    },
+    "sessionId": {
+     "$ref": "#/$defs/uuid"
+    }
+   },
+   "additionalProperties": false
+  },
+  "runner.hello": {
+   "type": "object",
+   "required": [
+    "type",
+    "protocolVersion",
+    "platform",
+    "debuggerEnabled"
+   ],
+   "properties": {
+    "type": {
+     "const": "hello"
+    },
+    "protocolVersion": {
+     "enum": [
+      4,
+      5
+     ]
+    },
+    "platform": {
+     "enum": [
+      "macOS",
+      "iOS"
+     ]
+    },
+    "debuggerEnabled": {
+     "type": "boolean"
+    },
+    "fileTransfer": {
+     "type": "boolean"
+    },
+    "fileLink": {
+     "type": "boolean"
+    },
+    "runtimes": {
+     "type": "array",
+     "items": {
+      "enum": [
+       "LiteRT-LM",
+       "PyTorch"
+      ]
+     }
+    },
+    "runnerInstance": {
+     "$ref": "#/$defs/uuid"
+    },
+    "buildId": {
+     "type": "string"
+    },
+    "capabilities": {
+     "type": "object"
+    }
+   }
+  },
+  "runner.activated": {
+   "type": "object",
+   "required": [
+    "type",
+    "requestId",
+    "owner",
+    "runnerInstance"
+   ],
+   "properties": {
+    "type": {
+     "const": "activated"
+    },
+    "requestId": {
+     "$ref": "#/$defs/uuid"
+    },
+    "owner": {
+     "type": "object",
+     "required": [
+      "serverId",
+      "sessionId",
+      "runId"
+     ],
+     "properties": {
+      "serverId": {
+       "type": "string",
+       "minLength": 1,
+       "maxLength": 256
+      },
+      "serverName": {
+       "type": "string"
+      },
+      "sessionId": {
+       "$ref": "#/$defs/uuid"
+      },
+      "sessionName": {
+       "type": "string"
+      },
+      "runId": {
+       "enum": [
+        "ref",
+        "target"
+       ]
+      }
+     }
+    },
+    "runnerInstance": {
+     "$ref": "#/$defs/uuid"
+    },
+    "buildId": {
+     "type": "string"
+    }
+   },
+   "additionalProperties": false
+  },
+  "runner.heartbeat_ack": {
+   "type": "object",
+   "required": [
+    "type",
+    "serverId",
+    "sessionId",
+    "sequence"
+   ],
+   "properties": {
+    "type": {
+     "const": "heartbeat_ack"
+    },
+    "serverId": {
+     "type": "string"
+    },
+    "sessionId": {
+     "$ref": "#/$defs/uuid"
+    },
+    "sequence": {
+     "type": "integer",
+     "minimum": 1
+    }
+   },
+   "additionalProperties": false
+  },
+  "runner.error": {
+   "type": "object",
+   "required": [
+    "type",
+    "error"
+   ],
+   "properties": {
+    "type": {
+     "const": "error"
+    },
+    "requestId": {
+     "type": "string"
+    },
+    "error": {
+     "type": "string"
+    },
+    "errorCode": {
+     "type": "string"
+    },
+    "generationStatus": {
+     "enum": [
+      "succeeded",
+      "stopped",
+      "failed"
+     ]
+    },
+    "dumpStatus": {
+     "enum": [
+      "ready",
+      "unavailable"
+     ]
+    },
+    "runDirectory": {
+     "type": "string",
+     "pattern": "^Documents/Runs/"
+    }
+   }
+  },
+  "runner.model_info": {
+   "type": "object",
+   "required": [
+    "type",
+    "requestId",
+    "available"
+   ],
+   "properties": {
+    "type": {
+     "const": "model_info"
+    },
+    "requestId": {
+     "$ref": "#/$defs/uuid"
+    },
+    "available": {
+     "type": "boolean"
+    }
+   },
+   "additionalProperties": false
+  },
+  "runner.model_link": {
+   "type": "object",
+   "required": [
+    "type",
+    "requestId",
+    "available"
+   ],
+   "properties": {
+    "type": {
+     "const": "model_link"
+    },
+    "requestId": {
+     "$ref": "#/$defs/uuid"
+    },
+    "available": {
+     "const": true
+    }
+   },
+   "additionalProperties": false
+  },
+  "runner.upload_begin": {
+   "type": "object",
+   "required": [
+    "type",
+    "requestId",
+    "offset"
+   ],
+   "properties": {
+    "type": {
+     "const": "upload_begin"
+    },
+    "requestId": {
+     "$ref": "#/$defs/uuid"
+    },
+    "offset": {
+     "const": 0
+    }
+   },
+   "additionalProperties": false
+  },
+  "runner.upload_chunk": {
+   "type": "object",
+   "required": [
+    "type",
+    "requestId",
+    "offset"
+   ],
+   "properties": {
+    "type": {
+     "const": "upload_chunk"
+    },
+    "requestId": {
+     "$ref": "#/$defs/uuid"
+    },
+    "offset": {
+     "type": "integer",
+     "minimum": 0
+    }
+   },
+   "additionalProperties": false
+  },
+  "runner.upload_finish": {
+   "type": "object",
+   "required": [
+    "type",
+    "requestId",
+    "available"
+   ],
+   "properties": {
+    "type": {
+     "const": "upload_finish"
+    },
+    "requestId": {
+     "$ref": "#/$defs/uuid"
+    },
+    "available": {
+     "const": true
+    }
+   },
+   "additionalProperties": false
+  },
+  "runner.upload_abort": {
+   "type": "object",
+   "required": [
+    "type",
+    "requestId"
+   ],
+   "properties": {
+    "type": {
+     "const": "upload_abort"
+    },
+    "requestId": {
+     "$ref": "#/$defs/uuid"
+    }
+   },
+   "additionalProperties": false
+  },
+  "runner.run_files": {
+   "type": "object",
+   "required": [
+    "type",
+    "requestId",
+    "manifestId",
+    "generationStatus",
+    "files"
+   ],
+   "properties": {
+    "type": {
+     "const": "run_files"
+    },
+    "requestId": {
+     "$ref": "#/$defs/uuid"
+    },
+    "manifestId": {
+     "$ref": "#/$defs/uuid"
+    },
+    "generationStatus": {
+     "enum": [
+      "succeeded",
+      "stopped",
+      "failed"
+     ]
+    },
+    "files": {
+     "type": "array",
+     "minItems": 1,
+     "maxItems": 2048,
+     "items": {
+      "$ref": "#/$defs/fileRecord"
+     }
+    },
+    "root": {
+     "type": "string",
+     "pattern": "^/.*/Runs/[0-9A-Fa-f-]{36}$"
+    }
+   },
+   "additionalProperties": false
+  },
+  "runner.file_chunk": {
+   "type": "object",
+   "required": [
+    "type",
+    "requestId",
+    "offset",
+    "manifestId"
+   ],
+   "properties": {
+    "type": {
+     "const": "file_chunk"
+    },
+    "requestId": {
+     "$ref": "#/$defs/uuid"
+    },
+    "offset": {
+     "type": "integer",
+     "minimum": 0
+    },
+    "manifestId": {
+     "$ref": "#/$defs/uuid"
+    },
+    "data": {
+     "type": "string"
+    }
+   },
+   "additionalProperties": false
+  },
+  "runner.run_received": {
+   "type": "object",
+   "required": [
+    "type",
+    "requestId",
+    "manifestId",
+    "deleted"
+   ],
+   "properties": {
+    "type": {
+     "const": "run_received"
+    },
+    "requestId": {
+     "$ref": "#/$defs/uuid"
+    },
+    "manifestId": {
+     "$ref": "#/$defs/uuid"
+    },
+    "deleted": {
+     "type": "boolean"
+    }
+   },
+   "additionalProperties": false
+  },
+  "runner.progress": {
+   "type": "object",
+   "required": [
+    "type",
+    "requestId",
+    "message"
+   ],
+   "properties": {
+    "type": {
+     "const": "progress"
+    },
+    "requestId": {
+     "$ref": "#/$defs/uuid"
+    },
+    "message": {
+     "type": "string"
+    }
+   },
+   "additionalProperties": false
+  },
+  "runner.delta": {
+   "type": "object",
+   "required": [
+    "type",
+    "requestId",
+    "text"
+   ],
+   "properties": {
+    "type": {
+     "const": "delta"
+    },
+    "requestId": {
+     "$ref": "#/$defs/uuid"
+    },
+    "text": {
+     "type": "string"
+    }
+   },
+   "additionalProperties": false
+  },
+  "runner.cancelling": {
+   "type": "object",
+   "required": [
+    "type",
+    "requestId"
+   ],
+   "properties": {
+    "type": {
+     "const": "cancelling"
+    },
+    "requestId": {
+     "$ref": "#/$defs/uuid"
+    }
+   },
+   "additionalProperties": false
+  },
+  "runner.preflight": {
+   "type": "object",
+   "required": [
+    "type",
+    "requestId",
+    "accepted"
+   ],
+   "properties": {
+    "type": {
+     "const": "preflight"
+    },
+    "requestId": {
+     "$ref": "#/$defs/uuid"
+    },
+    "accepted": {
+     "type": "boolean"
+    },
+    "contextTokenCount": {
+     "type": "integer",
+     "minimum": 0
+    },
+    "inputTokenCount": {
+     "type": "integer",
+     "minimum": 0
+    },
+    "contextLimit": {
+     "type": "integer",
+     "minimum": 0
+    },
+    "reason": {
+     "type": "string"
+    }
+   }
+  },
+  "runner.completed": {
+   "type": "object",
+   "required": [
+    "type",
+    "requestId"
+   ],
+   "properties": {
+    "type": {
+     "const": "completed"
+    },
+    "requestId": {
+     "$ref": "#/$defs/uuid"
+    },
+    "runDirectory": {
+     "type": "string",
+     "pattern": "^Documents/Runs/"
+    },
+    "output": {
+     "type": "string"
+    },
+    "generationStatus": {
+     "enum": [
+      "succeeded",
+      "stopped",
+      "failed"
+     ]
+    },
+    "dumpStatus": {
+     "enum": [
+      "ready",
+      "unavailable"
+     ]
+    },
+    "result": {
+     "type": "object"
+    },
+    "runtime": {
+     "const": "PyTorch"
+    }
+   }
+  },
+  "runner.runtime_event": {
+   "type": "object",
+   "required": [
+    "type",
+    "requestId",
+    "event"
+   ],
+   "properties": {
+    "type": {
+     "const": "runtime_event"
+    },
+    "requestId": {
+     "$ref": "#/$defs/uuid"
+    },
+    "event": {
+     "type": "object",
+     "required": [
+      "type"
+     ]
+    }
+   },
+   "additionalProperties": false
+  },
+  "runner.reset": {
+   "type": "object",
+   "required": [
+    "type",
+    "requestId",
+    "sessionId"
+   ],
+   "properties": {
+    "type": {
+     "const": "reset"
+    },
+    "requestId": {
+     "$ref": "#/$defs/uuid"
+    },
+    "sessionId": {
+     "$ref": "#/$defs/uuid"
+    }
+   },
+   "additionalProperties": false
+  },
+  "runner.closed": {
+   "type": "object",
+   "required": [
+    "type",
+    "requestId",
+    "sessionId"
+   ],
+   "properties": {
+    "type": {
+     "const": "closed"
+    },
+    "requestId": {
+     "$ref": "#/$defs/uuid"
+    },
+    "sessionId": {
+     "$ref": "#/$defs/uuid"
+    }
+   },
+   "additionalProperties": false
+  },
+  "runner.stop_requested": {
+   "type": "object",
+   "required": [
+    "type",
+    "serverId",
+    "sessionId",
+    "runId"
+   ],
+   "properties": {
+    "type": {
+     "const": "stop_requested"
+    },
+    "serverId": {
+     "type": "string"
+    },
+    "sessionId": {
+     "$ref": "#/$defs/uuid"
+    },
+    "runId": {
+     "enum": [
+      "ref",
+      "target"
+     ]
+    }
+   },
+   "additionalProperties": false
+  },
+  "runner.session_end_requested": {
+   "type": "object",
+   "required": [
+    "type",
+    "serverId",
+    "sessionId",
+    "runId"
+   ],
+   "properties": {
+    "type": {
+     "const": "session_end_requested"
+    },
+    "serverId": {
+     "type": "string"
+    },
+    "sessionId": {
+     "$ref": "#/$defs/uuid"
+    },
+    "runId": {
+     "enum": [
+      "ref",
+      "target"
+     ]
+    }
+   },
+   "additionalProperties": false
+  }
+ }
+}

@@ -1,0 +1,128 @@
+/**
+ * @license
+ * Copyright 2026 The AI Edge Model Explorer Authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ==============================================================================
+ */
+
+// Shared Chat / Debug mode switch interaction styles.
+report-app .debugger-shell {
+  .mode-switch {
+    display: inline-flex;
+    align-items: center;
+    box-sizing: border-box;
+    flex: 0 0 168px;
+    width: 168px;
+    min-width: 168px;
+    height: 32px;
+    gap: 0;
+    margin: 0;
+    padding: 4px;
+    border: 0;
+    border-radius: 6px;
+    background: var(--button-group);
+    box-shadow: none;
+  }
+  .mode-switch:has([data-mode='debug'][aria-pressed='true']) {
+    background: var(--button-group-debug);
+  }
+  .mode-switch button[data-mode] {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    flex: 0 0 80px;
+    width: 80px;
+    min-width: 80px;
+    height: 24px;
+    gap: 4px;
+    margin: 0;
+    padding: 0 8px;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    color: var(--button-muted);
+    font:
+      400 12px/20px Roboto,
+      Arial,
+      sans-serif;
+    white-space: nowrap;
+    box-shadow: none;
+    isolation: isolate;
+  }
+  .mode-switch button:first-child {
+    border-radius: 4px 0 0 4px;
+  }
+  .mode-switch button:last-child {
+    border-radius: 0 4px 4px 0;
+  }
+  .mode-switch button[data-mode='chat'] {
+    color: var(--button-text);
+  }
+  .mode-switch button[aria-pressed='true'] {
+    background: var(--button-chat);
+    color: var(--button-text);
+    font-weight: 500;
+  }
+  .mode-switch button[data-mode='debug'][aria-pressed='true'] {
+    background: var(--button-debug);
+    border: 1px solid var(--button-debug);
+    color: #fff;
+    box-shadow: 0 1px 1px rgba(49, 35, 7, 0.08);
+  }
+  .mode-switch button::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: var(--button-hover);
+    pointer-events: none;
+    opacity: 0;
+  }
+  .mode-switch button:not(:disabled):hover::before {
+    opacity: 1;
+  }
+  .mode-switch button:not(:disabled):active::before {
+    opacity: 1;
+    background: var(--button-press);
+  }
+  .mode-switch button:focus-visible {
+    outline: 2px solid var(--button-focus);
+    outline-offset: 2px;
+    z-index: 1;
+  }
+  .mode-switch button:disabled {
+    opacity: 0.35;
+  }
+  .mode-switch span.button-icon {
+    color: inherit;
+    font-size: 18px;
+    line-height: 18px;
+  }
+  .mode-switch button span:not(.button-icon) {
+    font: inherit;
+    color: inherit;
+  }
+}
+
+report-app .debugger-shell {
+  .mode-switch button::before {
+    transition: opacity 120ms;
+  }
+  .mode-switch button[data-mode='debug'][aria-pressed='true'] {
+    --button-hover: color-mix(in srgb, var(--button-text) 6%, transparent);
+    --button-press: color-mix(in srgb, var(--button-text) 12%, transparent);
+  }
+}

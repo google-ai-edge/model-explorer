@@ -1,0 +1,123 @@
+/**
+ * @license
+ * Copyright 2026 The AI Edge Model Explorer Authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ==============================================================================
+ */
+
+// Candidate Token Diff text geometry. Shared by normal, virtual and preview paths.
+@mixin token-type {
+  box-sizing: border-box;
+  font: 400 14px/24px var(--me-font-family);
+  min-height: 26px;
+  padding: 1px 0;
+  vertical-align: top;
+  &.empty-token {
+    min-width: 10px;
+  }
+}
+// The one heat palette. Token Diff applies it through the mixins below; the
+// trend chart resolves the same tokens with getComputedStyle.
+:root {
+  --heat-semantic-low: light-dark(#fffaf3, #3f352b);
+  --heat-semantic-high: light-dark(#df984f, #85603b);
+  --heat-semantic-point: light-dark(#df984f, #f6c581);
+  --heat-activation-low: light-dark(#f7f5ff, #363044);
+  --heat-activation-high: light-dark(#aa92dd, #705889);
+  --heat-activation-point: light-dark(#aa92dd, #cbb1fa);
+  --heat-hatch: light-dark(#b6b0a6, #8e877b);
+  --trend-surface: light-dark(#eef1f5, #17181b);
+}
+@mixin semantic-colors {
+  --b0: light-dark(#d2eada, #426e51);
+  --b4: light-dark(#fadbd6, #8b4c49);
+  --heat-low: var(--heat-semantic-low);
+  --heat-high: var(--heat-semantic-high);
+}
+
+@mixin activation-colors {
+  --heat-low: var(--heat-activation-low);
+  --heat-high: var(--heat-activation-high);
+}
+
+@mixin numeric-colors {
+  [data-palette='activation'] {
+    @include activation-colors;
+  }
+  button.numeric-token.numeric-token,
+  span.numeric-token.numeric-token {
+    background: color-mix(
+      in srgb,
+      var(--heat-high) var(--heat-level),
+      var(--heat-low)
+    );
+    color: var(--me-on-surface-color);
+    box-shadow: none;
+  }
+  button.numeric-missing.numeric-missing,
+  span.numeric-missing.numeric-missing {
+    background: repeating-linear-gradient(
+      135deg,
+      transparent 0 4px,
+      var(--heat-hatch) 4px 5px
+    );
+    color: var(--me-on-surface-color);
+    box-shadow: none;
+  }
+  .heat-scale {
+    display: inline-block;
+    width: 64px;
+    height: 8px;
+    border-radius: 2px;
+    background: linear-gradient(to right, var(--heat-low), var(--heat-high));
+  }
+  .numeric-legend[hidden] {
+    display: none;
+  }
+  .numeric-legend {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font: 11px/20px var(--me-font-family);
+    white-space: nowrap;
+  }
+}
+
+@mixin token-outline {
+  border: 1px solid light-dark(#9aaabd, #65758b);
+  padding: 0 2px;
+  margin: 1px;
+  border-radius: 2px;
+  box-shadow: none;
+}
+
+// Candidate selection is side-specific and must win over the hover outline.
+@mixin token-selection {
+  outline: 2px solid var(--pri, var(--me-primary-color));
+  outline-offset: -1px;
+  border-radius: 2px;
+}
+
+// Pointer feedback: the hovered token and its aligned partner on the other runtime
+// share one dashed frame; the stronger tint marks the pointer side.
+@mixin token-pair-hover($tint: 8%) {
+  position: relative;
+  z-index: 2;
+  outline: 1px dashed var(--pri, var(--me-primary-color));
+  outline-offset: -1px;
+  background-image: linear-gradient(
+    color-mix(in srgb, var(--pri, var(--me-primary-color)) $tint, transparent),
+    color-mix(in srgb, var(--pri, var(--me-primary-color)) $tint, transparent)
+  );
+}

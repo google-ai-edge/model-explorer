@@ -1,0 +1,13 @@
+{
+  "type": "activated",
+  "requestId": "3f6c2c9e-6c1a-4f7b-9d2e-1b7a9d5c0e21",
+  "owner": {
+    "serverId": "server-5d2f",
+    "serverName": "studio.local",
+    "sessionId": "6f1d2c3a-0b4e-4c5d-8e9f-a1b2c3d4e5f6",
+    "sessionName": "CPU vs GPU",
+    "runId": "ref"
+  },
+  "runnerInstance": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+  "buildId": "1@a0f1e97361155c8bb9cd3d6aa045c04320d4334b"
+}

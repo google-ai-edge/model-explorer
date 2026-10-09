@@ -1,0 +1,41 @@
+<!--
+ Copyright 2026 The AI Edge Model Explorer Authors.
+
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+ ==============================================================================
+-->
+<section
+  class="inPlaceDemo"
+  aria-label="Illustration of one conversation round sent to both runtimes"
+>
+  <div class="demoContext">
+    <div class="demoLanes">
+      @for (side of ['ref', 'target']; track side) {
+        <div class="demoSide">
+          <div class="demoPrompt">
+            <span class="demoRole">User</span>
+            <div class="demoBar">What's the capital of france?</div>
+          </div>
+          <div class="demoAnswer">
+            <div class="demoBar">
+              The capital of France is Paris<span class="exampleDiff">{{
+                side === 'ref' ? '.' : ', its largest city.'
+              }}</span>
+            </div>
+          </div>
+        </div>
+      }
+    </div>
+  </div>
+  <span class="demoDraftText" aria-hidden="true">What's the capital of france?</span>
+</section>

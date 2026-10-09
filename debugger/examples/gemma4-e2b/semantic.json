@@ -1,0 +1,6574 @@
+{
+  "semantic_ops": {
+    "Linear": "Learned linear projection.",
+    "RMSNorm": "Root-mean-square normalization, with optional learned gain.",
+    "RoPE": "Rotary positional transformation.",
+    "Attention": "Attention scores, softmax, and weighted value aggregation.",
+    "GELU": "Gaussian error linear unit.",
+    "Add": "Elementwise addition.",
+    "Mul": "Elementwise multiplication."
+  },
+  "semantic_graph": [
+    {
+      "kind": "decoder",
+      "inputs": [
+        {
+          "id": "input",
+          "shape": [
+            "B",
+            "S",
+            1536
+          ],
+          "source": "residual"
+        },
+        {
+          "id": "per_layer_input",
+          "shape": [
+            "B",
+            "S",
+            256
+          ],
+          "source": "external per-layer embedding",
+          "label": "Per-layer input"
+        }
+      ],
+      "outputs": [
+        {
+          "id": "output",
+          "shape": [
+            "B",
+            "S",
+            1536
+          ]
+        }
+      ],
+      "nodes": [
+        {
+          "id": "norm.attn.in",
+          "label": "Pre-RMSNorm",
+          "namespace": "Attention",
+          "incomingEdges": [
+            {
+              "sourceNodeId": "input",
+              "sourceNodeOutputId": "0",
+              "targetNodeInputId": "0"
+            }
+          ],
+          "outputsMetadata": [
+            {
+              "id": "0",
+              "attrs": [
+                {
+                  "key": "tensor_name",
+                  "value": "norm.attn.in:0"
+                },
+                {
+                  "key": "tensor_shape",
+                  "value": "B,S,1536"
+                }
+              ]
+            }
+          ],
+          "attrs": [
+            {
+              "key": "category",
+              "value": "norm"
+            }
+          ],
+          "ops": [
+            {
+              "id": "norm.attn.in",
+              "op": "RMSNorm"
+            }
+          ]
+        },
+        {
+          "id": "attn",
+          "label": "Multi-Query Attention",
+          "namespace": "Attention",
+          "incomingEdges": [
+            {
+              "sourceNodeId": "norm.attn.in",
+              "sourceNodeOutputId": "0",
+              "targetNodeInputId": "0"
+            }
+          ],
+          "outputsMetadata": [
+            {
+              "id": "0",
+              "attrs": [
+                {
+                  "key": "tensor_name",
+                  "value": "attn:0"
+                },
+                {
+                  "key": "tensor_shape",
+                  "value": "B,S,1536"
+                }
+              ]
+            }
+          ],
+          "attrs": [
+            {
+              "key": "category",
+              "value": "attention"
+            }
+          ],
+          "ops": [
+            {
+              "id": "q_proj",
+              "op": "Linear"
+            },
+            {
+              "id": "k_proj",
+              "op": "Linear"
+            },
+            {
+              "id": "v_proj",
+              "op": "Linear"
+            },
+            {
+              "id": "q_norm",
+              "op": "RMSNorm"
+            },
+            {
+              "id": "k_norm",
+              "op": "RMSNorm"
+            },
+            {
+              "id": "v_norm",
+              "op": "RMSNorm"
+            },
+            {
+              "id": "q_rope",
+              "op": "RoPE"
+            },
+            {
+              "id": "k_rope",
+              "op": "RoPE"
+            },
+            {
+              "id": "attend",
+              "op": "Attention"
+            },
+            {
+              "id": "o_proj",
+              "op": "Linear"
+            }
+          ]
+        },
+        {
+          "id": "norm.attn.out",
+          "label": "Post-RMSNorm",
+          "namespace": "Attention",
+          "incomingEdges": [
+            {
+              "sourceNodeId": "attn",
+              "sourceNodeOutputId": "0",
+              "targetNodeInputId": "0"
+            }
+          ],
+          "outputsMetadata": [
+            {
+              "id": "0",
+              "attrs": [
+                {
+                  "key": "tensor_name",
+                  "value": "norm.attn.out:0"
+                },
+                {
+                  "key": "tensor_shape",
+                  "value": "B,S,1536"
+                }
+              ]
+            }
+          ],
+          "attrs": [
+            {
+              "key": "category",
+              "value": "norm"
+            }
+          ],
+          "ops": [
+            {
+              "id": "norm.attn.out",
+              "op": "RMSNorm"
+            }
+          ]
+        },
+        {
+          "id": "add_attn",
+          "label": "Add",
+          "namespace": "Attention",
+          "incomingEdges": [
+            {
+              "sourceNodeId": "input",
+              "sourceNodeOutputId": "0",
+              "targetNodeInputId": "0"
+            },
+            {
+              "sourceNodeId": "norm.attn.out",
+              "sourceNodeOutputId": "0",
+              "targetNodeInputId": "1"
+            }
+          ],
+          "outputsMetadata": [
+            {
+              "id": "0",
+              "attrs": [
+                {
+                  "key": "tensor_name",
+                  "value": "add_attn:0"
+                },
+                {
+                  "key": "tensor_shape",
+                  "value": "B,S,1536"
+                }
+              ]
+            }
+          ],
+          "attrs": [
+            {
+              "key": "category",
+              "value": "elementwise"
+            }
+          ],
+          "ops": [
+            {
+              "id": "add_attn",
+              "op": "Add"
+            }
+          ]
+        },
+        {
+          "id": "norm.ffn.in",
+          "label": "Pre-RMSNorm",
+          "namespace": "Feed Forward",
+          "incomingEdges": [
+            {
+              "sourceNodeId": "add_attn",
+              "sourceNodeOutputId": "0",
+              "targetNodeInputId": "0"
+            }
+          ],
+          "outputsMetadata": [
+            {
+              "id": "0",
+              "attrs": [
+                {
+                  "key": "tensor_name",
+                  "value": "norm.ffn.in:0"
+                },
+                {
+                  "key": "tensor_shape",
+                  "value": "B,S,1536"
+                }
+              ]
+            }
+          ],
+          "attrs": [
+            {
+              "key": "category",
+              "value": "norm"
+            }
+          ],
+          "ops": [
+            {
+              "id": "norm.ffn.in",
+              "op": "RMSNorm"
+            }
+          ]
+        },
+        {
+          "id": "ffn",
+          "label": "GeGLU",
+          "namespace": "Feed Forward",
+          "incomingEdges": [
+            {
+              "sourceNodeId": "norm.ffn.in",
+              "sourceNodeOutputId": "0",
+              "targetNodeInputId": "0"
+            }
+          ],
+          "outputsMetadata": [
+            {
+              "id": "0",
+              "attrs": [
+                {
+                  "key": "tensor_name",
+                  "value": "ffn:0"
+                },
+                {
+                  "key": "tensor_shape",
+                  "value": "B,S,1536"
+                }
+              ]
+            }
+          ],
+          "attrs": [
+            {
+              "key": "category",
+              "value": "ffn"
+            }
+          ],
+          "ops": [
+            {
+              "id": "gate_proj",
+              "op": "Linear"
+            },
+            {
+              "id": "up_proj",
+              "op": "Linear"
+            },
+            {
+              "id": "act",
+              "op": "GELU"
+            },
+            {
+              "id": "gate",
+              "op": "Mul"
+            },
+            {
+              "id": "down_proj",
+              "op": "Linear"
+            }
+          ]
+        },
+        {
+          "id": "norm.ffn.out",
+          "label": "Post-RMSNorm",
+          "namespace": "Feed Forward",
+          "incomingEdges": [
+            {
+              "sourceNodeId": "ffn",
+              "sourceNodeOutputId": "0",
+              "targetNodeInputId": "0"
+            }
+          ],
+          "outputsMetadata": [
+            {
+              "id": "0",
+              "attrs": [
+                {
+                  "key": "tensor_name",
+                  "value": "norm.ffn.out:0"
+                },
+                {
+                  "key": "tensor_shape",
+                  "value": "B,S,1536"
+                }
+              ]
+            }
+          ],
+          "attrs": [
+            {
+              "key": "category",
+              "value": "norm"
+            }
+          ],
+          "ops": [
+            {
+              "id": "norm.ffn.out",
+              "op": "RMSNorm"
+            }
+          ]
+        },
+        {
+          "id": "add_ffn",
+          "label": "Add",
+          "namespace": "Feed Forward",
+          "incomingEdges": [
+            {
+              "sourceNodeId": "add_attn",
+              "sourceNodeOutputId": "0",
+              "targetNodeInputId": "0"
+            },
+            {
+              "sourceNodeId": "norm.ffn.out",
+              "sourceNodeOutputId": "0",
+              "targetNodeInputId": "1"
+            }
+          ],
+          "outputsMetadata": [
+            {
+              "id": "0",
+              "attrs": [
+                {
+                  "key": "tensor_name",
+                  "value": "add_ffn:0"
+                },
+                {
+                  "key": "tensor_shape",
+                  "value": "B,S,1536"
+                }
+              ]
+            }
+          ],
+          "attrs": [
+            {
+              "key": "category",
+              "value": "elementwise"
+            }
+          ],
+          "ops": [
+            {
+              "id": "add_ffn",
+              "op": "Add"
+            }
+          ]
+        },
+        {
+          "id": "ple",
+          "label": "Per-Layer Embedding",
+          "namespace": "Per-Layer Embedding",
+          "incomingEdges": [
+            {
+              "sourceNodeId": "add_ffn",
+              "sourceNodeOutputId": "0",
+              "targetNodeInputId": "0"
+            },
+            {
+              "sourceNodeId": "per_layer_input",
+              "sourceNodeOutputId": "0",
+              "targetNodeInputId": "1"
+            }
+          ],
+          "outputsMetadata": [
+            {
+              "id": "0",
+              "attrs": [
+                {
+                  "key": "tensor_name",
+                  "value": "ple:0"
+                },
+                {
+                  "key": "tensor_shape",
+                  "value": "B,S,1536"
+                }
+              ]
+            }
+          ],
+          "attrs": [
+            {
+              "key": "category",
+              "value": "per_layer_embedding"
+            }
+          ],
+          "ops": [
+            {
+              "id": "gate_proj",
+              "op": "Linear"
+            },
+            {
+              "id": "act",
+              "op": "GELU"
+            },
+            {
+              "id": "gate",
+              "op": "Mul"
+            },
+            {
+              "id": "proj",
+              "op": "Linear"
+            }
+          ]
+        },
+        {
+          "id": "norm.ple.out",
+          "label": "Post-RMSNorm",
+          "namespace": "Per-Layer Embedding",
+          "incomingEdges": [
+            {
+              "sourceNodeId": "ple",
+              "sourceNodeOutputId": "0",
+              "targetNodeInputId": "0"
+            }
+          ],
+          "outputsMetadata": [
+            {
+              "id": "0",
+              "attrs": [
+                {
+                  "key": "tensor_name",
+                  "value": "norm.ple.out:0"
+                },
+                {
+                  "key": "tensor_shape",
+                  "value": "B,S,1536"
+                }
+              ]
+            }
+          ],
+          "attrs": [
+            {
+              "key": "category",
+              "value": "norm"
+            }
+          ],
+          "ops": [
+            {
+              "id": "norm.ple.out",
+              "op": "RMSNorm"
+            }
+          ]
+        },
+        {
+          "id": "add_ple",
+          "label": "Add",
+          "namespace": "Per-Layer Embedding",
+          "incomingEdges": [
+            {
+              "sourceNodeId": "add_ffn",
+              "sourceNodeOutputId": "0",
+              "targetNodeInputId": "0"
+            },
+            {
+              "sourceNodeId": "norm.ple.out",
+              "sourceNodeOutputId": "0",
+              "targetNodeInputId": "1"
+            }
+          ],
+          "outputsMetadata": [
+            {
+              "id": "0",
+              "attrs": [
+                {
+                  "key": "tensor_name",
+                  "value": "add_ple:0"
+                },
+                {
+                  "key": "tensor_shape",
+                  "value": "B,S,1536"
+                }
+              ]
+            }
+          ],
+          "attrs": [
+            {
+              "key": "category",
+              "value": "elementwise"
+            }
+          ],
+          "ops": [
+            {
+              "id": "add_ple",
+              "op": "Add"
+            }
+          ]
+        },
+        {
+          "id": "layer_scale",
+          "label": "Mul",
+          "namespace": "",
+          "incomingEdges": [
+            {
+              "sourceNodeId": "add_ple",
+              "sourceNodeOutputId": "0",
+              "targetNodeInputId": "0"
+            }
+          ],
+          "outputsMetadata": [
+            {
+              "id": "0",
+              "attrs": [
+                {
+                  "key": "tensor_name",
+                  "value": "layer_scale:0"
+                },
+                {
+                  "key": "tensor_shape",
+                  "value": "B,S,1536"
+                }
+              ]
+            }
+          ],
+          "attrs": [
+            {
+              "key": "category",
+              "value": "elementwise"
+            }
+          ],
+          "ops": [
+            {
+              "id": "layer_scale",
+              "op": "Mul"
+            }
+          ]
+        }
+      ],
+      "anchors": [
+        {
+          "id": "input",
+          "semantic": "layer input",
+          "of": "input:0"
+        },
+        {
+          "id": "intermediate.1",
+          "semantic": "residual after attention",
+          "of": "add_attn:0",
+          "subgraph": {
+            "label": "Attention",
+            "nodes": [
+              "norm.attn.in",
+              "attn",
+              "norm.attn.out",
+              "add_attn"
+            ]
+          }
+        },
+        {
+          "id": "intermediate.2",
+          "semantic": "residual after FFN",
+          "of": "add_ffn:0",
+          "subgraph": {
+            "label": "Feed Forward",
+            "nodes": [
+              "norm.ffn.in",
+              "ffn",
+              "norm.ffn.out",
+              "add_ffn"
+            ]
+          }
+        },
+        {
+          "id": "output",
+          "semantic": "layer output",
+          "of": "layer_scale:0",
+          "subgraph": {
+            "label": "Per-Layer Embedding + Layer Scale",
+            "nodes": [
+              "ple",
+              "norm.ple.out",
+              "add_ple",
+              "layer_scale"
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "layers": [
+    {
+      "def": 0,
+      "attrs": {
+        "norm.attn.in": {
+          "ops": {
+            "norm.attn.in": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "norm.attn.out": {
+          "ops": {
+            "norm.attn.out": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "norm.ffn.in": {
+          "ops": {
+            "norm.ffn.in": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "norm.ffn.out": {
+          "ops": {
+            "norm.ffn.out": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "norm.ple.out": {
+          "ops": {
+            "norm.ple.out": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "attn": {
+          "ops": {
+            "q_proj": {
+              "out": {
+                "heads": 8,
+                "dim": 256
+              }
+            },
+            "k_proj": {
+              "out": {
+                "heads": 1,
+                "dim": 256
+              }
+            },
+            "v_proj": {
+              "out": {
+                "heads": 1,
+                "dim": 256
+              }
+            },
+            "q_norm": {
+              "eps": 1e-06,
+              "learned_scale": true
+            },
+            "k_norm": {
+              "eps": 1e-06,
+              "learned_scale": true
+            },
+            "v_norm": {
+              "eps": 1e-06,
+              "learned_scale": false
+            },
+            "q_rope": {
+              "variant": "default",
+              "theta": 10000.0,
+              "rotary_dims": 256,
+              "nope_dims": 0
+            },
+            "k_rope": {
+              "variant": "default",
+              "theta": 10000.0,
+              "rotary_dims": 256,
+              "nope_dims": 0
+            },
+            "attend": {
+              "span": {
+                "kind": "sliding",
+                "window": 512
+              },
+              "score_scale": 1.0
+            },
+            "o_proj": {
+              "out": 1536
+            }
+          }
+        },
+        "ffn": {
+          "ops": {
+            "gate_proj": {
+              "out": 6144
+            },
+            "up_proj": {
+              "out": 6144
+            },
+            "act": {
+              "kind": "gelu",
+              "approximate": "tanh"
+            },
+            "gate": {},
+            "down_proj": {
+              "out": 1536
+            }
+          }
+        },
+        "ple": {
+          "ops": {
+            "gate_proj": {
+              "out": 256
+            },
+            "act": {
+              "kind": "gelu",
+              "approximate": "tanh"
+            },
+            "gate": {
+              "slice": 0
+            },
+            "proj": {
+              "out": 1536
+            }
+          }
+        },
+        "add_attn": {
+          "ops": {
+            "add_attn": {}
+          }
+        },
+        "add_ffn": {
+          "ops": {
+            "add_ffn": {}
+          }
+        },
+        "add_ple": {
+          "ops": {
+            "add_ple": {}
+          }
+        },
+        "layer_scale": {
+          "ops": {
+            "layer_scale": {
+              "scalar_source": "checkpoint",
+              "value": 0.0185546875
+            }
+          }
+        }
+      }
+    },
+    {
+      "def": 0,
+      "attrs": {
+        "norm.attn.in": {
+          "ops": {
+            "norm.attn.in": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "norm.attn.out": {
+          "ops": {
+            "norm.attn.out": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "norm.ffn.in": {
+          "ops": {
+            "norm.ffn.in": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "norm.ffn.out": {
+          "ops": {
+            "norm.ffn.out": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "norm.ple.out": {
+          "ops": {
+            "norm.ple.out": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "attn": {
+          "ops": {
+            "q_proj": {
+              "out": {
+                "heads": 8,
+                "dim": 256
+              }
+            },
+            "k_proj": {
+              "out": {
+                "heads": 1,
+                "dim": 256
+              }
+            },
+            "v_proj": {
+              "out": {
+                "heads": 1,
+                "dim": 256
+              }
+            },
+            "q_norm": {
+              "eps": 1e-06,
+              "learned_scale": true
+            },
+            "k_norm": {
+              "eps": 1e-06,
+              "learned_scale": true
+            },
+            "v_norm": {
+              "eps": 1e-06,
+              "learned_scale": false
+            },
+            "q_rope": {
+              "variant": "default",
+              "theta": 10000.0,
+              "rotary_dims": 256,
+              "nope_dims": 0
+            },
+            "k_rope": {
+              "variant": "default",
+              "theta": 10000.0,
+              "rotary_dims": 256,
+              "nope_dims": 0
+            },
+            "attend": {
+              "span": {
+                "kind": "sliding",
+                "window": 512
+              },
+              "score_scale": 1.0
+            },
+            "o_proj": {
+              "out": 1536
+            }
+          }
+        },
+        "ffn": {
+          "ops": {
+            "gate_proj": {
+              "out": 6144
+            },
+            "up_proj": {
+              "out": 6144
+            },
+            "act": {
+              "kind": "gelu",
+              "approximate": "tanh"
+            },
+            "gate": {},
+            "down_proj": {
+              "out": 1536
+            }
+          }
+        },
+        "ple": {
+          "ops": {
+            "gate_proj": {
+              "out": 256
+            },
+            "act": {
+              "kind": "gelu",
+              "approximate": "tanh"
+            },
+            "gate": {
+              "slice": 1
+            },
+            "proj": {
+              "out": 1536
+            }
+          }
+        },
+        "add_attn": {
+          "ops": {
+            "add_attn": {}
+          }
+        },
+        "add_ffn": {
+          "ops": {
+            "add_ffn": {}
+          }
+        },
+        "add_ple": {
+          "ops": {
+            "add_ple": {}
+          }
+        },
+        "layer_scale": {
+          "ops": {
+            "layer_scale": {
+              "scalar_source": "checkpoint",
+              "value": 0.2265625
+            }
+          }
+        }
+      },
+      "from": {
+        "input": {
+          "layer": 0,
+          "anchor": "output"
+        }
+      }
+    },
+    {
+      "def": 0,
+      "attrs": {
+        "norm.attn.in": {
+          "ops": {
+            "norm.attn.in": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "norm.attn.out": {
+          "ops": {
+            "norm.attn.out": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "norm.ffn.in": {
+          "ops": {
+            "norm.ffn.in": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "norm.ffn.out": {
+          "ops": {
+            "norm.ffn.out": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "norm.ple.out": {
+          "ops": {
+            "norm.ple.out": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "attn": {
+          "ops": {
+            "q_proj": {
+              "out": {
+                "heads": 8,
+                "dim": 256
+              }
+            },
+            "k_proj": {
+              "out": {
+                "heads": 1,
+                "dim": 256
+              }
+            },
+            "v_proj": {
+              "out": {
+                "heads": 1,
+                "dim": 256
+              }
+            },
+            "q_norm": {
+              "eps": 1e-06,
+              "learned_scale": true
+            },
+            "k_norm": {
+              "eps": 1e-06,
+              "learned_scale": true
+            },
+            "v_norm": {
+              "eps": 1e-06,
+              "learned_scale": false
+            },
+            "q_rope": {
+              "variant": "default",
+              "theta": 10000.0,
+              "rotary_dims": 256,
+              "nope_dims": 0
+            },
+            "k_rope": {
+              "variant": "default",
+              "theta": 10000.0,
+              "rotary_dims": 256,
+              "nope_dims": 0
+            },
+            "attend": {
+              "span": {
+                "kind": "sliding",
+                "window": 512
+              },
+              "score_scale": 1.0
+            },
+            "o_proj": {
+              "out": 1536
+            }
+          }
+        },
+        "ffn": {
+          "ops": {
+            "gate_proj": {
+              "out": 6144
+            },
+            "up_proj": {
+              "out": 6144
+            },
+            "act": {
+              "kind": "gelu",
+              "approximate": "tanh"
+            },
+            "gate": {},
+            "down_proj": {
+              "out": 1536
+            }
+          }
+        },
+        "ple": {
+          "ops": {
+            "gate_proj": {
+              "out": 256
+            },
+            "act": {
+              "kind": "gelu",
+              "approximate": "tanh"
+            },
+            "gate": {
+              "slice": 2
+            },
+            "proj": {
+              "out": 1536
+            }
+          }
+        },
+        "add_attn": {
+          "ops": {
+            "add_attn": {}
+          }
+        },
+        "add_ffn": {
+          "ops": {
+            "add_ffn": {}
+          }
+        },
+        "add_ple": {
+          "ops": {
+            "add_ple": {}
+          }
+        },
+        "layer_scale": {
+          "ops": {
+            "layer_scale": {
+              "scalar_source": "checkpoint",
+              "value": 0.73828125
+            }
+          }
+        }
+      },
+      "from": {
+        "input": {
+          "layer": 1,
+          "anchor": "output"
+        }
+      }
+    },
+    {
+      "def": 0,
+      "attrs": {
+        "norm.attn.in": {
+          "ops": {
+            "norm.attn.in": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "norm.attn.out": {
+          "ops": {
+            "norm.attn.out": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "norm.ffn.in": {
+          "ops": {
+            "norm.ffn.in": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "norm.ffn.out": {
+          "ops": {
+            "norm.ffn.out": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "norm.ple.out": {
+          "ops": {
+            "norm.ple.out": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "attn": {
+          "ops": {
+            "q_proj": {
+              "out": {
+                "heads": 8,
+                "dim": 256
+              }
+            },
+            "k_proj": {
+              "out": {
+                "heads": 1,
+                "dim": 256
+              }
+            },
+            "v_proj": {
+              "out": {
+                "heads": 1,
+                "dim": 256
+              }
+            },
+            "q_norm": {
+              "eps": 1e-06,
+              "learned_scale": true
+            },
+            "k_norm": {
+              "eps": 1e-06,
+              "learned_scale": true
+            },
+            "v_norm": {
+              "eps": 1e-06,
+              "learned_scale": false
+            },
+            "q_rope": {
+              "variant": "default",
+              "theta": 10000.0,
+              "rotary_dims": 256,
+              "nope_dims": 0
+            },
+            "k_rope": {
+              "variant": "default",
+              "theta": 10000.0,
+              "rotary_dims": 256,
+              "nope_dims": 0
+            },
+            "attend": {
+              "span": {
+                "kind": "sliding",
+                "window": 512
+              },
+              "score_scale": 1.0
+            },
+            "o_proj": {
+              "out": 1536
+            }
+          }
+        },
+        "ffn": {
+          "ops": {
+            "gate_proj": {
+              "out": 6144
+            },
+            "up_proj": {
+              "out": 6144
+            },
+            "act": {
+              "kind": "gelu",
+              "approximate": "tanh"
+            },
+            "gate": {},
+            "down_proj": {
+              "out": 1536
+            }
+          }
+        },
+        "ple": {
+          "ops": {
+            "gate_proj": {
+              "out": 256
+            },
+            "act": {
+              "kind": "gelu",
+              "approximate": "tanh"
+            },
+            "gate": {
+              "slice": 3
+            },
+            "proj": {
+              "out": 1536
+            }
+          }
+        },
+        "add_attn": {
+          "ops": {
+            "add_attn": {}
+          }
+        },
+        "add_ffn": {
+          "ops": {
+            "add_ffn": {}
+          }
+        },
+        "add_ple": {
+          "ops": {
+            "add_ple": {}
+          }
+        },
+        "layer_scale": {
+          "ops": {
+            "layer_scale": {
+              "scalar_source": "checkpoint",
+              "value": 0.271484375
+            }
+          }
+        }
+      },
+      "from": {
+        "input": {
+          "layer": 2,
+          "anchor": "output"
+        }
+      }
+    },
+    {
+      "def": 0,
+      "attrs": {
+        "norm.attn.in": {
+          "ops": {
+            "norm.attn.in": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "norm.attn.out": {
+          "ops": {
+            "norm.attn.out": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "norm.ffn.in": {
+          "ops": {
+            "norm.ffn.in": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "norm.ffn.out": {
+          "ops": {
+            "norm.ffn.out": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "norm.ple.out": {
+          "ops": {
+            "norm.ple.out": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "attn": {
+          "ops": {
+            "q_proj": {
+              "out": {
+                "heads": 8,
+                "dim": 512
+              }
+            },
+            "k_proj": {
+              "out": {
+                "heads": 1,
+                "dim": 512
+              }
+            },
+            "v_proj": {
+              "out": {
+                "heads": 1,
+                "dim": 512
+              }
+            },
+            "q_norm": {
+              "eps": 1e-06,
+              "learned_scale": true
+            },
+            "k_norm": {
+              "eps": 1e-06,
+              "learned_scale": true
+            },
+            "v_norm": {
+              "eps": 1e-06,
+              "learned_scale": false
+            },
+            "q_rope": {
+              "variant": "proportional",
+              "theta": 1000000.0,
+              "rotary_dims": 128,
+              "nope_dims": 384
+            },
+            "k_rope": {
+              "variant": "proportional",
+              "theta": 1000000.0,
+              "rotary_dims": 128,
+              "nope_dims": 384
+            },
+            "attend": {
+              "span": {
+                "kind": "global"
+              },
+              "score_scale": 1.0
+            },
+            "o_proj": {
+              "out": 1536
+            }
+          }
+        },
+        "ffn": {
+          "ops": {
+            "gate_proj": {
+              "out": 6144
+            },
+            "up_proj": {
+              "out": 6144
+            },
+            "act": {
+              "kind": "gelu",
+              "approximate": "tanh"
+            },
+            "gate": {},
+            "down_proj": {
+              "out": 1536
+            }
+          }
+        },
+        "ple": {
+          "ops": {
+            "gate_proj": {
+              "out": 256
+            },
+            "act": {
+              "kind": "gelu",
+              "approximate": "tanh"
+            },
+            "gate": {
+              "slice": 4
+            },
+            "proj": {
+              "out": 1536
+            }
+          }
+        },
+        "add_attn": {
+          "ops": {
+            "add_attn": {}
+          }
+        },
+        "add_ffn": {
+          "ops": {
+            "add_ffn": {}
+          }
+        },
+        "add_ple": {
+          "ops": {
+            "add_ple": {}
+          }
+        },
+        "layer_scale": {
+          "ops": {
+            "layer_scale": {
+              "scalar_source": "checkpoint",
+              "value": 0.490234375
+            }
+          }
+        }
+      },
+      "from": {
+        "input": {
+          "layer": 3,
+          "anchor": "output"
+        }
+      }
+    },
+    {
+      "def": 0,
+      "attrs": {
+        "norm.attn.in": {
+          "ops": {
+            "norm.attn.in": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "norm.attn.out": {
+          "ops": {
+            "norm.attn.out": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "norm.ffn.in": {
+          "ops": {
+            "norm.ffn.in": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "norm.ffn.out": {
+          "ops": {
+            "norm.ffn.out": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "norm.ple.out": {
+          "ops": {
+            "norm.ple.out": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "attn": {
+          "ops": {
+            "q_proj": {
+              "out": {
+                "heads": 8,
+                "dim": 256
+              }
+            },
+            "k_proj": {
+              "out": {
+                "heads": 1,
+                "dim": 256
+              }
+            },
+            "v_proj": {
+              "out": {
+                "heads": 1,
+                "dim": 256
+              }
+            },
+            "q_norm": {
+              "eps": 1e-06,
+              "learned_scale": true
+            },
+            "k_norm": {
+              "eps": 1e-06,
+              "learned_scale": true
+            },
+            "v_norm": {
+              "eps": 1e-06,
+              "learned_scale": false
+            },
+            "q_rope": {
+              "variant": "default",
+              "theta": 10000.0,
+              "rotary_dims": 256,
+              "nope_dims": 0
+            },
+            "k_rope": {
+              "variant": "default",
+              "theta": 10000.0,
+              "rotary_dims": 256,
+              "nope_dims": 0
+            },
+            "attend": {
+              "span": {
+                "kind": "sliding",
+                "window": 512
+              },
+              "score_scale": 1.0
+            },
+            "o_proj": {
+              "out": 1536
+            }
+          }
+        },
+        "ffn": {
+          "ops": {
+            "gate_proj": {
+              "out": 6144
+            },
+            "up_proj": {
+              "out": 6144
+            },
+            "act": {
+              "kind": "gelu",
+              "approximate": "tanh"
+            },
+            "gate": {},
+            "down_proj": {
+              "out": 1536
+            }
+          }
+        },
+        "ple": {
+          "ops": {
+            "gate_proj": {
+              "out": 256
+            },
+            "act": {
+              "kind": "gelu",
+              "approximate": "tanh"
+            },
+            "gate": {
+              "slice": 5
+            },
+            "proj": {
+              "out": 1536
+            }
+          }
+        },
+        "add_attn": {
+          "ops": {
+            "add_attn": {}
+          }
+        },
+        "add_ffn": {
+          "ops": {
+            "add_ffn": {}
+          }
+        },
+        "add_ple": {
+          "ops": {
+            "add_ple": {}
+          }
+        },
+        "layer_scale": {
+          "ops": {
+            "layer_scale": {
+              "scalar_source": "checkpoint",
+              "value": 0.65234375
+            }
+          }
+        }
+      },
+      "from": {
+        "input": {
+          "layer": 4,
+          "anchor": "output"
+        }
+      }
+    },
+    {
+      "def": 0,
+      "attrs": {
+        "norm.attn.in": {
+          "ops": {
+            "norm.attn.in": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "norm.attn.out": {
+          "ops": {
+            "norm.attn.out": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "norm.ffn.in": {
+          "ops": {
+            "norm.ffn.in": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "norm.ffn.out": {
+          "ops": {
+            "norm.ffn.out": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "norm.ple.out": {
+          "ops": {
+            "norm.ple.out": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "attn": {
+          "ops": {
+            "q_proj": {
+              "out": {
+                "heads": 8,
+                "dim": 256
+              }
+            },
+            "k_proj": {
+              "out": {
+                "heads": 1,
+                "dim": 256
+              }
+            },
+            "v_proj": {
+              "out": {
+                "heads": 1,
+                "dim": 256
+              }
+            },
+            "q_norm": {
+              "eps": 1e-06,
+              "learned_scale": true
+            },
+            "k_norm": {
+              "eps": 1e-06,
+              "learned_scale": true
+            },
+            "v_norm": {
+              "eps": 1e-06,
+              "learned_scale": false
+            },
+            "q_rope": {
+              "variant": "default",
+              "theta": 10000.0,
+              "rotary_dims": 256,
+              "nope_dims": 0
+            },
+            "k_rope": {
+              "variant": "default",
+              "theta": 10000.0,
+              "rotary_dims": 256,
+              "nope_dims": 0
+            },
+            "attend": {
+              "span": {
+                "kind": "sliding",
+                "window": 512
+              },
+              "score_scale": 1.0
+            },
+            "o_proj": {
+              "out": 1536
+            }
+          }
+        },
+        "ffn": {
+          "ops": {
+            "gate_proj": {
+              "out": 6144
+            },
+            "up_proj": {
+              "out": 6144
+            },
+            "act": {
+              "kind": "gelu",
+              "approximate": "tanh"
+            },
+            "gate": {},
+            "down_proj": {
+              "out": 1536
+            }
+          }
+        },
+        "ple": {
+          "ops": {
+            "gate_proj": {
+              "out": 256
+            },
+            "act": {
+              "kind": "gelu",
+              "approximate": "tanh"
+            },
+            "gate": {
+              "slice": 6
+            },
+            "proj": {
+              "out": 1536
+            }
+          }
+        },
+        "add_attn": {
+          "ops": {
+            "add_attn": {}
+          }
+        },
+        "add_ffn": {
+          "ops": {
+            "add_ffn": {}
+          }
+        },
+        "add_ple": {
+          "ops": {
+            "add_ple": {}
+          }
+        },
+        "layer_scale": {
+          "ops": {
+            "layer_scale": {
+              "scalar_source": "checkpoint",
+              "value": 0.55078125
+            }
+          }
+        }
+      },
+      "from": {
+        "input": {
+          "layer": 5,
+          "anchor": "output"
+        }
+      }
+    },
+    {
+      "def": 0,
+      "attrs": {
+        "norm.attn.in": {
+          "ops": {
+            "norm.attn.in": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "norm.attn.out": {
+          "ops": {
+            "norm.attn.out": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "norm.ffn.in": {
+          "ops": {
+            "norm.ffn.in": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "norm.ffn.out": {
+          "ops": {
+            "norm.ffn.out": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "norm.ple.out": {
+          "ops": {
+            "norm.ple.out": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "attn": {
+          "ops": {
+            "q_proj": {
+              "out": {
+                "heads": 8,
+                "dim": 256
+              }
+            },
+            "k_proj": {
+              "out": {
+                "heads": 1,
+                "dim": 256
+              }
+            },
+            "v_proj": {
+              "out": {
+                "heads": 1,
+                "dim": 256
+              }
+            },
+            "q_norm": {
+              "eps": 1e-06,
+              "learned_scale": true
+            },
+            "k_norm": {
+              "eps": 1e-06,
+              "learned_scale": true
+            },
+            "v_norm": {
+              "eps": 1e-06,
+              "learned_scale": false
+            },
+            "q_rope": {
+              "variant": "default",
+              "theta": 10000.0,
+              "rotary_dims": 256,
+              "nope_dims": 0
+            },
+            "k_rope": {
+              "variant": "default",
+              "theta": 10000.0,
+              "rotary_dims": 256,
+              "nope_dims": 0
+            },
+            "attend": {
+              "span": {
+                "kind": "sliding",
+                "window": 512
+              },
+              "score_scale": 1.0
+            },
+            "o_proj": {
+              "out": 1536
+            }
+          }
+        },
+        "ffn": {
+          "ops": {
+            "gate_proj": {
+              "out": 6144
+            },
+            "up_proj": {
+              "out": 6144
+            },
+            "act": {
+              "kind": "gelu",
+              "approximate": "tanh"
+            },
+            "gate": {},
+            "down_proj": {
+              "out": 1536
+            }
+          }
+        },
+        "ple": {
+          "ops": {
+            "gate_proj": {
+              "out": 256
+            },
+            "act": {
+              "kind": "gelu",
+              "approximate": "tanh"
+            },
+            "gate": {
+              "slice": 7
+            },
+            "proj": {
+              "out": 1536
+            }
+          }
+        },
+        "add_attn": {
+          "ops": {
+            "add_attn": {}
+          }
+        },
+        "add_ffn": {
+          "ops": {
+            "add_ffn": {}
+          }
+        },
+        "add_ple": {
+          "ops": {
+            "add_ple": {}
+          }
+        },
+        "layer_scale": {
+          "ops": {
+            "layer_scale": {
+              "scalar_source": "checkpoint",
+              "value": 0.68359375
+            }
+          }
+        }
+      },
+      "from": {
+        "input": {
+          "layer": 6,
+          "anchor": "output"
+        }
+      }
+    },
+    {
+      "def": 0,
+      "attrs": {
+        "norm.attn.in": {
+          "ops": {
+            "norm.attn.in": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "norm.attn.out": {
+          "ops": {
+            "norm.attn.out": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "norm.ffn.in": {
+          "ops": {
+            "norm.ffn.in": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "norm.ffn.out": {
+          "ops": {
+            "norm.ffn.out": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "norm.ple.out": {
+          "ops": {
+            "norm.ple.out": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "attn": {
+          "ops": {
+            "q_proj": {
+              "out": {
+                "heads": 8,
+                "dim": 256
+              }
+            },
+            "k_proj": {
+              "out": {
+                "heads": 1,
+                "dim": 256
+              }
+            },
+            "v_proj": {
+              "out": {
+                "heads": 1,
+                "dim": 256
+              }
+            },
+            "q_norm": {
+              "eps": 1e-06,
+              "learned_scale": true
+            },
+            "k_norm": {
+              "eps": 1e-06,
+              "learned_scale": true
+            },
+            "v_norm": {
+              "eps": 1e-06,
+              "learned_scale": false
+            },
+            "q_rope": {
+              "variant": "default",
+              "theta": 10000.0,
+              "rotary_dims": 256,
+              "nope_dims": 0
+            },
+            "k_rope": {
+              "variant": "default",
+              "theta": 10000.0,
+              "rotary_dims": 256,
+              "nope_dims": 0
+            },
+            "attend": {
+              "span": {
+                "kind": "sliding",
+                "window": 512
+              },
+              "score_scale": 1.0
+            },
+            "o_proj": {
+              "out": 1536
+            }
+          }
+        },
+        "ffn": {
+          "ops": {
+            "gate_proj": {
+              "out": 6144
+            },
+            "up_proj": {
+              "out": 6144
+            },
+            "act": {
+              "kind": "gelu",
+              "approximate": "tanh"
+            },
+            "gate": {},
+            "down_proj": {
+              "out": 1536
+            }
+          }
+        },
+        "ple": {
+          "ops": {
+            "gate_proj": {
+              "out": 256
+            },
+            "act": {
+              "kind": "gelu",
+              "approximate": "tanh"
+            },
+            "gate": {
+              "slice": 8
+            },
+            "proj": {
+              "out": 1536
+            }
+          }
+        },
+        "add_attn": {
+          "ops": {
+            "add_attn": {}
+          }
+        },
+        "add_ffn": {
+          "ops": {
+            "add_ffn": {}
+          }
+        },
+        "add_ple": {
+          "ops": {
+            "add_ple": {}
+          }
+        },
+        "layer_scale": {
+          "ops": {
+            "layer_scale": {
+              "scalar_source": "checkpoint",
+              "value": 0.42578125
+            }
+          }
+        }
+      },
+      "from": {
+        "input": {
+          "layer": 7,
+          "anchor": "output"
+        }
+      }
+    },
+    {
+      "def": 0,
+      "attrs": {
+        "norm.attn.in": {
+          "ops": {
+            "norm.attn.in": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "norm.attn.out": {
+          "ops": {
+            "norm.attn.out": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "norm.ffn.in": {
+          "ops": {
+            "norm.ffn.in": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "norm.ffn.out": {
+          "ops": {
+            "norm.ffn.out": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "norm.ple.out": {
+          "ops": {
+            "norm.ple.out": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "attn": {
+          "ops": {
+            "q_proj": {
+              "out": {
+                "heads": 8,
+                "dim": 512
+              }
+            },
+            "k_proj": {
+              "out": {
+                "heads": 1,
+                "dim": 512
+              }
+            },
+            "v_proj": {
+              "out": {
+                "heads": 1,
+                "dim": 512
+              }
+            },
+            "q_norm": {
+              "eps": 1e-06,
+              "learned_scale": true
+            },
+            "k_norm": {
+              "eps": 1e-06,
+              "learned_scale": true
+            },
+            "v_norm": {
+              "eps": 1e-06,
+              "learned_scale": false
+            },
+            "q_rope": {
+              "variant": "proportional",
+              "theta": 1000000.0,
+              "rotary_dims": 128,
+              "nope_dims": 384
+            },
+            "k_rope": {
+              "variant": "proportional",
+              "theta": 1000000.0,
+              "rotary_dims": 128,
+              "nope_dims": 384
+            },
+            "attend": {
+              "span": {
+                "kind": "global"
+              },
+              "score_scale": 1.0
+            },
+            "o_proj": {
+              "out": 1536
+            }
+          }
+        },
+        "ffn": {
+          "ops": {
+            "gate_proj": {
+              "out": 6144
+            },
+            "up_proj": {
+              "out": 6144
+            },
+            "act": {
+              "kind": "gelu",
+              "approximate": "tanh"
+            },
+            "gate": {},
+            "down_proj": {
+              "out": 1536
+            }
+          }
+        },
+        "ple": {
+          "ops": {
+            "gate_proj": {
+              "out": 256
+            },
+            "act": {
+              "kind": "gelu",
+              "approximate": "tanh"
+            },
+            "gate": {
+              "slice": 9
+            },
+            "proj": {
+              "out": 1536
+            }
+          }
+        },
+        "add_attn": {
+          "ops": {
+            "add_attn": {}
+          }
+        },
+        "add_ffn": {
+          "ops": {
+            "add_ffn": {}
+          }
+        },
+        "add_ple": {
+          "ops": {
+            "add_ple": {}
+          }
+        },
+        "layer_scale": {
+          "ops": {
+            "layer_scale": {
+              "scalar_source": "checkpoint",
+              "value": 0.53125
+            }
+          }
+        }
+      },
+      "from": {
+        "input": {
+          "layer": 8,
+          "anchor": "output"
+        }
+      }
+    },
+    {
+      "def": 0,
+      "attrs": {
+        "norm.attn.in": {
+          "ops": {
+            "norm.attn.in": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "norm.attn.out": {
+          "ops": {
+            "norm.attn.out": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "norm.ffn.in": {
+          "ops": {
+            "norm.ffn.in": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "norm.ffn.out": {
+          "ops": {
+            "norm.ffn.out": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "norm.ple.out": {
+          "ops": {
+            "norm.ple.out": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "attn": {
+          "ops": {
+            "q_proj": {
+              "out": {
+                "heads": 8,
+                "dim": 256
+              }
+            },
+            "k_proj": {
+              "out": {
+                "heads": 1,
+                "dim": 256
+              }
+            },
+            "v_proj": {
+              "out": {
+                "heads": 1,
+                "dim": 256
+              }
+            },
+            "q_norm": {
+              "eps": 1e-06,
+              "learned_scale": true
+            },
+            "k_norm": {
+              "eps": 1e-06,
+              "learned_scale": true
+            },
+            "v_norm": {
+              "eps": 1e-06,
+              "learned_scale": false
+            },
+            "q_rope": {
+              "variant": "default",
+              "theta": 10000.0,
+              "rotary_dims": 256,
+              "nope_dims": 0
+            },
+            "k_rope": {
+              "variant": "default",
+              "theta": 10000.0,
+              "rotary_dims": 256,
+              "nope_dims": 0
+            },
+            "attend": {
+              "span": {
+                "kind": "sliding",
+                "window": 512
+              },
+              "score_scale": 1.0
+            },
+            "o_proj": {
+              "out": 1536
+            }
+          }
+        },
+        "ffn": {
+          "ops": {
+            "gate_proj": {
+              "out": 6144
+            },
+            "up_proj": {
+              "out": 6144
+            },
+            "act": {
+              "kind": "gelu",
+              "approximate": "tanh"
+            },
+            "gate": {},
+            "down_proj": {
+              "out": 1536
+            }
+          }
+        },
+        "ple": {
+          "ops": {
+            "gate_proj": {
+              "out": 256
+            },
+            "act": {
+              "kind": "gelu",
+              "approximate": "tanh"
+            },
+            "gate": {
+              "slice": 10
+            },
+            "proj": {
+              "out": 1536
+            }
+          }
+        },
+        "add_attn": {
+          "ops": {
+            "add_attn": {}
+          }
+        },
+        "add_ffn": {
+          "ops": {
+            "add_ffn": {}
+          }
+        },
+        "add_ple": {
+          "ops": {
+            "add_ple": {}
+          }
+        },
+        "layer_scale": {
+          "ops": {
+            "layer_scale": {
+              "scalar_source": "checkpoint",
+              "value": 0.5234375
+            }
+          }
+        }
+      },
+      "from": {
+        "input": {
+          "layer": 9,
+          "anchor": "output"
+        }
+      }
+    },
+    {
+      "def": 0,
+      "attrs": {
+        "norm.attn.in": {
+          "ops": {
+            "norm.attn.in": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "norm.attn.out": {
+          "ops": {
+            "norm.attn.out": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "norm.ffn.in": {
+          "ops": {
+            "norm.ffn.in": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "norm.ffn.out": {
+          "ops": {
+            "norm.ffn.out": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "norm.ple.out": {
+          "ops": {
+            "norm.ple.out": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "attn": {
+          "ops": {
+            "q_proj": {
+              "out": {
+                "heads": 8,
+                "dim": 256
+              }
+            },
+            "k_proj": {
+              "out": {
+                "heads": 1,
+                "dim": 256
+              }
+            },
+            "v_proj": {
+              "out": {
+                "heads": 1,
+                "dim": 256
+              }
+            },
+            "q_norm": {
+              "eps": 1e-06,
+              "learned_scale": true
+            },
+            "k_norm": {
+              "eps": 1e-06,
+              "learned_scale": true
+            },
+            "v_norm": {
+              "eps": 1e-06,
+              "learned_scale": false
+            },
+            "q_rope": {
+              "variant": "default",
+              "theta": 10000.0,
+              "rotary_dims": 256,
+              "nope_dims": 0
+            },
+            "k_rope": {
+              "variant": "default",
+              "theta": 10000.0,
+              "rotary_dims": 256,
+              "nope_dims": 0
+            },
+            "attend": {
+              "span": {
+                "kind": "sliding",
+                "window": 512
+              },
+              "score_scale": 1.0
+            },
+            "o_proj": {
+              "out": 1536
+            }
+          }
+        },
+        "ffn": {
+          "ops": {
+            "gate_proj": {
+              "out": 6144
+            },
+            "up_proj": {
+              "out": 6144
+            },
+            "act": {
+              "kind": "gelu",
+              "approximate": "tanh"
+            },
+            "gate": {},
+            "down_proj": {
+              "out": 1536
+            }
+          }
+        },
+        "ple": {
+          "ops": {
+            "gate_proj": {
+              "out": 256
+            },
+            "act": {
+              "kind": "gelu",
+              "approximate": "tanh"
+            },
+            "gate": {
+              "slice": 11
+            },
+            "proj": {
+              "out": 1536
+            }
+          }
+        },
+        "add_attn": {
+          "ops": {
+            "add_attn": {}
+          }
+        },
+        "add_ffn": {
+          "ops": {
+            "add_ffn": {}
+          }
+        },
+        "add_ple": {
+          "ops": {
+            "add_ple": {}
+          }
+        },
+        "layer_scale": {
+          "ops": {
+            "layer_scale": {
+              "scalar_source": "checkpoint",
+              "value": 0.388671875
+            }
+          }
+        }
+      },
+      "from": {
+        "input": {
+          "layer": 10,
+          "anchor": "output"
+        }
+      }
+    },
+    {
+      "def": 0,
+      "attrs": {
+        "norm.attn.in": {
+          "ops": {
+            "norm.attn.in": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "norm.attn.out": {
+          "ops": {
+            "norm.attn.out": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "norm.ffn.in": {
+          "ops": {
+            "norm.ffn.in": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "norm.ffn.out": {
+          "ops": {
+            "norm.ffn.out": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "norm.ple.out": {
+          "ops": {
+            "norm.ple.out": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "attn": {
+          "ops": {
+            "q_proj": {
+              "out": {
+                "heads": 8,
+                "dim": 256
+              }
+            },
+            "k_proj": {
+              "out": {
+                "heads": 1,
+                "dim": 256
+              }
+            },
+            "v_proj": {
+              "out": {
+                "heads": 1,
+                "dim": 256
+              }
+            },
+            "q_norm": {
+              "eps": 1e-06,
+              "learned_scale": true
+            },
+            "k_norm": {
+              "eps": 1e-06,
+              "learned_scale": true
+            },
+            "v_norm": {
+              "eps": 1e-06,
+              "learned_scale": false
+            },
+            "q_rope": {
+              "variant": "default",
+              "theta": 10000.0,
+              "rotary_dims": 256,
+              "nope_dims": 0
+            },
+            "k_rope": {
+              "variant": "default",
+              "theta": 10000.0,
+              "rotary_dims": 256,
+              "nope_dims": 0
+            },
+            "attend": {
+              "span": {
+                "kind": "sliding",
+                "window": 512
+              },
+              "score_scale": 1.0
+            },
+            "o_proj": {
+              "out": 1536
+            }
+          }
+        },
+        "ffn": {
+          "ops": {
+            "gate_proj": {
+              "out": 6144
+            },
+            "up_proj": {
+              "out": 6144
+            },
+            "act": {
+              "kind": "gelu",
+              "approximate": "tanh"
+            },
+            "gate": {},
+            "down_proj": {
+              "out": 1536
+            }
+          }
+        },
+        "ple": {
+          "ops": {
+            "gate_proj": {
+              "out": 256
+            },
+            "act": {
+              "kind": "gelu",
+              "approximate": "tanh"
+            },
+            "gate": {
+              "slice": 12
+            },
+            "proj": {
+              "out": 1536
+            }
+          }
+        },
+        "add_attn": {
+          "ops": {
+            "add_attn": {}
+          }
+        },
+        "add_ffn": {
+          "ops": {
+            "add_ffn": {}
+          }
+        },
+        "add_ple": {
+          "ops": {
+            "add_ple": {}
+          }
+        },
+        "layer_scale": {
+          "ops": {
+            "layer_scale": {
+              "scalar_source": "checkpoint",
+              "value": 0.310546875
+            }
+          }
+        }
+      },
+      "from": {
+        "input": {
+          "layer": 11,
+          "anchor": "output"
+        }
+      }
+    },
+    {
+      "def": 0,
+      "attrs": {
+        "norm.attn.in": {
+          "ops": {
+            "norm.attn.in": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "norm.attn.out": {
+          "ops": {
+            "norm.attn.out": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "norm.ffn.in": {
+          "ops": {
+            "norm.ffn.in": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "norm.ffn.out": {
+          "ops": {
+            "norm.ffn.out": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "norm.ple.out": {
+          "ops": {
+            "norm.ple.out": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "attn": {
+          "ops": {
+            "q_proj": {
+              "out": {
+                "heads": 8,
+                "dim": 256
+              }
+            },
+            "k_proj": {
+              "out": {
+                "heads": 1,
+                "dim": 256
+              }
+            },
+            "v_proj": {
+              "out": {
+                "heads": 1,
+                "dim": 256
+              }
+            },
+            "q_norm": {
+              "eps": 1e-06,
+              "learned_scale": true
+            },
+            "k_norm": {
+              "eps": 1e-06,
+              "learned_scale": true
+            },
+            "v_norm": {
+              "eps": 1e-06,
+              "learned_scale": false
+            },
+            "q_rope": {
+              "variant": "default",
+              "theta": 10000.0,
+              "rotary_dims": 256,
+              "nope_dims": 0
+            },
+            "k_rope": {
+              "variant": "default",
+              "theta": 10000.0,
+              "rotary_dims": 256,
+              "nope_dims": 0
+            },
+            "attend": {
+              "span": {
+                "kind": "sliding",
+                "window": 512
+              },
+              "score_scale": 1.0
+            },
+            "o_proj": {
+              "out": 1536
+            }
+          }
+        },
+        "ffn": {
+          "ops": {
+            "gate_proj": {
+              "out": 6144
+            },
+            "up_proj": {
+              "out": 6144
+            },
+            "act": {
+              "kind": "gelu",
+              "approximate": "tanh"
+            },
+            "gate": {},
+            "down_proj": {
+              "out": 1536
+            }
+          }
+        },
+        "ple": {
+          "ops": {
+            "gate_proj": {
+              "out": 256
+            },
+            "act": {
+              "kind": "gelu",
+              "approximate": "tanh"
+            },
+            "gate": {
+              "slice": 13
+            },
+            "proj": {
+              "out": 1536
+            }
+          }
+        },
+        "add_attn": {
+          "ops": {
+            "add_attn": {}
+          }
+        },
+        "add_ffn": {
+          "ops": {
+            "add_ffn": {}
+          }
+        },
+        "add_ple": {
+          "ops": {
+            "add_ple": {}
+          }
+        },
+        "layer_scale": {
+          "ops": {
+            "layer_scale": {
+              "scalar_source": "checkpoint",
+              "value": 0.07373046875
+            }
+          }
+        }
+      },
+      "from": {
+        "input": {
+          "layer": 12,
+          "anchor": "output"
+        }
+      }
+    },
+    {
+      "def": 0,
+      "attrs": {
+        "norm.attn.in": {
+          "ops": {
+            "norm.attn.in": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "norm.attn.out": {
+          "ops": {
+            "norm.attn.out": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "norm.ffn.in": {
+          "ops": {
+            "norm.ffn.in": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "norm.ffn.out": {
+          "ops": {
+            "norm.ffn.out": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "norm.ple.out": {
+          "ops": {
+            "norm.ple.out": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "attn": {
+          "ops": {
+            "q_proj": {
+              "out": {
+                "heads": 8,
+                "dim": 512
+              }
+            },
+            "k_proj": {
+              "out": {
+                "heads": 1,
+                "dim": 512
+              }
+            },
+            "v_proj": {
+              "out": {
+                "heads": 1,
+                "dim": 512
+              }
+            },
+            "q_norm": {
+              "eps": 1e-06,
+              "learned_scale": true
+            },
+            "k_norm": {
+              "eps": 1e-06,
+              "learned_scale": true
+            },
+            "v_norm": {
+              "eps": 1e-06,
+              "learned_scale": false
+            },
+            "q_rope": {
+              "variant": "proportional",
+              "theta": 1000000.0,
+              "rotary_dims": 128,
+              "nope_dims": 384
+            },
+            "k_rope": {
+              "variant": "proportional",
+              "theta": 1000000.0,
+              "rotary_dims": 128,
+              "nope_dims": 384
+            },
+            "attend": {
+              "span": {
+                "kind": "global"
+              },
+              "score_scale": 1.0
+            },
+            "o_proj": {
+              "out": 1536
+            }
+          }
+        },
+        "ffn": {
+          "ops": {
+            "gate_proj": {
+              "out": 6144
+            },
+            "up_proj": {
+              "out": 6144
+            },
+            "act": {
+              "kind": "gelu",
+              "approximate": "tanh"
+            },
+            "gate": {},
+            "down_proj": {
+              "out": 1536
+            }
+          }
+        },
+        "ple": {
+          "ops": {
+            "gate_proj": {
+              "out": 256
+            },
+            "act": {
+              "kind": "gelu",
+              "approximate": "tanh"
+            },
+            "gate": {
+              "slice": 14
+            },
+            "proj": {
+              "out": 1536
+            }
+          }
+        },
+        "add_attn": {
+          "ops": {
+            "add_attn": {}
+          }
+        },
+        "add_ffn": {
+          "ops": {
+            "add_ffn": {}
+          }
+        },
+        "add_ple": {
+          "ops": {
+            "add_ple": {}
+          }
+        },
+        "layer_scale": {
+          "ops": {
+            "layer_scale": {
+              "scalar_source": "checkpoint",
+              "value": 0.049072265625
+            }
+          }
+        }
+      },
+      "from": {
+        "input": {
+          "layer": 13,
+          "anchor": "output"
+        }
+      }
+    },
+    {
+      "def": 0,
+      "attrs": {
+        "norm.attn.in": {
+          "ops": {
+            "norm.attn.in": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "norm.attn.out": {
+          "ops": {
+            "norm.attn.out": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "norm.ffn.in": {
+          "ops": {
+            "norm.ffn.in": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "norm.ffn.out": {
+          "ops": {
+            "norm.ffn.out": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "norm.ple.out": {
+          "ops": {
+            "norm.ple.out": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "attn": {
+          "ops": {
+            "q_proj": {
+              "out": {
+                "heads": 8,
+                "dim": 256
+              }
+            },
+            "k_proj": {
+              "out": {
+                "heads": 1,
+                "dim": 256
+              },
+              "skip": true
+            },
+            "v_proj": {
+              "out": {
+                "heads": 1,
+                "dim": 256
+              },
+              "skip": true
+            },
+            "q_norm": {
+              "eps": 1e-06,
+              "learned_scale": true
+            },
+            "k_norm": {
+              "eps": 1e-06,
+              "learned_scale": true,
+              "skip": true
+            },
+            "v_norm": {
+              "eps": 1e-06,
+              "learned_scale": false,
+              "skip": true
+            },
+            "q_rope": {
+              "variant": "default",
+              "theta": 10000.0,
+              "rotary_dims": 256,
+              "nope_dims": 0
+            },
+            "k_rope": {
+              "variant": "default",
+              "theta": 10000.0,
+              "rotary_dims": 256,
+              "nope_dims": 0,
+              "skip": true
+            },
+            "attend": {
+              "span": {
+                "kind": "sliding",
+                "window": 512
+              },
+              "score_scale": 1.0
+            },
+            "o_proj": {
+              "out": 1536
+            }
+          }
+        },
+        "ffn": {
+          "ops": {
+            "gate_proj": {
+              "out": 12288
+            },
+            "up_proj": {
+              "out": 12288
+            },
+            "act": {
+              "kind": "gelu",
+              "approximate": "tanh"
+            },
+            "gate": {},
+            "down_proj": {
+              "out": 1536
+            }
+          }
+        },
+        "ple": {
+          "ops": {
+            "gate_proj": {
+              "out": 256
+            },
+            "act": {
+              "kind": "gelu",
+              "approximate": "tanh"
+            },
+            "gate": {
+              "slice": 15
+            },
+            "proj": {
+              "out": 1536
+            }
+          }
+        },
+        "add_attn": {
+          "ops": {
+            "add_attn": {}
+          }
+        },
+        "add_ffn": {
+          "ops": {
+            "add_ffn": {}
+          }
+        },
+        "add_ple": {
+          "ops": {
+            "add_ple": {}
+          }
+        },
+        "layer_scale": {
+          "ops": {
+            "layer_scale": {
+              "scalar_source": "checkpoint",
+              "value": 0.26171875
+            }
+          }
+        }
+      },
+      "from": {
+        "input": {
+          "layer": 14,
+          "anchor": "output"
+        },
+        "kv": {
+          "layer": 13
+        }
+      }
+    },
+    {
+      "def": 0,
+      "attrs": {
+        "norm.attn.in": {
+          "ops": {
+            "norm.attn.in": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "norm.attn.out": {
+          "ops": {
+            "norm.attn.out": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "norm.ffn.in": {
+          "ops": {
+            "norm.ffn.in": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "norm.ffn.out": {
+          "ops": {
+            "norm.ffn.out": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "norm.ple.out": {
+          "ops": {
+            "norm.ple.out": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "attn": {
+          "ops": {
+            "q_proj": {
+              "out": {
+                "heads": 8,
+                "dim": 256
+              }
+            },
+            "k_proj": {
+              "out": {
+                "heads": 1,
+                "dim": 256
+              },
+              "skip": true
+            },
+            "v_proj": {
+              "out": {
+                "heads": 1,
+                "dim": 256
+              },
+              "skip": true
+            },
+            "q_norm": {
+              "eps": 1e-06,
+              "learned_scale": true
+            },
+            "k_norm": {
+              "eps": 1e-06,
+              "learned_scale": true,
+              "skip": true
+            },
+            "v_norm": {
+              "eps": 1e-06,
+              "learned_scale": false,
+              "skip": true
+            },
+            "q_rope": {
+              "variant": "default",
+              "theta": 10000.0,
+              "rotary_dims": 256,
+              "nope_dims": 0
+            },
+            "k_rope": {
+              "variant": "default",
+              "theta": 10000.0,
+              "rotary_dims": 256,
+              "nope_dims": 0,
+              "skip": true
+            },
+            "attend": {
+              "span": {
+                "kind": "sliding",
+                "window": 512
+              },
+              "score_scale": 1.0
+            },
+            "o_proj": {
+              "out": 1536
+            }
+          }
+        },
+        "ffn": {
+          "ops": {
+            "gate_proj": {
+              "out": 12288
+            },
+            "up_proj": {
+              "out": 12288
+            },
+            "act": {
+              "kind": "gelu",
+              "approximate": "tanh"
+            },
+            "gate": {},
+            "down_proj": {
+              "out": 1536
+            }
+          }
+        },
+        "ple": {
+          "ops": {
+            "gate_proj": {
+              "out": 256
+            },
+            "act": {
+              "kind": "gelu",
+              "approximate": "tanh"
+            },
+            "gate": {
+              "slice": 16
+            },
+            "proj": {
+              "out": 1536
+            }
+          }
+        },
+        "add_attn": {
+          "ops": {
+            "add_attn": {}
+          }
+        },
+        "add_ffn": {
+          "ops": {
+            "add_ffn": {}
+          }
+        },
+        "add_ple": {
+          "ops": {
+            "add_ple": {}
+          }
+        },
+        "layer_scale": {
+          "ops": {
+            "layer_scale": {
+              "scalar_source": "checkpoint",
+              "value": 0.56640625
+            }
+          }
+        }
+      },
+      "from": {
+        "input": {
+          "layer": 15,
+          "anchor": "output"
+        },
+        "kv": {
+          "layer": 13
+        }
+      }
+    },
+    {
+      "def": 0,
+      "attrs": {
+        "norm.attn.in": {
+          "ops": {
+            "norm.attn.in": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "norm.attn.out": {
+          "ops": {
+            "norm.attn.out": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "norm.ffn.in": {
+          "ops": {
+            "norm.ffn.in": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "norm.ffn.out": {
+          "ops": {
+            "norm.ffn.out": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "norm.ple.out": {
+          "ops": {
+            "norm.ple.out": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "attn": {
+          "ops": {
+            "q_proj": {
+              "out": {
+                "heads": 8,
+                "dim": 256
+              }
+            },
+            "k_proj": {
+              "out": {
+                "heads": 1,
+                "dim": 256
+              },
+              "skip": true
+            },
+            "v_proj": {
+              "out": {
+                "heads": 1,
+                "dim": 256
+              },
+              "skip": true
+            },
+            "q_norm": {
+              "eps": 1e-06,
+              "learned_scale": true
+            },
+            "k_norm": {
+              "eps": 1e-06,
+              "learned_scale": true,
+              "skip": true
+            },
+            "v_norm": {
+              "eps": 1e-06,
+              "learned_scale": false,
+              "skip": true
+            },
+            "q_rope": {
+              "variant": "default",
+              "theta": 10000.0,
+              "rotary_dims": 256,
+              "nope_dims": 0
+            },
+            "k_rope": {
+              "variant": "default",
+              "theta": 10000.0,
+              "rotary_dims": 256,
+              "nope_dims": 0,
+              "skip": true
+            },
+            "attend": {
+              "span": {
+                "kind": "sliding",
+                "window": 512
+              },
+              "score_scale": 1.0
+            },
+            "o_proj": {
+              "out": 1536
+            }
+          }
+        },
+        "ffn": {
+          "ops": {
+            "gate_proj": {
+              "out": 12288
+            },
+            "up_proj": {
+              "out": 12288
+            },
+            "act": {
+              "kind": "gelu",
+              "approximate": "tanh"
+            },
+            "gate": {},
+            "down_proj": {
+              "out": 1536
+            }
+          }
+        },
+        "ple": {
+          "ops": {
+            "gate_proj": {
+              "out": 256
+            },
+            "act": {
+              "kind": "gelu",
+              "approximate": "tanh"
+            },
+            "gate": {
+              "slice": 17
+            },
+            "proj": {
+              "out": 1536
+            }
+          }
+        },
+        "add_attn": {
+          "ops": {
+            "add_attn": {}
+          }
+        },
+        "add_ffn": {
+          "ops": {
+            "add_ffn": {}
+          }
+        },
+        "add_ple": {
+          "ops": {
+            "add_ple": {}
+          }
+        },
+        "layer_scale": {
+          "ops": {
+            "layer_scale": {
+              "scalar_source": "checkpoint",
+              "value": 0.640625
+            }
+          }
+        }
+      },
+      "from": {
+        "input": {
+          "layer": 16,
+          "anchor": "output"
+        },
+        "kv": {
+          "layer": 13
+        }
+      }
+    },
+    {
+      "def": 0,
+      "attrs": {
+        "norm.attn.in": {
+          "ops": {
+            "norm.attn.in": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "norm.attn.out": {
+          "ops": {
+            "norm.attn.out": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "norm.ffn.in": {
+          "ops": {
+            "norm.ffn.in": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "norm.ffn.out": {
+          "ops": {
+            "norm.ffn.out": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "norm.ple.out": {
+          "ops": {
+            "norm.ple.out": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "attn": {
+          "ops": {
+            "q_proj": {
+              "out": {
+                "heads": 8,
+                "dim": 256
+              }
+            },
+            "k_proj": {
+              "out": {
+                "heads": 1,
+                "dim": 256
+              },
+              "skip": true
+            },
+            "v_proj": {
+              "out": {
+                "heads": 1,
+                "dim": 256
+              },
+              "skip": true
+            },
+            "q_norm": {
+              "eps": 1e-06,
+              "learned_scale": true
+            },
+            "k_norm": {
+              "eps": 1e-06,
+              "learned_scale": true,
+              "skip": true
+            },
+            "v_norm": {
+              "eps": 1e-06,
+              "learned_scale": false,
+              "skip": true
+            },
+            "q_rope": {
+              "variant": "default",
+              "theta": 10000.0,
+              "rotary_dims": 256,
+              "nope_dims": 0
+            },
+            "k_rope": {
+              "variant": "default",
+              "theta": 10000.0,
+              "rotary_dims": 256,
+              "nope_dims": 0,
+              "skip": true
+            },
+            "attend": {
+              "span": {
+                "kind": "sliding",
+                "window": 512
+              },
+              "score_scale": 1.0
+            },
+            "o_proj": {
+              "out": 1536
+            }
+          }
+        },
+        "ffn": {
+          "ops": {
+            "gate_proj": {
+              "out": 12288
+            },
+            "up_proj": {
+              "out": 12288
+            },
+            "act": {
+              "kind": "gelu",
+              "approximate": "tanh"
+            },
+            "gate": {},
+            "down_proj": {
+              "out": 1536
+            }
+          }
+        },
+        "ple": {
+          "ops": {
+            "gate_proj": {
+              "out": 256
+            },
+            "act": {
+              "kind": "gelu",
+              "approximate": "tanh"
+            },
+            "gate": {
+              "slice": 18
+            },
+            "proj": {
+              "out": 1536
+            }
+          }
+        },
+        "add_attn": {
+          "ops": {
+            "add_attn": {}
+          }
+        },
+        "add_ffn": {
+          "ops": {
+            "add_ffn": {}
+          }
+        },
+        "add_ple": {
+          "ops": {
+            "add_ple": {}
+          }
+        },
+        "layer_scale": {
+          "ops": {
+            "layer_scale": {
+              "scalar_source": "checkpoint",
+              "value": 0.60546875
+            }
+          }
+        }
+      },
+      "from": {
+        "input": {
+          "layer": 17,
+          "anchor": "output"
+        },
+        "kv": {
+          "layer": 13
+        }
+      }
+    },
+    {
+      "def": 0,
+      "attrs": {
+        "norm.attn.in": {
+          "ops": {
+            "norm.attn.in": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "norm.attn.out": {
+          "ops": {
+            "norm.attn.out": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "norm.ffn.in": {
+          "ops": {
+            "norm.ffn.in": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "norm.ffn.out": {
+          "ops": {
+            "norm.ffn.out": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "norm.ple.out": {
+          "ops": {
+            "norm.ple.out": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "attn": {
+          "ops": {
+            "q_proj": {
+              "out": {
+                "heads": 8,
+                "dim": 512
+              }
+            },
+            "k_proj": {
+              "out": {
+                "heads": 1,
+                "dim": 512
+              },
+              "skip": true
+            },
+            "v_proj": {
+              "out": {
+                "heads": 1,
+                "dim": 512
+              },
+              "skip": true
+            },
+            "q_norm": {
+              "eps": 1e-06,
+              "learned_scale": true
+            },
+            "k_norm": {
+              "eps": 1e-06,
+              "learned_scale": true,
+              "skip": true
+            },
+            "v_norm": {
+              "eps": 1e-06,
+              "learned_scale": false,
+              "skip": true
+            },
+            "q_rope": {
+              "variant": "proportional",
+              "theta": 1000000.0,
+              "rotary_dims": 128,
+              "nope_dims": 384
+            },
+            "k_rope": {
+              "variant": "proportional",
+              "theta": 1000000.0,
+              "rotary_dims": 128,
+              "nope_dims": 384,
+              "skip": true
+            },
+            "attend": {
+              "span": {
+                "kind": "global"
+              },
+              "score_scale": 1.0
+            },
+            "o_proj": {
+              "out": 1536
+            }
+          }
+        },
+        "ffn": {
+          "ops": {
+            "gate_proj": {
+              "out": 12288
+            },
+            "up_proj": {
+              "out": 12288
+            },
+            "act": {
+              "kind": "gelu",
+              "approximate": "tanh"
+            },
+            "gate": {},
+            "down_proj": {
+              "out": 1536
+            }
+          }
+        },
+        "ple": {
+          "ops": {
+            "gate_proj": {
+              "out": 256
+            },
+            "act": {
+              "kind": "gelu",
+              "approximate": "tanh"
+            },
+            "gate": {
+              "slice": 19
+            },
+            "proj": {
+              "out": 1536
+            }
+          }
+        },
+        "add_attn": {
+          "ops": {
+            "add_attn": {}
+          }
+        },
+        "add_ffn": {
+          "ops": {
+            "add_ffn": {}
+          }
+        },
+        "add_ple": {
+          "ops": {
+            "add_ple": {}
+          }
+        },
+        "layer_scale": {
+          "ops": {
+            "layer_scale": {
+              "scalar_source": "checkpoint",
+              "value": 0.546875
+            }
+          }
+        }
+      },
+      "from": {
+        "input": {
+          "layer": 18,
+          "anchor": "output"
+        },
+        "kv": {
+          "layer": 14
+        }
+      }
+    },
+    {
+      "def": 0,
+      "attrs": {
+        "norm.attn.in": {
+          "ops": {
+            "norm.attn.in": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "norm.attn.out": {
+          "ops": {
+            "norm.attn.out": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "norm.ffn.in": {
+          "ops": {
+            "norm.ffn.in": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "norm.ffn.out": {
+          "ops": {
+            "norm.ffn.out": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "norm.ple.out": {
+          "ops": {
+            "norm.ple.out": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "attn": {
+          "ops": {
+            "q_proj": {
+              "out": {
+                "heads": 8,
+                "dim": 256
+              }
+            },
+            "k_proj": {
+              "out": {
+                "heads": 1,
+                "dim": 256
+              },
+              "skip": true
+            },
+            "v_proj": {
+              "out": {
+                "heads": 1,
+                "dim": 256
+              },
+              "skip": true
+            },
+            "q_norm": {
+              "eps": 1e-06,
+              "learned_scale": true
+            },
+            "k_norm": {
+              "eps": 1e-06,
+              "learned_scale": true,
+              "skip": true
+            },
+            "v_norm": {
+              "eps": 1e-06,
+              "learned_scale": false,
+              "skip": true
+            },
+            "q_rope": {
+              "variant": "default",
+              "theta": 10000.0,
+              "rotary_dims": 256,
+              "nope_dims": 0
+            },
+            "k_rope": {
+              "variant": "default",
+              "theta": 10000.0,
+              "rotary_dims": 256,
+              "nope_dims": 0,
+              "skip": true
+            },
+            "attend": {
+              "span": {
+                "kind": "sliding",
+                "window": 512
+              },
+              "score_scale": 1.0
+            },
+            "o_proj": {
+              "out": 1536
+            }
+          }
+        },
+        "ffn": {
+          "ops": {
+            "gate_proj": {
+              "out": 12288
+            },
+            "up_proj": {
+              "out": 12288
+            },
+            "act": {
+              "kind": "gelu",
+              "approximate": "tanh"
+            },
+            "gate": {},
+            "down_proj": {
+              "out": 1536
+            }
+          }
+        },
+        "ple": {
+          "ops": {
+            "gate_proj": {
+              "out": 256
+            },
+            "act": {
+              "kind": "gelu",
+              "approximate": "tanh"
+            },
+            "gate": {
+              "slice": 20
+            },
+            "proj": {
+              "out": 1536
+            }
+          }
+        },
+        "add_attn": {
+          "ops": {
+            "add_attn": {}
+          }
+        },
+        "add_ffn": {
+          "ops": {
+            "add_ffn": {}
+          }
+        },
+        "add_ple": {
+          "ops": {
+            "add_ple": {}
+          }
+        },
+        "layer_scale": {
+          "ops": {
+            "layer_scale": {
+              "scalar_source": "checkpoint",
+              "value": 0.53515625
+            }
+          }
+        }
+      },
+      "from": {
+        "input": {
+          "layer": 19,
+          "anchor": "output"
+        },
+        "kv": {
+          "layer": 13
+        }
+      }
+    },
+    {
+      "def": 0,
+      "attrs": {
+        "norm.attn.in": {
+          "ops": {
+            "norm.attn.in": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "norm.attn.out": {
+          "ops": {
+            "norm.attn.out": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "norm.ffn.in": {
+          "ops": {
+            "norm.ffn.in": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "norm.ffn.out": {
+          "ops": {
+            "norm.ffn.out": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "norm.ple.out": {
+          "ops": {
+            "norm.ple.out": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "attn": {
+          "ops": {
+            "q_proj": {
+              "out": {
+                "heads": 8,
+                "dim": 256
+              }
+            },
+            "k_proj": {
+              "out": {
+                "heads": 1,
+                "dim": 256
+              },
+              "skip": true
+            },
+            "v_proj": {
+              "out": {
+                "heads": 1,
+                "dim": 256
+              },
+              "skip": true
+            },
+            "q_norm": {
+              "eps": 1e-06,
+              "learned_scale": true
+            },
+            "k_norm": {
+              "eps": 1e-06,
+              "learned_scale": true,
+              "skip": true
+            },
+            "v_norm": {
+              "eps": 1e-06,
+              "learned_scale": false,
+              "skip": true
+            },
+            "q_rope": {
+              "variant": "default",
+              "theta": 10000.0,
+              "rotary_dims": 256,
+              "nope_dims": 0
+            },
+            "k_rope": {
+              "variant": "default",
+              "theta": 10000.0,
+              "rotary_dims": 256,
+              "nope_dims": 0,
+              "skip": true
+            },
+            "attend": {
+              "span": {
+                "kind": "sliding",
+                "window": 512
+              },
+              "score_scale": 1.0
+            },
+            "o_proj": {
+              "out": 1536
+            }
+          }
+        },
+        "ffn": {
+          "ops": {
+            "gate_proj": {
+              "out": 12288
+            },
+            "up_proj": {
+              "out": 12288
+            },
+            "act": {
+              "kind": "gelu",
+              "approximate": "tanh"
+            },
+            "gate": {},
+            "down_proj": {
+              "out": 1536
+            }
+          }
+        },
+        "ple": {
+          "ops": {
+            "gate_proj": {
+              "out": 256
+            },
+            "act": {
+              "kind": "gelu",
+              "approximate": "tanh"
+            },
+            "gate": {
+              "slice": 21
+            },
+            "proj": {
+              "out": 1536
+            }
+          }
+        },
+        "add_attn": {
+          "ops": {
+            "add_attn": {}
+          }
+        },
+        "add_ffn": {
+          "ops": {
+            "add_ffn": {}
+          }
+        },
+        "add_ple": {
+          "ops": {
+            "add_ple": {}
+          }
+        },
+        "layer_scale": {
+          "ops": {
+            "layer_scale": {
+              "scalar_source": "checkpoint",
+              "value": 0.6484375
+            }
+          }
+        }
+      },
+      "from": {
+        "input": {
+          "layer": 20,
+          "anchor": "output"
+        },
+        "kv": {
+          "layer": 13
+        }
+      }
+    },
+    {
+      "def": 0,
+      "attrs": {
+        "norm.attn.in": {
+          "ops": {
+            "norm.attn.in": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "norm.attn.out": {
+          "ops": {
+            "norm.attn.out": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "norm.ffn.in": {
+          "ops": {
+            "norm.ffn.in": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "norm.ffn.out": {
+          "ops": {
+            "norm.ffn.out": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "norm.ple.out": {
+          "ops": {
+            "norm.ple.out": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "attn": {
+          "ops": {
+            "q_proj": {
+              "out": {
+                "heads": 8,
+                "dim": 256
+              }
+            },
+            "k_proj": {
+              "out": {
+                "heads": 1,
+                "dim": 256
+              },
+              "skip": true
+            },
+            "v_proj": {
+              "out": {
+                "heads": 1,
+                "dim": 256
+              },
+              "skip": true
+            },
+            "q_norm": {
+              "eps": 1e-06,
+              "learned_scale": true
+            },
+            "k_norm": {
+              "eps": 1e-06,
+              "learned_scale": true,
+              "skip": true
+            },
+            "v_norm": {
+              "eps": 1e-06,
+              "learned_scale": false,
+              "skip": true
+            },
+            "q_rope": {
+              "variant": "default",
+              "theta": 10000.0,
+              "rotary_dims": 256,
+              "nope_dims": 0
+            },
+            "k_rope": {
+              "variant": "default",
+              "theta": 10000.0,
+              "rotary_dims": 256,
+              "nope_dims": 0,
+              "skip": true
+            },
+            "attend": {
+              "span": {
+                "kind": "sliding",
+                "window": 512
+              },
+              "score_scale": 1.0
+            },
+            "o_proj": {
+              "out": 1536
+            }
+          }
+        },
+        "ffn": {
+          "ops": {
+            "gate_proj": {
+              "out": 12288
+            },
+            "up_proj": {
+              "out": 12288
+            },
+            "act": {
+              "kind": "gelu",
+              "approximate": "tanh"
+            },
+            "gate": {},
+            "down_proj": {
+              "out": 1536
+            }
+          }
+        },
+        "ple": {
+          "ops": {
+            "gate_proj": {
+              "out": 256
+            },
+            "act": {
+              "kind": "gelu",
+              "approximate": "tanh"
+            },
+            "gate": {
+              "slice": 22
+            },
+            "proj": {
+              "out": 1536
+            }
+          }
+        },
+        "add_attn": {
+          "ops": {
+            "add_attn": {}
+          }
+        },
+        "add_ffn": {
+          "ops": {
+            "add_ffn": {}
+          }
+        },
+        "add_ple": {
+          "ops": {
+            "add_ple": {}
+          }
+        },
+        "layer_scale": {
+          "ops": {
+            "layer_scale": {
+              "scalar_source": "checkpoint",
+              "value": 0.6484375
+            }
+          }
+        }
+      },
+      "from": {
+        "input": {
+          "layer": 21,
+          "anchor": "output"
+        },
+        "kv": {
+          "layer": 13
+        }
+      }
+    },
+    {
+      "def": 0,
+      "attrs": {
+        "norm.attn.in": {
+          "ops": {
+            "norm.attn.in": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "norm.attn.out": {
+          "ops": {
+            "norm.attn.out": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "norm.ffn.in": {
+          "ops": {
+            "norm.ffn.in": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "norm.ffn.out": {
+          "ops": {
+            "norm.ffn.out": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "norm.ple.out": {
+          "ops": {
+            "norm.ple.out": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "attn": {
+          "ops": {
+            "q_proj": {
+              "out": {
+                "heads": 8,
+                "dim": 256
+              }
+            },
+            "k_proj": {
+              "out": {
+                "heads": 1,
+                "dim": 256
+              },
+              "skip": true
+            },
+            "v_proj": {
+              "out": {
+                "heads": 1,
+                "dim": 256
+              },
+              "skip": true
+            },
+            "q_norm": {
+              "eps": 1e-06,
+              "learned_scale": true
+            },
+            "k_norm": {
+              "eps": 1e-06,
+              "learned_scale": true,
+              "skip": true
+            },
+            "v_norm": {
+              "eps": 1e-06,
+              "learned_scale": false,
+              "skip": true
+            },
+            "q_rope": {
+              "variant": "default",
+              "theta": 10000.0,
+              "rotary_dims": 256,
+              "nope_dims": 0
+            },
+            "k_rope": {
+              "variant": "default",
+              "theta": 10000.0,
+              "rotary_dims": 256,
+              "nope_dims": 0,
+              "skip": true
+            },
+            "attend": {
+              "span": {
+                "kind": "sliding",
+                "window": 512
+              },
+              "score_scale": 1.0
+            },
+            "o_proj": {
+              "out": 1536
+            }
+          }
+        },
+        "ffn": {
+          "ops": {
+            "gate_proj": {
+              "out": 12288
+            },
+            "up_proj": {
+              "out": 12288
+            },
+            "act": {
+              "kind": "gelu",
+              "approximate": "tanh"
+            },
+            "gate": {},
+            "down_proj": {
+              "out": 1536
+            }
+          }
+        },
+        "ple": {
+          "ops": {
+            "gate_proj": {
+              "out": 256
+            },
+            "act": {
+              "kind": "gelu",
+              "approximate": "tanh"
+            },
+            "gate": {
+              "slice": 23
+            },
+            "proj": {
+              "out": 1536
+            }
+          }
+        },
+        "add_attn": {
+          "ops": {
+            "add_attn": {}
+          }
+        },
+        "add_ffn": {
+          "ops": {
+            "add_ffn": {}
+          }
+        },
+        "add_ple": {
+          "ops": {
+            "add_ple": {}
+          }
+        },
+        "layer_scale": {
+          "ops": {
+            "layer_scale": {
+              "scalar_source": "checkpoint",
+              "value": 0.4609375
+            }
+          }
+        }
+      },
+      "from": {
+        "input": {
+          "layer": 22,
+          "anchor": "output"
+        },
+        "kv": {
+          "layer": 13
+        }
+      }
+    },
+    {
+      "def": 0,
+      "attrs": {
+        "norm.attn.in": {
+          "ops": {
+            "norm.attn.in": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "norm.attn.out": {
+          "ops": {
+            "norm.attn.out": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "norm.ffn.in": {
+          "ops": {
+            "norm.ffn.in": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "norm.ffn.out": {
+          "ops": {
+            "norm.ffn.out": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "norm.ple.out": {
+          "ops": {
+            "norm.ple.out": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "attn": {
+          "ops": {
+            "q_proj": {
+              "out": {
+                "heads": 8,
+                "dim": 512
+              }
+            },
+            "k_proj": {
+              "out": {
+                "heads": 1,
+                "dim": 512
+              },
+              "skip": true
+            },
+            "v_proj": {
+              "out": {
+                "heads": 1,
+                "dim": 512
+              },
+              "skip": true
+            },
+            "q_norm": {
+              "eps": 1e-06,
+              "learned_scale": true
+            },
+            "k_norm": {
+              "eps": 1e-06,
+              "learned_scale": true,
+              "skip": true
+            },
+            "v_norm": {
+              "eps": 1e-06,
+              "learned_scale": false,
+              "skip": true
+            },
+            "q_rope": {
+              "variant": "proportional",
+              "theta": 1000000.0,
+              "rotary_dims": 128,
+              "nope_dims": 384
+            },
+            "k_rope": {
+              "variant": "proportional",
+              "theta": 1000000.0,
+              "rotary_dims": 128,
+              "nope_dims": 384,
+              "skip": true
+            },
+            "attend": {
+              "span": {
+                "kind": "global"
+              },
+              "score_scale": 1.0
+            },
+            "o_proj": {
+              "out": 1536
+            }
+          }
+        },
+        "ffn": {
+          "ops": {
+            "gate_proj": {
+              "out": 12288
+            },
+            "up_proj": {
+              "out": 12288
+            },
+            "act": {
+              "kind": "gelu",
+              "approximate": "tanh"
+            },
+            "gate": {},
+            "down_proj": {
+              "out": 1536
+            }
+          }
+        },
+        "ple": {
+          "ops": {
+            "gate_proj": {
+              "out": 256
+            },
+            "act": {
+              "kind": "gelu",
+              "approximate": "tanh"
+            },
+            "gate": {
+              "slice": 24
+            },
+            "proj": {
+              "out": 1536
+            }
+          }
+        },
+        "add_attn": {
+          "ops": {
+            "add_attn": {}
+          }
+        },
+        "add_ffn": {
+          "ops": {
+            "add_ffn": {}
+          }
+        },
+        "add_ple": {
+          "ops": {
+            "add_ple": {}
+          }
+        },
+        "layer_scale": {
+          "ops": {
+            "layer_scale": {
+              "scalar_source": "checkpoint",
+              "value": 0.474609375
+            }
+          }
+        }
+      },
+      "from": {
+        "input": {
+          "layer": 23,
+          "anchor": "output"
+        },
+        "kv": {
+          "layer": 14
+        }
+      }
+    },
+    {
+      "def": 0,
+      "attrs": {
+        "norm.attn.in": {
+          "ops": {
+            "norm.attn.in": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "norm.attn.out": {
+          "ops": {
+            "norm.attn.out": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "norm.ffn.in": {
+          "ops": {
+            "norm.ffn.in": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "norm.ffn.out": {
+          "ops": {
+            "norm.ffn.out": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "norm.ple.out": {
+          "ops": {
+            "norm.ple.out": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "attn": {
+          "ops": {
+            "q_proj": {
+              "out": {
+                "heads": 8,
+                "dim": 256
+              }
+            },
+            "k_proj": {
+              "out": {
+                "heads": 1,
+                "dim": 256
+              },
+              "skip": true
+            },
+            "v_proj": {
+              "out": {
+                "heads": 1,
+                "dim": 256
+              },
+              "skip": true
+            },
+            "q_norm": {
+              "eps": 1e-06,
+              "learned_scale": true
+            },
+            "k_norm": {
+              "eps": 1e-06,
+              "learned_scale": true,
+              "skip": true
+            },
+            "v_norm": {
+              "eps": 1e-06,
+              "learned_scale": false,
+              "skip": true
+            },
+            "q_rope": {
+              "variant": "default",
+              "theta": 10000.0,
+              "rotary_dims": 256,
+              "nope_dims": 0
+            },
+            "k_rope": {
+              "variant": "default",
+              "theta": 10000.0,
+              "rotary_dims": 256,
+              "nope_dims": 0,
+              "skip": true
+            },
+            "attend": {
+              "span": {
+                "kind": "sliding",
+                "window": 512
+              },
+              "score_scale": 1.0
+            },
+            "o_proj": {
+              "out": 1536
+            }
+          }
+        },
+        "ffn": {
+          "ops": {
+            "gate_proj": {
+              "out": 12288
+            },
+            "up_proj": {
+              "out": 12288
+            },
+            "act": {
+              "kind": "gelu",
+              "approximate": "tanh"
+            },
+            "gate": {},
+            "down_proj": {
+              "out": 1536
+            }
+          }
+        },
+        "ple": {
+          "ops": {
+            "gate_proj": {
+              "out": 256
+            },
+            "act": {
+              "kind": "gelu",
+              "approximate": "tanh"
+            },
+            "gate": {
+              "slice": 25
+            },
+            "proj": {
+              "out": 1536
+            }
+          }
+        },
+        "add_attn": {
+          "ops": {
+            "add_attn": {}
+          }
+        },
+        "add_ffn": {
+          "ops": {
+            "add_ffn": {}
+          }
+        },
+        "add_ple": {
+          "ops": {
+            "add_ple": {}
+          }
+        },
+        "layer_scale": {
+          "ops": {
+            "layer_scale": {
+              "scalar_source": "checkpoint",
+              "value": 0.78125
+            }
+          }
+        }
+      },
+      "from": {
+        "input": {
+          "layer": 24,
+          "anchor": "output"
+        },
+        "kv": {
+          "layer": 13
+        }
+      }
+    },
+    {
+      "def": 0,
+      "attrs": {
+        "norm.attn.in": {
+          "ops": {
+            "norm.attn.in": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "norm.attn.out": {
+          "ops": {
+            "norm.attn.out": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "norm.ffn.in": {
+          "ops": {
+            "norm.ffn.in": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "norm.ffn.out": {
+          "ops": {
+            "norm.ffn.out": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "norm.ple.out": {
+          "ops": {
+            "norm.ple.out": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "attn": {
+          "ops": {
+            "q_proj": {
+              "out": {
+                "heads": 8,
+                "dim": 256
+              }
+            },
+            "k_proj": {
+              "out": {
+                "heads": 1,
+                "dim": 256
+              },
+              "skip": true
+            },
+            "v_proj": {
+              "out": {
+                "heads": 1,
+                "dim": 256
+              },
+              "skip": true
+            },
+            "q_norm": {
+              "eps": 1e-06,
+              "learned_scale": true
+            },
+            "k_norm": {
+              "eps": 1e-06,
+              "learned_scale": true,
+              "skip": true
+            },
+            "v_norm": {
+              "eps": 1e-06,
+              "learned_scale": false,
+              "skip": true
+            },
+            "q_rope": {
+              "variant": "default",
+              "theta": 10000.0,
+              "rotary_dims": 256,
+              "nope_dims": 0
+            },
+            "k_rope": {
+              "variant": "default",
+              "theta": 10000.0,
+              "rotary_dims": 256,
+              "nope_dims": 0,
+              "skip": true
+            },
+            "attend": {
+              "span": {
+                "kind": "sliding",
+                "window": 512
+              },
+              "score_scale": 1.0
+            },
+            "o_proj": {
+              "out": 1536
+            }
+          }
+        },
+        "ffn": {
+          "ops": {
+            "gate_proj": {
+              "out": 12288
+            },
+            "up_proj": {
+              "out": 12288
+            },
+            "act": {
+              "kind": "gelu",
+              "approximate": "tanh"
+            },
+            "gate": {},
+            "down_proj": {
+              "out": 1536
+            }
+          }
+        },
+        "ple": {
+          "ops": {
+            "gate_proj": {
+              "out": 256
+            },
+            "act": {
+              "kind": "gelu",
+              "approximate": "tanh"
+            },
+            "gate": {
+              "slice": 26
+            },
+            "proj": {
+              "out": 1536
+            }
+          }
+        },
+        "add_attn": {
+          "ops": {
+            "add_attn": {}
+          }
+        },
+        "add_ffn": {
+          "ops": {
+            "add_ffn": {}
+          }
+        },
+        "add_ple": {
+          "ops": {
+            "add_ple": {}
+          }
+        },
+        "layer_scale": {
+          "ops": {
+            "layer_scale": {
+              "scalar_source": "checkpoint",
+              "value": 0.8359375
+            }
+          }
+        }
+      },
+      "from": {
+        "input": {
+          "layer": 25,
+          "anchor": "output"
+        },
+        "kv": {
+          "layer": 13
+        }
+      }
+    },
+    {
+      "def": 0,
+      "attrs": {
+        "norm.attn.in": {
+          "ops": {
+            "norm.attn.in": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "norm.attn.out": {
+          "ops": {
+            "norm.attn.out": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "norm.ffn.in": {
+          "ops": {
+            "norm.ffn.in": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "norm.ffn.out": {
+          "ops": {
+            "norm.ffn.out": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "norm.ple.out": {
+          "ops": {
+            "norm.ple.out": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "attn": {
+          "ops": {
+            "q_proj": {
+              "out": {
+                "heads": 8,
+                "dim": 256
+              }
+            },
+            "k_proj": {
+              "out": {
+                "heads": 1,
+                "dim": 256
+              },
+              "skip": true
+            },
+            "v_proj": {
+              "out": {
+                "heads": 1,
+                "dim": 256
+              },
+              "skip": true
+            },
+            "q_norm": {
+              "eps": 1e-06,
+              "learned_scale": true
+            },
+            "k_norm": {
+              "eps": 1e-06,
+              "learned_scale": true,
+              "skip": true
+            },
+            "v_norm": {
+              "eps": 1e-06,
+              "learned_scale": false,
+              "skip": true
+            },
+            "q_rope": {
+              "variant": "default",
+              "theta": 10000.0,
+              "rotary_dims": 256,
+              "nope_dims": 0
+            },
+            "k_rope": {
+              "variant": "default",
+              "theta": 10000.0,
+              "rotary_dims": 256,
+              "nope_dims": 0,
+              "skip": true
+            },
+            "attend": {
+              "span": {
+                "kind": "sliding",
+                "window": 512
+              },
+              "score_scale": 1.0
+            },
+            "o_proj": {
+              "out": 1536
+            }
+          }
+        },
+        "ffn": {
+          "ops": {
+            "gate_proj": {
+              "out": 12288
+            },
+            "up_proj": {
+              "out": 12288
+            },
+            "act": {
+              "kind": "gelu",
+              "approximate": "tanh"
+            },
+            "gate": {},
+            "down_proj": {
+              "out": 1536
+            }
+          }
+        },
+        "ple": {
+          "ops": {
+            "gate_proj": {
+              "out": 256
+            },
+            "act": {
+              "kind": "gelu",
+              "approximate": "tanh"
+            },
+            "gate": {
+              "slice": 27
+            },
+            "proj": {
+              "out": 1536
+            }
+          }
+        },
+        "add_attn": {
+          "ops": {
+            "add_attn": {}
+          }
+        },
+        "add_ffn": {
+          "ops": {
+            "add_ffn": {}
+          }
+        },
+        "add_ple": {
+          "ops": {
+            "add_ple": {}
+          }
+        },
+        "layer_scale": {
+          "ops": {
+            "layer_scale": {
+              "scalar_source": "checkpoint",
+              "value": 0.83984375
+            }
+          }
+        }
+      },
+      "from": {
+        "input": {
+          "layer": 26,
+          "anchor": "output"
+        },
+        "kv": {
+          "layer": 13
+        }
+      }
+    },
+    {
+      "def": 0,
+      "attrs": {
+        "norm.attn.in": {
+          "ops": {
+            "norm.attn.in": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "norm.attn.out": {
+          "ops": {
+            "norm.attn.out": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "norm.ffn.in": {
+          "ops": {
+            "norm.ffn.in": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "norm.ffn.out": {
+          "ops": {
+            "norm.ffn.out": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "norm.ple.out": {
+          "ops": {
+            "norm.ple.out": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "attn": {
+          "ops": {
+            "q_proj": {
+              "out": {
+                "heads": 8,
+                "dim": 256
+              }
+            },
+            "k_proj": {
+              "out": {
+                "heads": 1,
+                "dim": 256
+              },
+              "skip": true
+            },
+            "v_proj": {
+              "out": {
+                "heads": 1,
+                "dim": 256
+              },
+              "skip": true
+            },
+            "q_norm": {
+              "eps": 1e-06,
+              "learned_scale": true
+            },
+            "k_norm": {
+              "eps": 1e-06,
+              "learned_scale": true,
+              "skip": true
+            },
+            "v_norm": {
+              "eps": 1e-06,
+              "learned_scale": false,
+              "skip": true
+            },
+            "q_rope": {
+              "variant": "default",
+              "theta": 10000.0,
+              "rotary_dims": 256,
+              "nope_dims": 0
+            },
+            "k_rope": {
+              "variant": "default",
+              "theta": 10000.0,
+              "rotary_dims": 256,
+              "nope_dims": 0,
+              "skip": true
+            },
+            "attend": {
+              "span": {
+                "kind": "sliding",
+                "window": 512
+              },
+              "score_scale": 1.0
+            },
+            "o_proj": {
+              "out": 1536
+            }
+          }
+        },
+        "ffn": {
+          "ops": {
+            "gate_proj": {
+              "out": 12288
+            },
+            "up_proj": {
+              "out": 12288
+            },
+            "act": {
+              "kind": "gelu",
+              "approximate": "tanh"
+            },
+            "gate": {},
+            "down_proj": {
+              "out": 1536
+            }
+          }
+        },
+        "ple": {
+          "ops": {
+            "gate_proj": {
+              "out": 256
+            },
+            "act": {
+              "kind": "gelu",
+              "approximate": "tanh"
+            },
+            "gate": {
+              "slice": 28
+            },
+            "proj": {
+              "out": 1536
+            }
+          }
+        },
+        "add_attn": {
+          "ops": {
+            "add_attn": {}
+          }
+        },
+        "add_ffn": {
+          "ops": {
+            "add_ffn": {}
+          }
+        },
+        "add_ple": {
+          "ops": {
+            "add_ple": {}
+          }
+        },
+        "layer_scale": {
+          "ops": {
+            "layer_scale": {
+              "scalar_source": "checkpoint",
+              "value": 0.84375
+            }
+          }
+        }
+      },
+      "from": {
+        "input": {
+          "layer": 27,
+          "anchor": "output"
+        },
+        "kv": {
+          "layer": 13
+        }
+      }
+    },
+    {
+      "def": 0,
+      "attrs": {
+        "norm.attn.in": {
+          "ops": {
+            "norm.attn.in": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "norm.attn.out": {
+          "ops": {
+            "norm.attn.out": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "norm.ffn.in": {
+          "ops": {
+            "norm.ffn.in": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "norm.ffn.out": {
+          "ops": {
+            "norm.ffn.out": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "norm.ple.out": {
+          "ops": {
+            "norm.ple.out": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "attn": {
+          "ops": {
+            "q_proj": {
+              "out": {
+                "heads": 8,
+                "dim": 512
+              }
+            },
+            "k_proj": {
+              "out": {
+                "heads": 1,
+                "dim": 512
+              },
+              "skip": true
+            },
+            "v_proj": {
+              "out": {
+                "heads": 1,
+                "dim": 512
+              },
+              "skip": true
+            },
+            "q_norm": {
+              "eps": 1e-06,
+              "learned_scale": true
+            },
+            "k_norm": {
+              "eps": 1e-06,
+              "learned_scale": true,
+              "skip": true
+            },
+            "v_norm": {
+              "eps": 1e-06,
+              "learned_scale": false,
+              "skip": true
+            },
+            "q_rope": {
+              "variant": "proportional",
+              "theta": 1000000.0,
+              "rotary_dims": 128,
+              "nope_dims": 384
+            },
+            "k_rope": {
+              "variant": "proportional",
+              "theta": 1000000.0,
+              "rotary_dims": 128,
+              "nope_dims": 384,
+              "skip": true
+            },
+            "attend": {
+              "span": {
+                "kind": "global"
+              },
+              "score_scale": 1.0
+            },
+            "o_proj": {
+              "out": 1536
+            }
+          }
+        },
+        "ffn": {
+          "ops": {
+            "gate_proj": {
+              "out": 12288
+            },
+            "up_proj": {
+              "out": 12288
+            },
+            "act": {
+              "kind": "gelu",
+              "approximate": "tanh"
+            },
+            "gate": {},
+            "down_proj": {
+              "out": 1536
+            }
+          }
+        },
+        "ple": {
+          "ops": {
+            "gate_proj": {
+              "out": 256
+            },
+            "act": {
+              "kind": "gelu",
+              "approximate": "tanh"
+            },
+            "gate": {
+              "slice": 29
+            },
+            "proj": {
+              "out": 1536
+            }
+          }
+        },
+        "add_attn": {
+          "ops": {
+            "add_attn": {}
+          }
+        },
+        "add_ffn": {
+          "ops": {
+            "add_ffn": {}
+          }
+        },
+        "add_ple": {
+          "ops": {
+            "add_ple": {}
+          }
+        },
+        "layer_scale": {
+          "ops": {
+            "layer_scale": {
+              "scalar_source": "checkpoint",
+              "value": 0.83203125
+            }
+          }
+        }
+      },
+      "from": {
+        "input": {
+          "layer": 28,
+          "anchor": "output"
+        },
+        "kv": {
+          "layer": 14
+        }
+      }
+    },
+    {
+      "def": 0,
+      "attrs": {
+        "norm.attn.in": {
+          "ops": {
+            "norm.attn.in": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "norm.attn.out": {
+          "ops": {
+            "norm.attn.out": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "norm.ffn.in": {
+          "ops": {
+            "norm.ffn.in": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "norm.ffn.out": {
+          "ops": {
+            "norm.ffn.out": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "norm.ple.out": {
+          "ops": {
+            "norm.ple.out": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "attn": {
+          "ops": {
+            "q_proj": {
+              "out": {
+                "heads": 8,
+                "dim": 256
+              }
+            },
+            "k_proj": {
+              "out": {
+                "heads": 1,
+                "dim": 256
+              },
+              "skip": true
+            },
+            "v_proj": {
+              "out": {
+                "heads": 1,
+                "dim": 256
+              },
+              "skip": true
+            },
+            "q_norm": {
+              "eps": 1e-06,
+              "learned_scale": true
+            },
+            "k_norm": {
+              "eps": 1e-06,
+              "learned_scale": true,
+              "skip": true
+            },
+            "v_norm": {
+              "eps": 1e-06,
+              "learned_scale": false,
+              "skip": true
+            },
+            "q_rope": {
+              "variant": "default",
+              "theta": 10000.0,
+              "rotary_dims": 256,
+              "nope_dims": 0
+            },
+            "k_rope": {
+              "variant": "default",
+              "theta": 10000.0,
+              "rotary_dims": 256,
+              "nope_dims": 0,
+              "skip": true
+            },
+            "attend": {
+              "span": {
+                "kind": "sliding",
+                "window": 512
+              },
+              "score_scale": 1.0
+            },
+            "o_proj": {
+              "out": 1536
+            }
+          }
+        },
+        "ffn": {
+          "ops": {
+            "gate_proj": {
+              "out": 12288
+            },
+            "up_proj": {
+              "out": 12288
+            },
+            "act": {
+              "kind": "gelu",
+              "approximate": "tanh"
+            },
+            "gate": {},
+            "down_proj": {
+              "out": 1536
+            }
+          }
+        },
+        "ple": {
+          "ops": {
+            "gate_proj": {
+              "out": 256
+            },
+            "act": {
+              "kind": "gelu",
+              "approximate": "tanh"
+            },
+            "gate": {
+              "slice": 30
+            },
+            "proj": {
+              "out": 1536
+            }
+          }
+        },
+        "add_attn": {
+          "ops": {
+            "add_attn": {}
+          }
+        },
+        "add_ffn": {
+          "ops": {
+            "add_ffn": {}
+          }
+        },
+        "add_ple": {
+          "ops": {
+            "add_ple": {}
+          }
+        },
+        "layer_scale": {
+          "ops": {
+            "layer_scale": {
+              "scalar_source": "checkpoint",
+              "value": 0.87890625
+            }
+          }
+        }
+      },
+      "from": {
+        "input": {
+          "layer": 29,
+          "anchor": "output"
+        },
+        "kv": {
+          "layer": 13
+        }
+      }
+    },
+    {
+      "def": 0,
+      "attrs": {
+        "norm.attn.in": {
+          "ops": {
+            "norm.attn.in": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "norm.attn.out": {
+          "ops": {
+            "norm.attn.out": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "norm.ffn.in": {
+          "ops": {
+            "norm.ffn.in": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "norm.ffn.out": {
+          "ops": {
+            "norm.ffn.out": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "norm.ple.out": {
+          "ops": {
+            "norm.ple.out": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "attn": {
+          "ops": {
+            "q_proj": {
+              "out": {
+                "heads": 8,
+                "dim": 256
+              }
+            },
+            "k_proj": {
+              "out": {
+                "heads": 1,
+                "dim": 256
+              },
+              "skip": true
+            },
+            "v_proj": {
+              "out": {
+                "heads": 1,
+                "dim": 256
+              },
+              "skip": true
+            },
+            "q_norm": {
+              "eps": 1e-06,
+              "learned_scale": true
+            },
+            "k_norm": {
+              "eps": 1e-06,
+              "learned_scale": true,
+              "skip": true
+            },
+            "v_norm": {
+              "eps": 1e-06,
+              "learned_scale": false,
+              "skip": true
+            },
+            "q_rope": {
+              "variant": "default",
+              "theta": 10000.0,
+              "rotary_dims": 256,
+              "nope_dims": 0
+            },
+            "k_rope": {
+              "variant": "default",
+              "theta": 10000.0,
+              "rotary_dims": 256,
+              "nope_dims": 0,
+              "skip": true
+            },
+            "attend": {
+              "span": {
+                "kind": "sliding",
+                "window": 512
+              },
+              "score_scale": 1.0
+            },
+            "o_proj": {
+              "out": 1536
+            }
+          }
+        },
+        "ffn": {
+          "ops": {
+            "gate_proj": {
+              "out": 12288
+            },
+            "up_proj": {
+              "out": 12288
+            },
+            "act": {
+              "kind": "gelu",
+              "approximate": "tanh"
+            },
+            "gate": {},
+            "down_proj": {
+              "out": 1536
+            }
+          }
+        },
+        "ple": {
+          "ops": {
+            "gate_proj": {
+              "out": 256
+            },
+            "act": {
+              "kind": "gelu",
+              "approximate": "tanh"
+            },
+            "gate": {
+              "slice": 31
+            },
+            "proj": {
+              "out": 1536
+            }
+          }
+        },
+        "add_attn": {
+          "ops": {
+            "add_attn": {}
+          }
+        },
+        "add_ffn": {
+          "ops": {
+            "add_ffn": {}
+          }
+        },
+        "add_ple": {
+          "ops": {
+            "add_ple": {}
+          }
+        },
+        "layer_scale": {
+          "ops": {
+            "layer_scale": {
+              "scalar_source": "checkpoint",
+              "value": 0.828125
+            }
+          }
+        }
+      },
+      "from": {
+        "input": {
+          "layer": 30,
+          "anchor": "output"
+        },
+        "kv": {
+          "layer": 13
+        }
+      }
+    },
+    {
+      "def": 0,
+      "attrs": {
+        "norm.attn.in": {
+          "ops": {
+            "norm.attn.in": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "norm.attn.out": {
+          "ops": {
+            "norm.attn.out": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "norm.ffn.in": {
+          "ops": {
+            "norm.ffn.in": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "norm.ffn.out": {
+          "ops": {
+            "norm.ffn.out": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "norm.ple.out": {
+          "ops": {
+            "norm.ple.out": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "attn": {
+          "ops": {
+            "q_proj": {
+              "out": {
+                "heads": 8,
+                "dim": 256
+              }
+            },
+            "k_proj": {
+              "out": {
+                "heads": 1,
+                "dim": 256
+              },
+              "skip": true
+            },
+            "v_proj": {
+              "out": {
+                "heads": 1,
+                "dim": 256
+              },
+              "skip": true
+            },
+            "q_norm": {
+              "eps": 1e-06,
+              "learned_scale": true
+            },
+            "k_norm": {
+              "eps": 1e-06,
+              "learned_scale": true,
+              "skip": true
+            },
+            "v_norm": {
+              "eps": 1e-06,
+              "learned_scale": false,
+              "skip": true
+            },
+            "q_rope": {
+              "variant": "default",
+              "theta": 10000.0,
+              "rotary_dims": 256,
+              "nope_dims": 0
+            },
+            "k_rope": {
+              "variant": "default",
+              "theta": 10000.0,
+              "rotary_dims": 256,
+              "nope_dims": 0,
+              "skip": true
+            },
+            "attend": {
+              "span": {
+                "kind": "sliding",
+                "window": 512
+              },
+              "score_scale": 1.0
+            },
+            "o_proj": {
+              "out": 1536
+            }
+          }
+        },
+        "ffn": {
+          "ops": {
+            "gate_proj": {
+              "out": 12288
+            },
+            "up_proj": {
+              "out": 12288
+            },
+            "act": {
+              "kind": "gelu",
+              "approximate": "tanh"
+            },
+            "gate": {},
+            "down_proj": {
+              "out": 1536
+            }
+          }
+        },
+        "ple": {
+          "ops": {
+            "gate_proj": {
+              "out": 256
+            },
+            "act": {
+              "kind": "gelu",
+              "approximate": "tanh"
+            },
+            "gate": {
+              "slice": 32
+            },
+            "proj": {
+              "out": 1536
+            }
+          }
+        },
+        "add_attn": {
+          "ops": {
+            "add_attn": {}
+          }
+        },
+        "add_ffn": {
+          "ops": {
+            "add_ffn": {}
+          }
+        },
+        "add_ple": {
+          "ops": {
+            "add_ple": {}
+          }
+        },
+        "layer_scale": {
+          "ops": {
+            "layer_scale": {
+              "scalar_source": "checkpoint",
+              "value": 0.8515625
+            }
+          }
+        }
+      },
+      "from": {
+        "input": {
+          "layer": 31,
+          "anchor": "output"
+        },
+        "kv": {
+          "layer": 13
+        }
+      }
+    },
+    {
+      "def": 0,
+      "attrs": {
+        "norm.attn.in": {
+          "ops": {
+            "norm.attn.in": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "norm.attn.out": {
+          "ops": {
+            "norm.attn.out": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "norm.ffn.in": {
+          "ops": {
+            "norm.ffn.in": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "norm.ffn.out": {
+          "ops": {
+            "norm.ffn.out": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "norm.ple.out": {
+          "ops": {
+            "norm.ple.out": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "attn": {
+          "ops": {
+            "q_proj": {
+              "out": {
+                "heads": 8,
+                "dim": 256
+              }
+            },
+            "k_proj": {
+              "out": {
+                "heads": 1,
+                "dim": 256
+              },
+              "skip": true
+            },
+            "v_proj": {
+              "out": {
+                "heads": 1,
+                "dim": 256
+              },
+              "skip": true
+            },
+            "q_norm": {
+              "eps": 1e-06,
+              "learned_scale": true
+            },
+            "k_norm": {
+              "eps": 1e-06,
+              "learned_scale": true,
+              "skip": true
+            },
+            "v_norm": {
+              "eps": 1e-06,
+              "learned_scale": false,
+              "skip": true
+            },
+            "q_rope": {
+              "variant": "default",
+              "theta": 10000.0,
+              "rotary_dims": 256,
+              "nope_dims": 0
+            },
+            "k_rope": {
+              "variant": "default",
+              "theta": 10000.0,
+              "rotary_dims": 256,
+              "nope_dims": 0,
+              "skip": true
+            },
+            "attend": {
+              "span": {
+                "kind": "sliding",
+                "window": 512
+              },
+              "score_scale": 1.0
+            },
+            "o_proj": {
+              "out": 1536
+            }
+          }
+        },
+        "ffn": {
+          "ops": {
+            "gate_proj": {
+              "out": 12288
+            },
+            "up_proj": {
+              "out": 12288
+            },
+            "act": {
+              "kind": "gelu",
+              "approximate": "tanh"
+            },
+            "gate": {},
+            "down_proj": {
+              "out": 1536
+            }
+          }
+        },
+        "ple": {
+          "ops": {
+            "gate_proj": {
+              "out": 256
+            },
+            "act": {
+              "kind": "gelu",
+              "approximate": "tanh"
+            },
+            "gate": {
+              "slice": 33
+            },
+            "proj": {
+              "out": 1536
+            }
+          }
+        },
+        "add_attn": {
+          "ops": {
+            "add_attn": {}
+          }
+        },
+        "add_ffn": {
+          "ops": {
+            "add_ffn": {}
+          }
+        },
+        "add_ple": {
+          "ops": {
+            "add_ple": {}
+          }
+        },
+        "layer_scale": {
+          "ops": {
+            "layer_scale": {
+              "scalar_source": "checkpoint",
+              "value": 0.60546875
+            }
+          }
+        }
+      },
+      "from": {
+        "input": {
+          "layer": 32,
+          "anchor": "output"
+        },
+        "kv": {
+          "layer": 13
+        }
+      }
+    },
+    {
+      "def": 0,
+      "attrs": {
+        "norm.attn.in": {
+          "ops": {
+            "norm.attn.in": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "norm.attn.out": {
+          "ops": {
+            "norm.attn.out": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "norm.ffn.in": {
+          "ops": {
+            "norm.ffn.in": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "norm.ffn.out": {
+          "ops": {
+            "norm.ffn.out": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "norm.ple.out": {
+          "ops": {
+            "norm.ple.out": {
+              "eps": 1e-06,
+              "learned_scale": true
+            }
+          }
+        },
+        "attn": {
+          "ops": {
+            "q_proj": {
+              "out": {
+                "heads": 8,
+                "dim": 512
+              }
+            },
+            "k_proj": {
+              "out": {
+                "heads": 1,
+                "dim": 512
+              },
+              "skip": true
+            },
+            "v_proj": {
+              "out": {
+                "heads": 1,
+                "dim": 512
+              },
+              "skip": true
+            },
+            "q_norm": {
+              "eps": 1e-06,
+              "learned_scale": true
+            },
+            "k_norm": {
+              "eps": 1e-06,
+              "learned_scale": true,
+              "skip": true
+            },
+            "v_norm": {
+              "eps": 1e-06,
+              "learned_scale": false,
+              "skip": true
+            },
+            "q_rope": {
+              "variant": "proportional",
+              "theta": 1000000.0,
+              "rotary_dims": 128,
+              "nope_dims": 384
+            },
+            "k_rope": {
+              "variant": "proportional",
+              "theta": 1000000.0,
+              "rotary_dims": 128,
+              "nope_dims": 384,
+              "skip": true
+            },
+            "attend": {
+              "span": {
+                "kind": "global"
+              },
+              "score_scale": 1.0
+            },
+            "o_proj": {
+              "out": 1536
+            }
+          }
+        },
+        "ffn": {
+          "ops": {
+            "gate_proj": {
+              "out": 12288
+            },
+            "up_proj": {
+              "out": 12288
+            },
+            "act": {
+              "kind": "gelu",
+              "approximate": "tanh"
+            },
+            "gate": {},
+            "down_proj": {
+              "out": 1536
+            }
+          }
+        },
+        "ple": {
+          "ops": {
+            "gate_proj": {
+              "out": 256
+            },
+            "act": {
+              "kind": "gelu",
+              "approximate": "tanh"
+            },
+            "gate": {
+              "slice": 34
+            },
+            "proj": {
+              "out": 1536
+            }
+          }
+        },
+        "add_attn": {
+          "ops": {
+            "add_attn": {}
+          }
+        },
+        "add_ffn": {
+          "ops": {
+            "add_ffn": {}
+          }
+        },
+        "add_ple": {
+          "ops": {
+            "add_ple": {}
+          }
+        },
+        "layer_scale": {
+          "ops": {
+            "layer_scale": {
+              "scalar_source": "checkpoint",
+              "value": 0.1611328125
+            }
+          }
+        }
+      },
+      "from": {
+        "input": {
+          "layer": 33,
+          "anchor": "output"
+        },
+        "kv": {
+          "layer": 14
+        }
+      }
+    }
+  ]
+}

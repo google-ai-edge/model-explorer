@@ -1,0 +1,382 @@
+<!--
+ Copyright 2026 The AI Edge Model Explorer Authors.
+
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+ ==============================================================================
+-->
+@if (loading()) {
+  <p class="evidence-message" role="status">Loading head evidence…</p>
+} @else if (error()) {
+  <div class="evidence-message" role="alert">
+    <p>{{ error() }}</p>
+    <button class="outlined" type="button" (click)="retry.emit()">Retry</button>
+  </div>
+} @else if (evidence()) {
+  @let data = evidence()!;
+  @if (data.reason) {
+    <p class="evidence-note">
+      {{
+        data.status === 'batch_selection_required'
+          ? 'Head values are unavailable for this selection.'
+          : data.reason
+      }}
+    </p>
+  }
+  <explorer-info-section
+    label="Numerical Diff"
+    [expanded]="numericalExpanded()"
+    (expandedChange)="numericalExpanded.set($event)"
+  >
+    <mat-icon
+      section-action
+      class="metric-info"
+      tabindex="0"
+      title="Comparison across channels in this head. Signed Δ = Target − Ref."
+      aria-label="Comparison across channels in this head. Signed delta equals Target minus Ref."
+      >info_outline</mat-icon
+    >
+    <kv-metric-values
+      [metrics]="data.metrics"
+      [metricStatus]="data.metric_status"
+      label="Selected head numerical comparison"
+    />
+  </explorer-info-section>
+  <explorer-info-section
+    label="Channels"
+    [expanded]="channelsExpanded()"
+    (expandedChange)="channelsExpanded.set($event)"
+  >
+    <div
+      section-action
+      class="view-switch"
+      [hidden]="!channels().length"
+      role="group"
+      aria-label="Channel chart view"
+    >
+      <button
+        type="button"
+        [attr.aria-pressed]="view() === 'index'"
+        aria-label="By channel"
+        title="By channel"
+        (click)="view.set('index')"
+      >
+        <mat-icon>show_chart</mat-icon></button
+      ><button
+        type="button"
+        [attr.aria-pressed]="view() === 'scatter'"
+        aria-label="Ref–Target scatter"
+        title="Ref–Target scatter"
+        (click)="view.set('scatter')"
+      >
+        <mat-icon>scatter_plot</mat-icon>
+      </button>
+    </div>
+    @if (channels().length) {
+      <div class="channel-plot" #plotContainer>
+        @if (view() === 'index' && hasValues()) {
+          <svg
+            class="channel-chart"
+            [attr.viewBox]="plotViewBox()"
+            role="group"
+            tabindex="0"
+            aria-label="Channel values. Left and right arrows select channels. Home and End select the first and last channel."
+            (keydown)="chartKey($event)"
+          >
+            <line class="ref-line legend-line" x1="12" x2="28" y1="12" y2="12" />
+            <text class="legend-label" x="34" y="16">Ref</text>
+            <line class="target-line legend-line" x1="82" x2="98" y1="12" y2="12" />
+            <text class="legend-label" x="104" y="16">Target</text>
+            @for (tick of tickValues(); track $index) {
+              <line
+                class="grid-line"
+                [attr.x1]="box().left"
+                [attr.x2]="box().right"
+                [attr.y1]="valueY(tick)"
+                [attr.y2]="valueY(tick)"
+              />
+              <text
+                class="axis-label"
+                [attr.x]="box().left - 7"
+                [attr.y]="valueY(tick) + 3"
+                text-anchor="end"
+              >
+                {{ shortNumber(tick) }}
+              </text>
+            }
+            <line
+              class="axis-line"
+              [attr.x1]="box().left"
+              [attr.x2]="box().right"
+              [attr.y1]="box().bottom"
+              [attr.y2]="box().bottom"
+            />
+            @for (tick of channelTicks(); track tick) {
+              <text
+                class="axis-label"
+                [attr.x]="x(tick)"
+                [attr.y]="box().bottom + 18"
+                text-anchor="middle"
+              >
+                {{ tick }}
+              </text>
+            }
+            <text
+              class="axis-label"
+              [attr.x]="(box().left + box().right) / 2"
+              [attr.y]="plotHeight - 3"
+              text-anchor="middle"
+            >
+              Channel index
+            </text>
+            @for (path of paths(); track path.side) {
+              <path [attr.class]="path.side + '-line value-line'" [attr.d]="path.d" />
+            }
+            @if (selected(); as selected) {
+              <line
+                class="selection-line"
+                [attr.x1]="x(selected.channel)"
+                [attr.x2]="x(selected.channel)"
+                [attr.y1]="box().top"
+                [attr.y2]="box().bottom"
+              />
+            }
+            @for (row of plotChannels(); track row.channel) {
+              @if (finite(row.ref)) {
+                <circle
+                  class="ref-point chart-point"
+                  [class.selected]="row.channel === selected()?.channel"
+                  [attr.cx]="x(row.channel)"
+                  [attr.cy]="valueY($any(row.ref))"
+                  [attr.r]="row.channel === selected()?.channel ? 5 : 2.5"
+                  (click)="selectChannel(row.channel)"
+                >
+                  <title>{{ pointTitle(row) }}</title>
+                </circle>
+              }
+              @if (finite(row.target)) {
+                <rect
+                  class="target-point chart-point"
+                  [class.selected]="row.channel === selected()?.channel"
+                  [attr.x]="x(row.channel) - 2.5"
+                  [attr.y]="valueY($any(row.target)) - 2.5"
+                  width="5"
+                  height="5"
+                  [attr.transform]="
+                    'rotate(45 ' + x(row.channel) + ' ' + valueY($any(row.target)) + ')'
+                  "
+                  (click)="selectChannel(row.channel)"
+                >
+                  <title>{{ pointTitle(row) }}</title>
+                </rect>
+              }
+            }
+          </svg>
+        } @else if (view() === 'scatter' && finitePairs().length) {
+          <svg
+            class="channel-chart scatter-chart"
+            [attr.viewBox]="plotViewBox()"
+            role="group"
+            tabindex="0"
+            aria-label="Reference versus Target channel values. Diagonal means equal values. Arrow keys select channels."
+            (keydown)="chartKey($event)"
+          >
+            <text class="legend-label" x="12" y="16">
+              Ref = Target
+              <title>Diagonal = equal values</title>
+            </text>
+            @for (tick of tickValues(); track $index) {
+              <line
+                class="grid-line"
+                [attr.x1]="box().left"
+                [attr.x2]="box().right"
+                [attr.y1]="valueY(tick)"
+                [attr.y2]="valueY(tick)"
+              />
+              <text
+                class="axis-label"
+                [attr.x]="box().left - 7"
+                [attr.y]="valueY(tick) + 3"
+                text-anchor="end"
+              >
+                {{ shortNumber(tick) }}
+              </text>
+            }
+            @for (tick of scatterTicks(); track $index) {
+              <line
+                class="grid-line"
+                [attr.x1]="scatterX(tick)"
+                [attr.x2]="scatterX(tick)"
+                [attr.y1]="box().top"
+                [attr.y2]="box().bottom"
+              />
+              <text
+                class="axis-label"
+                [attr.x]="scatterX(tick)"
+                [attr.y]="box().bottom + 18"
+                [attr.text-anchor]="$first ? 'start' : $last ? 'end' : 'middle'"
+              >
+                {{ shortNumber(tick) }}
+              </text>
+            }
+            <line
+              class="diagonal-line"
+              [attr.x1]="scatterX(domain().low * domain().scale)"
+              [attr.y1]="valueY(domain().low * domain().scale)"
+              [attr.x2]="scatterX(domain().high * domain().scale)"
+              [attr.y2]="valueY(domain().high * domain().scale)"
+            />
+            <text
+              class="axis-label"
+              [attr.x]="(box().left + box().right) / 2"
+              [attr.y]="plotHeight - 3"
+              text-anchor="middle"
+            >
+              Ref
+            </text>
+            <text
+              class="axis-title"
+              x="12"
+              [attr.y]="(box().top + box().bottom) / 2"
+              [attr.transform]="'rotate(-90 12 ' + (box().top + box().bottom) / 2 + ')'"
+              text-anchor="middle"
+            >
+              Target
+            </text>
+            @for (row of finitePairs(); track row.channel) {
+              <circle
+                class="scatter-point chart-point"
+                [class.selected]="row.channel === selected()?.channel"
+                [attr.cx]="scatterX($any(row.ref))"
+                [attr.cy]="valueY($any(row.target))"
+                [attr.r]="row.channel === selected()?.channel ? 5.5 : 3"
+                (click)="selectChannel(row.channel)"
+              >
+                <title>{{ pointTitle(row) }}</title>
+              </circle>
+            }
+          </svg>
+        } @else {
+          <p class="chart-unavailable">
+            {{
+              view() === 'scatter'
+                ? 'No aligned, finite Ref–Target pairs are available in this channel range.'
+                : 'No finite channel values are available in this range.'
+            }}
+          </p>
+        }
+      </div>
+      @if (hasPages()) {
+        <nav class="channel-pages" aria-label="Channel chart range">
+          <button
+            type="button"
+            [disabled]="windowStart() === 0"
+            aria-label="Previous channel range"
+            (click)="movePage(-1)"
+          >
+            <mat-icon>chevron_left</mat-icon></button
+          ><span
+            >Channels {{ plotChannels().at(0)?.channel }}–{{ plotChannels().at(-1)?.channel }} ·
+            {{ channels().length }} total</span
+          ><button
+            type="button"
+            [disabled]="!canNextPage()"
+            aria-label="Next channel range"
+            (click)="movePage(1)"
+          >
+            <mat-icon>chevron_right</mat-icon>
+          </button>
+        </nav>
+      }
+      <div class="channel-navigation">
+        <label
+          >Channel
+          <button
+            class="icon-button"
+            type="button"
+            aria-label="Previous channel"
+            [disabled]="selectedIndex() === 0"
+            (click)="moveChannel(-1)"
+          >
+            <mat-icon>chevron_left</mat-icon></button
+          ><input
+            aria-label="Channel index"
+            type="number"
+            step="1"
+            [min]="firstChannel()"
+            [max]="lastChannel()"
+            [value]="selected()?.channel"
+            (change)="commitChannel($event)"
+            (keydown)="channelInputKey($event)"
+          /><span>/ {{ lastChannel() }}</span
+          ><button
+            class="icon-button"
+            type="button"
+            aria-label="Next channel"
+            [disabled]="selectedIndex() === channels().length - 1"
+            (click)="moveChannel(1)"
+          >
+            <mat-icon>chevron_right</mat-icon>
+          </button></label
+        ><span class="divider"></span
+        ><button
+          class="icon-button"
+          type="button"
+          aria-label="Locate largest absolute delta channel"
+          title="Locate largest |Δ| channel"
+          [disabled]="largest() === null"
+          (click)="selectChannel(largest()!)"
+        >
+          <mat-icon>my_location</mat-icon>
+        </button>
+      </div>
+      <table class="channel-values" aria-label="Selected channel values">
+        <tbody>
+          @for (row of scalarRows(); track row.label) {
+            <tr>
+              <th scope="row">{{ row.label }}</th>
+              <td class="property-value" [class.unavailable]="!finite(row.value)">
+                <explorer-info-value
+                  [label]="'Channel ' + selected()?.channel + ' ' + row.label"
+                  [value]="valueText(row.value, row.signed)"
+                />
+              </td>
+              <td class="property-action">
+                <button
+                  type="button"
+                  class="copy-value"
+                  [attr.aria-label]="'Copy ' + row.label"
+                  [title]="'Copy ' + row.label"
+                  [disabled]="row.value === null"
+                  (click)="copyValue(row.label, row.value, row.signed)"
+                >
+                  <mat-icon>content_copy</mat-icon>
+                </button>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+      @if (selected()?.status !== 'ok') {
+        <p class="evidence-note">
+          {{ selected()?.status?.replaceAll('_', ' ') }} · Unavailable values are omitted from the
+          chart.
+        </p>
+      }
+      <p class="copy-status" role="status">{{ copyStatus() }}</p>
+    } @else if (data.status !== 'batch_selection_required') {
+      <p class="evidence-note">Channel values are unavailable for this head.</p>
+    }
+  </explorer-info-section>
+} @else {
+  <p class="evidence-message">Choose a head to inspect its captured channel values.</p>
+}

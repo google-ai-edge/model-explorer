@@ -1,0 +1,104 @@
+/**
+ * @license
+ * Copyright 2026 The AI Edge Model Explorer Authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ==============================================================================
+ */
+
+@use '@angular/material' as mat;
+:host {
+  font-family: var(--me-font-family);
+  color: var(--me-on-surface-color);
+  display: block;
+}
+.welcome {
+  display: flex;
+  justify-content: space-between;
+  position: relative;
+  box-sizing: border-box;
+  border: 1px solid var(--me-surface-variant-color);
+  border-radius: 8px;
+  padding: 24px;
+  background: var(--me-surface-color);
+  color: var(--me-on-surface-color);
+}
+h1 {
+  font: 400 24px / normal var(--me-font-family);
+  margin: 0;
+  padding-right: 0;
+}
+p {
+  font: 400 14px / normal var(--me-font-family);
+  color: var(--me-on-surface-variant-color);
+  margin: 8px 0 24px;
+}
+:host .dismiss {
+  position: absolute;
+  right: 6px;
+  top: 6px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  width: 16px;
+  height: 20.5px;
+  display: flex;
+  align-items: flex-start;
+  cursor: pointer;
+  color: var(--me-on-surface-color);
+  opacity: 0.5;
+}
+:host .dismiss:hover {
+  opacity: 0.8;
+}
+.dismiss mat-icon {
+  font-size: 16px;
+  width: 16px;
+  height: 16px;
+}
+
+// Reused from Model Explorer welcome_card; preserve upstream link states.
+.doc-link {
+  line-height: normal;
+  font-size: 14px;
+  color: var(--me-link-color);
+  cursor: pointer;
+  opacity: 0.8;
+  margin-bottom: 8px;
+
+  .doc-text {
+    color: var(--me-link-color);
+  }
+
+  a {
+    display: flex;
+    align-items: center;
+    text-decoration: none;
+  }
+
+  :hover {
+    opacity: 1;
+
+    .doc-text {
+      text-decoration: underline;
+    }
+  }
+
+  mat-icon {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+    margin-right: 8px;
+    color: var(--me-link-color);
+  }
+}

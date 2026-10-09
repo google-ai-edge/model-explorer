@@ -1,0 +1,58 @@
+{
+  "name": "model-explorer-debugger",
+  "version": "0.1.0",
+  "private": true,
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "start": "ng serve model_explorer_debugger --host 127.0.0.1 --port 4201",
+    "build": "ng build model_explorer_debugger",
+    "prebuild": "node scripts/version_graph_execution.mjs --check",
+    "version:graph": "node scripts/version_graph_execution.mjs",
+    "check": "ng build --configuration development",
+    "verify": "npm run format:check && npm run test:contracts && npm test && npm run test:unit && npm run build",
+    "ng": "ng",
+    "watch": "ng build model_explorer_debugger --watch --configuration development",
+    "test:graph": "node scripts/run-tests.mjs graph",
+    "postbuild": "node scripts/copy-license-notices.mjs",
+    "test:tokens": "node scripts/check_token_alignment.mjs",
+    "format": "prettier --write \"src/**/*.{ts,js,scss,html}\"",
+    "format:check": "prettier --check \"src/**/*.{ts,js,scss,html}\"",
+    "test:contracts": "tsc --project tsconfig.contracts.json --noEmit",
+    "test:sessions": "node scripts/check_sessions.mjs",
+    "test:identity": "node scripts/check_capture_context.mjs && node scripts/check_runtime_reconnect.mjs",
+    "test": "node scripts/run-tests.mjs",
+    "test:e2e": "playwright test",
+    "e2e:browsers": "playwright install chromium",
+    "test:unit": "ng test",
+    "verify:e2e": "npm run verify && npm run test:e2e"
+  },
+  "dependencies": {
+    "@angular/animations": "20.1.2",
+    "@angular/cdk": "20.1.2",
+    "@angular/common": "20.1.2",
+    "@angular/compiler": "20.1.2",
+    "@angular/core": "20.1.2",
+    "@angular/forms": "20.1.2",
+    "@angular/material": "20.1.2",
+    "@angular/platform-browser": "20.1.2",
+    "@dagrejs/dagre": "1.1.5",
+    "plotly.js-dist-min": "3.5.1",
+    "rxjs": "~7.8.0",
+    "tslib": "^2.3.0",
+    "zone.js": "~0.15.0"
+  },
+  "devDependencies": {
+    "@angular-devkit/build-angular": "20.1.1",
+    "@angular/build": "^20.1.1",
+    "@angular/cli": "20.1.1",
+    "@angular/compiler-cli": "20.1.2",
+    "@playwright/test": "^1.63.0",
+    "esbuild": "0.25.5",
+    "jsdom": "^26.1.0",
+    "prettier": "3.6.2",
+    "typescript": "~5.8.3",
+    "vitest": "^3.2.7"
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "type": "preflight",
+  "requestId": "3f6c2c9e-6c1a-4f7b-9d2e-1b7a9d5c0e21",
+  "accepted": true,
+  "contextTokenCount": 18,
+  "inputTokenCount": 11,
+  "contextLimit": 1024,
+  "reason": ""
+}
