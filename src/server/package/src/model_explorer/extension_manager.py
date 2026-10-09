@@ -47,6 +47,7 @@ class ExtensionManager(object, metaclass=Singleton):
       + (['.builtin_pytorch_exportedprogram_adapter'] if torch else [])
       + [
           '.builtin_mlir_adapter',
+          '.builtin_hfgraph_adapter',
       ]
   )
 
@@ -61,7 +62,7 @@ class ExtensionManager(object, metaclass=Singleton):
           ['.builtin_pytorch_exportedprogram_adapter']
           if torch is not None
           else []
-      )
+      ) + ['.builtin_hfgraph_adapter']
 
     # For custom extensions (i.e. non-built-in extensions), we load their "main"
     # module by default.

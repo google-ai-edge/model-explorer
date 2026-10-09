@@ -1,0 +1,316 @@
+{
+ "$defs": {
+  "Branch": {
+   "description": "A source branch (if, loop, or ternary) within a FunctionTemplate.",
+   "properties": {
+    "id": {
+     "title": "Id",
+     "type": "string"
+    },
+    "template": {
+     "title": "Template",
+     "type": "string"
+    },
+    "kind": {
+     "enum": [
+      "if",
+      "for",
+      "while",
+      "ternary"
+     ],
+     "title": "Kind",
+     "type": "string"
+    },
+    "cond_src": {
+     "title": "Cond Src",
+     "type": "string"
+    },
+    "cond_kind": {
+     "enum": [
+      "config",
+      "shape",
+      "value",
+      "guarded",
+      "python",
+      "unknown",
+      "loop"
+     ],
+     "title": "Cond Kind",
+     "type": "string"
+    },
+    "cond_hash": {
+     "title": "Cond Hash",
+     "type": "string"
+    },
+    "file": {
+     "title": "File",
+     "type": "string"
+    },
+    "line_start": {
+     "title": "Line Start",
+     "type": "integer"
+    },
+    "line_end": {
+     "title": "Line End",
+     "type": "integer"
+    },
+    "parent_region": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "null"
+      }
+     ],
+     "default": null,
+     "title": "Parent Region"
+    },
+    "regions": {
+     "items": {
+      "$ref": "#/$defs/Region"
+     },
+     "title": "Regions",
+     "type": "array"
+    }
+   },
+   "required": [
+    "id",
+    "template",
+    "kind",
+    "cond_src",
+    "cond_kind",
+    "cond_hash",
+    "file",
+    "line_start",
+    "line_end"
+   ],
+   "title": "Branch",
+   "type": "object"
+  },
+  "FunctionTemplate": {
+   "description": "A class forward (kind=forward) or a helper function (kind=function).",
+   "properties": {
+    "id": {
+     "title": "Id",
+     "type": "string"
+    },
+    "kind": {
+     "enum": [
+      "forward",
+      "function"
+     ],
+     "title": "Kind",
+     "type": "string"
+    },
+    "cls": {
+     "default": "",
+     "title": "Cls",
+     "type": "string"
+    },
+    "file": {
+     "title": "File",
+     "type": "string"
+    },
+    "line_start": {
+     "title": "Line Start",
+     "type": "integer"
+    },
+    "line_end": {
+     "title": "Line End",
+     "type": "integer"
+    },
+    "calls": {
+     "items": {
+      "type": "string"
+     },
+     "title": "Calls",
+     "type": "array"
+    },
+    "call_sites": {
+     "additionalProperties": {
+      "type": "string"
+     },
+     "title": "Call Sites",
+     "type": "object"
+    }
+   },
+   "required": [
+    "id",
+    "kind",
+    "file",
+    "line_start",
+    "line_end"
+   ],
+   "title": "FunctionTemplate",
+   "type": "object"
+  },
+  "Instance": {
+   "description": "A statically known path: a module instance, call site, or branch region.",
+   "properties": {
+    "path": {
+     "title": "Path",
+     "type": "string"
+    },
+    "kind": {
+     "enum": [
+      "module",
+      "function",
+      "region"
+     ],
+     "title": "Kind",
+     "type": "string"
+    },
+    "template": {
+     "title": "Template",
+     "type": "string"
+    },
+    "branch": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "null"
+      }
+     ],
+     "default": null,
+     "title": "Branch"
+    },
+    "static": {
+     "default": "undecided",
+     "enum": [
+      "taken",
+      "pruned",
+      "guarded",
+      "undecided"
+     ],
+     "title": "Static",
+     "type": "string"
+    },
+    "reason": {
+     "default": "",
+     "title": "Reason",
+     "type": "string"
+    }
+   },
+   "required": [
+    "path",
+    "kind",
+    "template"
+   ],
+   "title": "Instance",
+   "type": "object"
+  },
+  "Meta": {
+   "description": "Metadata for a staged model skeleton.",
+   "properties": {
+    "schema_version": {
+     "default": 3,
+     "title": "Schema Version",
+     "type": "integer"
+    },
+    "hf_id": {
+     "title": "Hf Id",
+     "type": "string"
+    },
+    "config_hash": {
+     "title": "Config Hash",
+     "type": "string"
+    },
+    "torch": {
+     "title": "Torch",
+     "type": "string"
+    },
+    "transformers": {
+     "title": "Transformers",
+     "type": "string"
+    },
+    "source_file_hashes": {
+     "additionalProperties": {
+      "type": "string"
+     },
+     "title": "Source File Hashes",
+     "type": "object"
+    }
+   },
+   "required": [
+    "hf_id",
+    "config_hash",
+    "torch",
+    "transformers"
+   ],
+   "title": "Meta",
+   "type": "object"
+  },
+  "Region": {
+   "description": "A branch destination or body region (e.g. #then, #else, #body).",
+   "properties": {
+    "id": {
+     "title": "Id",
+     "type": "string"
+    },
+    "label": {
+     "enum": [
+      "then",
+      "else",
+      "body"
+     ],
+     "title": "Label",
+     "type": "string"
+    },
+    "line_start": {
+     "title": "Line Start",
+     "type": "integer"
+    },
+    "line_end": {
+     "title": "Line End",
+     "type": "integer"
+    }
+   },
+   "required": [
+    "id",
+    "label",
+    "line_start",
+    "line_end"
+   ],
+   "title": "Region",
+   "type": "object"
+  }
+ },
+ "description": "Static model graph skeleton with templates, branches, and instances.",
+ "properties": {
+  "meta": {
+   "$ref": "#/$defs/Meta"
+  },
+  "functions": {
+   "items": {
+    "$ref": "#/$defs/FunctionTemplate"
+   },
+   "title": "Functions",
+   "type": "array"
+  },
+  "branches": {
+   "items": {
+    "$ref": "#/$defs/Branch"
+   },
+   "title": "Branches",
+   "type": "array"
+  },
+  "instances": {
+   "items": {
+    "$ref": "#/$defs/Instance"
+   },
+   "title": "Instances",
+   "type": "array"
+  }
+ },
+ "required": [
+  "meta",
+  "functions",
+  "branches",
+  "instances"
+ ],
+ "title": "Skeleton",
+ "type": "object"
+}
