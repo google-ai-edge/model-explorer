@@ -277,7 +277,6 @@ export const SETTING_USE_SVG_TEXT_RENDERER: Setting = {
     'It also supports rendering non-ASCII characters. ' +
     '⚠️ Note: This may impact performance when rendering large models.',
 };
-
 const SETTINGS_LOCAL_STORAGE_KEY = 'model_explorer_settings';
 
 /**
