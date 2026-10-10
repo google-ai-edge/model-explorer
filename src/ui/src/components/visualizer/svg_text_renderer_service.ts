@@ -102,7 +102,8 @@ export class SvgTextRendererService {
       .attr('y', (d) => this.getNodeLabelY(d))
       .style('fill', (d) => this.getNodeLabelColor(d))
       .style('font-size', (d) => this.getNodeLabelFontSize(d))
-      .style('font-weight', (d) => (isOpNode(d) ? 400 : 500));
+      .style('font-weight', (d) => (isOpNode(d) ? 400 : 500))
+      .style('font-family', '"Google Sans Text", Arial, Helvetica, sans-serif');
     // Render multi-line text labels using tspans.
     nodeLabelEnter.each((d, i, nodes) => {
       const textElement = d3.select(nodes[i]);
@@ -234,7 +235,11 @@ export class SvgTextRendererService {
       for (const row of rows) {
         const textElement = nodeAttrsTable
           .append('text')
-          .style('font-size', attrsTableFontSize);
+          .style('font-size', attrsTableFontSize)
+          .style(
+            'font-family',
+            '"Google Sans Text", Arial, Helvetica, sans-serif',
+          );
 
         // Key Label
         const keyLabel = row.keyLabelData;
