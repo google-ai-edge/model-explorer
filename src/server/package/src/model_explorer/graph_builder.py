@@ -12,9 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
+"""Graph builder data structures for Model Explorer."""
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field  # pylint: disable=g-importing-member,g-multiple-import
 from typing import Dict, Literal, Union
+
+# pylint: disable=invalid-name
 
 
 @dataclass
@@ -180,7 +183,7 @@ NodeAttributeValue = Union[str, SpecialNodeAttributeValue]
 
 @dataclass
 class KeyValue:
-  """A key-value pair"""
+  """A key-value pair."""
 
   key: str
   value: NodeAttributeValue
@@ -253,6 +256,21 @@ class GroupNodeConfig:
   # 1: left-right
   layoutDirection: Union[int, None] = None
 
+  # The background color of the group node in CSS format.
+  #
+  # (optional)
+  backgroundColor: Union[str, None] = None
+
+  # The border color of the group node in CSS format.
+  #
+  # (optional)
+  borderColor: Union[str, None] = None
+
+  # The text color of the group node in CSS format.
+  #
+  # (optional)
+  textColor: Union[str, None] = None
+
 
 class LayoutDirection:
   """Defines the possible layout directions for visualization."""
@@ -263,6 +281,8 @@ class LayoutDirection:
 
 @dataclass
 class GraphCollection:
+  """A collection of graphs."""
+
   # The label of the collection.
   #
   # It will be appended to the file name to distinguish different graph
@@ -372,3 +392,9 @@ class LayoutConfigs:
   #
   # Default is 20.
   edgeSep: Union[int, None] = None
+
+  # Whether to keep layers with a single child op node instead of collapsing
+  # them.
+  #
+  # (optional)
+  keepLayersWithASingleChild: Union[bool, None] = None
