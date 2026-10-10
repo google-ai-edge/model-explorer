@@ -21,6 +21,7 @@ An op's path is its namespace.
 from __future__ import annotations
 
 import collections
+import re
 from typing import Any
 
 from . import prune
@@ -49,6 +50,8 @@ class Emitter:
     skeleton: Skeleton representing static model structure.
     coverage: Coverage analysis across execution paths.
     iterations: Mapping of loop paths to iteration counts.
+    emit_info_nodes: Whether to emit synthetic `info:` nodes inside single-child
+      region namespaces.
     templates: Pre-indexed function and module templates from skeleton.
     status: Mapping from region path to PathCoverage records.
   """
@@ -58,10 +61,21 @@ class Emitter:
       skeleton: schema.Skeleton,
       coverage: schema.Coverage,
       iterations: dict[str, int],
+      emit_info_nodes: bool = True,
   ):
+    """Initializes the instance.
+
+    Args:
+      skeleton: Skeleton representing static model structure.
+      coverage: Coverage analysis across execution paths.
+      iterations: Mapping of loop paths to iteration counts.
+      emit_info_nodes: Whether to emit synthetic `info:` nodes inside
+        single-child region namespaces.
+    """
     self.skeleton = skeleton
     self.coverage = coverage
     self.iterations = iterations
+    self.emit_info_nodes = emit_info_nodes
     self.templates = prune.Templates(skeleton)
     self.status = {row.path: row for row in coverage.paths}
     self._render_cache: dict[str, str] = {}
@@ -102,7 +116,19 @@ class Emitter:
       edges: list[schema.Edge],
       shapes_by_id: dict[str, list[str]] | None = None,
   ) -> dict[str, Any]:
-    """Build a Model Explorer graph dict from ops and edges."""
+    """Builds a Model Explorer graph dict from ops and edges.
+
+    Args:
+      gid: Graph identifier for the emitted Model Explorer graph.
+      ops: Tensor operations belonging to the graph.
+      edges: Data-flow edges connecting the operations.
+      shapes_by_id: Optional mapping from operation ID to per-trace shape
+        strings. If None, `shapes_by_trace` attributes are omitted.
+
+    Returns:
+      A Model Explorer graph dictionary containing `id`, `nodes`,
+      `groupNodeAttributes`, `groupNodeConfigs`, and `layoutConfigs`.
+    """
     nodes = []
     by_dst = collections.defaultdict(list)
     for edge in edges:
@@ -177,8 +203,9 @@ class Emitter:
           "style": {"backgroundColor": background, "borderColor": border},
       })
       present_prefixes.add(namespace)
-    # group attributes for every region group, info node for single-child groups
+    # group attributes and status styling for every region group
     group_attrs = {}
+    group_configs = []
     namespace_to_path = {}
     for node in nodes:
       node_path = next(
@@ -193,31 +220,48 @@ class Emitter:
     for namespace, region_path in namespace_to_path.items():
       row = self.status.get(region_path)
       branch = self.templates.branch_at(region_path)
+      status = row.status if row else "executed"
       group_attrs[namespace] = {
           "path": region_path,
           "condition": branch.cond_src if branch else "",
           "kind": branch.cond_kind if branch else "",
-          "status": row.status if row else "executed",
+          "status": status,
           "source": f"{branch.file}:{branch.line_start}" if branch else "",
           "evidence": (row.evidence if row else "")[:200],
           "needs": row.needs if row and row.needs else "",
       }
-    children = collections.Counter(node["namespace"] for node in nodes)
-    for namespace, n_children in list(children.items()):
-      if n_children == 1 and namespace in group_attrs:
-        attrs = group_attrs[namespace]
-        nodes.append({
-            "id": f"info:{gid}:{namespace}",
-            "label": "ℹ " + attrs["condition"][:COND_CHARS],
-            "namespace": namespace,
-            "attrs": [
-                {"key": key, "value": value} for key, value in attrs.items()
-            ],
-            "incomingEdges": [],
-            "outputsMetadata": [],
-            "style": {"backgroundColor": "#ffffff", "borderColor": "#bdbdbd"},
+      colors = COLORS.get(status)
+      if colors is not None:
+        background, border = colors
+        unescaped = namespace.replace(r"\/", "/")
+        group_configs.append({
+            "namespaceRegex": f"^{re.escape(unescaped)}$",
+            "backgroundColor": background,
+            "borderColor": border,
         })
-    return {"id": gid, "nodes": nodes, "groupNodeAttributes": group_attrs}
+    if self.emit_info_nodes:
+      children = collections.Counter(node["namespace"] for node in nodes)
+      for namespace, n_children in list(children.items()):
+        if n_children == 1 and namespace in group_attrs:
+          attrs = group_attrs[namespace]
+          nodes.append({
+              "id": f"info:{gid}:{namespace}",
+              "label": "ℹ " + attrs["condition"][:COND_CHARS],
+              "namespace": namespace,
+              "attrs": [
+                  {"key": key, "value": value} for key, value in attrs.items()
+              ],
+              "incomingEdges": [],
+              "outputsMetadata": [],
+              "style": {"backgroundColor": "#ffffff", "borderColor": "#bdbdbd"},
+          })
+    return {
+        "id": gid,
+        "nodes": nodes,
+        "groupNodeAttributes": group_attrs,
+        "groupNodeConfigs": group_configs,
+        "layoutConfigs": {"keepLayersWithASingleChild": True},
+    }
 
   def emit(self, traces: list[schema.Trace], primary: str) -> dict[str, Any]:
     """Emit the full GraphCollection with merged graph and individual traces.
