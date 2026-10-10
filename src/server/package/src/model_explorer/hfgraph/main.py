@@ -111,6 +111,13 @@ def _graph(graph_dict: dict[str, Any]) -> gb.Graph:
     for k, v in graph_dict["groupNodeAttributes"].items():
       group_attrs[k] = {kk: str(vv) for kk, vv in v.items()}
     graph.groupNodeAttributes = group_attrs
+  if graph_dict.get("groupNodeConfigs"):
+    graph.groupNodeConfigs = [
+        gb.GroupNodeConfig(**config)
+        for config in graph_dict["groupNodeConfigs"]
+    ]
+  if graph_dict.get("layoutConfigs"):
+    graph.layoutConfigs = gb.LayoutConfigs(**graph_dict["layoutConfigs"])
   return graph
 
 
