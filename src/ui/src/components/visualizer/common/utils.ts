@@ -1051,7 +1051,9 @@ export function splitLabel(label: string): string[] {
     .filter((line) => line !== '');
 }
 
-/** Wraps the label based on the given max width. */
+/**
+ * Wraps the given label to multiple lines if it exceeds the given maxWidth.
+ */
 export function wrapLabel(
   label: string,
   maxWidth: number,
@@ -1108,7 +1110,8 @@ export function wrapLabel(
           }
         }
         if (splitIndex === 0) {
-          // If even one char is too wide, just take one char (shouldn't happen with reasonable width).
+          // If even one char is too wide, just take one char (shouldn't happen
+          // with reasonable width).
           splitIndex = 1;
         }
         finalLines.push(curLine.substring(0, splitIndex));
@@ -1123,7 +1126,6 @@ export function wrapLabel(
 
   return allLines;
 }
-
 /** Get the extra height for multi-line label. */
 export function getMultiLineLabelExtraHeight(
   node: ModelNode,

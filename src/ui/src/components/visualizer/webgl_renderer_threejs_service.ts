@@ -413,6 +413,10 @@ export class WebglRendererThreejsService {
     }
   }
 
+  setSceneBackground(color: three.Color) {
+    this.scene.background = color;
+  }
+
   createOrthographicCamera(
     left: number,
     right: number,
