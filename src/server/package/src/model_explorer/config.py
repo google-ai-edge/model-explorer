@@ -32,7 +32,7 @@ from .types import ModelExplorerGraphs
 from .utils import convert_adapter_response
 
 if torch is not None:
-  from .pytorch_exported_program_adater_impl import PytorchExportedProgramAdapterImpl
+  from .pytorch_exported_program_adapter_impl import PytorchExportedProgramAdapterImpl  # pylint: disable=g-import-not-at-top
 
 ModelSource = TypedDict(
     'ModelSource', {'url': str, 'adapterId': NotRequired[str]}

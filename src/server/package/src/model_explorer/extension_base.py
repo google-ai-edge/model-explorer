@@ -15,7 +15,7 @@
 
 from typing import Union
 from .extension_class_processor import ExtensionClassProcessor
-from .extension_matadata import ExtensionMetadata
+from .extension_metadata import ExtensionMetadata
 
 
 class Extension(object, metaclass=ExtensionClassProcessor):

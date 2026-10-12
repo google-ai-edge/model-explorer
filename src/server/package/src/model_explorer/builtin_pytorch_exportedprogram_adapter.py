@@ -24,7 +24,7 @@ from .adapter import Adapter, AdapterMetadata
 from .types import ModelExplorerGraphs
 
 if torch is not None:
-  from .pytorch_exported_program_adater_impl import PytorchExportedProgramAdapterImpl
+  from .pytorch_exported_program_adapter_impl import PytorchExportedProgramAdapterImpl  # pylint: disable=g-import-not-at-top
 
 try:
   import executorch
