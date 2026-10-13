@@ -13,7 +13,7 @@
 # limitations under the License.
 # ==============================================================================
 
-from typing import Dict
+from typing import Any
 
 import ai_edge_model_explorer_adapter as convert_wrapper
 
@@ -38,7 +38,13 @@ class BuiltinTfMlirAdapter(Adapter):
   def __init__(self):
     super().__init__()
 
-  def convert(self, model_path: str, settings: Dict) -> ModelExplorerGraphs:
+  def convert(
+      self,
+      model_path: str,
+      settings: dict[str, Any],
+      on_progress: convert_wrapper.ProgressCallback | None = None,
+  ) -> ModelExplorerGraphs:
+    """See base class."""
     # Construct config.
     config = convert_wrapper.VisualizeConfig()
     if 'const_element_count_limit' in settings:
@@ -50,5 +56,7 @@ class BuiltinTfMlirAdapter(Adapter):
       model_dir = ensure_tf_model_name(model_path)
 
     # Run
-    resp_json_str = convert_wrapper.ConvertSavedModelToJson(config, model_dir)
+    resp_json_str = convert_wrapper.ConvertSavedModelToJson(
+        config, model_dir, on_progress=on_progress
+    )
     return {'graphCollections': convert_builtin_resp(resp_json_str)}
