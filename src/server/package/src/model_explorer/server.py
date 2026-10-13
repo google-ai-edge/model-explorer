@@ -17,9 +17,11 @@ import http
 from importlib import metadata
 import json
 import logging
+import ntpath
 import os
 import platform
 import queue
+import shutil
 import socket
 import sys
 import tempfile
@@ -58,6 +60,9 @@ from .server_director import ServerDirector
 from .utils import convert_adapter_response
 
 OSS_WEB_APP_DIR = os.path.join(os.path.dirname(__file__), 'web_app')
+
+_STRIP_CHARS = '. \t\r\n\v\f'
+_DEFAULT_UPLOAD_FILENAME = 'no_name'
 
 server_directive_dispatcher = ServerDirectiveDispatcher()
 
@@ -219,6 +224,38 @@ def _serve_static_asset(rel_path: str) -> flask.Response:
   return flask.send_from_directory(OSS_WEB_APP_DIR, rel_path)
 
 
+def _get_upload_file_path(upload_dir: str, file_name: Union[str, None]) -> str:
+  """Returns the path in `upload_dir` to save an uploaded file to.
+
+  The multipart file name is client-controlled, so only its last component is
+  kept: `ntpath.basename` splits on both forward slashes and backslashes and
+  drops Windows drive prefixes on every platform. Unlike
+  `werkzeug.utils.secure_filename`, this keeps non-ASCII names and their
+  extensions, which adapters dispatch on.
+
+  Args:
+    upload_dir: The directory to save the uploaded file into.
+    file_name: The file name sent by the client, if any.
+
+  Returns:
+    A path directly inside `upload_dir`.
+
+  Raises:
+    ValueError: If the path still resolves outside of `upload_dir`.
+  """
+  base_name = ntpath.basename(file_name or '')
+  # Names made of only dots and whitespace can refer to `upload_dir` or its
+  # parent (Windows strips trailing dots and spaces from file names).
+  if not base_name.strip(_STRIP_CHARS):
+    base_name = _DEFAULT_UPLOAD_FILENAME
+  file_path = os.path.join(upload_dir, base_name)
+  # Defense in depth, e.g. against a symlink in `upload_dir`.
+  real_upload_dir = os.path.realpath(upload_dir)
+  if os.path.dirname(os.path.realpath(file_path)) != real_upload_dir:
+    raise ValueError(f'Upload file name {file_name!r} escapes {upload_dir}')
+  return file_path
+
+
 def _is_internal_colab() -> bool:
   return False
 
@@ -349,10 +386,16 @@ def start(
   @app.route('/apipost/v1/upload', methods=['POST'])
   def upload_file():
     f = flask.request.files['file']
-    file_name = f.filename if f.filename is not None else 'no_name'
     tmp_dir = tempfile.mkdtemp()
-    file_path = os.path.join(tmp_dir, file_name)
-    f.save(file_path)
+    try:
+      file_path = _get_upload_file_path(tmp_dir, f.filename)
+      f.save(file_path)
+    except ValueError:
+      shutil.rmtree(tmp_dir, ignore_errors=True)
+      flask.abort(400)
+    except Exception:
+      shutil.rmtree(tmp_dir, ignore_errors=True)
+      raise
     return _make_json_response({'path': file_path})
 
   @app.route('/api/v1/send_command')
