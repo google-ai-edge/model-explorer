@@ -17,14 +17,18 @@
  */
 
 import '@angular/compiler';
-
-import {ChangeDetectorRef, createEnvironmentInjector, ElementRef, runInInjectionContext,} from '@angular/core';
+import {
+  createEnvironmentInjector,
+  runInInjectionContext,
+  ElementRef,
+  ChangeDetectorRef,
+} from '@angular/core';
 import {MatDialog} from '@angular/material/dialog';
-import {build} from 'esbuild';
 import {strict as assert} from 'node:assert';
+import {build} from 'esbuild';
 import {mkdir, mkdtemp, rm} from 'node:fs/promises';
-import path from 'node:path';
 import {fileURLToPath, pathToFileURL} from 'node:url';
+import path from 'node:path';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
 const cache = path.join(root, 'node_modules/.cache');
@@ -33,11 +37,7 @@ const temp = await mkdtemp(path.join(cache, 'session-regressions-'));
 const originalDocument = globalThis.document;
 const originalFetch = globalThis.fetch;
 const originalFrame = globalThis.requestAnimationFrame;
-globalThis.document = {
-  visibilityState: 'hidden',
-  addEventListener() {},
-  removeEventListener() {}
-};
+globalThis.document = {visibilityState: 'hidden', addEventListener() {}, removeEventListener() {}};
 globalThis.requestAnimationFrame = (fn) => {
   fn();
   return 1;
@@ -60,18 +60,8 @@ const session = (id = 'a', extra = {}) => ({
   status: 'draft',
   has_capture: false,
   runs: [
-    {
-      id: 'ref',
-      runtime: 'LiteRT-LM',
-      source: 'path',
-      artifact: 'model.litertlm'
-    },
-    {
-      id: 'target',
-      runtime: 'LiteRT-LM',
-      source: 'path',
-      artifact: 'model.litertlm'
-    },
+    {id: 'ref', runtime: 'LiteRT-LM', source: 'path', artifact: 'model.litertlm'},
+    {id: 'target', runtime: 'LiteRT-LM', source: 'path', artifact: 'model.litertlm'},
   ],
   notice: '',
   ...extra,
@@ -87,8 +77,7 @@ try {
   const bundle = path.join(temp, 'sessions.mjs');
   await build({
     stdin: {
-      contents:
-          `export {SessionListService} from './src/data/session_list_service'; export {ReportApiService} from './src/data/report_api_service'; export {SessionEditor} from './src/features/sessions/session_editor/session_editor'; export {RuntimeService} from './src/data/runtime_service'; export {HfFilePicker} from './src/features/sessions/hf_file_picker/hf_file_picker'; export * from './src/data/session_status';`,
+      contents: `export {SessionListService} from './src/data/session_list_service'; export {ReportApiService} from './src/data/report_api_service'; export {SessionEditor} from './src/features/sessions/session_editor/session_editor'; export {RuntimeService} from './src/data/runtime_service'; export {HfFilePicker} from './src/features/sessions/hf_file_picker/hf_file_picker'; export * from './src/data/session_status';`,
       resolveDir: root,
       loader: 'ts',
     },
@@ -112,8 +101,7 @@ try {
     copiedSessionName,
   } = await import(pathToFileURL(bundle));
   function service(api) {
-    const injector =
-        createEnvironmentInjector([{provide: ReportApiService, useValue: api}]);
+    const injector = createEnvironmentInjector([{provide: ReportApiService, useValue: api}]);
     disposals.push(() => injector.destroy());
     return runInInjectionContext(injector, () => new SessionListService());
   }
@@ -145,9 +133,7 @@ try {
   await renaming;
   old.resolve(listing());
   await oldRead;
-  assert.equal(
-      sessions.items()[0].name, 'Renamed',
-      'late poll must not revert completed rename');
+  assert.equal(sessions.items()[0].name, 'Renamed', 'late poll must not revert completed rename');
   const beforeDelete = sessions.load(true);
   const stale = reads.shift();
   const deleting = sessions.manage('delete', {id: 'a'});
@@ -155,8 +141,7 @@ try {
   await deleting;
   stale.resolve(listing());
   await beforeDelete;
-  assert.equal(
-      sessions.items().length, 0, 'late poll must not resurrect deleted row');
+  assert.equal(sessions.items().length, 0, 'late poll must not resurrect deleted row');
 
   // Failed mutation still releases polling and keeps last-known data.
   sessions.listing.set(listing());
@@ -178,69 +163,55 @@ try {
   assert.equal(sessions.items()[0].name, 'Server value');
   assert.match(sessions.refreshError(), /offline/);
   console.log(
-      'PASS: late rename/delete polls, mutation failure recovery, paused polls, last-known refresh error',
+    'PASS: late rename/delete polls, mutation failure recovery, paused polls, last-known refresh error',
   );
 
   assert.equal(sessionStatusLabel(session('a', {status: 'failed'})), 'Failed');
   for (const [phase, label] of Object.entries({
-         starting: 'Starting',
-         active: 'Active',
-         ending: 'Ending',
-         ended: 'Ended',
-         interrupted: 'Interrupted',
-         unavailable: 'Unavailable',
-       }))
-    assert.equal(
-        sessionStatusLabel(session('a', {execution: {phase, runners: []}})),
-        label);
-  // The list shows one Model Server state per Session: failure, starting, on or
-  // off.
+    starting: 'Starting',
+    active: 'Active',
+    ending: 'Ending',
+    ended: 'Ended',
+    interrupted: 'Interrupted',
+    unavailable: 'Unavailable',
+  }))
+    assert.equal(sessionStatusLabel(session('a', {execution: {phase, runners: []}})), label);
+  // The list shows one Model Server state per Session: failure, starting, on or off.
   for (const [extra, state] of [
-           [{}, 'off'],
-           [{status: 'saved', has_capture: true}, 'off'],
-           [{status: 'preparing'}, 'starting'],
-           [{status: 'initializing'}, 'starting'],
-           [{execution: {phase: 'starting', runners: []}}, 'starting'],
-           [{execution: {phase: 'active', runners: []}}, 'on'],
-           [{execution: {phase: 'ending', runners: []}}, 'on'],
-           [{execution: {phase: 'ended', runners: []}}, 'off'],
-           [{status: 'failed'}, 'failure'],
-           [{execution: {phase: 'interrupted', runners: []}}, 'failure'],
-           [{execution: {phase: 'unavailable', runners: []}}, 'failure'],
+    [{}, 'off'],
+    [{status: 'saved', has_capture: true}, 'off'],
+    [{status: 'preparing'}, 'starting'],
+    [{status: 'initializing'}, 'starting'],
+    [{execution: {phase: 'starting', runners: []}}, 'starting'],
+    [{execution: {phase: 'active', runners: []}}, 'on'],
+    [{execution: {phase: 'ending', runners: []}}, 'on'],
+    [{execution: {phase: 'ended', runners: []}}, 'off'],
+    [{status: 'failed'}, 'failure'],
+    [{execution: {phase: 'interrupted', runners: []}}, 'failure'],
+    [{execution: {phase: 'unavailable', runners: []}}, 'failure'],
   ])
-    assert.equal(
-        modelServerState(session('a', extra)), state, JSON.stringify(extra));
-  assert.equal(
-      modelServerState(session('a'), 'Server refused the request'), 'failure');
-  // Entering needs something to do: a Model Server that is on, or captured
-  // data.
+    assert.equal(modelServerState(session('a', extra)), state, JSON.stringify(extra));
+  assert.equal(modelServerState(session('a'), 'Server refused the request'), 'failure');
+  // Entering needs something to do: a Model Server that is on, or captured data.
   assert.equal(sessionEnterable(session('a')), false);
   assert.equal(sessionEnterable(session('a', {status: 'preparing'})), false);
   assert.equal(sessionEnterable(session('a', {status: 'failed'})), false);
+  assert.equal(sessionEnterable(session('a', {execution: {phase: 'active', runners: []}})), true);
+  assert.equal(sessionEnterable(session('a', {status: 'saved', has_capture: true})), true);
   assert.equal(
-      sessionEnterable(
-          session('a', {execution: {phase: 'active', runners: []}})),
-      true);
-  assert.equal(
-      sessionEnterable(session('a', {status: 'saved', has_capture: true})),
-      true);
-  assert.equal(
-      sessionConfigurationLocked(
-          session('a', {execution: {phase: 'unavailable', runners: []}})),
-      true,
-      'an unavailable execution still owns its slot',
+    sessionConfigurationLocked(session('a', {execution: {phase: 'unavailable', runners: []}})),
+    true,
+    'an unavailable execution still owns its slot',
   );
   assert.equal(
-      sessionConfigurationLocked(
-          session('a', {execution: {phase: 'active', runners: []}})),
-      true,
+    sessionConfigurationLocked(session('a', {execution: {phase: 'active', runners: []}})),
+    true,
   );
-  assert.equal(
-      sessionConfigurationLocked(session('a', {status: 'preparing'})), true);
+  assert.equal(sessionConfigurationLocked(session('a', {status: 'preparing'})), true);
   assert.equal(copiedSessionName('a'.repeat(80)).length, 80);
   assert.equal(copiedSessionName('Example'), 'Example (copy)');
   console.log(
-      'PASS: shared execution/status semantics, immutable active configuration, bounded duplicate name',
+    'PASS: shared execution/status semantics, immutable active configuration, bounded duplicate name',
   );
 
   const listingState = {value: listing()};
@@ -253,8 +224,7 @@ try {
     manage: async (operation, payload) => {
       requests.push({operation, payload});
       if (failure) throw new Error('save failed');
-      return session(
-          payload.id ?? 'saved', {...payload, id: payload.id ?? 'saved'});
+      return session(payload.id ?? 'saved', {...payload, id: payload.id ?? 'saved'});
     },
     load: async () => {},
   };
@@ -291,9 +261,7 @@ try {
   assert.equal(editor.captureReady(), true);
   await editor.save();
   assert.equal(requests.length, 1);
-  assert.equal(
-      prepareCalls, 0,
-      'offline saved configuration must not attempt Runner preparation');
+  assert.equal(prepareCalls, 0, 'offline saved configuration must not attempt Runner preparation');
   assert.equal(editor.saving(), false);
   failure = true;
   editor.savedId = undefined;
@@ -312,17 +280,16 @@ try {
   assert.match(editor.error(), /Configuration saved.*preparation failed/);
   await editor.save();
   assert.deepEqual(
-      requests.map((r) => r.operation),
-      ['create', 'update'],
+    requests.map((r) => r.operation),
+    ['create', 'update'],
   );
   assert.equal(requests[1].payload.id, 'saved');
   console.log(
-      'PASS: offline configuration save without Runner, save error retains draft, prepare retry reuses saved identity',
+    'PASS: offline configuration save without Runner, save error retains draft, prepare retry reuses saved identity',
   );
 
-  // Creating a Session starts its Model Server: right away, or queued behind
-  // the preparation of selected outputs. Saving an existing configuration never
-  // starts anything.
+  // Creating a Session starts its Model Server: right away, or queued behind the preparation of
+  // selected outputs. Saving an existing configuration never starts anything.
   {
     const calls = [];
     const starting = {
@@ -344,10 +311,8 @@ try {
     ]);
     disposals.push(() => startInjector.destroy());
     const create = (mode, tap_profile) => {
-      const item =
-          runInInjectionContext(startInjector, () => new SessionEditor());
-      item.request = () =>
-          ({mode, session: mode === 'update' ? session('saved') : undefined});
+      const item = runInInjectionContext(startInjector, () => new SessionEditor());
+      item.request = () => ({mode, session: mode === 'update' ? session('saved') : undefined});
       item.config = {
         name: 'Live',
         model: 'test',
@@ -377,7 +342,7 @@ try {
     assert.deepEqual(update.created, []);
     assert.doesNotMatch(update.item.saveNotice(), /Model Server/);
     console.log(
-        'PASS: creating a Session starts its Model Server, queued behind preparation when outputs are selected',
+      'PASS: creating a Session starts its Model Server, queued behind preparation when outputs are selected',
     );
   }
 
@@ -413,7 +378,7 @@ try {
   assert.deepEqual(progress, [0.5]);
   assert.equal(editor.uploadProgress(), null);
   console.log(
-      'PASS: same-file input reset, upload cancellation, ignored late result, successful same-file retry, progress',
+    'PASS: same-file input reset, upload cancellation, ignored late result, successful same-file retry, progress',
   );
 
   let uploads = 0;
@@ -424,15 +389,12 @@ try {
   runtimeMock.capabilities = () => ({upload_limit_bytes: 10});
   input.files = [{name: 'big.litertlm', size: 11}];
   input.value = 'C:\\fakepath\\big.litertlm';
-  await editor.upload(
-      {target: input}, {id: 'ref', runtime: 'LiteRT-LM', artifact: ''});
-  assert.equal(
-      uploads, 0, 'oversize files are rejected before any transfer starts');
+  await editor.upload({target: input}, {id: 'ref', runtime: 'LiteRT-LM', artifact: ''});
+  assert.equal(uploads, 0, 'oversize files are rejected before any transfer starts');
   assert.match(editor.error(), /accepts files up to/);
   assert.equal(editor.uploading(), null);
   runtimeMock.capabilities = () => null;
-  console.log(
-      'PASS: upload size limit from runtime capabilities is enforced client-side');
+  console.log('PASS: upload size limit from runtime capabilities is enforced client-side');
 
   const hfInjector = createEnvironmentInjector([]);
   disposals.push(() => hfInjector.destroy());
@@ -442,8 +404,7 @@ try {
   assert.equal(hf.selection(), null);
   hf.path.set('sub/model.litertlm');
   assert.equal(hf.selection()?.artifact, 'sub/model.litertlm');
-  console.log(
-      'PASS: Hugging Face parent traversal rejected after directory migration');
+  console.log('PASS: Hugging Face parent traversal rejected after directory migration');
 } finally {
   for (const dispose of disposals.reverse()) dispose();
   globalThis.document = originalDocument;

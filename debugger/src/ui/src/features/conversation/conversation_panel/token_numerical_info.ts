@@ -18,15 +18,15 @@
 
 import {Component, input} from '@angular/core';
 import {MatTooltipModule} from '@angular/material/tooltip';
-import {TokenAnalysisPair} from '../../../data/contracts/token_analysis';
 import {ExplorerInfoValue} from '../../../shared/explorer_info_value/explorer_info_value';
+import {TokenAnalysisPair} from '../../../data/contracts/token_analysis';
 import {heatLevel, heatPalette, metricText} from '../token_analysis';
 import {TOKEN_METRICS} from '../token_metric_metadata';
 @Component({
   selector: 'token-numerical-info',
   imports: [MatTooltipModule, ExplorerInfoValue],
   template: `
-    @for (group of groups; track group.label) {
+    @for (group of visibleGroups(); track group.label) {
       <section>
         <h3>{{ group.label }}</h3>
         <table [attr.aria-label]="group.label + ' numerical differences'">
@@ -131,6 +131,10 @@ import {TOKEN_METRICS} from '../token_metric_metadata';
   `,
 })
 export class TokenNumericalInfo {
+  readonly logitsOnly = input(false);
+  visibleGroups() {
+    return this.logitsOnly() ? this.groups.filter((g) => g.label === 'Logits') : this.groups;
+  }
   readonly analysis = input<TokenAnalysisPair>();
   readonly loading = input(false);
   readonly error = input('');
@@ -138,7 +142,7 @@ export class TokenNumericalInfo {
   readonly heatPalette = heatPalette;
   readonly groups = [
     {label: 'Logits', metrics: TOKEN_METRICS.slice(0, 2)},
-    {label: 'Activations', metrics: TOKEN_METRICS.slice(2)},
+    {label: 'Layer Activation', metrics: TOKEN_METRICS.slice(2)},
   ];
   label(value: string) {
     return value.split(' · ')[1];

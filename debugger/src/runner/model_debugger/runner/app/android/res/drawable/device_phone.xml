@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- A phone in outline, as the Model Debugger's pages draw a device. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="22dp" android:height="22dp"
+    android:viewportWidth="24" android:viewportHeight="24">
+  <path
+      android:strokeColor="#FF444746" android:strokeWidth="1.7"
+      android:strokeLineCap="round" android:strokeLineJoin="round"
+      android:pathData="M9,2 L15,2 Q18,2 18,5 L18,19 Q18,22 15,22 L9,22 Q6,22 6,19 L6,5 Q6,2 9,2 Z M10,5 L14,5 M11,19 L13,19" />
+</vector>

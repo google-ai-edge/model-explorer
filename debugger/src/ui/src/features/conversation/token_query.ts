@@ -35,9 +35,7 @@ export const queryFields: Record<string, 'number' | 'boolean'> = {
   max_abs_error: 'number',
 };
 const TOKEN_QUERY_LANGUAGE: MetricQueryLanguage = {
-  fields: Object.fromEntries(
-    Object.entries(queryFields).map(([name, type]) => [name, {type}]),
-  ),
+  fields: Object.fromEntries(Object.entries(queryFields).map(([name, type]) => [name, {type}])),
   percentField: 'relative_l2',
   percentScale: 1,
 };
@@ -46,7 +44,6 @@ export type TokenQuery = MetricQuery<TokenQueryRow>;
 export type {Truth};
 /** The default filter is `NOT token_match`; a blank formula is an error, not match-all. */
 export function compileQuery(source: string): TokenQuery {
-  if (!source.trim())
-    throw new Error('Enter a formula, or reset to NOT token_match');
+  if (!source.trim()) throw new Error('Enter a formula, or reset to NOT token_match');
   return compileMetricQuery<TokenQueryRow>(source, TOKEN_QUERY_LANGUAGE);
 }

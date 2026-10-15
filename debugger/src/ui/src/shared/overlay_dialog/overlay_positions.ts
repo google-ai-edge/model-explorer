@@ -19,21 +19,14 @@
 import type {ConnectedPosition} from '@angular/cdk/overlay';
 
 /** Where a panel opens relative to its origin; the vertical flip is the fallback. */
-export type OverlayPlacement =
-  | 'below-start'
-  | 'below-end'
-  | 'above-start'
-  | 'above-end';
+export type OverlayPlacement = 'below-start' | 'below-end' | 'above-start' | 'above-end';
 
 export function overlayPositions(
   placement: OverlayPlacement,
   gap: number,
   inset = 0,
 ): ConnectedPosition[] {
-  const [vertical, horizontal] = placement.split('-') as [
-    'below' | 'above',
-    'start' | 'end',
-  ];
+  const [vertical, horizontal] = placement.split('-') as ['below' | 'above', 'start' | 'end'];
   const position = (side: 'below' | 'above'): ConnectedPosition => ({
     originX: horizontal,
     originY: side === 'below' ? 'bottom' : 'top',
@@ -42,8 +35,5 @@ export function overlayPositions(
     offsetY: side === 'below' ? gap : -gap,
     ...(inset ? {offsetX: inset} : {}),
   });
-  return [
-    position(vertical),
-    position(vertical === 'below' ? 'above' : 'below'),
-  ];
+  return [position(vertical), position(vertical === 'below' ? 'above' : 'below')];
 }

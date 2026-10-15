@@ -27,9 +27,7 @@ export function formatSignificant(
   digits = 4,
   placeholder = EM_DASH,
 ): string {
-  return finite(value)
-    ? Number(value.toPrecision(digits)).toString()
-    : placeholder;
+  return finite(value) ? Number(value.toPrecision(digits)).toString() : placeholder;
 }
 /** Fixed decimals: 1.5 → "1.500" with 3 digits. */
 export function formatFixed(
@@ -80,4 +78,58 @@ export function formatGiB(bytes: number, maximumFractionDigits = 1): string {
 }
 export function formatCount(count: number): string {
   return count.toLocaleString('en-US');
+}
+
+const COSINE_DECIMALS = 6;
+const PERCENT_DECIMALS = 2;
+const METRIC_SIGNIFICANT_DIGITS = 6;
+const PERCENT_METRICS = ['relative_l2', 'selected_probability', 'margin'];
+
+/** Describes the same display rules used by formatAnalysisMetric, not computation accuracy. */
+export function analysisMetricDisplayFormat(metric: string) {
+  if (metric === 'cosine_similarity')
+    return {
+      precision: `${COSINE_DECIMALS} decimal places`,
+      notation: `Scientific notation (${COSINE_DECIMALS} significant digits) if a nonzero value rounds to 0`,
+      rounding: '≈1 / ≈−1 when rounding reaches an endpoint; exact endpoints retain decimals',
+    };
+  if (PERCENT_METRICS.includes(metric))
+    return {
+      precision: `${PERCENT_DECIMALS} decimal places`,
+      notation: `Scientific notation (${PERCENT_DECIMALS + 1} significant digits) if a nonzero percentage rounds to 0`,
+      rounding: 'Applied after conversion to percent or percentage points',
+    };
+  return {
+    precision: `${METRIC_SIGNIFICANT_DIGITS} significant digits`,
+    notation: 'Scientific notation when 0 < |value| < 0.0001 or |value| ≥ 1,000,000',
+    rounding: 'Trailing zeros omitted',
+  };
+}
+
+/** Accepted analysis-metric-spec.md display contract; input values use canonical raw units. */
+export function formatAnalysisMetric(metric: string, value: number | null | undefined): string {
+  if (!finite(value)) return EM_DASH;
+  const normalized = value === 0 ? 0 : value;
+  if (metric === 'cosine_similarity') {
+    const fixed = normalized.toFixed(COSINE_DECIMALS);
+    if (Math.abs(normalized) !== 1 && Math.abs(Number(fixed)) === 1)
+      return normalized < 0 ? '≈−1' : '≈1';
+    return normalized !== 0 && Number(fixed) === 0
+      ? normalized.toExponential(COSINE_DECIMALS - 1)
+      : fixed;
+  }
+  if (PERCENT_METRICS.includes(metric)) {
+    const display = normalized * 100;
+    const fixed = display.toFixed(PERCENT_DECIMALS);
+    const formatted =
+      display !== 0 && Number(fixed) === 0 ? display.toExponential(PERCENT_DECIMALS) : fixed;
+    return formatted + (metric === 'margin' ? ' pp' : '%');
+  }
+  return formatMetric(normalized, {
+    digits: METRIC_SIGNIFICANT_DIGITS,
+    exponentDigits: METRIC_SIGNIFICANT_DIGITS - 1,
+    small: 0.0001,
+    large: 1000000,
+    placeholder: EM_DASH,
+  });
 }

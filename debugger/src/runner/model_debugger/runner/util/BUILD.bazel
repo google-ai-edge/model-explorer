@@ -1,0 +1,28 @@
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
+load("@rules_cc//cc:cc_test.bzl", "cc_test")
+
+# JSON is a format of the edges: a .cc of a layer may depend on this; no
+# header includes it (see json.h).
+cc_library(
+    name = "json",
+    srcs = ["json.cc"],
+    hdrs = ["json.h"],
+    visibility = ["//model_debugger/runner:__subpackages__"],
+    deps = [
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status:statusor",
+        "@com_google_absl//absl/strings:string_view",
+        "@nlohmann_json//:json",
+    ],
+)
+
+cc_test(
+    name = "json_test",
+    srcs = ["json_test.cc"],
+    deps = [
+        ":json",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status:statusor",
+        "@com_google_googletest//:gtest_main",
+    ],
+)

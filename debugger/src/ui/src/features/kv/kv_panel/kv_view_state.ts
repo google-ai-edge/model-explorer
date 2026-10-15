@@ -16,12 +16,8 @@
  * ==============================================================================
  */
 
-import type {
-  KvAnalysis,
-  KvAnalysisContext,
-  KvMetric,
-  KvRangeBin,
-} from '../../../data/contracts/kv';
+import {validValueRange, type ValueRange} from './kv_scatter_model';
+import type {KvAnalysis, KvAnalysisContext, KvMetric, KvRangeBin} from '../../../data/contracts/kv';
 import {compileKvQuery} from './kv_query';
 
 export interface KvHeadViewState {
@@ -38,11 +34,27 @@ export interface KvViewSnapshot {
   metric: KvMetric;
   colorScale: 'auto' | 'thresholds';
   head: string;
+  headSelection?: number[] | null;
+  positionReduction?: 'min' | 'max' | 'mean' | null;
   view: 'heatmap' | 'trends';
+  tensor?: {
+    active: boolean;
+    plot: 'index' | 'scatter';
+    position: number | null;
+    layer: number | null;
+    head: number | null;
+    channelRange?: KvRangeBin | null;
+    valueRange?: ValueRange | null;
+    channelReduction?: 'min' | 'max' | 'mean';
+    visibleRuntimes?: string[];
+  };
   formula: string;
   layer: number;
   position: number;
   selectionEnd: number | null;
+  trendLayers?: number[] | null;
+  heatmapLayers?: number[] | null;
+  bothTensors?: boolean;
   column: boolean;
   zoomRange: KvRangeBin | null;
   zoomHistory: KvRangeBin[];
@@ -111,26 +123,64 @@ const interval = (value: unknown): value is KvRangeBin =>
   integer(value['end']) &&
   value['end'] > value['start'];
 const booleans = (value: unknown): value is Record<string, boolean> =>
-  record(value) &&
-  Object.values(value).every((item) => typeof item === 'boolean');
+  record(value) && Object.values(value).every((item) => typeof item === 'boolean');
 
 /** Reject unsupported or malformed snapshots before applying any fields. */
 export function parseKvView(value: unknown): KvViewSnapshot | null {
-  if (!record(value) || value['version'] !== 1) return null;
-  if (
-    !['contextId', 'kind', 'head', 'formula'].every(
-      (key) => typeof value[key] === 'string',
+  if (value && typeof value === 'object') {
+    const extra = value as Partial<KvViewSnapshot>;
+    if (
+      extra.tensor !== undefined &&
+      (!record(extra.tensor) ||
+        typeof extra.tensor.active !== 'boolean' ||
+        !['index', 'scatter'].includes(extra.tensor.plot) ||
+        (extra.tensor.valueRange != null && !validValueRange(extra.tensor.valueRange)) ||
+        (extra.tensor.channelRange != null && !interval(extra.tensor.channelRange)) ||
+        (extra.tensor.channelReduction !== undefined &&
+          !['min', 'max', 'mean'].includes(extra.tensor.channelReduction)) ||
+        (extra.tensor.visibleRuntimes !== undefined &&
+          (!Array.isArray(extra.tensor.visibleRuntimes) ||
+            !extra.tensor.visibleRuntimes.every((side) => side === 'ref' || side === 'target'))) ||
+        ![extra.tensor.position, extra.tensor.layer, extra.tensor.head].every(
+          (value) => value === null || integer(value),
+        ))
     )
-  )
+      return null;
+    if (
+      extra.headSelection != null &&
+      (!Array.isArray(extra.headSelection) ||
+        !extra.headSelection.length ||
+        !extra.headSelection.every(integer) ||
+        new Set(extra.headSelection).size !== extra.headSelection.length)
+    )
+      return null;
+    for (const selected of [extra.trendLayers, extra.heatmapLayers]) {
+      if (
+        selected != null &&
+        (!Array.isArray(selected) ||
+          !selected.every((n) => Number.isInteger(n) && n >= 0) ||
+          new Set(selected).size !== selected.length)
+      )
+        return null;
+    }
+    if (
+      extra.positionReduction != null &&
+      !['min', 'max', 'mean'].includes(extra.positionReduction)
+    )
+      return null;
+    if (extra.bothTensors !== undefined && typeof extra.bothTensors !== 'boolean') return null;
+  }
+  if (!record(value) || value['version'] !== 1) return null;
+  if (!['contextId', 'kind', 'head', 'formula'].every((key) => typeof value[key] === 'string'))
     return null;
   if (
     !['key', 'value'].includes(String(value['kind'])) ||
-    !['relative_l2', 'max_abs', 'cosine_distance'].includes(
+    !['relative_l2', 'max_abs', 'cosine_distance', 'cosine_similarity'].includes(
       String(value['metric']),
     ) ||
     !['auto', 'thresholds'].includes(String(value['colorScale'])) ||
     !['heatmap', 'trends'].includes(String(value['view'])) ||
-    !/^(max|mean|\d+)$/.test(String(value['head']))
+    !/^(max|min|mean|\d+)$/.test(String(value['head']))
   )
     return null;
   if (
@@ -176,65 +226,16 @@ export function parseKvView(value: unknown): KvViewSnapshot | null {
   } catch {
     return null;
   }
-  return {
-    version: 1,
-    contextId: String(value['contextId']),
-    kind: String(value['kind']),
-    metric: value['metric'] as KvMetric,
-    colorScale: value['colorScale'] as 'auto' | 'thresholds',
-    head: String(value['head']),
-    view: value['view'] as 'heatmap' | 'trends',
-    formula: String(value['formula']),
-    layer: Number(value['layer']),
-    position: Number(value['position']),
-    selectionEnd:
-      value['selectionEnd'] === null ? null : Number(value['selectionEnd']),
-    column: Boolean(value['column']),
-    zoomRange:
-      value['zoomRange'] === null
-        ? null
-        : structuredClone(value['zoomRange'] as KvRangeBin),
-    zoomHistory: structuredClone(value['zoomHistory'] as KvRangeBin[]),
-    panelWidth: Number(value['panelWidth']),
-    showDetails: Boolean(value['showDetails']),
-    showResults: Boolean(value['showResults']),
-    infoExpanded: Boolean(value['infoExpanded']),
-    actionsExpanded: Boolean(value['actionsExpanded']),
-    savedExpanded: Boolean(value['savedExpanded']),
-    expandedHeads: structuredClone(
-      value['expandedHeads'] as Record<string, boolean>,
-    ),
-    headViews: structuredClone(
-      value['headViews'] as Record<string, KvHeadViewState>,
-    ),
-    detailHeadPages: structuredClone(
-      value['detailHeadPages'] as Record<string, number>,
-    ),
-    tensorExpanded: structuredClone(
-      value['tensorExpanded'] as Record<string, boolean>,
-    ),
-  };
+  return structuredClone(value) as unknown as KvViewSnapshot;
 }
 
 /** Positions are derived from captured metadata; no absent tensor becomes a zero-valued tensor. */
-export function kvContextRange(
-  context: KvAnalysisContext | undefined,
-): KvRangeBin | null {
+export function kvContextRange(context: KvAnalysisContext | undefined): KvRangeBin | null {
   const bounds = (context?.layers ?? []).flatMap((row) => {
     const values: KvRangeBin[] = [];
-    if (
-      row.position_start !== null &&
-      row.position_count !== null &&
-      row.position_count > 0
-    )
-      values.push({
-        start: row.position_start,
-        end: row.position_start + row.position_count,
-      });
-    for (const source of [
-      row.token_structure?.ref,
-      row.token_structure?.target,
-    ]) {
+    if (row.position_start !== null && row.position_count !== null && row.position_count > 0)
+      values.push({start: row.position_start, end: row.position_start + row.position_count});
+    for (const source of [row.token_structure?.ref, row.token_structure?.target]) {
       if (
         source?.status === 'ok' &&
         source.position_start !== null &&
@@ -265,11 +266,8 @@ export function restoreKvView(
 ): {state: KvViewSnapshot; notice: string; entryMissing: boolean} {
   const parsed = parseKvView(value),
     state = parsed ?? defaultKvView(showDetails);
-  const contexts = analysis.contexts.filter(
-    (context) => context.turn === identity.turn,
-  );
-  const explicit =
-    entry?.sessionId === identity.captureId && entry.turn === identity.turn;
+  const contexts = analysis.contexts.filter((context) => context.turn === identity.turn);
+  const explicit = entry?.sessionId === identity.captureId && entry.turn === identity.turn;
   // A native context keyed by logical identity carries no step/forward coordinates of its
   // own; its target snapshot still does, so the entry resolves through that snapshot.
   const context = explicit
@@ -288,16 +286,12 @@ export function restoreKvView(
                 snapshot.moment === entry.moment,
             )),
       )
-    : (contexts.find((context) => context.id === state.contextId) ??
-      contexts[0]);
+    : (contexts.find((context) => context.id === state.contextId) ?? contexts[0]);
   const changedContext = !context || context.id !== state.contextId;
   let notice =
-    value != null && !parsed
-      ? 'Saved KV settings were invalid. Defaults were restored.'
-      : '';
+    value != null && !parsed ? 'Saved KV settings were invalid. Defaults were restored.' : '';
   if (parsed?.contextId && changedContext && !explicit)
-    notice =
-      'The saved KV observation is no longer available. Showing an available observation.';
+    notice = 'The saved KV observation is no longer available. Showing an available observation.';
   if (explicit && !context)
     notice =
       'The requested KV observation is no longer available. Choose another captured observation.';
@@ -311,15 +305,17 @@ export function restoreKvView(
   }
   const rows = context?.layers ?? [];
   if (!rows.some((row) => row.kind === state.kind))
-    state.kind =
-      rows.find((row) => row.kind === 'key' || row.kind === 'value')?.kind ??
-      'key';
+    state.kind = rows.find((row) => row.kind === 'key' || row.kind === 'value')?.kind ?? 'key';
   const selected =
     rows.find((row) => row.kind === state.kind && row.layer === state.layer) ??
     rows.find((row) => row.kind === state.kind);
   state.layer = selected?.layer ?? 0;
   const heads = Math.max(0, ...rows.map((row) => row.head_count ?? 0));
-  if (!['max', 'mean'].includes(state.head) && Number(state.head) >= heads)
+  if (state.headSelection) {
+    state.headSelection = state.headSelection.filter((head) => head < heads);
+    if (!state.headSelection.length) state.headSelection = null;
+  }
+  if (!['max', 'min', 'mean'].includes(state.head) && Number(state.head) >= heads)
     state.head = 'max';
   const range = kvContextRange(context);
   const within = (candidate: KvRangeBin) =>
@@ -330,19 +326,38 @@ export function restoreKvView(
   }
   if (
     state.selectionEnd !== null &&
-    (!range ||
-      state.selectionEnd <= state.position ||
-      state.selectionEnd > range.end)
+    (!range || state.selectionEnd <= state.position || state.selectionEnd > range.end)
   )
     state.selectionEnd = null;
   if (state.zoomRange && !within(state.zoomRange)) state.zoomRange = null;
   state.zoomHistory = state.zoomHistory.filter(within);
+  if (state.tensor) {
+    if (
+      changedContext ||
+      explicit ||
+      !range ||
+      state.tensor.position === null ||
+      state.tensor.position < range.start ||
+      state.tensor.position >= range.end
+    )
+      state.tensor.position = null;
+    if (!rows.some((row) => row.layer === state.tensor!.layer)) state.tensor.layer = null;
+    const count = Math.max(
+      0,
+      ...rows
+        .filter((row) => row.layer === state.tensor!.layer)
+        .flatMap((row) => [
+          row.head_count ?? 0,
+          row.token_structure?.ref?.head_count ?? 0,
+          row.token_structure?.target?.head_count ?? 0,
+        ]),
+    );
+    if (state.tensor.head !== null && state.tensor.head >= count) state.tensor.head = null;
+  }
   const validHead = (key: string) => {
     const match = /^(key|value):(\d+)$/.exec(key);
     if (!match) return false;
-    const row = rows.find(
-      (row) => row.kind === match[1] && row.layer === state.layer,
-    );
+    const row = rows.find((row) => row.kind === match[1] && row.layer === state.layer);
     const count = Math.max(
       row?.head_count ?? 0,
       row?.token_structure?.ref?.head_count ?? 0,
@@ -359,14 +374,10 @@ export function restoreKvView(
   state.detailHeadPages = Object.fromEntries(
     ['key', 'value'].map((kind) => {
       const count =
-        rows.find((row) => row.kind === kind && row.layer === state.layer)
-          ?.head_count ?? 0;
+        rows.find((row) => row.kind === kind && row.layer === state.layer)?.head_count ?? 0;
       return [
         kind,
-        Math.min(
-          state.detailHeadPages[kind] ?? 0,
-          Math.max(0, Math.ceil(count / 64) - 1),
-        ),
+        Math.min(state.detailHeadPages[kind] ?? 0, Math.max(0, Math.ceil(count / 64) - 1)),
       ];
     }),
   );
@@ -390,8 +401,7 @@ export class KvViewCache {
     const key = this.key(identity);
     this.views.delete(key);
     this.views.set(key, parsed);
-    if (this.views.size > 80)
-      this.views.delete(this.views.keys().next().value!);
+    if (this.views.size > 80) this.views.delete(this.views.keys().next().value!);
   }
   read(identity: KvViewIdentity): KvViewSnapshot | undefined {
     const value = this.views.get(this.key(identity));

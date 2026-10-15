@@ -1,0 +1,33 @@
+# llm/ is the layer: what the Runner needs of an LLM runtime (runtime.h), in
+# the protocol's types, and the runtimes that provide it, one directory each.
+
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
+load("//model_debugger/runner/testing:model_test.bzl", "model_test")
+
+cc_library(
+    name = "runtime",
+    hdrs = ["runtime.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "@com_google_absl//absl/status:statusor",
+        "@protocol//model_debugger/v1:runner_cc_proto",
+    ],
+)
+
+# The interface's contract, on LiteRT-LM: skipped unless RUNNER_MODEL names a
+# model.
+model_test(
+    name = "runtime_test",
+    srcs = ["runtime_test.cc"],
+    deps = [
+        ":runtime",
+        "//model_debugger/runner/llm/litert_lm",
+        "//model_debugger/runner/testing:test_utils",
+        "@com_google_absl//absl/base:no_destructor",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status:statusor",
+        "@com_google_googletest//:gtest_main",
+        "@protobuf",
+        "@protocol//model_debugger/v1:runner_cc_proto",
+    ],
+)

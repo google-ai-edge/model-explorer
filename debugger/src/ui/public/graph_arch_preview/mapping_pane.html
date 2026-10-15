@@ -1,0 +1,59 @@
+<!doctype html>
+<!--
+ Copyright 2026 The AI Edge Model Explorer Authors.
+
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+ ==============================================================================
+-->
+<html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Tensor pairs · Model Explorer</title><link rel="icon" href="data:,"><link rel="stylesheet" href="fonts.css"><link rel="stylesheet" href="mapping_interaction.css"><style>
+@font-face{font-family:'Material Icons';src:url('../fonts/material_icon.woff2') format('woff2')}
+:root{--bg:#fff;--text:#041e49;--muted:#5f6368;--rule:#dadce0;--surface:#fff;--group:#f1f5f9;--op-border:#777;--group-border:#aaa;--edge:#aaa;--accent:#1a73e8;--accent-wash:#c2e7ff;--scope:#555;--scope-wash:#e0e3e7;--hover:#e8f0fe;--hatch:#5f636829;--shadow:0 1px 3px #182c4914}*{box-sizing:border-box}html,body{height:100%;margin:0;overflow:hidden;font:12px 'Google Sans Text',Arial,sans-serif;color:var(--text);background:var(--bg)}html body{background:var(--bg);color:var(--text);color-scheme:light}html[data-theme=dark] body{color-scheme:dark}#head{background:var(--surface);color:var(--text)}body{display:flex;flex-direction:column}header{display:grid;grid-template-columns:1fr 1fr;border-bottom:1px solid var(--rule);flex:none}header>div{padding:8px 10px;display:flex;align-items:center;gap:8px;min-width:0}header>div+div{border-left:1px solid var(--rule)}header b{font-size:12px}header span{font-size:10px;color:var(--muted);margin-left:auto}main{position:relative;flex:1;min-height:0}#host,model-explorer-visualizer{display:block;width:100%;height:100%}footer{display:grid;grid-template-columns:1fr 1fr;flex:none;border-top:1px solid var(--rule)}footer>div{display:flex;align-items:center;justify-content:flex-end;gap:4px;padding:4px 8px}footer>div+div{border-left:1px solid var(--rule)}button{font:11px 'Google Sans Text',Arial,sans-serif;background:var(--bg);border:1px solid var(--rule);border-radius:3px;color:var(--text);padding:3px 8px;cursor:pointer}button:hover{background:var(--hover)}button:focus-visible{outline:2px solid var(--accent)}#loading{position:absolute;inset:35% 20px auto;text-align:center;color:var(--muted)}#tooltip{position:fixed;z-index:20;pointer-events:none;max-width:300px;padding:6px 9px;background:#444746;color:white;border-radius:4px;font-size:10px;white-space:pre-line;overflow-wrap:anywhere}#status{font-size:10px;color:var(--muted);margin-right:auto}[hidden]{display:none!important}
+
+#tensor-overlay{position:absolute;inset:0;pointer-events:none;overflow:clip}.tensor-pane{position:absolute;overflow:clip;pointer-events:none}.tensor-world{position:absolute;inset:0;transform-origin:0 0;pointer-events:none}.tensor-world>svg{position:absolute;left:0;top:0;width:1px;height:1px;overflow:visible;pointer-events:none}.tensor-hit{fill:none;stroke:transparent;stroke-width:12;pointer-events:stroke;cursor:pointer}.tensor-highlight{fill:none;stroke:var(--accent);stroke-width:1.5;pointer-events:none}.tensor-terminal{fill:none;stroke:var(--edge);stroke-width:1;stroke-dasharray:4 3;pointer-events:none}.tensor-tag{position:absolute;transform-origin:left center;pointer-events:auto;display:flex;align-items:center;gap:4px;height:18px;padding:1px 4px;border:0;border-radius:3px;color:var(--group-border);font:500 13px 'Google Sans Text',Arial,sans-serif;background:repeating-linear-gradient(135deg,transparent 0 4px,var(--hatch) 4px 5px);white-space:nowrap;line-height:16px}.tensor-tag>svg{width:12px;height:12px;flex:none;fill:none;stroke:currentColor;stroke-width:1}.tensor-tag.paired{background:var(--group);color:var(--op-border)}.tensor-tag.paired .cube-body{fill:currentColor}.tensor-tag .cube-seams{stroke:var(--surface);stroke-width:.8}.tensor-tag:hover{background:var(--scope-wash);color:var(--scope)}.tensor-tag.chosen{background:var(--accent-wash);color:var(--accent);outline:1px solid var(--accent)}.tensor-tag:before{content:'';position:absolute;right:100%;top:8px;width:8px;border-top:1px dashed currentColor}.tensor-tag.paired:before{border-top-style:solid}.tensor-tag:focus-visible{outline:2px solid var(--accent)}
+.tensor-bundle{gap:3px;border-radius:4px;box-shadow:0 0 0 1px var(--rule);background-color:var(--bg)}.tensor-bundle>.tensor-symbol{width:16px;height:16px}.tensor-count{font-size:9px;line-height:12px;align-self:flex-start;font-variant-numeric:tabular-nums}.tensor-symbol .stack-empty{fill:var(--bg);stroke-dasharray:2 1.5}.tensor-symbol .stack-filled{fill:currentColor;stroke-dasharray:none}.tensor-bundle.partial{color:var(--op-border)}.tensor-bundle.chosen{color:var(--accent)}.tensor-chevron{width:9px!important;height:9px!important;margin-left:2px}
+
+#tensor-picker{position:fixed;z-index:30;max-width:300px;max-height:220px;overflow:auto;background:var(--bg);border:1px solid var(--rule);border-radius:5px;box-shadow:var(--shadow);padding:4px}#tensor-picker button{display:flex;align-items:center;gap:8px;text-align:left;width:100%;border:0;border-radius:2px;padding:6px 8px}#tensor-picker .cube-body{fill:currentColor}#tensor-picker .cube-seams{stroke:var(--surface)}#tensor-picker button:disabled{opacity:.45;cursor:default}#tensor-picker button>svg{width:12px;height:12px;fill:none;stroke:currentColor;flex:none}#tensor-picker small{display:block;color:var(--muted);font-size:10px}#tensor-picker .pair-status{font-size:10px;color:var(--muted);margin-left:auto}
+
+#head{display:none}main{height:100%}.pane-placeholder{display:grid;place-items:center;height:100%;padding:24px;color:var(--muted);text-align:center}#host{height:100%}
+/* Ready tensors share the Arch metric palette; interaction outlines remain separate. */
+.tensor-tag.metric-ready:not(.chosen):not(.candidate){background:var(--metric-bg);color:var(--metric-fg)}
+.tensor-tag.metric-ready .cube-seams{stroke:var(--metric-bg)}
+.tensor-tag.metric-ready .mapping-metric-value{background:transparent!important;color:var(--metric-fg)!important}
+.tensor-tag.candidate{background:var(--pair-candidate-bg);color:var(--pair-candidate);outline:1px dashed var(--pair-candidate)}
+.tensor-tag.candidate:hover{background:var(--pair-candidate-hover);outline:1px dashed var(--pair-candidate)}
+.tensor-tag.candidate.current-match{background:var(--pair-candidate-bg);color:var(--pair-candidate)}
+.tensor-tag.candidate.chosen{background:var(--pair-candidate-bg);box-shadow:0 0 0 2px var(--pair-candidate-bg)}
+.tensor-tag.candidate .mapping-metric-value{color:inherit!important}
+.tensor-tag.candidate .cube-seams{stroke:var(--pair-candidate-bg)}
+.pair-action-icon{position:absolute;right:-6px;top:-7px;width:15px;height:15px;display:flex;align-items:center;justify-content:center;border-radius:4px;background:var(--pair-candidate);color:var(--pair-candidate-ink);pointer-events:none}
+.pair-action-icon svg{width:12px;height:12px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+#tensor-picker button.candidate{position:relative;background:var(--pair-candidate-bg);color:var(--pair-candidate);outline:1px dashed var(--pair-candidate);outline-offset:-3px}
+#tensor-picker button.candidate:hover{background:var(--pair-candidate-hover)}
+#tensor-picker button .pair-action-icon{position:static;flex:none;margin-left:auto}
+.tensor-tag.subdued:not(:hover){opacity:.45}
+
+.tensor-tag{height:24px;line-height:22px;gap:5px;font-variant-numeric:tabular-nums}
+.tensor-tag:before{top:11px}
+.mapping-metric-value{display:inline-flex;align-items:center;min-height:18px;padding:0 4px;border-radius:3px;font:500 13px/20px 'Google Sans Text',Arial,sans-serif;font-variant-numeric:tabular-nums;color:var(--muted)}
+.metric-spinner{width:11px;height:11px;display:inline-block;flex:none;margin:0 3px;border:1.5px solid var(--muted);border-right-color:transparent;border-radius:50%;animation:metric-spin 900ms linear infinite}
+@keyframes metric-spin{to{transform:rotate(360deg)}}
+@media(prefers-reduced-motion:reduce){.metric-spinner{animation:none}}
+#tensor-picker .mapping-metric-value{margin-left:auto;flex:none}
+#tensor-picker{max-width:min(360px,calc(100vw - 16px));max-height:min(280px,calc(100vh - 16px))}
+#tensor-picker .tensor-source{min-width:0;flex:1}
+#tensor-picker .tensor-source>span{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#tensor-picker button.chosen{background:var(--accent-wash);outline:1px solid var(--accent);outline-offset:-2px}
+.tensor-bundle[aria-expanded=true] .tensor-chevron{transform:rotate(180deg)}
+</style><script src="pair_renderer.js?v=114"></script>
+<header id="head"><div><b>Reference</b><span>LiteRT-LM · decode</span></div><div><b>Target</b><span>LiteRT-LM · decode</span></div></header><main><div id="host"></div><div id="tensor-overlay"></div><div id="tensor-picker" role="dialog" aria-label="Choose tensor" hidden></div><div id="loading" role="status">Loading Model Explorer…</div><div id="tooltip" role="tooltip" hidden></div></main>
+<script src="mapping_pane.js?v=177"></script></html>

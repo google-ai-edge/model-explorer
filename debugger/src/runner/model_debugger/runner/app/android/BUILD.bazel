@@ -1,0 +1,92 @@
+# The Runner's App on Android: Kotlin and Compose around the C facade.
+#   bazel build --config=android_app //model_debugger/runner/app/android:runner
+# ANDROID_HOME and ANDROID_NDK_HOME name the SDK and the NDK. The App is not in
+# //...: a machine without them builds it only on request.
+
+load("@rules_android//android:rules.bzl", "android_binary")
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
+load("@rules_java//java:java_binary.bzl", "java_binary")
+load("@rules_kotlin//kotlin:android.bzl", "kt_android_library")
+load("@rules_kotlin//kotlin:core.bzl", "define_kt_toolchain", "kt_compiler_plugin")
+
+# The Maven artifacts' versions and checksums (MODULE.bazel, maven_android).
+exports_files(["maven_install.json"])
+
+# The App's Kotlin formatter, always in Google style (ci/check_runner.sh):
+#   bazel run //model_debugger/runner/app/android:ktfmt -- FILE...
+# It needs neither the Android SDK nor the NDK.
+java_binary(
+    name = "ktfmt",
+    args = ["--google-style"],
+    main_class = "com.facebook.ktfmt.cli.Main",
+    runtime_deps = ["@ktfmt//jar"],
+)
+
+# Kotlin for Java 17, as the App's Java is (.bazelrc): the libraries it inlines
+# from are built for 11 and up, rules_kotlin's default is 1.8.
+define_kt_toolchain(
+    name = "kotlin_toolchain",
+    jvm_target = "17",
+)
+
+# The Compose compiler: the Kotlin plugin of kotlinc's own version.
+kt_compiler_plugin(
+    name = "compose_compiler_plugin",
+    id = "androidx.compose.compiler.plugins.kotlin",
+    target_embedded_compiler = True,
+    deps = ["@maven_android//:org_jetbrains_kotlin_kotlin_compose_compiler_plugin_embeddable"],
+)
+
+# The facade's three functions for Kotlin. Its own code joins librunner.so;
+# the runtime, what it links and its GPU plugins come as libraries beside it.
+cc_library(
+    name = "runner_jni",
+    srcs = ["jni/runner_jni.cc"],
+    tags = ["manual"],
+    deps = [
+        "//model_debugger/runner:runner_c",
+        "@litert_lm_android_arm64//:gpu_library_imports",
+    ],
+    alwayslink = True,  # Called from Java only.
+)
+
+kt_android_library(
+    name = "app",
+    srcs = glob(["src/**/*.kt"]),
+    custom_package = "com.google.ai.edge.modeldebugger.runner",
+    manifest = "AndroidManifest.xml",
+    plugins = [":compose_compiler_plugin"],
+    resource_files = glob(["res/**"]),
+    tags = ["manual"],
+    deps = [
+        "@maven_android//:androidx_activity_activity_compose",
+        "@maven_android//:androidx_compose_foundation_foundation",
+        "@maven_android//:androidx_compose_material3_material3",
+        "@maven_android//:androidx_compose_material_material_icons_extended",
+        "@maven_android//:androidx_compose_runtime_runtime",
+        "@maven_android//:androidx_compose_ui_ui",
+        "@maven_android//:org_jetbrains_kotlinx_kotlinx_coroutines_core",
+    ],
+)
+
+# What --config=android_app builds the App's native code for (.bazelrc): the
+# name is the APK's library directory, lib/arm64-v8a.
+platform(
+    name = "arm64-v8a",
+    constraint_values = [
+        "@platforms//cpu:arm64",
+        "@platforms//os:android",
+    ],
+)
+
+# librunner.so, and the libraries beside it, in lib/arm64-v8a.
+android_binary(
+    name = "runner",
+    custom_package = "com.google.ai.edge.modeldebugger.runner",
+    manifest = "AndroidManifest.xml",
+    tags = ["manual"],
+    deps = [
+        ":app",
+        ":runner_jni",
+    ],
+)

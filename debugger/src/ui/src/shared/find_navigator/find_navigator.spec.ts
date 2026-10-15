@@ -49,8 +49,7 @@ describe('FindNavigator', () => {
     return {
       fixture,
       host: fixture.componentInstance,
-      buttons: () =>
-        Array.from(element.querySelectorAll<HTMLButtonElement>('button')),
+      buttons: () => Array.from(element.querySelectorAll<HTMLButtonElement>('button')),
       group: () => element.querySelector('find-navigator')!,
     };
   }
@@ -66,12 +65,7 @@ describe('FindNavigator', () => {
       'Next result',
     ]);
     expect(view.buttons()[2].textContent?.trim()).toBe('— / 0');
-    expect(view.buttons().map((b) => b.disabled)).toEqual([
-      true,
-      true,
-      false,
-      true,
-    ]);
+    expect(view.buttons().map((b) => b.disabled)).toEqual([true, true, false, true]);
   });
 
   it('enables the right directions for a middle result and emits on click', () => {
@@ -79,22 +73,12 @@ describe('FindNavigator', () => {
     view.host.total.set(3);
     view.host.index.set(1);
     view.fixture.detectChanges();
-    expect(view.buttons().map((b) => b.disabled)).toEqual([
-      false,
-      false,
-      false,
-      false,
-    ]);
+    expect(view.buttons().map((b) => b.disabled)).toEqual([false, false, false, false]);
     expect(view.buttons()[2].textContent?.trim()).toBe('2 / 3');
     for (const button of view.buttons()) button.click();
     expect(view.host.log).toEqual(['first', 'previous', 'count', 'next']);
     view.host.busy.set(true);
     view.fixture.detectChanges();
-    expect(view.buttons().map((b) => b.disabled)).toEqual([
-      true,
-      true,
-      false,
-      true,
-    ]);
+    expect(view.buttons().map((b) => b.disabled)).toEqual([true, true, false, true]);
   });
 });

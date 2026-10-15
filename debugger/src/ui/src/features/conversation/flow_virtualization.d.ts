@@ -56,18 +56,8 @@ export interface FlowConfig {
   phase: (turn: number, side: string, index: number) => string;
   findRow: (turn: number, side: string, index: number) => FlowRow | undefined;
   getSelectedRow: (turn: number) => FlowRow | null;
-  renderOutputToken: (
-    word: string,
-    index: number,
-    side: string,
-    turn: number,
-  ) => string;
-  renderInputToken: (
-    word: string,
-    index: number,
-    side: string,
-    turn: number,
-  ) => string;
+  renderOutputToken: (word: string, index: number, side: string, turn: number) => string;
+  renderInputToken: (word: string, index: number, side: string, turn: number) => string;
   displayKey: () => string;
   styleKey: () => string;
   widthAdjustment?: () => number;

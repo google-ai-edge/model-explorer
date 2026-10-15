@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The Runner's App on Android. It listens on a socket (INTERNET), and its
+     native libraries are extracted to its library directory, where the
+     runtime finds its GPU plugins beside itself. The GPU plugins open the
+     vendor's OpenCL (through libvndksupport), which an App sees only if it
+     names it; a device without it still runs on the CPU. -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.google.ai.edge.modeldebugger.runner">
+
+  <uses-sdk android:minSdkVersion="31" android:targetSdkVersion="35" />
+  <uses-permission android:name="android.permission.INTERNET" />
+
+  <application
+      android:extractNativeLibs="true"
+      android:icon="@mipmap/app_icon"
+      android:label="Model Debugger Runner"
+      android:theme="@android:style/Theme.Material.Light.NoActionBar">
+    <uses-native-library
+        android:name="libOpenCL.so"
+        android:required="false" />
+    <uses-native-library
+        android:name="libvndksupport.so"
+        android:required="false" />
+    <activity
+        android:name=".RunnerActivity"
+        android:exported="true">
+      <intent-filter>
+        <action android:name="android.intent.action.MAIN" />
+        <category android:name="android.intent.category.LAUNCHER" />
+      </intent-filter>
+    </activity>
+  </application>
+</manifest>

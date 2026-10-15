@@ -1,0 +1,86 @@
+/**
+ * @license
+ * Copyright 2026 The AI Edge Model Explorer Authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ==============================================================================
+ */
+
+// One toolbar geometry for all stage analyses, embedded and expanded.
+@mixin layout {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px;
+  margin: 0;
+  box-sizing: border-box;
+  min-height: 48px;
+  height: auto;
+  flex-wrap: wrap;
+  position: relative;
+  padding-right: 48px;
+  > .panel-expand {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+  }
+}
+
+// Match KV's single-row toolbar: controls scroll while legend and actions stay visible.
+@mixin fixed-actions {
+  gap: 8px;
+  align-items: flex-start;
+  flex-wrap: nowrap;
+  overflow: visible;
+  padding-right: 8px;
+  > .toolbar-scroll {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+    flex: 1;
+    overflow-x: auto;
+    // Keep native scrollbars below the control baseline, outside action alignment.
+    > :not(.tool-divider):not(.toolbar-section-divider) {
+      min-height: 32px;
+    }
+  }
+  > .toolbar-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: none;
+    // Center the icon itself; inline icons otherwise sit on the text baseline.
+    > .view-display-button.mat-mdc-icon-button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      mat-icon {
+        display: block;
+      }
+    }
+    &::before {
+      content: '';
+      height: 24px;
+      flex: 0 0 1px;
+      background: var(--me-outline-hairline-color);
+    }
+    > .toolbar-legend {
+      width: 144px;
+      flex: 0 0 144px;
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+    }
+  }
+}

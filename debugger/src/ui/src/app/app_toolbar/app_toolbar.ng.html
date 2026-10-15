@@ -25,14 +25,15 @@
     aria-label="Model Debugger home"
     (click)="workspace.home.set(true)"
   >
-    <img src="debugger-logo.svg" alt="" /><span class="brand-label">Model Debugger</span>
+    <img src="debugger_logo.svg" alt="" /><span class="brand-label">Model Debugger</span>
   </button>
   @if (!workspace.home() && workspace.selectedId()) {
-    @if (workspace.mode() === 'Debug') {
-      <span class="title-divider" aria-hidden="true">›</span
-      ><button mat-button class="view-select" aria-label="View" [matMenuTriggerFor]="viewMenu">
-        {{ workspace.view() }}<span class="view-triangle" aria-hidden="true">▼</span>
-      </button>
+    @if (workspace.mode() === 'Debug' && workspace.view() === 'Graph Diff') {
+      <div class="graph-navigation">
+        <button mat-button class="back-to-analysis" (click)="workspace.view.set('Token Diff')">
+          <mat-icon>arrow_back</mat-icon>Back to analysis
+        </button>
+      </div>
     }
     <span class="spacer"></span>
     @if (workspace.mode() === 'Debug' && workspace.view() === 'Token Diff') {
@@ -176,6 +177,11 @@
         matTooltip="Report an issue"
         ><mat-icon>bug_report</mat-icon></a
       >
+      @if (theme.paletteReview) {
+        <button mat-button aria-label="Debug palette" [matMenuTriggerFor]="paletteMenu">
+          <mat-icon>palette</mat-icon>Debug palette
+        </button>
+      }
       <button mat-icon-button aria-label="Theme" matTooltip="Theme" [matMenuTriggerFor]="themeMenu">
         <mat-icon>{{ theme.icon() }}</mat-icon>
       </button>
@@ -220,350 +226,16 @@
   <div class="version">v0.1.0</div></mat-menu
 >
 
-<mat-menu #viewMenu="matMenu" class="debug-view-menu">
-  <button
-    mat-menu-item
-    data-token-view
-    (keydown)="viewKey($event)"
-    role="menuitemradio"
-    [attr.aria-checked]="workspace.view() === 'Token Diff'"
-    (click)="workspace.view.set('Token Diff')"
-  >
-    <span class="view-illustration"
-      ><svg class="vda-icon" viewBox="0 0 72 46" aria-hidden="true">
-        <g class="vda-base">
-          <rect x="7" y="3" width="21" height="7" rx="2" />
-          <rect x="7" y="14" width="21" height="7" rx="2" />
-          <rect x="7" y="25" width="21" height="7" rx="2" />
-          <rect x="7" y="36" width="21" height="7" rx="2" />
-          <rect x="44" y="3" width="21" height="7" rx="2" />
-        </g>
-        <g class="vda-move">
-          <rect class="vda-base" x="44" y="25" width="21" height="7" rx="2" />
-          <rect class="vda-base" x="44" y="36" width="21" height="7" rx="2" />
-        </g>
-        <g class="vda-reveal vda-line vda-faint"><path d="M30 6.5h12M30 28.5h12M30 39.5h12" /></g>
-        <g class="vda-reveal">
-          <rect class="vda-line vda-dash" x="44" y="14" width="21" height="7" rx="2" />
-          <path class="vda-line" d="M52 17.5h5" />
-          <rect class="vda-line" x="7" y="14" width="21" height="7" rx="2" />
-          <path class="vda-line vda-faint vda-dash" d="M30 17.5h12" />
-        </g>
-        <g class="vda-late">
-          <rect class="vda-solid" x="44" y="25" width="21" height="7" rx="2" />
-          <path class="vda-line" d="m52.5 26.5 4 4m0-4-4 4" style="stroke: var(--vda-wash)" />
-          <path class="vda-line" d="M4 25v7" />
-        </g></svg></span
-    ><span>Token Diff</span>
-    @if (workspace.view() === 'Token Diff') {
-      <mat-icon class="view-current-check" aria-hidden="true">check</mat-icon>
-    }
-  </button>
-  <button
-    mat-menu-item
-    (keydown)="viewKey($event)"
-    role="menuitemradio"
-    [attr.aria-checked]="workspace.view() === 'KV Diff'"
-    (click)="workspace.view.set('KV Diff')"
-  >
-    <span class="view-illustration"
-      ><svg class="vda-icon" viewBox="0 0 72 46" aria-hidden="true">
-        <g class="vda-cache-axes vda-line vda-faint">
-          <path d="M7 3v18h21M44 3v18h21M7 25v18h21M44 25v18h21" />
-        </g>
-        <rect class="vda-base" fill-opacity="0.6" x="10" y="3" width="3.5" height="4.5" rx=".8" />
-        <rect
-          class="vda-base"
-          fill-opacity="0.85"
-          x="14.5"
-          y="3"
-          width="3.5"
-          height="4.5"
-          rx=".8"
-        />
-        <rect class="vda-base" fill-opacity="1" x="19" y="3" width="3.5" height="4.5" rx=".8" />
-        <rect class="vda-base" fill-opacity="0.7" x="23.5" y="3" width="3.5" height="4.5" rx=".8" />
-        <rect class="vda-base" fill-opacity="0.85" x="10" y="9" width="3.5" height="4.5" rx=".8" />
-        <rect class="vda-base" fill-opacity="1" x="14.5" y="9" width="3.5" height="4.5" rx=".8" />
-        <rect class="vda-base" fill-opacity="0.65" x="19" y="9" width="3.5" height="4.5" rx=".8" />
-        <rect class="vda-base" fill-opacity="0.9" x="23.5" y="9" width="3.5" height="4.5" rx=".8" />
-        <rect class="vda-base" fill-opacity="0.75" x="10" y="15" width="3.5" height="4.5" rx=".8" />
-        <rect
-          class="vda-base"
-          fill-opacity="0.6"
-          x="14.5"
-          y="15"
-          width="3.5"
-          height="4.5"
-          rx=".8"
-        />
-        <rect class="vda-base" fill-opacity="0.9" x="19" y="15" width="3.5" height="4.5" rx=".8" />
-        <rect class="vda-base" fill-opacity="1" x="23.5" y="15" width="3.5" height="4.5" rx=".8" />
-        <rect class="vda-base" fill-opacity="0.6" x="10" y="25" width="3.5" height="4.5" rx=".8" />
-        <rect
-          class="vda-base"
-          fill-opacity="0.85"
-          x="14.5"
-          y="25"
-          width="3.5"
-          height="4.5"
-          rx=".8"
-        />
-        <rect class="vda-base" fill-opacity="1" x="19" y="25" width="3.5" height="4.5" rx=".8" />
-        <rect
-          class="vda-base"
-          fill-opacity="0.7"
-          x="23.5"
-          y="25"
-          width="3.5"
-          height="4.5"
-          rx=".8"
-        />
-        <rect class="vda-base" fill-opacity="0.85" x="10" y="31" width="3.5" height="4.5" rx=".8" />
-        <rect class="vda-base" fill-opacity="1" x="14.5" y="31" width="3.5" height="4.5" rx=".8" />
-        <rect class="vda-base" fill-opacity="0.65" x="19" y="31" width="3.5" height="4.5" rx=".8" />
-        <rect
-          class="vda-base"
-          fill-opacity="0.9"
-          x="23.5"
-          y="31"
-          width="3.5"
-          height="4.5"
-          rx=".8"
-        />
-        <rect class="vda-base" fill-opacity="0.75" x="10" y="37" width="3.5" height="4.5" rx=".8" />
-        <rect
-          class="vda-base"
-          fill-opacity="0.6"
-          x="14.5"
-          y="37"
-          width="3.5"
-          height="4.5"
-          rx=".8"
-        />
-        <rect class="vda-base" fill-opacity="0.9" x="19" y="37" width="3.5" height="4.5" rx=".8" />
-        <rect class="vda-base" fill-opacity="1" x="23.5" y="37" width="3.5" height="4.5" rx=".8" />
-        <rect class="vda-base" fill-opacity="0.6" x="47" y="3" width="3.5" height="4.5" rx=".8" />
-        <rect
-          class="vda-base"
-          fill-opacity="0.85"
-          x="51.5"
-          y="3"
-          width="3.5"
-          height="4.5"
-          rx=".8"
-        />
-        <rect class="vda-base" fill-opacity="1" x="56" y="3" width="3.5" height="4.5" rx=".8" />
-        <rect class="vda-base" fill-opacity="0.7" x="60.5" y="3" width="3.5" height="4.5" rx=".8" />
-        <rect class="vda-base" fill-opacity="0.85" x="47" y="9" width="3.5" height="4.5" rx=".8" />
-        <rect class="vda-base" fill-opacity="1" x="51.5" y="9" width="3.5" height="4.5" rx=".8" />
-        <rect class="vda-base" fill-opacity="0.65" x="56" y="9" width="3.5" height="4.5" rx=".8" />
-        <rect class="vda-base" fill-opacity="0.9" x="60.5" y="9" width="3.5" height="4.5" rx=".8" />
-        <rect class="vda-base" fill-opacity="0.75" x="47" y="15" width="3.5" height="4.5" rx=".8" />
-        <rect
-          class="vda-base"
-          fill-opacity="0.6"
-          x="51.5"
-          y="15"
-          width="3.5"
-          height="4.5"
-          rx=".8"
-        />
-        <rect class="vda-base" fill-opacity="0.9" x="56" y="15" width="3.5" height="4.5" rx=".8" />
-        <rect class="vda-base" fill-opacity="1" x="60.5" y="15" width="3.5" height="4.5" rx=".8" />
-        <rect class="vda-base" fill-opacity="0.6" x="47" y="25" width="3.5" height="4.5" rx=".8" />
-        <rect
-          class="vda-base"
-          fill-opacity="0.85"
-          x="51.5"
-          y="25"
-          width="3.5"
-          height="4.5"
-          rx=".8"
-        />
-        <rect class="vda-base" fill-opacity="1" x="56" y="25" width="3.5" height="4.5" rx=".8" />
-        <rect
-          class="vda-base"
-          fill-opacity="0.7"
-          x="60.5"
-          y="25"
-          width="3.5"
-          height="4.5"
-          rx=".8"
-        />
-        <rect class="vda-base" fill-opacity="0.85" x="47" y="31" width="3.5" height="4.5" rx=".8" />
-        <rect class="vda-base" fill-opacity="1" x="51.5" y="31" width="3.5" height="4.5" rx=".8" />
-        <rect class="vda-base" fill-opacity="0.65" x="56" y="31" width="3.5" height="4.5" rx=".8" />
-        <rect
-          class="vda-base"
-          fill-opacity="0.9"
-          x="60.5"
-          y="31"
-          width="3.5"
-          height="4.5"
-          rx=".8"
-        />
-        <rect class="vda-base" fill-opacity="0.75" x="47" y="37" width="3.5" height="4.5" rx=".8" />
-        <rect
-          class="vda-base"
-          fill-opacity="0.6"
-          x="51.5"
-          y="37"
-          width="3.5"
-          height="4.5"
-          rx=".8"
-        />
-        <rect class="vda-base" fill-opacity="0.9" x="56" y="37" width="3.5" height="4.5" rx=".8" />
-        <rect class="vda-base" fill-opacity="1" x="60.5" y="37" width="3.5" height="4.5" rx=".8" />
-        <g class="vda-kv-scan">
-          <rect class="vda-frame" x="10" y="15" width="17" height="4.5" rx="1.5" />
-          <rect class="vda-frame" x="47" y="15" width="17" height="4.5" rx="1.5" />
-          <rect class="vda-frame" x="10" y="37" width="17" height="4.5" rx="1.5" />
-          <rect class="vda-frame" x="47" y="37" width="17" height="4.5" rx="1.5" />
-        </g>
-        <g class="vda-comparison-diff">
-          <rect
-            class="vda-solid"
-            fill-opacity="0.6"
-            x="51.5"
-            y="15"
-            width="3.5"
-            height="4.5"
-            rx=".8"
-          />
-          <rect class="vda-solid" fill-opacity="1" x="56" y="15" width="3.5" height="4.5" rx=".8" />
-          <rect
-            class="vda-solid"
-            fill-opacity="1"
-            x="51.5"
-            y="37"
-            width="3.5"
-            height="4.5"
-            rx=".8"
-          />
-          <rect
-            class="vda-solid"
-            fill-opacity="0.5"
-            x="56"
-            y="37"
-            width="3.5"
-            height="4.5"
-            rx=".8"
-          />
-          <rect
-            class="vda-solid"
-            fill-opacity="0.8"
-            x="60.5"
-            y="37"
-            width="3.5"
-            height="4.5"
-            rx=".8"
-          />
-        </g></svg></span
-    ><span>KV Diff</span>
-    @if (workspace.view() === 'KV Diff') {
-      <mat-icon class="view-current-check" aria-hidden="true">check</mat-icon>
-    }
-  </button>
-  <button
-    mat-menu-item
-    (keydown)="viewKey($event)"
-    role="menuitemradio"
-    [attr.aria-checked]="workspace.view() === 'Graph Diff'"
-    (click)="workspace.view.set('Graph Diff')"
-  >
-    <span class="view-illustration"
-      ><svg class="vda-icon" viewBox="0 0 72 46" aria-hidden="true">
-        <g data-side="reference" transform="translate(0 0)">
-          <g class="vda-graph-edges vda-line">
-            <path d="M17.5 9v3H11v3M17.5 12H24v3M11 21v6M11 33v3h6.5v3M24 33V36h-6.5M24 21v6" />
-            <path
-              d="m9.5 13.5 1.5 1.5 1.5-1.5M22.5 13.5l1.5 1.5 1.5-1.5M9.5 25.5 11 27l1.5-1.5M16 37.5l1.5 1.5 1.5-1.5M22.5 25.5 24 27l1.5-1.5"
-            />
-          </g>
-          <g class="vda-graph-operators">
-            <rect
-              class="vda-graph-node-first"
-              data-node-id="input"
-              x="13"
-              y="3"
-              width="9"
-              height="6"
-              rx="1"
-            />
-            <rect
-              class="vda-graph-node-next"
-              data-node-id="branch-left"
-              x="7"
-              y="15"
-              width="8"
-              height="6"
-              rx="1"
-            />
-            <rect
-              class="vda-graph-node-fusion"
-              data-node-id="branch-right"
-              x="20"
-              y="15"
-              width="8"
-              height="6"
-              rx="1"
-            />
-            <rect class="" data-node-id="left-op" x="7" y="27" width="8" height="6" rx="1" />
-            <rect
-              class="vda-graph-node-fusion"
-              data-node-id="right-op"
-              x="20"
-              y="27"
-              width="8"
-              height="6"
-              rx="1"
-            />
-            <rect class="" data-node-id="output" x="13" y="39" width="9" height="4" rx="1" />
-          </g>
-        </g>
-        <g data-side="target" transform="translate(37 0)">
-          <g class="vda-graph-edges vda-line">
-            <path d="M17.5 9v3H11v3M17.5 12H24v9M11 21v6M11 33v3h6.5v3M24 27V36h-6.5" />
-            <path
-              d="m9.5 13.5 1.5 1.5 1.5-1.5M22.5 19.5l1.5 1.5 1.5-1.5M9.5 25.5 11 27l1.5-1.5M16 37.5l1.5 1.5 1.5-1.5"
-            />
-          </g>
-          <g class="vda-graph-operators">
-            <rect
-              class="vda-graph-node-first"
-              data-node-id="input"
-              x="13"
-              y="3"
-              width="9"
-              height="6"
-              rx="1"
-            />
-            <rect
-              class="vda-graph-node-next"
-              data-node-id="branch-left"
-              x="7"
-              y="15"
-              width="8"
-              height="6"
-              rx="1"
-            />
-            <rect class="" data-node-id="left-op" x="7" y="27" width="8" height="6" rx="1" />
-            <rect class="" data-node-id="output" x="13" y="39" width="9" height="4" rx="1" />
-            <rect
-              class="vda-graph-node-fusion"
-              data-node-id="fused-right"
-              x="20"
-              y="21"
-              width="8"
-              height="6"
-              rx="1"
-            />
-          </g>
-        </g></svg></span
-    ><span>Graph Diff</span>
-    @if (workspace.view() === 'Graph Diff') {
-      <mat-icon class="view-current-check" aria-hidden="true">check</mat-icon>
-    }
-  </button>
+<mat-menu #paletteMenu="matMenu">
+  @for (palette of theme.debugPalettes; track palette.id) {
+    <button
+      mat-menu-item
+      role="menuitemradio"
+      [attr.aria-checked]="theme.debugPalette() === palette.id"
+      (click)="theme.setDebugPalette(palette.id)"
+    >
+      <mat-icon>{{ theme.debugPalette() === palette.id ? 'check' : 'palette' }}</mat-icon>
+      {{ palette.label }}
+    </button>
+  }
 </mat-menu>

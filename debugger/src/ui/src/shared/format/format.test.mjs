@@ -28,10 +28,17 @@ const {outputFiles} = await build({
   format: 'esm',
   platform: 'node',
 });
-const {formatSignificant, formatFixed, formatMetric, formatPercent, formatGiB, formatCount} =
-  await import(
-    'data:text/javascript;base64,' + Buffer.from(outputFiles[0].text).toString('base64')
-  );
+const {
+  formatAnalysisMetric,
+  formatSignificant,
+  formatFixed,
+  formatMetric,
+  formatPercent,
+  formatGiB,
+  formatCount,
+} = await import(
+  'data:text/javascript;base64,' + Buffer.from(outputFiles[0].text).toString('base64')
+);
 
 test('significant and fixed digits, with placeholders for missing values', () => {
   assert.equal(formatSignificant(0.123456), '0.1235');
@@ -69,4 +76,20 @@ test('bytes and counts use en-US grouping', () => {
   assert.equal(formatGiB(1.5 * 1024 ** 3, 2), '1.5 GiB');
   assert.equal(formatGiB(20 * 1024 ** 3 + 123456789, 2), '20.11 GiB');
   assert.equal(formatCount(1234567), '1,234,567');
+});
+
+test('accepted analysis display precision and units', () => {
+  assert.equal(formatAnalysisMetric('cosine_similarity', 1), '1.000000');
+  assert.equal(formatAnalysisMetric('cosine_similarity', 0.99999999), '≈1');
+  assert.equal(formatAnalysisMetric('cosine_similarity', -0.99999999), '≈−1');
+  assert.equal(formatAnalysisMetric('cosine_similarity', 1e-8), '1.00000e-8');
+  assert.equal(formatAnalysisMetric('cosine_similarity', -0), '0.000000');
+  assert.equal(formatAnalysisMetric('relative_l2', 0.123456), '12.35%');
+  assert.equal(formatAnalysisMetric('relative_l2', 1.23e-7), '1.23e-5%');
+  assert.equal(formatAnalysisMetric('margin', 0.125), '12.50 pp');
+  assert.equal(formatAnalysisMetric('max_abs', 1.2345678e-7), '1.23457e-7');
+  assert.equal(formatAnalysisMetric('max_abs', 1234567), '1.23457e+6');
+  assert.equal(formatAnalysisMetric('entropy', 2.41038), '2.41038');
+  assert.equal(formatAnalysisMetric('max_abs', -0), '0');
+  assert.equal(formatAnalysisMetric('max_abs', null), '—');
 });

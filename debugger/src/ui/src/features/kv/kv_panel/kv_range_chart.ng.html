@@ -14,179 +14,128 @@
  limitations under the License.
  ==============================================================================
 -->
-<div class="chart-viewport" #viewport>
-  <svg
-    class="range-chart"
-    [class.heatmap]="view() === 'heatmap'"
-    [class.trends]="view() === 'trends'"
-    [class.brushing]="!!brush()"
-    [attr.viewBox]="'0 0 ' + width() + ' ' + height()"
-    [style.width.px]="width()"
-    [style.height.px]="height()"
-    role="group"
-    tabindex="0"
-    [attr.aria-disabled]="disabled()"
-    [attr.aria-label]="
-      (view() === 'heatmap' ? 'KV heatmap' : 'KV trends') +
-      '. Arrow keys select a bin. Home and End select the first and last bin. C selects all layers. Drag horizontally to zoom, or Shift+Left/Right to adjust a zoom range and Enter to apply. Escape cancels.'
-    "
-    (pointerdown)="pointerDown($event)"
-    (pointermove)="pointerMove($event)"
-    (pointerup)="pointerUp($event)"
-    (pointercancel)="pointerCancel($event)"
-    (lostpointercapture)="pointerCancel($event)"
-    (keydown)="keyDown($event)"
-    (blur)="cancelBrush()"
+<div
+  #plot
+  class="plot"
+  role="group"
+  tabindex="0"
+  [attr.aria-label]="
+    view() === 'heatmap'
+      ? analysisLabel() + ' Heatmap with position range slider'
+      : analysisLabel() + ' Line chart with position range slider'
+  "
+  (mouseleave)="clearCellHover()"
+  (mousemove)="trackPointer($event)"
+></div>
+@if (error()) {
+  <div class="chart-error" role="alert">{{ error() }} <button (click)="retry()">Retry</button></div>
+}
+<span class="sr-only" role="status">{{ announcement() }}</span>
+
+@if (columnAxis(); as axis) {
+  <analysis-range-axis-selection
+    [axis]="axis"
+    [height]="columnStripHeight"
+    [cells]="axisCells()"
+    [hover]="hoveredColumn()"
+    [selected]="selectedAxisRange()"
+    [disabled]="disabled()"
+    label="Select a Position column"
+    (pointerHover)="hoverColumn($event)"
+    (pointerLeave)="clearColumnHover()"
+    (choose)="selectColumn($event)"
+    (navigate)="columnKeyDown($event)"
+  />
+}
+@if (hoveredColumn(); as column) {
+  @for (box of column.boxes; track $index) {
+    <div
+      class="column-preview"
+      aria-hidden="true"
+      [style.left.px]="box.left"
+      [style.top.px]="box.top"
+      [style.width.px]="box.width"
+      [style.height.px]="box.height"
+    ></div>
+  }
+}
+
+@for (cell of missingCells(); track $index) {
+  <div
+    class="cell-unavailable"
+    aria-hidden="true"
+    [style.left.px]="cell.left"
+    [style.top.px]="cell.top"
+    [style.width.px]="cell.width"
+    [style.height.px]="cell.height"
+  ></div>
+}
+
+@for (box of hoveredBands(); track $index) {
+  <div
+    class="column-preview"
+    aria-hidden="true"
+    [style.left.px]="box.left"
+    [style.top.px]="box.top"
+    [style.width.px]="box.width"
+    [style.height.px]="box.height"
+  ></div>
+}
+@for (point of hoveredPoints(); track $index) {
+  <div
+    class="cell-hover point-hover"
+    aria-hidden="true"
+    [style.left.px]="point.left"
+    [style.top.px]="point.top"
+  ></div>
+}
+@for (cell of selectedCells(); track $index) {
+  <div
+    class="cell-selected"
+    aria-hidden="true"
+    [style.left.px]="cell.left"
+    [style.top.px]="cell.top"
+    [style.width.px]="cell.width"
+    [style.height.px]="cell.height"
+  ></div>
+}
+@for (cell of hoveredCells(); track $index) {
+  <div
+    class="cell-hover"
+    aria-hidden="true"
+    [style.left.px]="cell.left"
+    [style.top.px]="cell.top"
+    [style.width.px]="cell.width"
+    [style.height.px]="cell.height"
+  ></div>
+}
+
+@if (tooltip(); as tip) {
+  <analysis-chart-hover [info]="tip" />
+}
+
+@if (locatedRegion(); as region) {
+  <div
+    #locationTarget
+    class="cache-location"
+    aria-hidden="true"
+    [attr.data-kind]="region.kind"
+    [attr.data-position]="region.position"
+    [attr.data-layer]="region.layer"
+    [style.left.px]="region.left"
+    [style.top.px]="region.top"
+    [style.width.px]="region.width"
+    [style.height.px]="region.height"
+  ></div>
+  <div
+    class="location-label"
+    aria-hidden="true"
+    [style.left]="'clamp(8px, ' + region.left + 'px, calc(100% - 248px))'"
+    [style.top.px]="region.top > 44 ? region.top - 44 : region.top + region.height + 12"
   >
-    <title>
-      Click to select. Drag horizontally to zoom. Shift+Left/Right adjusts a zoom range; Enter
-      zooms; Escape cancels.
-    </title>
-    <text x="6" y="23" class="axis-label">Position</text>
-    @for (tick of ticks(); track tick.bin.start) {
-      <text
-        [attr.x]="(binStartX(tick.index) + binEndX(tick.index)) / 2"
-        y="23"
-        text-anchor="middle"
-        class="position-tick"
-      >
-        {{ tickLabel(tick.bin) }}
-        <title>{{ rangeLabel(tick.bin) }}</title>
-      </text>
+    {{ locationName(region.kind, region.layer) }}
+    @if (region.position !== undefined) {
+      · {{ showLayers() ? 'Layer ' + region.layer : 'Final' }} · Position {{ region.position }}
     }
-    @for (bin of bins(); track bin.start; let index = $index) {
-      <rect
-        class="column-target"
-        [attr.x]="binStartX(index)"
-        y="4"
-        [attr.width]="binEndX(index) - binStartX(index)"
-        [attr.height]="top - 4"
-      >
-        <title>{{ columnTitle(bin) }}</title>
-      </rect>
-    }
-    @if (view() === 'heatmap') {
-      @for (layer of layers(); track layer; let rowIndex = $index) {
-        <text
-          x="56"
-          [attr.y]="top + rowIndex * rowHeight + rowHeight / 2 + 4"
-          text-anchor="end"
-          class="axis-label"
-        >
-          L{{ layer }}
-        </text>
-        @for (bin of bins(); track bin.start; let index = $index) {
-          <rect
-            class="heat-cell"
-            [class.dimmed]="filtered() && !isMatch(layer, bin)"
-            [attr.x]="binStartX(index)"
-            [attr.y]="top + rowIndex * rowHeight"
-            [attr.width]="columnWidth()"
-            [attr.height]="rowHeight"
-            [attr.fill]="color()(value(layer, bin))"
-          >
-            <title>{{ cellTitle(layer, bin) }}</title>
-          </rect>
-          @if (filtered() && isMatch(layer, bin)) {
-            <circle
-              class="match-dot"
-              [attr.cx]="binStartX(index) + columnWidth() / 2"
-              [attr.cy]="top + rowIndex * rowHeight + rowHeight / 2"
-              [attr.r]="matchRadius()"
-            />
-          }
-        }
-        <line
-          class="layer-boundary"
-          [attr.x1]="left"
-          [attr.x2]="left + plotSpan()"
-          [attr.y1]="top + (rowIndex + 1) * rowHeight"
-          [attr.y2]="top + (rowIndex + 1) * rowHeight"
-        />
-      }
-    } @else {
-      @for (fraction of [0, 0.25, 0.5, 0.75, 1]; track fraction) {
-        <line
-          class="grid-line"
-          [attr.x1]="left"
-          [attr.x2]="left + plotSpan()"
-          [attr.y1]="trendY(trendMaximum() * fraction)"
-          [attr.y2]="trendY(trendMaximum() * fraction)"
-        />
-        <text
-          x="56"
-          [attr.y]="trendY(trendMaximum() * fraction) + 4"
-          text-anchor="end"
-          class="axis-label"
-        >
-          {{ format()(trendMaximum() * fraction) }}
-        </text>
-      }
-      @for (bin of bins(); track bin.start; let index = $index) {
-        <rect
-          class="trend-hit"
-          [class.range-current]="selected()?.start === bin.start && selected()?.end === bin.end"
-          [attr.x]="binStartX(index)"
-          [attr.y]="top"
-          [attr.width]="binEndX(index) - binStartX(index)"
-          [attr.height]="plotBottom() - top"
-        >
-          <title>{{ cellTitle(trendLayer(), bin) }}</title>
-        </rect>
-      }
-      @for (path of trendPaths(); track $index) {
-        <path class="trend-line" [attr.d]="path" />
-      }
-      @for (point of trendPoints(); track $index) {
-        <circle
-          class="trend-point"
-          [class.current]="pointSelected(point.position)"
-          [class.dimmed]="filtered() && !isMatch(trendLayer(), bins()[point.bin])"
-          [attr.cx]="trendX(point.position)"
-          [attr.cy]="trendY(point.value)"
-          r="3"
-          [attr.fill]="color()(point.value)"
-        >
-          <title>
-            Position {{ point.position }} · {{ metricLabel() }}: {{ format()(point.value) }}
-            {{ cellTitle(trendLayer(), bins()[point.bin]) }}
-          </title>
-        </circle>
-      }
-      <text
-        [attr.x]="left + plotSpan() / 2"
-        [attr.y]="height() - 12"
-        text-anchor="middle"
-        class="axis-label"
-      >
-        Cache position
-      </text>
-    }
-    @if (selectionFrame(); as box) {
-      <rect
-        class="selection-underlay"
-        [attr.x]="box.x"
-        [attr.y]="box.y"
-        [attr.width]="box.width"
-        [attr.height]="box.height"
-      />
-      <rect
-        class="selection"
-        [attr.x]="box.x"
-        [attr.y]="box.y"
-        [attr.width]="box.width"
-        [attr.height]="box.height"
-      />
-    }
-    @if (brushBox(); as box) {
-      <rect
-        class="brush"
-        [attr.x]="box.x"
-        [attr.y]="top"
-        [attr.width]="box.width"
-        [attr.height]="plotBottom() - top"
-      />
-    }
-  </svg>
-</div>
-<span class="sr-only" aria-live="polite">{{ announcement() }}</span>
+  </div>
+}

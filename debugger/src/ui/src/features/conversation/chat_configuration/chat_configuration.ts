@@ -16,42 +16,33 @@
  * ==============================================================================
  */
 
-import {Component, ElementRef, inject, OnDestroy, signal} from '@angular/core';
-import {FormsModule} from '@angular/forms';
-import {MatButtonModule} from '@angular/material/button';
-import {
-  MAT_DIALOG_DATA,
-  MatDialogModule,
-  MatDialogRef,
-} from '@angular/material/dialog';
-import {MatIconModule} from '@angular/material/icon';
-import {WorkspaceStateService} from '../../../app/workspace_state_service';
+import {Component, inject, signal, ElementRef, OnDestroy} from '@angular/core';
 import {ConfigPicker} from '../../../shared/config_picker/config_picker';
+import {FormsModule} from '@angular/forms';
+import {MatDialogModule, MatDialogRef, MAT_DIALOG_DATA} from '@angular/material/dialog';
+import {MatButtonModule} from '@angular/material/button';
+import {MatIconModule} from '@angular/material/icon';
 import {
   GENERATION_GROUPS,
   GENERATION_LABELS,
   GENERATION_RANGES,
+  GENERATION_SWITCHES,
+  PYTORCH_UNSUPPORTED,
+  SAMPLER_TYPES,
+  switchLabel,
 } from '../../sessions/chat_configuration';
+import {WorkspaceStateService} from '../../../app/workspace_state_service';
 type Values = Record<string, string | number | null>;
 @Component({
   selector: 'chat-configuration',
-  imports: [
-    ConfigPicker,
-    FormsModule,
-    MatDialogModule,
-    MatButtonModule,
-    MatIconModule,
-  ],
+  imports: [ConfigPicker, FormsModule, MatDialogModule, MatButtonModule, MatIconModule],
   templateUrl: './chat_configuration.ng.html',
   styleUrl: './chat_configuration.scss',
 })
 export class ChatConfiguration implements OnDestroy {
   private readonly element = inject<ElementRef<HTMLElement>>(ElementRef);
   readonly copied = signal(new Set<string>());
-  private readonly copyTimers = new Map<
-    string,
-    ReturnType<typeof setTimeout>
-  >();
+  private readonly copyTimers = new Map<string, ReturnType<typeof setTimeout>>();
   ngOnDestroy() {
     for (const timer of this.copyTimers.values()) clearTimeout(timer);
   }
@@ -61,35 +52,23 @@ export class ChatConfiguration implements OnDestroy {
     this.copied.update((v) => new Set([...v, key]));
     this.copyTimers.set(
       key,
-      setTimeout(
-        () =>
-          this.copied.update((v) => new Set([...v].filter((k) => k !== key))),
-        1500,
-      ),
+      setTimeout(() => this.copied.update((v) => new Set([...v].filter((k) => k !== key))), 1500),
     );
   }
   readonly workspace = inject(WorkspaceStateService);
   readonly ref = inject(MatDialogRef<ChatConfiguration>);
   readonly session = this.workspace.runtime.selected();
   /** Native Runners accept fewer output tokens than the generic generation bounds. */
-  readonly ranges: Record<
-    string,
-    {min: number; max: number; step: number | string}
-  > = (() => {
+  readonly ranges: Record<string, {min: number; max: number; step: number | string}> = (() => {
     const limits = (this.session?.runs ?? [])
       .map(
-        (run) =>
-          this.workspace.runtime.capability(run.runtime ?? 'LiteRT-LM')
-            ?.max_output_tokens,
+        (run) => this.workspace.runtime.capability(run.runtime ?? 'LiteRT-LM')?.max_output_tokens,
       )
       .filter((limit): limit is number => typeof limit === 'number');
     const base = GENERATION_RANGES['maxOutputTokens'];
     return {
       ...GENERATION_RANGES,
-      maxOutputTokens: {
-        ...base,
-        max: limits.length ? Math.min(base.max, ...limits) : base.max,
-      },
+      maxOutputTokens: {...base, max: limits.length ? Math.min(base.max, ...limits) : base.max},
     };
   })();
   readonly readOnly = false;
@@ -97,74 +76,78 @@ export class ChatConfiguration implements OnDestroy {
   readonly create = !!inject(MAT_DIALOG_DATA, {optional: true})?.create;
   get groups() {
     return GENERATION_GROUPS.filter((group) =>
-      group.keys.some((key) =>
-        this.sides.some((side) => this.supported(side, key)),
-      ),
+      group.keys.some((key) => this.sides.some((side) => this.supported(side, key))),
     );
   }
   readonly labels = GENERATION_LABELS;
-  readonly thinkingOptions = ['Model default', 'Enabled', 'Disabled'];
-  thinkingLabel(side: string) {
-    return this.values[side]['thinking'] === 'on'
-      ? 'Enabled'
-      : this.values[side]['thinking'] === 'off'
-        ? 'Disabled'
-        : 'Model default';
+  readonly switches = GENERATION_SWITCHES;
+  readonly switchOptions = ['Model default', 'Enabled', 'Disabled'];
+  isSwitch(key: string) {
+    return this.switches.includes(key);
   }
-  setThinking(side: string, value: string) {
-    this.values[side]['thinking'] =
-      value === 'Enabled' ? 'on' : value === 'Disabled' ? 'off' : null;
+  switchLabel(side: string, key: string) {
+    return switchLabel(this.values[side][key]);
+  }
+  setSwitch(side: string, key: string, value: string) {
+    this.values[side][key] = value === 'Enabled' ? 'on' : value === 'Disabled' ? 'off' : null;
+  }
+  /** Sampler types the side's Runner build implements; the contract's list until one is connected. */
+  samplerOptions(side: string) {
+    return ['Default', ...(this.capability(side)?.sampler_types ?? SAMPLER_TYPES)];
+  }
+  samplerLabel(side: string) {
+    return String(this.values[side]['samplerType'] || 'Default');
+  }
+  setSampler(side: string, value: string) {
+    this.values[side]['samplerType'] = value === 'Default' ? null : value;
+  }
+  private run(side: string) {
+    return this.session?.runs.find((run) => run.id === side);
+  }
+  private capability(side: string) {
+    const run = this.run(side);
+    if (!run) return undefined;
+    const cap = this.workspace.runtime.capability(run.runtime ?? 'LiteRT-LM');
+    const runner = this.workspace.runtime
+      .devices()
+      .find((d) => d.id === (!run.device || run.device === 'Server host' ? 'local' : run.device))
+      ?.runner?.capabilities;
+    return cap
+      ? {
+          ...cap,
+          ...(runner?.conversationOptions
+            ? {chat_options: ['maxOutputTokens', ...runner.conversationOptions]}
+            : {}),
+          ...(runner?.samplerTypes ? {sampler_types: runner.samplerTypes} : {}),
+        }
+      : cap;
   }
   readonly values: Record<string, Values> = structuredClone(
     this.session?.generation ?? {ref: {}, target: {}},
   );
-  private readonly undoValues = new Map<
-    string,
-    {before: Values; applied: Values}
-  >();
+  private readonly undoValues = new Map<string, {before: Values; applied: Values}>();
   readonly error = signal('');
   readonly saving = signal(false);
   onlyDifferences = false;
-  readonly runtimeFields = [
-    'runtime',
-    'backend',
-    'precision',
-    'artifact',
-    'cpuThreads',
-    'audioBackend',
-    'audioCpuThreads',
-    'visionBackend',
-    'forceF32',
-    'prefillBatchSizes',
-    'contextLength',
-  ];
   constructor() {
     for (const side of this.sides) {
       this.values[side] ??= {};
-      if (this.supported(side, 'thinking'))
-        this.values[side]['thinking'] ??= null;
-      else {
-        delete this.values[side]['thinking'];
-        delete this.values[side]['thinkingBudget'];
-      }
+      for (const key of Object.keys(this.values[side]))
+        if (!this.supported(side, key)) delete this.values[side][key];
     }
   }
+  /** Whether the side's runtime, and its connected Runner build, take the Chat option. */
   supported(side: string, key: string) {
-    return (
-      this.session?.runs.find((run) => run.id === side)?.runtime !==
-        'PyTorch' || !['thinking', 'thinkingBudget'].includes(key)
-    );
+    if (this.run(side)?.runtime === 'PyTorch') return !PYTORCH_UNSUPPORTED.includes(key);
+    const options = this.capability(side)?.chat_options;
+    return options ? options.includes(key) : true;
   }
   canCopy(group: {keys: string[]}, target: string) {
     const source = target === 'ref' ? 'target' : 'ref';
-    return group.keys.some(
-      (key) => this.supported(target, key) && this.supported(source, key),
-    );
+    return group.keys.some((key) => this.supported(target, key) && this.supported(source, key));
   }
   value(side: string, key: string) {
-    return (
-      this.values[side]?.[key] ?? (this.readOnly ? 'Not recorded' : 'Default')
-    );
+    return this.values[side]?.[key] ?? (this.readOnly ? 'Not recorded' : 'Default');
   }
   copy(group: {name: string; keys: string[]}, target: string) {
     if (!this.canCopy(group, target)) return;
@@ -172,12 +155,8 @@ export class ChatConfiguration implements OnDestroy {
     const keys = group.keys.filter(
       (key) => this.supported(target, key) && this.supported(source, key),
     );
-    const before = Object.fromEntries(
-      keys.map((k) => [k, this.values[target][k] ?? null]),
-    );
-    const applied = Object.fromEntries(
-      keys.map((k) => [k, this.values[source][k] ?? null]),
-    );
+    const before = Object.fromEntries(keys.map((k) => [k, this.values[target][k] ?? null]));
+    const applied = Object.fromEntries(keys.map((k) => [k, this.values[source][k] ?? null]));
     this.undoValues.set(group.name + target, {before, applied});
     Object.assign(this.values[target], applied);
     this.feedback(group.name, target);
@@ -207,9 +186,7 @@ export class ChatConfiguration implements OnDestroy {
   async save() {
     if (!this.session || this.readOnly || this.saving()) return;
     const invalid = Array.from(
-      this.element.nativeElement.querySelectorAll<HTMLInputElement>(
-        'input[type=number]',
-      ),
+      this.element.nativeElement.querySelectorAll<HTMLInputElement>('input[type=number]'),
     ).find((input) => !input.disabled && !input.checkValidity());
     if (invalid) {
       invalid.reportValidity();
@@ -238,10 +215,7 @@ export class ChatConfiguration implements OnDestroy {
         });
         await this.workspace.chooseChat(chat.id);
       } else {
-        await this.workspace.sessions.manage('chat-config', {
-          id: this.session.id,
-          generation,
-        });
+        await this.workspace.sessions.manage('chat-config', {id: this.session.id, generation});
       }
       this.ref.close();
     } catch (e) {

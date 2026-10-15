@@ -16,13 +16,14 @@
  * ==============================================================================
  */
 
+import {validStagePanels, type StageAnalysisPanel} from './stage_analysis';
 import type {ConversationSelection} from './conversation_content';
-import type {FlowAnchor} from './flow_virtualization';
 import type {AlignmentMode, TokenPair} from './token_alignment';
-import {normalizeColor, type TokenColor} from './token_analysis';
-import {TOKEN_METRICS} from './token_metric_metadata';
+import type {FlowAnchor} from './flow_virtualization';
 import {compileQuery} from './token_query';
 import {SIDE_TREND_METRICS, type TokenTrendState} from './token_trends';
+import {normalizeColor, type TokenColor} from './token_analysis';
+import {TOKEN_METRICS} from './token_metric_metadata';
 
 /** Details panel width bounds; the snapshot validator and the resize handle share them. */
 export const PANEL_WIDTH = {min: 280, max: 600} as const;
@@ -60,24 +61,17 @@ export interface TokenDiffViewState extends ConversationReadingPosition {
   groups: Record<string, boolean>;
   panelWidth: number;
   trends: Record<string, TokenTrendState>;
+  analysisPanels?: StageAnalysisPanel[];
+  inspectedPanel?: string | null;
+  analysisFindScope?: string;
 }
 
-export function pairIdentity(
-  pair: TokenPair | null | undefined,
-): TokenDiffViewState['identity'] {
+export function pairIdentity(pair: TokenPair | null | undefined): TokenDiffViewState['identity'] {
   return pair
     ? {
-        ...(pair.ref
-          ? {ref: {step: pair.ref.step, id: pair.ref.id, text: pair.ref.text}}
-          : {}),
+        ...(pair.ref ? {ref: {step: pair.ref.step, id: pair.ref.id, text: pair.ref.text}} : {}),
         ...(pair.target
-          ? {
-              target: {
-                step: pair.target.step,
-                id: pair.target.id,
-                text: pair.target.text,
-              },
-            }
+          ? {target: {step: pair.target.step, id: pair.target.id, text: pair.target.text}}
           : {}),
       }
     : undefined;
@@ -90,10 +84,7 @@ export function samePairIdentity(
     const saved = identity[side],
       token = pair[side];
     return saved
-      ? !!token &&
-          saved.step === token.step &&
-          saved.id === token.id &&
-          saved.text === token.text
+      ? !!token && saved.step === token.step && saved.id === token.id && saved.text === token.text
       : !token;
   });
 }
@@ -109,17 +100,11 @@ const metricKeys: readonly string[] = TOKEN_METRICS.map((metric) => metric.key);
 export function validFlowAnchor(value: unknown): value is FlowAnchor | null {
   if (value === null) return true;
   if (!object(value)) return false;
-  if (value.kind === 'absolute')
-    return finite(value.scrollTop) && value.scrollTop >= 0;
+  if (value.kind === 'absolute') return finite(value.scrollTop) && value.scrollTop >= 0;
   if (!integer(value.ti, 1) || !finite(value.offset)) return false;
-  if (
-    value.windowLine !== undefined &&
-    value.windowLine !== null &&
-    !integer(value.windowLine)
-  )
+  if (value.windowLine !== undefined && value.windowLine !== null && !integer(value.windowLine))
     return false;
-  if (value.kind === 'input')
-    return value.stage === 'Prefill' && integer(value.position);
+  if (value.kind === 'input') return value.stage === 'Prefill' && integer(value.position);
   return (
     value.kind === 'token' &&
     integer(value.step) &&
@@ -129,9 +114,7 @@ export function validFlowAnchor(value: unknown): value is FlowAnchor | null {
     ['Thinking', 'Output'].includes(value.stage)
   );
 }
-export function validReadingPosition(
-  value: unknown,
-): value is ConversationReadingPosition {
+export function validReadingPosition(value: unknown): value is ConversationReadingPosition {
   return (
     object(value) &&
     finite(value.scrollTop) &&
@@ -145,6 +128,11 @@ function validSelection(value: unknown): value is ConversationSelection | null {
   return value.kind === 'token' || value.kind === 'input'
     ? integer(value.index)
     : value.kind === 'stage' &&
+        (value.range === undefined ||
+          (object(value.range) &&
+            integer(value.range.start) &&
+            integer(value.range.end) &&
+            value.range.end > value.range.start)) &&
         typeof value.stage === 'string' &&
         ['prefill', 'decode'].includes(value.stage) &&
         typeof value.side === 'string' &&
@@ -152,10 +140,29 @@ function validSelection(value: unknown): value is ConversationSelection | null {
 }
 function validSnapshot(value: unknown): value is Record<string, unknown> {
   if (
-    !object(value) ||
-    typeof value.version !== 'number' ||
-    ![2, 3].includes(value.version)
+    object(value) &&
+    value.analysisPanels !== undefined &&
+    !validStagePanels(value.analysisPanels)
   )
+    return false;
+  if (
+    object(value) &&
+    value.inspectedPanel != null &&
+    (typeof value.inspectedPanel !== 'string' ||
+      !Array.isArray(value.analysisPanels) ||
+      !value.analysisPanels.some((p) => p.id === value.inspectedPanel))
+  )
+    return false;
+  if (
+    object(value) &&
+    value.analysisFindScope !== undefined &&
+    (typeof value.analysisFindScope !== 'string' ||
+      (value.analysisFindScope &&
+        (!Array.isArray(value.analysisPanels) ||
+          !value.analysisPanels.some((p) => p.kind === 'kv' && p.id === value.analysisFindScope))))
+  )
+    return false;
+  if (!object(value) || typeof value.version !== 'number' || ![2, 3].includes(value.version))
     return false;
   if (
     value.version === 3 &&
@@ -207,17 +214,13 @@ function validSnapshot(value: unknown): value is Record<string, unknown> {
   if (
     !Array.isArray(value.collapsed) ||
     !value.collapsed.every(
-      (key) =>
-        typeof key === 'string' &&
-        /^\d+:(ref|target):(prefill|decode)$/.test(key),
+      (key) => typeof key === 'string' && /^\d+:(ref|target):(prefill|decode)$/.test(key),
     )
   )
     return false;
   if (
     !Array.isArray(value.thinking) ||
-    !value.thinking.every(
-      (key) => typeof key === 'string' && /^\d+:(ref|target)$/.test(key),
-    )
+    !value.thinking.every((key) => typeof key === 'string' && /^\d+:(ref|target)$/.test(key))
   )
     return false;
   if (
@@ -242,8 +245,7 @@ function validSnapshot(value: unknown): value is Record<string, unknown> {
   )
     return false;
   if (value.identity !== undefined) {
-    if (!object(value.identity) || !Object.keys(value.identity).length)
-      return false;
+    if (!object(value.identity) || !Object.keys(value.identity).length) return false;
     if (
       !Object.entries(value.identity).every(
         ([side, token]) =>
@@ -265,57 +267,20 @@ export function validViewState(value: unknown): value is TokenDiffViewState {
 /** Valid v2 bookmarks were captured in Debug. Unknown versions are never partly applied. */
 export function readViewState(value: unknown): TokenDiffViewState | null {
   if (!validSnapshot(value)) return null;
-  const raw = value;
-  const state: Omit<TokenDiffViewState, 'version'> = {
-    scrollTop: Number(raw['scrollTop']),
-    anchor: (raw['anchor'] as FlowAnchor | null | undefined) ?? null,
-    mode: raw['version'] === 2 ? 'Debug' : (raw['mode'] as ConversationMode),
-    color: normalizeColor(raw['color'] as boolean | TokenColor),
-    observation:
-      (raw['observation'] as ConversationObservation | null | undefined) ??
-      null,
-    formula: String(raw['formula']),
-    alignment: raw['alignment'] as AlignmentMode,
-    selection:
-      (raw['selection'] as ConversationSelection | null | undefined) ?? null,
-    identity: raw['identity'] as
-      | {ref?: TokenIdentity; target?: TokenIdentity}
-      | undefined,
-    details: Boolean(raw['details']),
-    boundaries: Boolean(raw['boundaries']),
-    whitespace: Boolean(raw['whitespace']),
-    collapsed: raw['collapsed'] as string[],
-    thinking: raw['thinking'] as string[],
-    infoExpanded: Boolean(raw['infoExpanded']),
-    groups: raw['groups'] as Record<string, boolean>,
-    trends: raw['trends'] as Record<string, TokenTrendState>,
-    panelWidth: Number(raw['panelWidth']),
-  };
-  return captureViewState(state);
-}
-export function captureViewState(
-  state: Omit<TokenDiffViewState, 'version'>,
-): TokenDiffViewState {
-  return structuredClone({
+  const state = value as unknown as TokenDiffViewState & {color: boolean | TokenColor};
+  return captureViewState({
     ...state,
-    observation: state.observation ?? null,
-    version: 3,
+    mode: value.version === 2 ? 'Debug' : state.mode,
+    color: normalizeColor(state.color),
   });
+}
+export function captureViewState(state: Omit<TokenDiffViewState, 'version'>): TokenDiffViewState {
+  return structuredClone({...state, observation: state.observation ?? null, version: 3});
 }
 
 export type ViewRestoreResult =
-  | {
-      status: 'ready';
-      state: TokenDiffViewState;
-      observation: ConversationObservation | null;
-    }
-  | {
-      status:
-        | 'invalid'
-        | 'missing-turn'
-        | 'missing-token'
-        | 'inconsistent-turn';
-    };
+  | {status: 'ready'; state: TokenDiffViewState; observation: ConversationObservation | null}
+  | {status: 'invalid' | 'missing-turn' | 'missing-token' | 'inconsistent-turn'};
 /** Resolve against captured tokens before changing any live display state. */
 export function prepareViewRestore(
   value: unknown,
@@ -325,10 +290,7 @@ export function prepareViewRestore(
   },
   request:
     | {source: 'return'; observation: ConversationObservation | null}
-    | {
-        source: 'bookmark' | 'legacy';
-        expected: {turn: number; alignment: AlignmentMode};
-      } = {
+    | {source: 'bookmark' | 'legacy'; expected: {turn: number; alignment: AlignmentMode}} = {
     source: 'return',
     observation: null,
   },
@@ -342,10 +304,8 @@ export function prepareViewRestore(
     const current = request.observation;
     const changed =
       state.observation &&
-      (state.observation.turn !== current.turn ||
-        state.observation.phase !== current.phase);
-    const staleSelection =
-      state.selection && state.selection.turn !== current.turn;
+      (state.observation.turn !== current.turn || state.observation.phase !== current.phase);
+    const staleSelection = state.selection && state.selection.turn !== current.turn;
     if (staleSelection) {
       state.selection = null;
       state.identity = undefined;
@@ -360,8 +320,7 @@ export function prepareViewRestore(
   )
     return {status: 'inconsistent-turn'};
   const turn = expected?.turn ?? state.selection?.turn;
-  if (turn !== undefined && !context.hasTurn(turn))
-    return {status: 'missing-turn'};
+  if (turn !== undefined && !context.hasTurn(turn)) return {status: 'missing-turn'};
   if (state.selection?.kind === 'token') {
     const selection = state.selection;
     let rows: readonly TokenPair[];
@@ -379,10 +338,7 @@ export function prepareViewRestore(
   return {status: 'ready', state, observation};
 }
 
-export function readingPositionKey(
-  context: string,
-  mode: ConversationMode,
-): string {
+export function readingPositionKey(context: string, mode: ConversationMode): string {
   return JSON.stringify([context, mode]);
 }
 export function captureReadingPosition(
@@ -397,9 +353,7 @@ export function savedReadingPosition(
   mode: ConversationMode,
 ): ConversationReadingPosition {
   const saved = positions.get(readingPositionKey(context, mode));
-  return validReadingPosition(saved)
-    ? structuredClone(saved)
-    : {scrollTop: 0, anchor: null};
+  return validReadingPosition(saved) ? structuredClone(saved) : {scrollTop: 0, anchor: null};
 }
 /** Save the outgoing layout, then restore only the incoming mode's own location. */
 export function switchReadingPosition(
@@ -409,10 +363,6 @@ export function switchReadingPosition(
   incoming: ConversationMode,
   current: ConversationReadingPosition,
 ): ConversationReadingPosition {
-  if (outgoing)
-    positions.set(
-      readingPositionKey(context, outgoing),
-      structuredClone(current),
-    );
+  if (outgoing) positions.set(readingPositionKey(context, outgoing), structuredClone(current));
   return savedReadingPosition(positions, context, incoming);
 }

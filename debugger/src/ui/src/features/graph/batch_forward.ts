@@ -19,10 +19,7 @@
 import type {CapturedBatch, CapturedToken} from '../../data/contracts/capture';
 
 /** Native invocation IDs belong to one Run; paired batch IDs belong to the UI. */
-export function batchForwardId(
-  batch: CapturedBatch,
-  run: string,
-): number | null | undefined {
+export function batchForwardId(batch: CapturedBatch, run: string): number | null | undefined {
   return batch.forward_ids ? batch.forward_ids[run] : batch.forward_id;
 }
 export function tokenMatchesBatch(
@@ -32,7 +29,6 @@ export function tokenMatchesBatch(
 ): boolean {
   return (
     token.batch === batch.batch &&
-    (token.source_forward_id == null ||
-      batchForwardId(batch, run) === token.source_forward_id)
+    (token.source_forward_id == null || batchForwardId(batch, run) === token.source_forward_id)
   );
 }

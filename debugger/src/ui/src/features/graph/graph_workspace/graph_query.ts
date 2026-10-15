@@ -34,14 +34,9 @@ export const emptyGraphQuery = (): GraphQuery => ({
   threshold: '',
   withMetrics: false,
 });
-export function graphMetricValue(
-  row: ComparisonRow | undefined,
-  name: string,
-): number | null {
+export function graphMetricValue(row: ComparisonRow | undefined, name: string): number | null {
   const metric = row?.metrics[name];
-  return metric?.status === 'ok' &&
-    metric.value != null &&
-    Number.isFinite(metric.value)
+  return metric?.status === 'ok' && metric.value != null && Number.isFinite(metric.value)
     ? metric.value
     : null;
 }
@@ -51,11 +46,7 @@ export function graphAnchor(model: Semantic | null, row: ComparisonRow) {
     ? model?.semantic_graph[layer.def]?.anchors.find((a) => a.id === row.anchor)
     : undefined;
 }
-export function matchesGraphQuery(
-  row: ComparisonRow,
-  model: Semantic | null,
-  query: GraphQuery,
-) {
+export function matchesGraphQuery(row: ComparisonRow, model: Semantic | null, query: GraphQuery) {
   const anchor = graphAnchor(model, row);
   if (query.anchor && row.anchor !== query.anchor) return false;
   const text = query.text.trim().toLowerCase();
@@ -70,25 +61,18 @@ export function matchesGraphQuery(
   const value = graphMetricValue(row, query.metric);
   if (
     query.withMetrics &&
-    !Object.keys(row.metrics).some(
-      (name) => graphMetricValue(row, name) != null,
-    )
+    !Object.keys(row.metrics).some((name) => graphMetricValue(row, name) != null)
   )
     return false;
   if (query.threshold.trim()) {
     const threshold = Number(query.threshold);
-    if (!Number.isFinite(threshold) || value == null || !Number.isFinite(value))
-      return false;
-    if (query.operator === 'lt' ? value >= threshold : value <= threshold)
-      return false;
+    if (!Number.isFinite(threshold) || value == null || !Number.isFinite(value)) return false;
+    if (query.operator === 'lt' ? value >= threshold : value <= threshold) return false;
   }
   return true;
 }
 export function graphQueryCount(query: GraphQuery) {
-  return [
-    query.text.trim(),
-    query.anchor,
-    query.threshold.trim(),
-    query.withMetrics,
-  ].filter(Boolean).length;
+  return [query.text.trim(), query.anchor, query.threshold.trim(), query.withMetrics].filter(
+    Boolean,
+  ).length;
 }

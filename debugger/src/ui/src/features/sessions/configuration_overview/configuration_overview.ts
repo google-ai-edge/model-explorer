@@ -16,22 +16,22 @@
  * ==============================================================================
  */
 
-import {Component, inject, output, TemplateRef, viewChild} from '@angular/core';
+import {Component, inject, output, viewChild, TemplateRef} from '@angular/core';
+import {MatTabsModule} from '@angular/material/tabs';
 import {MatButtonModule} from '@angular/material/button';
 import {MatDialog, MatDialogModule} from '@angular/material/dialog';
-import {MatSnackBar} from '@angular/material/snack-bar';
-import {MatTabsModule} from '@angular/material/tabs';
-import {WorkspaceStateService} from '../../../app/workspace_state_service';
-import {GENERATION_GROUPS, GENERATION_LABELS} from '../chat_configuration';
 import {SessionConfiguration} from '../session_configuration/session_configuration';
+import {MatSnackBar} from '@angular/material/snack-bar';
+import {WorkspaceStateService} from '../../../app/workspace_state_service';
+import {
+  GENERATION_GROUPS,
+  GENERATION_LABELS,
+  GENERATION_SWITCHES,
+  switchLabel,
+} from '../chat_configuration';
 @Component({
   selector: 'configuration-overview',
-  imports: [
-    MatTabsModule,
-    MatButtonModule,
-    MatDialogModule,
-    SessionConfiguration,
-  ],
+  imports: [MatTabsModule, MatButtonModule, MatDialogModule, SessionConfiguration],
   templateUrl: './configuration_overview.ng.html',
   styleUrl: './configuration_overview.scss',
 })
@@ -46,24 +46,42 @@ export class ConfigurationOverview {
   get chat() {
     return this.workspace.context().activeRecord;
   }
-  readonly groups = GENERATION_GROUPS.filter((g) => g.name !== 'System prompt');
+  readonly groups = GENERATION_GROUPS.map((g) => ({
+    ...g,
+    keys: g.keys.filter((key) => key !== 'systemPrompt'),
+  }));
   readonly labels = GENERATION_LABELS;
   readonly prompt = viewChild.required<TemplateRef<unknown>>('prompt');
+  /** Chat settings that differ between the sides. Differences are shown, never blocked: they
+   * make a numeric difference attributable to the configuration, not only to the model. */
+  differs(key: string) {
+    return !!this.chat?.generation && this.value('ref', key) !== this.value('target', key);
+  }
+  get differingKeys() {
+    return GENERATION_GROUPS.flatMap((g) => g.keys).filter((key) => this.differs(key));
+  }
+  get differenceNote() {
+    const keys = this.differingKeys;
+    if (!keys.length) return '';
+    return (
+      (keys.length === 1 ? 'One Chat setting differs' : keys.length + ' Chat settings differ') +
+      ' between Reference and Target: ' +
+      keys.map((key) => GENERATION_LABELS[key]).join(', ') +
+      '. Output differences may come from these settings, not only from the model.'
+    );
+  }
   value(side: string, key: string) {
     const config = this.chat?.generation;
     const raw = config?.[side as 'ref' | 'target']?.[key];
     if (!config) return 'Not recorded';
     return raw == null || raw === ''
       ? 'Default'
-      : key === 'thinking'
-        ? ({on: 'Enabled', off: 'Disabled'}[String(raw)] ?? 'Default')
+      : GENERATION_SWITCHES.includes(key)
+        ? switchLabel(raw)
         : String(raw);
   }
   showPrompt() {
-    this.dialog.open(this.prompt(), {
-      width: '560px',
-      maxWidth: 'calc(100vw - 48px)',
-    });
+    this.dialog.open(this.prompt(), {width: '560px', maxWidth: 'calc(100vw - 48px)'});
   }
   async edit() {
     try {
@@ -79,10 +97,7 @@ export class ConfigurationOverview {
       });
     } catch {
       this.snackBar
-        .open(
-          'Chat configuration could not be loaded. Reload the page and try again.',
-          'Reload',
-        )
+        .open('Chat configuration could not be loaded. Reload the page and try again.', 'Reload')
         .onAction()
         .subscribe(() => window.location.reload());
     }

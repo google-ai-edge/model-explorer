@@ -16,14 +16,11 @@
  * ==============================================================================
  */
 
-import type {
-  KvRangeBin,
-  KvRangeMetricSummary,
-} from '../../../data/contracts/kv';
+import type {KvRangeBin, KvRangeMetricSummary} from '../../../data/contracts/kv';
 import {KvRangeSelection} from './kv_range_types';
 
 export const KV_RANGE_MAX_BINS = 1024;
-export const KV_RANGE_MIN_COLUMN_WIDTH = 4;
+export const KV_RANGE_MIN_COLUMN_WIDTH = 8;
 export const KV_RANGE_MAX_EXACT_COLUMN_WIDTH = 24;
 export const KV_RANGE_ROW_HEIGHT = 24;
 export const KV_RANGE_LEFT = 64;
@@ -49,11 +46,17 @@ export function rangeCapacity(width: number): number {
     1,
     Math.min(
       KV_RANGE_MAX_BINS,
-      Math.floor(
-        (width - KV_RANGE_LEFT - KV_RANGE_RIGHT) / KV_RANGE_MIN_COLUMN_WIDTH,
-      ),
+      Math.floor((width - KV_RANGE_LEFT - KV_RANGE_RIGHT) / KV_RANGE_MIN_COLUMN_WIDTH),
     ),
   );
+}
+
+/** Integer partitioning must not create a narrower remainder column. */
+export function rangeBinCount(range: KvRangeBin | null, capacity: number): number {
+  if (!range) return 1;
+  const count = Math.max(1, range.end - range.start);
+  const minimumSpan = Math.ceil(count / Math.max(1, capacity));
+  return Math.max(1, Math.floor(count / minimumSpan));
 }
 
 /** Coarse intervals stay dense; exact positions grow only when spare horizontal space exists. */
@@ -67,8 +70,7 @@ export function rangeColumnWidth(
     visibleRange.end - visibleRange.start === bins.length &&
     bins.length > 0 &&
     bins.every(
-      (bin, index) =>
-        bin.start === visibleRange.start + index && bin.end === bin.start + 1,
+      (bin, index) => bin.start === visibleRange.start + index && bin.end === bin.start + 1,
     );
   if (!exact) return KV_RANGE_MIN_COLUMN_WIDTH;
   return Math.max(
@@ -91,10 +93,7 @@ export function rangeSelectionFrame(box: KvRangeBox): KvRangeBox {
 }
 
 /** Bins are ordered, non-overlapping, half-open logical position intervals. */
-export function rangeBinAtPosition(
-  bins: readonly KvRangeBin[],
-  position: number,
-): number {
+export function rangeBinAtPosition(bins: readonly KvRangeBin[], position: number): number {
   let low = 0,
     high = bins.length - 1;
   while (low <= high) {
@@ -118,8 +117,7 @@ export function rangeBinAtX(
   if (!bins.length || !Number.isFinite(x) || width <= 0) return -1;
   if (!clamp && (x < left || x > left + width)) return -1;
   const fraction = Math.max(0, Math.min(1, (x - left) / width));
-  if (uniform)
-    return Math.min(bins.length - 1, Math.floor(fraction * bins.length));
+  if (uniform) return Math.min(bins.length - 1, Math.floor(fraction * bins.length));
   const start = bins[0].start,
     end = bins[bins.length - 1].end;
   if (fraction === 1) return bins.length - 1;
@@ -131,18 +129,9 @@ export function rangeFromBins(
   first: number,
   last: number,
 ): KvRangeBin | null {
-  if (
-    !bins.length ||
-    first < 0 ||
-    last < 0 ||
-    first >= bins.length ||
-    last >= bins.length
-  )
+  if (!bins.length || first < 0 || last < 0 || first >= bins.length || last >= bins.length)
     return null;
-  return {
-    start: bins[Math.min(first, last)].start,
-    end: bins[Math.max(first, last)].end,
-  };
+  return {start: bins[Math.min(first, last)].start, end: bins[Math.max(first, last)].end};
 }
 
 /** Continuous position mapping lets a single coarse bucket be brushed into a smaller range. */
@@ -155,10 +144,7 @@ export function rangePositionAtX(
 ): number | null {
   if (!bins.length || !Number.isFinite(x) || width <= 0) return null;
   const fraction = Math.max(0, Math.min(1, (x - left) / width));
-  if (!uniform)
-    return (
-      bins[0].start + fraction * (bins[bins.length - 1].end - bins[0].start)
-    );
+  if (!uniform) return bins[0].start + fraction * (bins[bins.length - 1].end - bins[0].start);
   if (fraction === 1) return bins[bins.length - 1].end;
   const offset = fraction * bins.length,
     index = Math.floor(offset),
@@ -178,19 +164,14 @@ export function rangeXAtPosition(
     end = bins[bins.length - 1].end;
   if (position <= start) return left;
   if (position >= end) return left + width;
-  if (!uniform)
-    return left + ((position - start) / Math.max(1, end - start)) * width;
+  if (!uniform) return left + ((position - start) / Math.max(1, end - start)) * width;
   const index = rangeBinAtPosition(bins, position);
   if (index < 0) {
     const next = bins.findIndex((bin) => bin.start > position);
     return left + ((next < 0 ? bins.length : next) / bins.length) * width;
   }
   const bin = bins[index];
-  return (
-    left +
-    ((index + (position - bin.start) / (bin.end - bin.start)) / bins.length) *
-      width
-  );
+  return left + ((index + (position - bin.start) / (bin.end - bin.start)) / bins.length) * width;
 }
 
 export function rangeFromBrush(
@@ -206,17 +187,8 @@ export function rangeFromBrush(
   if (first === null || last === null) return null;
   const extentStart = bins[0].start,
     extentEnd = bins[bins.length - 1].end;
-  const start = Math.max(
-    extentStart,
-    Math.min(extentEnd - 1, Math.floor(Math.min(first, last))),
-  );
-  return {
-    start,
-    end: Math.min(
-      extentEnd,
-      Math.max(start + 1, Math.ceil(Math.max(first, last))),
-    ),
-  };
+  const start = Math.max(extentStart, Math.min(extentEnd - 1, Math.floor(Math.min(first, last))));
+  return {start, end: Math.min(extentEnd, Math.max(start + 1, Math.ceil(Math.max(first, last))))};
 }
 
 export function rangeKeyboardBrush(
@@ -230,28 +202,18 @@ export function rangeKeyboardBrush(
 ): {anchorX: number; focusX: number; range: KvRangeBin} | null {
   if (!bins.length || width <= 0) return null;
   const selected = selection ?? bins[0];
-  const anchorX =
-    current?.anchorX ??
-    rangeXAtPosition(bins, selected.start, left, width, uniform);
-  const previous =
-    current?.focusX ??
-    rangeXAtPosition(bins, selected.end, left, width, uniform);
+  const anchorX = current?.anchorX ?? rangeXAtPosition(bins, selected.start, left, width, uniform);
+  const previous = current?.focusX ?? rangeXAtPosition(bins, selected.end, left, width, uniform);
   // At very low capacity a quarter-bucket step keeps keyboard zoom usable inside one coarse bucket.
   const focusX = Math.max(
     left,
-    Math.min(
-      left + width,
-      previous + (direction * width) / Math.max(4, bins.length),
-    ),
+    Math.min(left + width, previous + (direction * width) / Math.max(4, bins.length)),
   );
   const range = rangeFromBrush(bins, anchorX, focusX, left, width, uniform);
   return range ? {anchorX, focusX, range} : null;
 }
 
-export function rangeDragStarted(
-  firstClientX: number,
-  currentClientX: number,
-): boolean {
+export function rangeDragStarted(firstClientX: number, currentClientX: number): boolean {
   return Math.abs(currentClientX - firstClientX) >= KV_RANGE_DRAG_THRESHOLD;
 }
 
@@ -310,11 +272,7 @@ export function rangeTrendSegments(
     if (i > 0 && bins[i - 1].end !== bin.start) finish();
     for (const point of candidates) {
       const previous = current[current.length - 1];
-      if (
-        previous?.position === point.position &&
-        previous.value === point.value
-      )
-        continue;
+      if (previous?.position === point.position && previous.value === point.value) continue;
       current.push({...point, bin: i});
     }
   }
@@ -332,28 +290,17 @@ export function rangeKeyboardSelection(
   if (!bins.length) return null;
   const overlap = rangeOverlappingBins(bins, selection);
   let index = overlap?.[0] ?? 0;
-  let layer: number | null =
-    selection?.layer ?? trendLayer ?? layers[0] ?? null;
+  let layer: number | null = selection?.layer ?? trendLayer ?? layers[0] ?? null;
   if (selection?.layer === null) layer = null;
   if (trendLayer !== null && layer !== null) layer = trendLayer;
   if (key === 'ArrowLeft') index = Math.max(0, index - 1);
-  else if (key === 'ArrowRight')
-    index = overlap ? Math.min(bins.length - 1, index + 1) : 0;
+  else if (key === 'ArrowRight') index = overlap ? Math.min(bins.length - 1, index + 1) : 0;
   else if (key === 'Home') index = 0;
   else if (key === 'End') index = bins.length - 1;
-  else if (
-    (key === 'ArrowUp' || key === 'ArrowDown') &&
-    trendLayer === null &&
-    layers.length
-  ) {
+  else if ((key === 'ArrowUp' || key === 'ArrowDown') && trendLayer === null && layers.length) {
     const current = Math.max(0, layers.indexOf(layer ?? layers[0]));
     layer =
-      layers[
-        Math.max(
-          0,
-          Math.min(layers.length - 1, current + (key === 'ArrowUp' ? -1 : 1)),
-        )
-      ];
+      layers[Math.max(0, Math.min(layers.length - 1, current + (key === 'ArrowUp' ? -1 : 1)))];
   } else if (key.toLowerCase() === 'c') layer = null;
   else if (key !== 'Enter') return null;
   return {...bins[index], layer};

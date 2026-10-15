@@ -16,8 +16,28 @@
  * ==============================================================================
  */
 
+import {SessionListing, SessionSummary, SessionConfig} from './contracts/session_summary';
 import {Injectable} from '@angular/core';
 import type {Session} from './contracts/capture';
+import type {
+  FinalLogitsRequest,
+  FinalLogitsResponse,
+  FinalLogitsVectorRequest,
+  FinalLogitsVectorResponse,
+} from './contracts/final_logits';
+import type {
+  KvAnalysis,
+  KvFindResponse,
+  KvHeadEvidence,
+  KvPositionAlignment,
+  KvRangeDetails,
+  KvRangeResponse,
+} from './contracts/kv';
+import type {
+  PositionAnalysis,
+  PositionTensorRequest,
+  PositionTensorResponse,
+} from './contracts/position_analysis';
 import type {
   DeviceCandidates,
   RunnerBuildCatalog,
@@ -25,21 +45,17 @@ import type {
   RuntimeCapabilities,
   RuntimeJob,
 } from './contracts/runtime';
-import {
-  SessionConfig,
-  SessionListing,
-  SessionSummary,
-} from './contracts/session_summary';
 import type {TapScan} from './contracts/tap_scan';
-import {ResourcePreview, Telemetry} from './contracts/telemetry';
+import {type ExplicitPair, Telemetry, ResourcePreview} from './contracts/telemetry';
+import type {TokenAnalysisResponse} from './contracts/token_analysis';
 import {
+  Semantic,
   Comparison,
-  NodeDetails,
   Overview,
-  SavedMapping,
+  NodeDetails,
   Selection,
   SelectionResult,
-  Semantic,
+  SavedMapping,
 } from './contracts/types';
 
 export class ApiError extends Error {
@@ -56,7 +72,9 @@ function errorMessage(text: string, status: number): string {
   if (trimmed.startsWith('{')) {
     try {
       const body = JSON.parse(trimmed);
-      if (typeof body?.error === 'string' && body.error) return body.error;
+      if (typeof body?.error === 'string' && body.error) {
+        return body.error;
+      }
     } catch {
       /* not JSON after all */
     }
@@ -70,13 +88,10 @@ export interface UploadOptions {
 @Injectable({providedIn: 'root'})
 export class ReportApiService {
   private capturePath(captureId: string | null, path: string): string {
-    if (!captureId) throw new Error('A capture record must be selected.');
-    return (
-      path +
-      (path.includes('?') ? '&' : '?') +
-      'session_id=' +
-      encodeURIComponent(captureId)
-    );
+    if (!captureId) {
+      throw new Error('A capture record must be selected.');
+    }
+    return path + (path.includes('?') ? '&' : '?') + 'session_id=' + encodeURIComponent(captureId);
   }
   private async getCapture<T>(
     captureId: string | null,
@@ -93,30 +108,25 @@ export class ReportApiService {
   ): Promise<T> {
     return this.post<T>(this.capturePath(captureId, path), payload, signal);
   }
-  tapScan(id: string): Promise<TapScan> {
+  tapScan(id: string) {
     return this.get<TapScan>(`artifacts/${id}/scan`);
   }
-  capabilities(): Promise<RuntimeCapabilities> {
+  capabilities() {
     return this.get<RuntimeCapabilities>('runtime/capabilities');
   }
-  job(id: string): Promise<RuntimeJob> {
+  job(id: string) {
     return this.get<RuntimeJob>('jobs/' + id);
   }
   private get<T>(path: string, signal?: AbortSignal): Promise<T> {
     return this.request<T>(path, {signal});
   }
   /** Single request path: server error text is surfaced; a 503 with Retry-After is retried once. */
-  private async request<T>(
-    path: string,
-    init: RequestInit = {},
-    retried = false,
-  ): Promise<T> {
+  private async request<T>(path: string, init: RequestInit = {}, retried = false): Promise<T> {
     const response = await fetch('/api/' + path, {cache: 'no-store', ...init});
-    if (response.ok) return (await response.json()) as T;
-    const message = errorMessage(
-      await response.text().catch(() => ''),
-      response.status,
-    );
+    if (response.ok) {
+      return (await response.json()) as T;
+    }
+    const message = errorMessage(await response.text().catch(() => ''), response.status);
     if (response.status === 503 && !retried && !init.signal?.aborted) {
       const header = response.headers.get('Retry-After');
       const delay = header && header.trim() ? Number(header) : NaN;
@@ -131,9 +141,7 @@ export class ReportApiService {
     return this.request<DeviceCandidates>('devices');
   }
   deviceBuilds(id: string) {
-    return this.request<RunnerBuildCatalog>(
-      'devices/builds?id=' + encodeURIComponent(id),
-    );
+    return this.request<RunnerBuildCatalog>('devices/builds?id=' + encodeURIComponent(id));
   }
   inspectDevice(id: string) {
     return this.post<Partial<RunnerDevice>>('devices/inspect', {id});
@@ -149,8 +157,9 @@ export class ReportApiService {
       options.signal?.addEventListener('abort', abort, {once: true});
       const settle = () => options.signal?.removeEventListener('abort', abort);
       request.upload.onprogress = (event) => {
-        if (event.lengthComputable)
+        if (event.lengthComputable) {
           options.onProgress?.(event.loaded, event.total);
+        }
       };
       request.onload = () => {
         settle();
@@ -159,20 +168,15 @@ export class ReportApiService {
           try {
             resolve(JSON.parse(text));
           } catch {
-            reject(
-              new ApiError('Upload response was not JSON', request.status),
-            );
+            reject(new ApiError('Upload response was not JSON', request.status));
           }
-        } else
-          reject(
-            new ApiError(errorMessage(text, request.status), request.status),
-          );
+        } else {
+          reject(new ApiError(errorMessage(text, request.status), request.status));
+        }
       };
       request.onerror = () => {
         settle();
-        reject(
-          new ApiError('Upload failed; the server could not be reached.', 0),
-        );
+        reject(new ApiError('Upload failed; the server could not be reached.', 0));
       };
       request.onabort = () => {
         settle();
@@ -202,37 +206,17 @@ export class ReportApiService {
       signal,
     });
   }
-  compareSelection(
-    captureId: string | null,
-    payload: Selection,
-    signal: AbortSignal,
-  ) {
-    return this.postCapture<SelectionResult>(
-      captureId,
-      'selection/compare',
-      payload,
-      signal,
-    );
+  compareSelection(captureId: string | null, payload: Selection, signal: AbortSignal) {
+    return this.postCapture<SelectionResult>(captureId, 'selection/compare', payload, signal);
   }
   removeMapping(captureId: string | null, payload: Selection) {
-    return this.postCapture<SavedMapping>(
-      captureId,
-      'mappings/remove',
-      payload,
-    );
+    return this.postCapture<SavedMapping>(captureId, 'mappings/remove', payload);
   }
   saveMapping(captureId: string | null, payload: Selection) {
     return this.postCapture<SavedMapping>(captureId, 'mappings', payload);
   }
   manageSession(
-    operation:
-      | 'create'
-      | 'update'
-      | 'duplicate'
-      | 'chat'
-      | 'chat-config'
-      | 'delete'
-      | 'restore',
+    operation: 'create' | 'update' | 'duplicate' | 'chat' | 'chat-config' | 'delete' | 'restore',
     payload: Partial<SessionConfig> & {id?: string},
   ) {
     return this.post<SessionSummary>('sessions/' + operation, payload);
@@ -249,11 +233,46 @@ export class ReportApiService {
   session(captureId: string | null, signal?: AbortSignal) {
     return this.getCapture<Session>(captureId, 'session', signal);
   }
+  positionAnalysis(
+    captureId: string | null,
+    turn: number,
+    phase: string,
+    signal: AbortSignal,
+    alignment: KvPositionAlignment | null = null,
+  ) {
+    if (alignment) {
+      return this.postCapture<PositionAnalysis>(
+        captureId,
+        `position-analysis?turn=${turn}&phase=${encodeURIComponent(phase)}`,
+        {alignment},
+        signal,
+      );
+    }
+    return this.getCapture<PositionAnalysis>(
+      captureId,
+      `position-analysis?turn=${turn}&phase=${encodeURIComponent(phase)}`,
+      signal,
+    );
+  }
+  positionTensor(
+    captureId: string | null,
+    turn: number,
+    phase: string,
+    query: PositionTensorRequest,
+    signal: AbortSignal,
+  ) {
+    return this.postCapture<PositionTensorResponse>(
+      captureId,
+      `position-tensor?turn=${turn}&phase=${encodeURIComponent(phase)}`,
+      query,
+      signal,
+    );
+  }
   semantic(captureId: string | null, signal?: AbortSignal) {
     return this.getCapture<Semantic>(captureId, 'semantic', signal);
   }
   explicitPairs(captureId: string | null, signal: AbortSignal) {
-    return this.getCapture<import('./contracts/telemetry').ExplicitPair[]>(
+    return this.getCapture<ExplicitPair[]>(
       captureId,
       'explicit-pairs',
       signal,
@@ -274,11 +293,7 @@ export class ReportApiService {
     );
   }
   telemetry(captureId: string | null, turn: number, signal: AbortSignal) {
-    return this.getCapture<Telemetry>(
-      captureId,
-      'telemetry?turn=' + turn,
-      signal,
-    );
+    return this.getCapture<Telemetry>(captureId, 'telemetry?turn=' + turn, signal);
   }
   tokenAnalysis(
     captureId: string | null,
@@ -286,12 +301,39 @@ export class ReportApiService {
     pairs: {ref: number | null; target: number | null}[],
     signal: AbortSignal,
   ) {
-    return this.postCapture<
-      import('./contracts/token_analysis').TokenAnalysisResponse
-    >(captureId, 'token-analysis', {turn, pairs}, signal);
+    return this.postCapture<TokenAnalysisResponse>(
+      captureId,
+      'token-analysis',
+      {turn, pairs},
+      signal,
+    );
+  }
+  finalLogits(
+    captureId: string | null,
+    payload: FinalLogitsRequest,
+    signal: AbortSignal,
+  ) {
+    return this.postCapture<FinalLogitsResponse>(
+      captureId,
+      'final-logits',
+      payload,
+      signal,
+    );
+  }
+  finalLogitsVector(
+    captureId: string | null,
+    payload: FinalLogitsVectorRequest,
+    signal: AbortSignal,
+  ) {
+    return this.postCapture<FinalLogitsVectorResponse>(
+      captureId,
+      'final-logits-vector',
+      payload,
+      signal,
+    );
   }
   kvMetadata(captureId: string | null, turn: number, signal: AbortSignal) {
-    return this.getCapture<import('./contracts/kv').KvAnalysis>(
+    return this.getCapture<KvAnalysis>(
       captureId,
       'kv-analysis?mode=metadata&turn=' + turn,
       signal,
@@ -308,6 +350,8 @@ export class ReportApiService {
     head: string,
     formula: string,
     signal: AbortSignal,
+    alignment: KvPositionAlignment | null = null,
+    heads: number[] | null = null,
   ) {
     const params = new URLSearchParams({
       turn: String(turn),
@@ -318,8 +362,21 @@ export class ReportApiService {
       kind,
       head,
     });
-    if (formula) params.set('formula', formula);
-    return this.getCapture<import('./contracts/kv').KvRangeResponse>(
+    if (formula) {
+      params.set('formula', formula);
+    }
+    if (heads) {
+      params.set('heads', JSON.stringify(heads));
+    }
+    if (alignment) {
+      return this.postCapture<KvRangeResponse>(
+        captureId,
+        'kv-range?' + params,
+        {alignment},
+        signal,
+      );
+    }
+    return this.getCapture<KvRangeResponse>(
       captureId,
       'kv-range?' + params,
       signal,
@@ -333,6 +390,7 @@ export class ReportApiService {
     end: number,
     layer: number | null,
     signal: AbortSignal,
+    alignment: KvPositionAlignment | null = null,
   ) {
     const params = new URLSearchParams({
       turn: String(turn),
@@ -340,8 +398,18 @@ export class ReportApiService {
       start: String(start),
       end: String(end),
     });
-    if (layer !== null) params.set('layer', String(layer));
-    return this.getCapture<import('./contracts/kv').KvRangeDetails>(
+    if (layer !== null) {
+      params.set('layer', String(layer));
+    }
+    if (alignment) {
+      return this.postCapture<KvRangeDetails>(
+        captureId,
+        'kv-selection?' + params,
+        {alignment},
+        signal,
+      );
+    }
+    return this.getCapture<KvRangeDetails>(
       captureId,
       'kv-selection?' + params,
       signal,
@@ -362,7 +430,7 @@ export class ReportApiService {
       offset: String(offset),
       limit: '40',
     });
-    return this.getCapture<import('./contracts/kv').KvFindResponse>(
+    return this.getCapture<KvFindResponse>(
       captureId,
       'kv-find?' + params,
       signal,
@@ -378,6 +446,7 @@ export class ReportApiService {
     head: number,
     batch: number | null,
     signal: AbortSignal,
+    alignment: KvPositionAlignment | null = null,
   ) {
     const params = new URLSearchParams({
       turn: String(turn),
@@ -387,18 +456,24 @@ export class ReportApiService {
       position: String(position),
       head: String(head),
     });
-    if (batch !== null) params.set('batch', String(batch));
-    return this.getCapture<import('./contracts/kv').KvHeadEvidence>(
+    if (batch !== null) {
+      params.set('batch', String(batch));
+    }
+    if (alignment) {
+      return this.postCapture<KvHeadEvidence>(
+        captureId,
+        'kv-head?' + params,
+        {alignment},
+        signal,
+      );
+    }
+    return this.getCapture<KvHeadEvidence>(
       captureId,
       'kv-head?' + params,
       signal,
     );
   }
   comparison(captureId: string | null, batch: number, signal: AbortSignal) {
-    return this.getCapture<Comparison>(
-      captureId,
-      'comparisons?batch=' + batch,
-      signal,
-    );
+    return this.getCapture<Comparison>(captureId, 'comparisons?batch=' + batch, signal);
   }
 }

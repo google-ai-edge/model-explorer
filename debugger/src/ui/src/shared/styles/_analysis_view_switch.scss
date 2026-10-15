@@ -1,0 +1,100 @@
+/**
+ * @license
+ * Copyright 2026 The AI Edge Model Explorer Authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ==============================================================================
+ */
+
+// Match the Chat / Debug segmented control geometry and theme tokens.
+@mixin styles {
+  .view-switch {
+    display: inline-flex;
+    align-items: center;
+    flex: none;
+    box-sizing: border-box;
+    height: 32px;
+    gap: 0;
+    padding: 4px;
+    border: 0;
+    border-radius: 6px;
+    background: var(--button-group-debug);
+  }
+  .view-switch button {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    flex: 0 0 88px;
+    width: 88px;
+    min-height: 24px;
+    height: 24px;
+    gap: 4px;
+    margin: 0;
+    padding: 0 8px;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    color: var(--button-text);
+    font: 400 12px/20px var(--me-font-family);
+    white-space: nowrap;
+    cursor: pointer;
+  }
+  .view-switch button:first-child {
+    border-radius: 4px 0 0 4px;
+  }
+  .view-switch button:last-child {
+    border-radius: 0 4px 4px 0;
+  }
+  .view-switch button[aria-pressed='true'] {
+    background: var(--me-primary-color);
+    color: var(--me-on-primary-color, #fff);
+    font-weight: 500;
+    box-shadow: 0 1px 1px rgba(49, 35, 7, 0.08);
+  }
+  .view-switch button::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: var(--button-hover);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 120ms;
+  }
+  .view-switch button:hover:not(:disabled) {
+    background: transparent;
+  }
+  .view-switch button[aria-pressed='true']:hover {
+    background: var(--me-primary-color);
+  }
+  .view-switch button:hover::before {
+    opacity: 1;
+  }
+  .view-switch button:active::before {
+    opacity: 1;
+    background: var(--button-press);
+  }
+  .view-switch button:focus-visible {
+    outline: 2px solid var(--me-primary-color);
+    outline-offset: 2px;
+    z-index: 1;
+  }
+  .view-switch mat-icon {
+    width: 16px;
+    height: 16px;
+    font-size: 16px;
+    line-height: 16px;
+  }
+}

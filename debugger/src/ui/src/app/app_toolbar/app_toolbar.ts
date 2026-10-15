@@ -16,34 +16,29 @@
  * ==============================================================================
  */
 
-import {A11yModule} from '@angular/cdk/a11y';
-import {OverlayModule} from '@angular/cdk/overlay';
-import {
-  ChangeDetectionStrategy,
-  Component,
-  computed,
-  DestroyRef,
-  inject,
-  signal,
-  viewChild,
-} from '@angular/core';
-import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
-import {MatButtonModule} from '@angular/material/button';
-import {MatDialog} from '@angular/material/dialog';
-import {MatIconModule} from '@angular/material/icon';
-import {MatMenuModule, MatMenuTrigger} from '@angular/material/menu';
-import {MatSnackBar} from '@angular/material/snack-bar';
-import {MatTooltipModule} from '@angular/material/tooltip';
-import {ReportStateService} from '../../data/report_state_service';
 import {ConversationBookmarks} from '../../features/conversation/conversation_bookmarks/conversation_bookmarks';
+import {OverlayModule} from '@angular/cdk/overlay';
+import {A11yModule} from '@angular/cdk/a11y';
 import {ConfigurationOverview} from '../../features/sessions/configuration_overview/configuration_overview';
 import {ModelServerSwitch} from '../../features/sessions/model_server_switch/model_server_switch';
 import {
-  OverlayDialog,
-  OverlayPanel,
-} from '../../shared/overlay_dialog/overlay_dialog';
-import {ThemeService} from '../../theme/theme_service';
+  ChangeDetectionStrategy,
+  Component,
+  inject,
+  viewChild,
+  signal,
+  computed,
+} from '@angular/core';
+import {MatButtonModule} from '@angular/material/button';
+import {MatIconModule} from '@angular/material/icon';
+import {MatMenuModule, MatMenuTrigger} from '@angular/material/menu';
+import {MatTooltipModule} from '@angular/material/tooltip';
+import {MatDialog} from '@angular/material/dialog';
+import {MatSnackBar} from '@angular/material/snack-bar';
+import {ReportStateService} from '../../data/report_state_service';
 import {WorkspaceStateService} from '../workspace_state_service';
+import {ThemeService} from '../../theme/theme_service';
+import {OverlayDialog, OverlayPanel} from '../../shared/overlay_dialog/overlay_dialog';
 @Component({
   selector: 'app-toolbar',
   imports: [
@@ -67,17 +62,12 @@ export class AppToolbar {
   readonly state = inject(ReportStateService);
   readonly workspace = inject(WorkspaceStateService);
   readonly theme = inject(ThemeService);
-  private readonly destroyRef = inject(DestroyRef);
   private readonly dialog = inject(MatDialog);
   private readonly snackBar = inject(MatSnackBar);
   private dialogFailure(label: string) {
     this.snackBar
-      .open(
-        label + ' could not be loaded. Reload the page and try again.',
-        'Reload',
-      )
+      .open(label + ' could not be loaded. Reload the page and try again.', 'Reload')
       .onAction()
-      .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(() => window.location.reload());
   }
   private readonly aboutTrigger = viewChild<MatMenuTrigger>('aboutTrigger');
@@ -89,9 +79,7 @@ export class AppToolbar {
     this.workspace
       .chats()
       .filter((c) =>
-        c.name
-          .toLocaleLowerCase()
-          .includes(this.chatQuery().trim().toLocaleLowerCase()),
+        c.name.toLocaleLowerCase().includes(this.chatQuery().trim().toLocaleLowerCase()),
       ),
   );
   openChats() {
@@ -110,13 +98,10 @@ export class AppToolbar {
       return;
     }
     const panel = (event.target as HTMLElement).closest('.chat-picker');
-    const options = Array.from(
-      panel?.querySelectorAll<HTMLButtonElement>('[role=option]') ?? [],
-    );
+    const options = Array.from(panel?.querySelectorAll<HTMLButtonElement>('[role=option]') ?? []);
     if (
       ['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key) &&
-      (!(event.target instanceof HTMLInputElement) ||
-        event.key.startsWith('Arrow'))
+      (!(event.target instanceof HTMLInputElement) || event.key.startsWith('Arrow'))
     ) {
       event.preventDefault();
       const index = options.indexOf(event.target as HTMLButtonElement);
@@ -129,8 +114,7 @@ export class AppToolbar {
               ? event.key === 'ArrowUp'
                 ? options.length - 1
                 : 0
-              : (index + (event.key === 'ArrowUp' ? -1 : 1) + options.length) %
-                options.length;
+              : (index + (event.key === 'ArrowUp' ? -1 : 1) + options.length) % options.length;
       options[next]?.focus();
     } else if (
       event.key === 'Enter' &&
@@ -146,25 +130,6 @@ export class AppToolbar {
     void this.workspace.chooseChat(id);
   }
 
-  viewKey(event: KeyboardEvent) {
-    if (!['ArrowLeft', 'ArrowRight'].includes(event.key)) {
-      return;
-    }
-    event.preventDefault();
-    event.stopPropagation();
-    const current = event.currentTarget as HTMLElement;
-    const items = Array.from(
-      current
-        .closest('[role=menu]')
-        ?.querySelectorAll<HTMLElement>('[role=menuitemradio]') ?? [],
-    );
-    items[
-      (items.indexOf(current) +
-        (event.key === 'ArrowRight' ? 1 : -1) +
-        items.length) %
-        items.length
-    ]?.focus();
-  }
   async newChat() {
     this.chatOpen.set(false);
     try {
@@ -185,10 +150,7 @@ export class AppToolbar {
   async settings() {
     try {
       const {AppSettings} = await import('../app_settings/app_settings');
-      this.dialog.open(AppSettings, {
-        width: '466px',
-        maxWidth: 'calc(100vw - 32px)',
-      });
+      this.dialog.open(AppSettings, {width: '466px', maxWidth: 'calc(100vw - 32px)'});
     } catch {
       this.dialogFailure('Settings');
     }
@@ -197,13 +159,8 @@ export class AppToolbar {
     try {
       const {AboutDialog} = await import('../about_dialog/about_dialog');
       this.dialog
-        .open(AboutDialog, {
-          width: '560px',
-          maxWidth: 'calc(100vw - 32px)',
-          restoreFocus: false,
-        })
+        .open(AboutDialog, {width: '560px', maxWidth: 'calc(100vw - 32px)', restoreFocus: false})
         .afterClosed()
-        .pipe(takeUntilDestroyed(this.destroyRef))
         .subscribe(() => this.aboutTrigger()?.focus('keyboard'));
     } catch {
       this.dialogFailure('About');

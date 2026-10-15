@@ -17,6 +17,11 @@
  */
 
 @use '../shared/styles/data_table' as data-table;
+// Model Explorer info_panel: nested content starts 18px inside its parent item.
+$child-indent: 18px;
+$bullet-width: 5px;
+$bullet-gap: 4px;
+$bullet-text-indent: $bullet-width + $bullet-gap;
 /** Model Explorer info_panel metadata-table presentation (Apache-2.0).
  * Two value columns are the Token Diff adapter; density and overflow match ME.
  */
@@ -31,15 +36,15 @@
     width: calc(100% - 16px - var(--info-indent, 12px));
     max-width: calc(100% - 16px - var(--info-indent, 12px));
     table-layout: fixed;
-    font: 12px/18px var(--me-font-family);
+    font: 12px / var(--info-property-line-height, normal) var(--me-font-family);
   }
   th,
   td {
     height: auto;
     position: static;
     background: transparent;
-    font: 12px/18px var(--me-font-family);
-    padding: 2px 0;
+    font: 12px / var(--info-property-line-height, normal) var(--me-font-family);
+    padding: 1px 0;
     border: 0;
     text-align: left;
     vertical-align: text-top;
@@ -48,8 +53,14 @@
     white-space: nowrap;
     font-weight: 400;
   }
+  tbody tr {
+    cursor: default;
+  }
+  tbody tr:hover td {
+    background: transparent;
+  }
   th:first-child {
-    width: 104px;
+    width: var(--info-key-width, 100px);
     padding-right: 6px;
     color: var(--me-on-surface-low-color);
   }
@@ -59,7 +70,7 @@
   }
   .info-note {
     margin: 4px 12px 4px var(--info-indent, 12px);
-    font: 12px/18px var(--me-font-family);
+    font: 12px / normal var(--me-font-family);
     color: var(--me-on-surface-variant-color);
   }
   .info-close.mat-mdc-button-base {
@@ -88,7 +99,7 @@
 @mixin section-dividers {
   explorer-info-section + explorer-info-section {
     display: block;
-    border-top: 1px solid var(--me-surface-variant-color);
+    border-top: 1px solid var(--me-outline-hairline-color);
   }
 }
 /** Action links of a details panel: icon and label hang under the section title. */
@@ -128,6 +139,73 @@
     height: 16px;
     font-size: 16px;
     line-height: 16px;
+  }
+}
+
+/** Numeric inspector tables: values and their optional locators have separate slots. */
+@mixin statistic-table {
+  // One column alignment contract for Statistic, Metadata, Comparison Metrics and Values.
+  // Align property tables and loading messages with the text after the bullet.
+  :is(.layer-table, .inspector-table),
+  .note.statistic-table-note {
+    margin: 3px 16px 0 calc(var(--info-indent, 12px) + #{$bullet-text-indent});
+    width: calc(
+      100% - 16px - var(--info-indent, 12px) - #{$bullet-text-indent}
+    );
+    max-width: calc(
+      100% - 16px - var(--info-indent, 12px) - #{$bullet-text-indent}
+    );
+  }
+  :is(.layer-table, .inspector-table) {
+    font-variant-numeric: tabular-nums;
+  }
+  :is(.layer-table, .inspector-table) th,
+  :is(.layer-table, .inspector-table) td {
+    box-sizing: border-box;
+    white-space: nowrap;
+    overflow-wrap: normal;
+    vertical-align: middle;
+    text-align: left;
+    padding: 0 0 0 4px;
+  }
+  // Header templates belong to the caller, while the shared table owns <thead>.
+  // Target the caller's <th> directly so Angular style scoping does not skip it.
+  :is(.layer-table, .inspector-table) th {
+    color: var(--me-on-surface-low-color);
+    font: 400 12px/20px var(--me-font-family);
+    border-bottom: 0;
+    padding-bottom: 4px;
+  }
+  :is(.layer-table, .inspector-table) th:first-child,
+  :is(.layer-table, .inspector-table) td:first-child {
+    width: auto;
+    padding-left: 0;
+    padding-right: 0;
+    text-align: left;
+  }
+  :is(.layer-table, .inspector-table) td {
+    height: 20px;
+  }
+  :is(.layer-table, .inspector-table) .stat-cell {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) var(--info-table-action-size, 20px);
+    align-items: center;
+    gap: var(--info-table-action-gap, 4px);
+    min-width: 0;
+  }
+  :is(.layer-table, .inspector-table) .stat-cell > span:first-child,
+  :is(.layer-table, .inspector-table) .stat-value {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 0;
+  }
+  :is(.layer-table, .inspector-table) .stat-locator {
+    flex: 0 0 var(--info-table-action-size, 20px);
+    width: var(--info-table-action-size, 20px);
+    height: 20px;
+  }
+  :is(.layer-table, .inspector-table) tbody tr:hover td {
+    background: var(--me-surface-container-low-color);
   }
 }
 

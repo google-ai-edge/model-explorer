@@ -89,6 +89,12 @@ $blue-palette-dark: (
 // Angular Material theme file.
 // See https://material.angular.io/guide/theming for more details.
 
+// The `mat.core` mixin applies common styles used by multiple
+// components, such ripples, overlays, high contrast mode, etc.
+// copybara:insert_begin(external)
+// @include mat.core();
+// copybara:insert_end
+
 // Define the application's color palettes.
 $primary: mat.m2-define-palette($blue-palette, 600);
 $accent: mat.m2-define-palette($blue-palette, 600);
@@ -123,8 +129,6 @@ $dark-theme: mat.m2-define-dark-theme(
 );
 
 // Adapted from Model Explorer theme.scss (Apache-2.0). Only used components emitted.
-// The `mat.core` mixin applies common styles used by multiple components, such
-// as ripples, overlays, and high contrast mode. Include it exactly once.
 @include mat.core();
 @mixin components($theme) {
   @include mat.core-theme($theme);

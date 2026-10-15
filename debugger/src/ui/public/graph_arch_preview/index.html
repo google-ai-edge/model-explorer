@@ -1,0 +1,1017 @@
+<!doctype html>
+<!--
+ Copyright 2026 The AI Edge Model Explorer Authors.
+
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+ ==============================================================================
+-->
+<html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Model Overview · Interaction preview</title><link rel="icon" href="data:,"><link rel="stylesheet" href="fonts.css"><link rel="stylesheet" href="explorer_details.css?v=64"><link rel="stylesheet" href="explorer_controls.css?v=65">
+<style>
+:root{--crumb-border:#3876c7;--crumb-bg:#d5e7ff;--crumb-parent:#777;--crumb-current:#000;--crumb-separator:#999;--icon-color:#444746;--op-hover:#000;--group-hover:#666;--incoming:#009e73;--outgoing:#d55e00;--bg:#fff;--surface:#fff;--panel:#f8f9fa;--group:hsl(212 40% 96%);--group-head:#e9eff6;--rule:#dadce0;--op-border:#777;--group-border:#aaa;--text:#041e49;--muted:#5f6368;--accent:#1a73e8;--accent-wash:#c2e7ff;--hatch:color-mix(in srgb,var(--muted) 16%,transparent);--paired:var(--op-border);--tensor:var(--group);--tensor-border:#7c94a6;--tensor-text:#294f69;--edge:var(--group-border);--scope:#555;--scope-wash:#e0e3e7;--hover:#e8f0fe;--shadow:0 1px 3px #182c4914;--node-radius:6px;--node-stroke:1.2;--selected-stroke:2;--edge-stroke:1;--highlight-stroke:1.5;--node-font:11px;--group-font:11px;--icon-color:#444746;--op-hover:#000;--group-hover:#666;--incoming:#009e73;--outgoing:#d55e00;--sans:"Google Sans Text",Arial,-apple-system,BlinkMacSystemFont,'PingFang SC','Microsoft YaHei',sans-serif;--mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+@media(prefers-color-scheme:dark){:root{--crumb-border:#8ab4f8;--crumb-bg:#23496a;--crumb-parent:#bdc5ce;--crumb-current:#e8eaed;--crumb-separator:#a8b0bc;--icon-color:#bdc5ce;--op-hover:#fff;--group-hover:#bdc5ce;--incoming:#6dd7b0;--outgoing:#ffa26b;--bg:#202124;--surface:#292a2d;--panel:#25272a;--group:#28303a;--group-head:#303b49;--rule:#41454b;--op-border:#8893a2;--group-border:#667387;--text:#e8eaed;--muted:#a8b0bc;--accent:#8ab4f8;--accent-wash:#23496a;--hatch:color-mix(in srgb,var(--muted) 16%,transparent);--paired:var(--op-border);--tensor:var(--group);--tensor-border:#8faabd;--tensor-text:#b0c4d5;--edge:var(--group-border);--scope:#c3c8cf;--scope-wash:#414750;--hover:#303e52;--shadow:0 1px 3px #0006}}
+:root[data-theme=dark]{--crumb-border:#8ab4f8;--crumb-bg:#23496a;--crumb-parent:#bdc5ce;--crumb-current:#e8eaed;--crumb-separator:#a8b0bc;--icon-color:#bdc5ce;--op-hover:#fff;--group-hover:#bdc5ce;--incoming:#6dd7b0;--outgoing:#ffa26b;--bg:#202124;--surface:#292a2d;--panel:#25272a;--group:#28303a;--group-head:#303b49;--rule:#41454b;--op-border:#8893a2;--group-border:#667387;--text:#e8eaed;--muted:#a8b0bc;--accent:#8ab4f8;--accent-wash:#23496a;--hatch:color-mix(in srgb,var(--muted) 16%,transparent);--paired:var(--op-border);--tensor:var(--group);--tensor-border:#8faabd;--tensor-text:#b0c4d5;--edge:var(--group-border);--scope:#c3c8cf;--scope-wash:#414750;--hover:#303e52;--shadow:0 1px 3px #0006}
+:root[data-theme=light]{--crumb-border:#3876c7;--crumb-bg:#d5e7ff;--crumb-parent:#777;--crumb-current:#000;--crumb-separator:#999;--icon-color:#444746;--op-hover:#000;--group-hover:#666;--incoming:#009e73;--outgoing:#d55e00;--bg:#fff;--surface:#fff;--panel:#f8f9fa;--group:hsl(212 40% 96%);--group-head:#e9eff6;--rule:#dadce0;--op-border:#777;--group-border:#aaa;--text:#041e49;--muted:#5f6368;--accent:#1a73e8;--accent-wash:#c2e7ff;--hatch:color-mix(in srgb,var(--muted) 16%,transparent);--paired:var(--op-border);--tensor:var(--group);--tensor-border:#7c94a6;--tensor-text:#294f69;--edge:var(--group-border);--scope:#555;--scope-wash:#e0e3e7;--hover:#e8f0fe;--shadow:0 1px 3px #182c4914}
+:root{color-scheme:light}@media(prefers-color-scheme:dark){:root{color-scheme:dark}}:root[data-theme=dark]{color-scheme:dark}:root[data-theme=light]{color-scheme:light}*{box-sizing:border-box}html,body{height:100%;margin:0}body{font:13px/1.5 var(--sans);color:var(--text);background:var(--bg);overflow:hidden}button,select{font:inherit;color:inherit}button{cursor:pointer;border:1px solid var(--rule);border-radius:4px;background:var(--surface);padding:6px 10px}button:hover{background:var(--hover)}button:disabled{opacity:.4;cursor:default}button:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:3px}[hidden]{display:none!important}.app{height:100%;display:flex;flex-direction:column}.appbar{height:44px;flex:none;display:flex;align-items:center;gap:12px;padding:0 16px;border-bottom:1px solid var(--rule);background:var(--surface)}.appbar strong{font-size:14px;font-weight:600;white-space:nowrap}.tag{font:10px var(--mono);color:var(--muted);border:1px solid var(--rule);padding:3px 6px;border-radius:3px}.spacer{flex:1}.icon{width:30px;height:30px;padding:0;font-size:17px}.workspace{flex:1;min-height:0;display:flex;position:relative}.canvas{flex:1;min-width:0;position:relative;background:var(--bg);overflow:hidden}.viewport{position:absolute;inset:0;overflow:hidden;cursor:grab;touch-action:none;outline-offset:-3px}.viewport.drag{cursor:grabbing;user-select:none}.stage{position:absolute;inset:0}.architecture{width:100%;height:100%;overflow:hidden}svg{display:block;flex:none;overflow:visible;font-family:var(--sans)}svg text{user-select:none;pointer-events:none;fill:var(--text)}.edge{stroke:var(--edge);stroke-width:var(--edge-stroke);fill:none;pointer-events:none}.edge.related{stroke:var(--accent);stroke-width:var(--highlight-stroke)}marker path{fill:var(--edge)}.residual-label{font:10px var(--mono);fill:var(--muted)}.op,.tensor,.group-select,.fold,.more{cursor:pointer;outline:none}.op rect,.op circle{fill:color-mix(in srgb,var(--surface),var(--text) var(--far-fill,0%));stroke:var(--op-border);stroke-width:var(--node-stroke)}.arch-boundary rect{fill:var(--surface);stroke:var(--op-border);stroke-width:var(--node-stroke)}.arch-boundary text{font-size:var(--node-font);font-weight:500}.op text{font-size:var(--node-font);font-weight:500}.op .math-symbol{fill:none;stroke:var(--text);stroke-width:1.5;stroke-linecap:round;pointer-events:none}.residual-flow{stroke:var(--edge);stroke-width:var(--edge-stroke)}.fork-point{fill:var(--edge)}.fork-point.tensor-selected{fill:var(--accent)}.swatch.math-key{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:50%;font-style:normal;font-size:14px;line-height:14px;margin:0 2px}.op.io-incoming rect,.op.io-incoming circle{stroke:var(--incoming);stroke-width:1.5}.op.io-outgoing rect,.op.io-outgoing circle{stroke:var(--outgoing);stroke-width:1.5}.op.selected rect,.op.selected circle{stroke:var(--accent);stroke-width:var(--selected-stroke);fill:var(--accent-wash)}.op:hover:not(.selected):not(.io-incoming):not(.io-outgoing) rect,.op:hover:not(.selected):not(.io-incoming):not(.io-outgoing) circle{stroke:var(--op-hover)}.op:focus-visible rect,.op:focus-visible circle{stroke:var(--accent);stroke-width:var(--selected-stroke)}.tensor{opacity:1;pointer-events:auto}.tensor.boundary,.tensor.selected,.tensor:hover{opacity:1;pointer-events:auto}.tensor .tensor-hit{fill:transparent;stroke:none}.tensor text{font:10px var(--mono);fill:var(--group-border)}.tensor.selected text{fill:var(--accent);font-weight:500}.tensor-flow{cursor:pointer;outline:none}.edge-area{fill:transparent;stroke:none;pointer-events:all}.edge-hit{fill:none;stroke:transparent;stroke-width:16;pointer-events:stroke}.tensor .tensor-underline{stroke:transparent;stroke-width:1}.tensor.selected .tensor-underline{stroke:var(--accent)}.group-bg{cursor:pointer;fill:var(--group);stroke:var(--group-border);stroke-width:var(--node-stroke)}.group-bg:hover:not(.is-selected){stroke:var(--group-hover)}.group-bg.is-selected{stroke:var(--accent);stroke-width:var(--selected-stroke);fill:var(--accent-wash)}.group-select .title{font-size:var(--group-font);font-weight:700}.group-select .hit{fill:transparent;stroke:transparent}.group-select:focus-visible .hit{stroke:var(--accent);stroke-width:2}.more rect,.fold rect{fill:transparent;stroke:none}.more:hover rect,.fold:hover rect{fill:var(--op-hover);fill-opacity:.07}.more:active rect,.fold:active rect{fill:var(--op-hover);fill-opacity:.14}.more:focus-visible rect,.fold:focus-visible rect{fill:var(--hover);fill-opacity:1;stroke:var(--accent);stroke-width:1}.more path,.more circle,.fold path{stroke:none;fill:var(--icon-color);pointer-events:none}.module-type{font:10px var(--mono);fill:var(--muted)}.group-summary{font:10px var(--mono);fill:var(--muted)}.crumb{position:absolute;left:18px;top:12px;z-index:2;display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--rule);border-radius:4px;padding:3px 8px;font-size:12px}.crumb button{border:0;padding:2px 4px;color:var(--accent)}.legend{flex-wrap:wrap;max-width:calc(100% - 190px);position:absolute;bottom:16px;left:20px;display:flex;gap:15px;align-items:center;color:var(--muted);font-size:11px;padding:6px 8px;background:var(--bg);pointer-events:none}.legend span{display:flex;gap:6px;align-items:center}.swatch{width:20px;height:12px;border:1px solid var(--op-border);border-radius:3px;background:var(--surface)}.swatch.tensor-key{position:relative;width:24px;height:12px;border:0;background:none;border-radius:0}.swatch.tensor-key::before{content:"";position:absolute;left:0;right:0;top:6px;border-top:1px solid var(--muted)}.swatch.tensor-key::after{content:"";position:absolute;right:0;top:3px;width:6px;height:6px;border-right:1px solid var(--muted);border-top:1px solid var(--muted);transform:rotate(45deg)}.swatch.group-key{border-color:var(--group-border);background:var(--group)}.zoom{position:absolute;bottom:15px;right:16px;display:flex;border:1px solid var(--rule);border-radius:5px;box-shadow:var(--shadow);overflow:hidden;background:var(--surface)}.zoom button{display:flex;align-items:center;justify-content:center;height:30px;border:0;border-radius:0;min-width:30px;padding:5px 8px}.zoom button+button{border-left:1px solid var(--rule)}.zoom .percent{font:11px var(--mono);min-width:48px}.details{width:324px;flex:none;border-left:1px solid var(--rule);background:var(--surface);display:flex;flex-direction:column;min-height:0}.details-head{padding:15px 18px;border-bottom:1px solid var(--rule)}h2{font-size:13px;margin:0 0 16px;font-weight:600}.layer-line{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--muted)}.layer-value{color:var(--text);font:11px var(--mono)}.details-body{overflow:auto;flex:1;min-height:0}.selected-info{padding:20px 18px 16px}.kind{font:10px var(--mono);color:var(--accent);text-transform:uppercase;letter-spacing:.07em}.selected-info h3{font-size:18px;font-weight:500;line-height:1.4;margin:6px 0}.path{font:10px var(--mono);color:var(--muted);overflow-wrap:anywhere}.section{padding:15px 18px;border-top:1px solid var(--rule)}.section h4{font-size:11px;font-weight:600;margin:0 0 12px;color:var(--muted)}.property{display:flex;justify-content:space-between;gap:16px;padding:5px 0;font-size:12px}.property span:first-child{color:var(--muted)}.property span:last-child{font:11px/1.8 var(--mono);text-align:right}.link{border:0;background:none;color:var(--accent);padding:5px 0;text-align:left;display:block;font-size:12px;max-width:100%;overflow-wrap:anywhere}.link:hover{background:none;text-decoration:underline}.primary{border-color:var(--accent);color:var(--accent);width:100%;margin-top:14px}.hint{color:var(--muted);font-size:12px;line-height:1.7;margin:0}.nodes{display:grid;gap:4px}.node-row{display:flex;align-items:center;gap:10px;text-align:left;width:100%;border:0;padding:6px 0}.node-row b{font:10px var(--mono);color:var(--muted);font-weight:400}.footnote{padding:12px 18px;border-top:1px solid var(--rule);font-size:10px;color:var(--muted);background:var(--panel)}.small-only{display:none}.sr-only{position:absolute;clip-path:inset(50%);width:1px;height:1px;overflow:hidden}
+@media(max-width:1000px){.details{width:290px}.legend{gap:8px;left:8px;font-size:10px}}
+@media(max-width:700px){.details{position:absolute;z-index:5;right:0;top:0;bottom:0;width:min(310px,calc(100vw - 44px));box-shadow:var(--shadow)}.workspace:not(.show-details) .details{display:none}.small-only{display:block}.appbar{padding:0 10px;gap:8px}.legend{bottom:57px;max-width:calc(100% - 16px)}.zoom{bottom:15px}.appbar .tag{font-size:9px}}
+.icon{display:flex;align-items:center;justify-content:center}.control-icon{width:18px;height:18px;fill:currentColor;flex:none}.edge.no-arrow{marker-end:none!important}.edge.incoming{stroke:var(--incoming);stroke-width:var(--highlight-stroke)}.edge.outgoing{stroke:var(--outgoing);stroke-width:var(--highlight-stroke)}
+.graph-menu{position:fixed;z-index:20;min-width:172px;max-width:calc(100vw - 16px);padding:6px 0;background:var(--surface);border:1px solid var(--rule);border-radius:4px;box-shadow:0 4px 6px -1px #0002,0 2px 4px -2px #0002}.graph-menu button{display:block;width:100%;text-align:left;border:0;border-radius:0;padding:7px 14px;font-size:12px}.graph-menu button:focus-visible{outline-offset:-2px}.group-select:focus-visible .hit{stroke-dasharray:2 2;stroke-width:1}
+
+.pair-view{position:absolute;inset:0;display:flex;flex-direction:column;min-height:0;background:var(--surface);overflow:hidden}
+/* Model Explorer subgraph-breadcrumbs: same dimensions, colors and navigation affordance. */
+.pair-navigation{align-self:flex-start;flex:none;display:flex;align-items:center;max-width:calc(100% - 24px);margin:8px 12px;padding:4px 8px;border:1px solid var(--crumb-border);background:var(--crumb-bg);border-radius:4px;box-sizing:border-box;font-size:13px;line-height:20px;overflow-x:auto;white-space:nowrap}
+.pair-navigation button{display:flex;align-items:center;border:0;border-radius:0;padding:0;background:transparent;color:var(--crumb-parent);font:inherit}
+.pair-navigation button:hover{background:transparent;text-decoration:underline}.pair-navigation button:focus-visible{outline-offset:1px}
+.pair-navigation [aria-current]{color:var(--crumb-current)}.pair-navigation .separator{width:16px;height:16px;margin:0 3px;fill:var(--crumb-separator)}
+.canvas.pair-active>.viewport,.canvas.pair-active>.crumb,.canvas.pair-active>.legend,.canvas.pair-active>.zoom{visibility:hidden;pointer-events:none}
+.pair-graphs{flex:1;min-height:180px;overflow:auto;display:flex}.pair-pane{flex:1;min-width:280px;display:flex;flex-direction:column}.pair-pane+.pair-pane{border-left:1px solid var(--rule)}.pair-pane-head{height:36px;flex:none;display:flex;align-items:center;justify-content:space-between;padding:0 16px;border-bottom:1px solid var(--rule);font-size:12px}.pair-pane-head span{color:var(--muted);font-size:10px}.pair-canvas{flex:1;min-height:180px;overflow:hidden}.pair-canvas svg{width:100%;height:100%}.pair-graph .op{cursor:default}.pair-graph .pick{cursor:pointer;outline:none}.pair-graph .pick .flow{fill:none;stroke:var(--edge);stroke-width:1}.pair-graph .pick .hit{fill:transparent;stroke:transparent;stroke-width:16;pointer-events:all}.pair-graph .label-hit{fill:transparent;stroke:none;pointer-events:all}.pair-graph .pick text{font:10px var(--mono);fill:var(--muted)}.pair-graph .pick:hover .flow,.pair-graph .pick:focus-visible .flow,.pair-graph .pick.chosen .flow{stroke:var(--accent);stroke-width:var(--highlight-stroke)}.pair-graph .pick.chosen text{fill:var(--accent)}.pair-graph .pick:focus-visible .hit{stroke:var(--accent);stroke-opacity:.12}.pair-controls{flex:none;padding:10px 14px;border-top:1px solid var(--rule);display:flex;gap:12px;align-items:center;flex-wrap:wrap}.pair-selection{flex:1;font-size:11px;min-width:200px}.pair-selection span{color:var(--muted)}.pair-selection code{font:10px var(--mono);overflow-wrap:anywhere}.pair-add{border-color:var(--accent);color:var(--accent)}.pair-list{padding:0 14px;max-height:90px;overflow:auto;flex:none}.pair-row{display:flex;gap:10px;align-items:center;padding:6px 0;border-top:1px solid var(--rule);font:10px var(--mono)}.pair-row code{flex:1;overflow-wrap:anywhere}.pair-row button{border:0;font-size:11px;padding:2px 6px}.popup-note{font-size:10px;color:var(--muted);padding:5px 14px 9px;flex:none}
+
+ .tensor .label-bg{fill:transparent;stroke:none}.tensor .tensor-glyph,.tensor .tensor-leader{fill:none;stroke:var(--group-border);stroke-width:1;pointer-events:none;stroke-linejoin:round}.tensor.is-paired:not(.selected) .label-bg{fill:var(--tensor)}.tensor.selected .label-bg{fill:var(--accent-wash);stroke:var(--accent);stroke-width:var(--selected-stroke)}.tensor.is-paired text{fill:var(--paired)}.tensor.is-paired .tensor-glyph,.tensor.is-paired .tensor-leader{stroke:var(--paired)}.tensor .cube-body{fill:none;stroke:var(--muted);stroke-width:1;stroke-linejoin:round}.tensor .cube-seams{fill:none;stroke:var(--muted);stroke-width:.8}.tensor.is-paired .cube-body{fill:var(--paired);stroke:var(--paired)}.tensor.is-paired .cube-seams{stroke:var(--surface)}.tensor.selected .tensor-leader{stroke:var(--accent)}.tensor-key-dot{display:block;width:11px;height:11px;border:0;background:none}.tensor-key-dot svg{width:11px;height:11px;fill:none;stroke:var(--muted);stroke-width:1;stroke-linejoin:round}.tensor-key-dot.paired-key .cube-body{fill:var(--paired);stroke:var(--paired)}.tensor-key-dot.paired-key .cube-seams{stroke:var(--surface)}
+.edge:not(.paired){stroke-dasharray:4 3}.edge.paired{stroke-width:var(--edge-stroke);stroke-dasharray:none}.tensor:not(.is-paired) .tensor-leader{stroke-dasharray:3 2}.edge.paired:not(.incoming):not(.outgoing):not(.tensor-selected){stroke:var(--paired)}.tensor.is-paired .tensor-leader{stroke-width:var(--edge-stroke)}.pair-state{display:flex;align-items:center;gap:7px;margin-bottom:8px;font-size:12px}.pair-info-row{font:10px/1.6 var(--mono);padding:6px 0;overflow-wrap:anywhere}.pair-state-note{font-size:11px;color:var(--muted);margin:6px 0 0}.menu-popup-icon{width:16px;height:16px;margin-right:8px;vertical-align:middle;fill:currentColor}
+.more .pair-icon{fill:none;stroke:var(--icon-color);stroke-width:1.25;stroke-linejoin:round;stroke-linecap:round}
+.graph-tooltip{position:fixed;z-index:40;pointer-events:none;padding:5px 8px;border-radius:4px;background:var(--icon-color);color:var(--surface);font:11px/16px var(--sans);max-width:calc(100vw - 16px);box-shadow:var(--shadow)}
+.more.has-sync .pair-icon{stroke:var(--icon-color)}
+#stage .tensor.sync-covered:not(.selected) .label-bg{fill:var(--scope-wash);stroke:none}
+#stage .tensor.sync-covered:not(.selected) .tensor-leader{stroke:var(--scope)}
+#stage .tensor-flow.sync-covered .edge:not(.incoming):not(.outgoing):not(.tensor-selected){stroke-width:var(--edge-stroke)}
+#stage .tensor-flow.sync-covered .edge{stroke:var(--scope);marker-end:url(#scope-arrow)}
+#stage .fork-point.sync-covered:not(.tensor-selected){fill:var(--scope)}
+#stage .tensor.selected text{fill:var(--accent)}
+#stage .group-bg.sync-owner:not(.is-selected){stroke:var(--group-hover);stroke-width:var(--node-stroke)}
+.pair-graph .input-context .flow{fill:none;stroke:var(--edge);stroke-width:1}.pair-graph .input-context text{font:10px var(--mono);fill:var(--muted)}
+#stage .edge.incoming,#stage .edge.outgoing,#stage .edge.tensor-selected{stroke-width:var(--highlight-stroke)}
+.tensor .label-hatch{fill:url(#unconfigured-hatch);stroke:none;pointer-events:none}.tensor.is-paired .label-hatch{display:none}
+.tensor .empty-frame,.tensor-key-dot .empty-frame{fill:none;stroke:var(--group-border);stroke-width:1;stroke-dasharray:2 1.5;stroke-linejoin:round}
+.tensor-key-dot:not(.paired-key){background:repeating-linear-gradient(135deg,transparent 0 4px,var(--hatch) 4px 5px)}
+#stage .tensor:not([data-popup]),#stage .tensor[data-popup=""],#stage .tensor-flow:not([data-popup]){cursor:default}
+#stage .more.scope-active:not(:focus-visible) rect{fill:var(--op-hover);fill-opacity:.07;stroke:none}
+#stage .more.scope-active:active:not(:focus-visible) rect{fill-opacity:.14}
+#stage .more.scope-active .pair-icon{stroke:var(--scope)}
+#stage .tensor.sync-covered .label-hatch{display:none}
+#stage .tensor.sync-covered>text{fill:var(--scope)}
+#stage .tensor.sync-covered .empty-frame,#stage .tensor.sync-covered .cube-body{stroke:var(--scope)}
+#stage .tensor.is-paired.sync-covered .cube-body{fill:var(--scope)}
+
+
+.pair-view .pair-graphs{min-height:100px}.pair-pane{min-width:260px}.pair-pane-head{gap:8px;padding:0 10px}
+.pair-canvas{position:relative;min-height:100px;touch-action:none;cursor:grab;outline:none}.pair-canvas.dragging{cursor:grabbing}.pair-canvas:focus-visible{outline:1px solid var(--accent);outline-offset:-2px}
+.pair-graph{overflow:hidden}.pair-graph .raw-bg{fill:var(--group);stroke:var(--group-border);stroke-width:1.2}
+.pair-graph .raw-edge{fill:none;stroke:var(--group-border);stroke-width:1}.pair-graph .raw-edge.paired{stroke:var(--op-border)}.pair-graph .raw-edge.chosen{stroke:var(--accent);stroke-width:1.5}
+.pair-graph .raw-op{cursor:default}.pair-graph .raw-op text{font:500 11px var(--sans)}
+.pair-graph .pick .label-bg{fill:transparent;stroke:none}.pair-graph .pick.paired .label-bg{fill:var(--group)}.pair-graph .pick.chosen .label-bg{fill:var(--accent-wash);stroke:var(--accent);stroke-width:1.2}
+.pair-graph .pick .cube-body{fill:var(--op-border);stroke:var(--op-border)}.pair-graph .pick .cube-seams{stroke:var(--surface);fill:none;stroke-width:.8}.pair-graph .pick .empty-frame{fill:none;stroke:var(--group-border);stroke-dasharray:2 1.5}
+.pair-graph .pick text{font:10px var(--mono);fill:var(--op-border)}.pair-graph .pick:hover .label-bg{fill:var(--scope-wash)}.pair-graph .pick.chosen text{fill:var(--accent)}
+.pair-graph .pick:focus-visible .label-bg{stroke:var(--accent);stroke-width:1.2}.pair-graph .raw-label-leader{stroke:var(--group-border);stroke-width:1;fill:none}
+.pair-graph .raw-op:hover rect,.pair-graph .raw-op:hover circle{stroke:var(--op-hover)}
+.pair-camera{position:absolute;right:8px;bottom:8px;display:flex;background:var(--surface);border:1px solid var(--rule);border-radius:4px;overflow:hidden}.pair-camera button{border:0;border-radius:0;padding:3px 7px;font-size:12px}.pair-camera button+button{border-left:1px solid var(--rule)}.pair-camera .pair-percent{font:10px var(--mono);min-width:42px}
+.pair-selection code{display:inline-block;max-width:100%;vertical-align:middle}.pair-list{max-height:74px}.pair-row code{min-width:0}.popup-note{font-size:9px}
+
+.raw-connection[data-pick]{cursor:pointer}.raw-edge-hit{fill:none;stroke:transparent;stroke-width:12;pointer-events:stroke}.raw-connection:hover .raw-edge:not(.chosen){stroke:var(--scope)}
+
+.pair-details-section{border-top:0;padding:18px}.pair-details-section h4{margin-bottom:6px}.pair-details-section>.pair-navigation{margin:0 0 20px;max-width:100%;width:max-content}.pair-details-section h4{margin-bottom:16px}
+#pair-draft{padding-bottom:16px;margin-bottom:8px;border-bottom:1px solid var(--rule)}#pair-draft .pair-selection{min-width:0}.pair-selection .pair-side{margin:0 0 12px}.pair-side span{display:block;margin-bottom:4px;font:11px var(--sans);color:var(--muted)}.pair-side code{font:11px/1.6 var(--mono);overflow-wrap:anywhere}
+#pair-details .pair-add{width:100%;padding:5px 8px;margin-top:2px}#pair-details .pair-list{padding:0;max-height:none;overflow:visible}#pair-details .pair-row{align-items:flex-start;padding:12px 0;gap:8px}#pair-details .pair-row:first-child{border-top:0}.pair-row .pair-values{min-width:0;flex:1}.pair-values .pair-side+.pair-side{margin-top:9px}.pair-row button{color:var(--muted)}.pair-empty{font-size:12px;color:var(--muted);margin:0}
+.workspace.pair-mode .details>.footnote{display:none}
+@media(max-width:700px){.workspace.pair-mode .details{position:relative;inset:auto;width:240px;max-width:45vw;box-shadow:none}.workspace.pair-mode:not(.show-details) .details{display:none}}
+.module-io{border-bottom:1px solid var(--rule);font-size:11px}.module-io summary{padding:9px 0;cursor:pointer;color:var(--muted)}.module-io summary>span{float:right;font-family:var(--mono)}.module-io-row{display:grid;grid-template-columns:48px minmax(0,1fr);gap:3px 6px;padding:7px 0}.module-io-row>span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.module-io-row>small{grid-column:2;color:var(--muted);overflow-wrap:anywhere}.module-io-row>code{font:10px var(--mono)}
+.module-io-toggle{display:flex;align-items:center;gap:7px;font-size:11px;color:var(--muted);margin-bottom:14px}.module-io-toggle input{margin:0}
+
+.crumb{top:8px;left:12px;z-index:12;min-height:28px;border:1px solid var(--crumb-border);border-radius:4px;background:var(--crumb-bg);padding:4px 8px;gap:6px;font:13px/20px var(--sans)}
+.crumb [aria-current]{color:var(--text)}.crumb .separator{color:var(--muted)}
+.graph-controls{top:44px!important}.control-popover{top:90px!important}
+.canvas.pair-active>.crumb{visibility:visible;pointer-events:auto}.pair-view{top:44px}
+.layer-entry{cursor:pointer;outline:none}.layer-entry rect{fill:transparent;stroke:none}.layer-entry:hover rect{fill:var(--op-hover);fill-opacity:.07}.layer-entry:focus-visible rect{stroke:var(--accent)}.layer-entry path{fill:var(--icon-color)}
+.model-page .legend tr:has(.op-key),.model-page .legend tr:has(.tensor-key-empty),.model-page .legend tr:has(.tensor-key-set){display:none}
+#pair-view-title{font:700 12px Arial,sans-serif;margin-bottom:16px}
+
+.model-node{cursor:pointer;outline:none}.model-node rect{fill:color-mix(in srgb,var(--surface),var(--text) var(--far-fill,0%));stroke:var(--op-border);stroke-width:var(--node-stroke)}.model-node text{font-size:11px;font-weight:500}.model-layer rect{fill:var(--group);stroke:var(--group-border)}.model-layer text{font-weight:700}.model-node:hover rect{stroke:var(--op-hover)}.model-node.selected rect{stroke:var(--accent);stroke-width:2;fill:var(--accent-wash)}.model-node:focus-visible rect{stroke:var(--accent);stroke-width:2}.model-junction{fill:var(--edge);pointer-events:none}.model-edge{stroke:var(--edge);stroke-width:1;fill:none;pointer-events:none}.model-edge.kv-dependency{stroke:var(--incoming);stroke-width:1.5}.model-edge-label{font-size:10px;fill:var(--incoming)}
+.model-page .legend tr:has(.op-key){display:table-row}
+
+.model-decoder-frame{fill:var(--group);stroke:var(--group-border);stroke-width:1.2;pointer-events:none}.model-decoder-title{font-size:11px;font-weight:700;pointer-events:none}.model-layer:not(.selected) rect{fill:var(--surface)}.model-edge.ple-dependency{stroke:var(--incoming);stroke-width:1.5}
+
+.functional-block-key{background:var(--group)!important;border-color:var(--group-border)!important;border-style:solid!important}
+.model-functional-block{cursor:pointer;outline:none}.model-functional-block rect{fill:var(--group);stroke:var(--group-border);stroke-width:var(--node-stroke)}.model-functional-block:hover rect{stroke:var(--group-hover)}.model-functional-block.selected rect,.model-functional-block:focus-visible rect{stroke:var(--accent);stroke-width:var(--selected-stroke)}.model-block-title{pointer-events:none}.model-block-title rect{fill:var(--bg);stroke:none}.model-block-title text{font-size:var(--group-font);font-weight:700;fill:var(--text)}
+.model-math text{font-size:17px;font-weight:400}
+.stack-backs rect{fill:var(--group);stroke:var(--group-border);stroke-width:1.2}
+.model-node.model-stack rect,.model-node.model-module rect{fill:var(--group);stroke:var(--group-border)}
+.model-stack:hover:not(.selected) rect,.model-module:hover:not(.selected) rect{stroke:var(--group-hover)}.model-stack text,.model-module text{font-weight:700}.model-stack .stack-count{font-weight:400;fill:var(--muted);font-size:10px}
+.model-node.selected rect{fill:var(--accent-wash);stroke:var(--accent)}
+.model-node.io-incoming:not(.selected) rect{stroke:var(--incoming);stroke-width:1.5}.model-node.io-outgoing:not(.selected) rect{stroke:var(--outgoing);stroke-width:1.5}.model-edge.incoming{stroke:var(--incoming)}.model-edge.outgoing{stroke:var(--outgoing)}.model-edge{stroke-linejoin:round;stroke-linecap:round}.model-page .stack-legend-key{box-shadow:2px 2px 0 var(--bg),3px 3px 0 var(--group-border)}
+.stack-toggle{cursor:pointer;outline:none}.stack-toggle rect{fill:transparent;stroke:none}.stack-toggle path{fill:var(--icon-color)}.stack-toggle:hover rect{fill:var(--op-hover);fill-opacity:.07}.stack-toggle:focus-visible rect{fill:var(--hover);stroke:var(--accent);stroke-width:1}
+.stack-list{height:100%;overflow:auto;overscroll-behavior:contain;scrollbar-width:thin;background:var(--surface);border-radius:3px;outline:none;color:var(--text);font-family:var(--sans)}
+.stack-row{display:flex;align-items:center;min-height:27px;border-bottom:1px solid var(--rule)}
+.stack-row:last-child{border:0}.stack-row.selected{background:var(--accent-wash);box-shadow:inset 2px 0 var(--accent)}
+.stack-list button{color:var(--text);background:transparent;border:0;border-radius:3px;font:500 11px var(--sans);cursor:pointer;height:25px;padding:0 8px}
+.stack-list button:hover{background:var(--hover)}.stack-list button:focus-visible{outline:1px solid var(--accent);outline-offset:-1px}
+.stack-select{flex:1;text-align:left}.stack-list .stack-enter{flex:none;width:28px;padding:4px 6px}.stack-enter svg{width:16px;height:16px;fill:var(--icon-color)}
+#workspace.native-model-active > :not(main){display:none!important}#native-model-root{position:absolute;inset:0;z-index:4;border:0;width:100%;height:100%;background:var(--bg)}.native-model-active #viewport,.native-model-active .canvas>.crumb,.native-model-active .canvas>.graph-controls,.native-model-active .canvas>.legend,.native-model-active .canvas>.zoom,.native-model-active>.details,.native-model-active>.details-reopen{display:none!important}
+ #execution-stage-control{display:flex;align-items:center;gap:7px;margin-left:14px;font-size:11px;color:var(--muted)}#execution-stage-control select{font-size:11px;padding:3px 6px;background:var(--surface);color:var(--text);border:1px solid var(--rule);border-radius:4px}
+#model-select{font:inherit;font-size:11px;max-width:150px;min-width:0;margin-left:6px;padding:5px 7px;color:var(--text);background:var(--surface);border:1px solid var(--rule);border-radius:4px}#model-select:focus-visible{outline:2px solid var(--accent)}@media(max-width:520px){.appbar .tag{display:none}#model-select{max-width:125px}}
+.subgraph-entry{cursor:pointer;outline:none}.subgraph-entry rect{fill:var(--crumb-bg);stroke:var(--crumb-border);stroke-width:1}.subgraph-entry text{font:13px 'Material Icons';fill:var(--crumb-border);pointer-events:none}.subgraph-entry:hover rect,.subgraph-entry:focus-visible rect{stroke:var(--accent);stroke-width:1.5}
+.crumb button{background:transparent;border:0;border-radius:0;padding:0;color:var(--crumb-parent);font:inherit}.crumb button:hover{background:transparent;text-decoration:underline}.crumb .separator{display:inline-block;width:16px;height:16px;line-height:16px;margin:0 3px;text-align:center;color:var(--crumb-separator)}
+.subgraph-entry rect{fill:var(--indicator-bg,#d5e7ff);stroke:var(--indicator-border,#135cbb)}.subgraph-entry text{fill:var(--indicator-border,#135cbb)}:root[data-theme=dark]{--indicator-border:var(--accent);--indicator-bg:var(--accent-wash)}:root[data-theme=light]{--indicator-border:#135cbb;--indicator-bg:#d5e7ff}
+
+.module-arch .module-arch-block{cursor:pointer;outline:none}.module-arch-block rect{fill:var(--group);stroke:var(--group-border);stroke-width:1.2}.module-arch-block text{font:700 11px var(--sans);fill:var(--text)}.module-arch-block.selected rect{fill:var(--accent-wash);stroke:var(--accent);stroke-width:2}.module-arch-block:hover rect{stroke:var(--group-hover)}.module-arch .group-title{font:700 11px var(--sans);fill:var(--text)}.module-arch .arch-boundary{cursor:pointer}.module-arch .arch-boundary.selected rect{stroke:var(--accent);fill:var(--accent-wash)}
+
+.pair-navigation{height:38px;flex:none;display:flex;align-items:center;gap:8px;padding:0 14px;background:var(--crumb-bg);border-bottom:1px solid var(--rule);font:12px var(--sans);color:var(--crumb-current)}
+.pair-navigation button{border:0;background:transparent;color:var(--crumb-parent);font:inherit;cursor:pointer;padding:4px 0}.pair-navigation .separator{color:var(--crumb-separator)}
+.pair-graphs:has(.mapping-pane){display:flex;min-height:0;flex:1;overflow:auto}.mapping-pane{display:flex;flex-direction:column;flex:1;min-width:260px;border-right:1px solid var(--rule)}.mapping-pane:last-child{border-right:0}.mapping-pane header{font:500 12px var(--sans);height:32px;display:flex;align-items:center;padding:0 12px;border-bottom:1px solid var(--rule);background:var(--surface)}.mapping-pane iframe{border:0;display:block;width:100%;flex:1;min-height:0}
+.mapping-source,.mapping-draft,.mapping-pairs{padding:8px 12px}.mapping-source label{display:block;font:500 12px var(--sans);margin-bottom:6px}.mapping-source select{width:100%;min-width:0;background:var(--surface);color:var(--text);border:1px solid var(--rule);border-radius:4px;padding:6px;font:12px var(--sans)}.mapping-source button,.mapping-draft>button,.mapping-pairs button{background:var(--surface);color:var(--text);border:1px solid var(--rule);border-radius:4px;padding:5px 8px;font:12px var(--sans);cursor:pointer;margin-top:8px}.mapping-source button:hover,.mapping-draft>button:hover,.mapping-pairs button:hover{background:var(--hover)}.mapping-draft>button:disabled{opacity:.4;cursor:default}.mapping-source .hint,.mapping-pairs .hint{font:11px/1.5 var(--sans);color:var(--muted)}.mapping-draft .pair-side,.mapping-pairs .pair-side{display:flex;flex-direction:column;gap:4px;margin-bottom:12px;overflow-wrap:anywhere}.pair-side code{white-space:normal}.pair-side small{color:var(--muted);font:11px/1.5 var(--sans)}#mapping-feedback{font:11px/1.5 var(--sans);color:var(--muted)}
+[data-mapping-anchor]{cursor:pointer}.module-arch .tensor.paired .label-hatch{display:block;fill:var(--surface);stroke-dasharray:none}.module-arch .tensor.paired .tensor-leader{stroke-dasharray:none}.module-arch .tensor:hover .label-hatch{fill:var(--scope-wash)}.module-arch .tensor:focus-visible .label-hatch{stroke:var(--scope);stroke-width:2}
+.tensor[data-mapping-anchor] .label-hatch{pointer-events:all}.pair-view:has(.pair-navigation){top:0}
+.tensor.mapping-hover .label-hatch{fill:var(--scope-wash)}.edge.mapping-hover,.tensor-flow.mapping-hover .flow{stroke:var(--scope)}
+.tensor.mapping-hover .tensor-leader{stroke:var(--scope)}.pair-semantic-label{display:block;color:var(--muted);font:500 11px var(--sans);margin:0 0 8px}
+</style><link rel="stylesheet" href="model_tree.css?v=142"><link rel="stylesheet" href="embedded.css?v=169"><link rel="stylesheet" href="mapping_interaction.css">
+<div class="app"><header class="appbar"><strong>Layer Graph</strong><span class="tag">PREVIEW 141</span><select id="model-select" aria-label="Preview model"><option value="gemma">Gemma 4 E2B</option><option value="qwen35">Qwen3.5-2B</option><option value="qwen38">Qwen3.8-27B</option></select><span class="spacer"></span><button id="modules-toggle" aria-expanded="false">Modules</button><button id="details-toggle" class="small-only" aria-expanded="false">Details</button><button id="theme" class="icon" aria-label="Switch theme" title="Switch theme"><svg class="control-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm0 18V4a8 8 0 0 1 0 16z"/></svg></button></header>
+<div class="workspace" id="workspace"><aside id="model-tree" class="model-tree" aria-label="Model modules"></aside><main class="canvas" aria-label="Interactive architecture graph"><div class="viewport" id="viewport" tabindex="0" aria-label="Graph canvas, drag empty space to pan"><div class="stage" id="stage"></div></div><nav class="crumb" id="crumb" aria-label="Graph location" hidden></nav><div class="graph-controls" role="toolbar" aria-label="Graph controls"><div class="graph-search"><span class="material-icon" aria-hidden="true">search</span><input id="graph-search" type="search" autocomplete="off" placeholder="Search nodes/blocks by regex" aria-label="Search nodes or blocks" aria-controls="graph-search-results" aria-expanded="false"><button class="search-clear" id="search-clear" aria-label="Clear search" hidden><span class="material-icon" aria-hidden="true">close</span></button></div><i class="control-divider"></i><button id="view-options" class="graph-control" aria-label="Display options" title="Display options" aria-expanded="false" aria-controls="view-options-menu"><span class="material-icon" aria-hidden="true">visibility</span></button><i class="control-divider"></i><button id="toolbar-fit" class="graph-control" aria-label="Reset graph view" title="Reset graph view · Space"><span class="material-icon" aria-hidden="true">fit_screen</span></button><i class="control-divider"></i><button id="expand-blocks" class="graph-control" aria-label="Expand all blocks" title="Expand all blocks"><span class="material-icon compact" aria-hidden="true">unfold_more_double</span></button><button id="collapse-blocks" class="graph-control" aria-label="Collapse all blocks" title="Collapse all blocks"><span class="material-icon compact" aria-hidden="true">unfold_less_double</span></button></div><div class="control-popover search-results" id="graph-search-results" role="region" aria-label="Search results" hidden></div><div class="control-popover view-options-menu" id="view-options-menu" hidden><label><input id="show-legend" type="checkbox" checked>Legends</label></div><div class="legend" aria-label="Graph legend"><table class="legacy-legend"><tbody><tr><td><i class="legend-key op-key"></i></td><td>Op</td></tr><tr><td><i class="legend-key block-key"></i></td><td>Block</td></tr><tr class="functional-block-legend" hidden><td><i class="legend-key functional-block-key"></i></td><td>Block</td></tr><tr data-legend-selected hidden><td><i class="legend-key selected-key"></i></td><td>Selected</td></tr><tr data-legend-io hidden><td><i class="legend-key input-key"></i></td><td>Input</td></tr><tr data-legend-io hidden><td><i class="legend-key output-key"></i></td><td>Output</td></tr><tr><td><i class="legend-key tensor-key-empty"><svg viewBox="0 0 12 12" aria-hidden="true"><rect x="1" y="1" width="10" height="10" rx="1"/></svg></i></td><td>No sync point</td></tr><tr><td><i class="legend-key tensor-key-set"><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M6 .7L11 3.3v5.4L6 11.3 1 8.7V3.3z"/><path class="cube-seams" d="M1 3.3L6 6l5-2.7M6 6v5.3"/></svg></i></td><td>Sync point set</td></tr><tr><td colspan="2"><div class="legend-divider"></div></td></tr><tr class="shortcut"><td>Zoom</td><td>Ctrl+Scroll</td></tr><tr class="shortcut"><td>Pan</td><td>Drag or scroll</td></tr></tbody></table><table class="arch-legend"><tbody>
+<tr><td><i class="legend-key arch-node-key"></i></td><td>Node · structure</td></tr>
+<tr><td><i class="legend-key arch-tensor-key"><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M6 .7L11 3.3v5.4L6 11.3 1 8.7V3.3z"/><path class="seams" d="M1 3.3L6 6l5-2.7M6 6v5.3"/></svg></i></td><td>Tensor · metric</td></tr>
+<tr><td><i class="legend-key arch-summary-key"><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M6 1 11 3.5 6 6 1 3.5Z M1 6 6 8.5 11 6 M1 8.5 6 11 11 8.5"/></svg></i></td><td>Internal summary · Min / Max</td></tr>
+<tr><td><i class="legend-key arch-config-key"><span class="material-icon" aria-hidden="true">subdirectory_arrow_right</span></i></td><td>Enter Mapping</td></tr>
+<tr><td colspan="2"><div class="legend-divider"></div></td></tr>
+<tr class="shortcut"><td>Zoom</td><td>Ctrl+Scroll</td></tr><tr class="shortcut"><td>Pan</td><td>Drag or scroll</td></tr>
+</tbody></table></div><div class="zoom" aria-label="Canvas controls"><button id="out" aria-label="Zoom out" title="Zoom out"><svg class="control-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 11h14v2H5z"/></svg></button><button id="reset" class="percent" aria-label="Reset zoom">100%</button><button id="in" aria-label="Zoom in" title="Zoom in"><svg class="control-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M11 5h2v6h6v2h-6v6h-2v-6H5v-2h6z"/></svg></button><button id="fit" aria-label="Fit graph" title="Fit graph"><svg class="control-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3h6v2H5v4H3zm12 0h6v6h-2V5h-4zM3 15h2v4h4v2H3zm16 0h2v6h-6v-2h4z"/></svg></button></div><section id="pair-view" class="pair-view" role="region" aria-label="Tensor pairs" hidden><div class="pair-graphs" id="pair-graphs"></div></section></main>
+<aside class="details" aria-label="Selection details"><div class="info-resizer" role="separator" aria-label="Resize Details" aria-orientation="vertical" tabindex="0"></div><button class="info-hide" aria-label="Hide Details" title="Hide Details">›</button><div class="details-body" id="details"></div><div class="details-body" id="pair-details" hidden><section class="section pair-details-section"><div id="pair-view-title"></div><h4>Tensor pairs</h4><div id="pair-draft" hidden><div class="pair-selection" id="pair-selection"></div><button class="pair-add" id="pair-add" disabled>Pair tensors</button></div><div class="pair-list" id="pair-list"></div></section><section class="section"><label class="module-io-toggle"><input type="checkbox" id="pair-show-aux">Show auxiliary I/O</label><div id="pair-boundary"></div></section></div></aside><button class="info-show" aria-label="Show Details" title="Show Details">‹</button></div><div id="status" class="sr-only" aria-live="polite"></div></div>
+<div id="graph-tooltip" class="graph-tooltip" role="tooltip" hidden></div>
+<div id="graph-menu" class="graph-menu" role="menu" hidden></div>
+
+<script src="mapping_catalog.js?v=136"></script><script src="semantic_graph.js?v=170"></script><script src="model_layout.js?v=74"></script><script src="arch_layouts.js?v=170"></script>
+<script src="ple_arch.js?v=5"></script>
+<script src="mapping_metrics.js?v=2"></script><script src="ple_mapping.js?v=2"></script><script src="arch_metrics.js?v=3"></script>
+<script src="model_tree_scrollbar.js?v=143"></script><script src="model_tree.js?v=143"></script>
+<script src="raw_op_data.js?v=52b"></script>
+<script src="model_explorer_data.js?v=52b"></script>
+<script>
+(()=>{'use strict';
+// Throwaway interaction prototype: Model Explorer node colors were read from the local vendor.
+// Semantic overview of Gemma 4 E2B decode layer 0; PLE ops 90–99 and Skip Scale op 100 verified against the local official adapter export. No captured values.
+// Expansion uses the same Material Icons as Model Explorer: 0xe5d7 unfold_more / 0xe5d6 unfold_less.
+// SVG paths: google/material-design-icons, src/navigation/{unfold_more,unfold_less}/materialicons/24px.svg.
+// One focused preview tests the agreed visual hierarchy, not alternate page layouts.
+let executionStage='decode',modelTree=null;
+const embedded=true;window.GEMMA_METRIC_DEMO=null;let analysisContext=null;
+let selectedModel=new URLSearchParams(location.search).get('model')||'gemma';if(!['gemma','qwen35','qwen38'].includes(selectedModel))selectedModel='gemma';document.getElementById('model-select').value=selectedModel;
+const semanticModel=window.SEMANTIC_MODEL;let semantic,groups,outputByNode,ops,tensors;
+const groupNames={attention:'Attention',ffn:'Feed Forward',ple:'Per-Layer Gating'};
+// Each block folds its input/output normalization with its computation.
+// Residual additions and the final layer scale remain on the Layer overview.
+const overviewOps=new Set(['add_attn','add_ffn','ple_add','skip_scale']);
+const overviewOrder=['attention','add_attn','ffn','add_ffn','ple','ple_add','skip_scale'];
+function activateLayer(layer){
+ semantic=semanticModel.semantic_graph[semanticModel.layers[layer].def];
+ groups=Object.entries(groupNames).map(([id,name])=>({id,name,input:{attention:'input',ffn:'attn_out',ple:'ffn_out'}[id],output:{attention:'post_attention_value',ffn:'post_ffn_value',ple:'ple_normalized'}[id],ops:semantic.nodes.filter(n=>n.namespace===id&&!overviewOps.has(n.id)).map(n=>n.id),description:name}));
+
+ outputByNode=Object.fromEntries(semantic.nodes.map(n=>[n.id,n.attrs.find(a=>a.key==='semantic_output').value]));
+ ops=Object.fromEntries(semantic.nodes.map(n=>[n.id,{name:n.label,role:n.attrs.find(a=>a.key==='role')?.value||n.label,group:n.namespace,input:n.incomingEdges.map(e=>outputByNode[e.sourceNodeId]||e.sourceNodeId),output:[outputByNode[n.id]],layout:n.layout,purpose:n.attrs.find(a=>a.key==='description')?.value||n.label+' · semantic operation',runtimeTensor:executionStage==='decode'?semanticModel.runtime_bindings[layer]?.[n.id]:undefined}]));
+ tensors=Object.fromEntries([...semantic.inputs.map(n=>[n.id,{name:n.label,producer:null,consumers:[]}]),...semantic.nodes.map(n=>[outputByNode[n.id],{name:n.outputsMetadata[0].attrs[0].value,producer:n.id,consumers:[],group:n.namespace,runtimeTensor:executionStage==='decode'?semanticModel.runtime_bindings[layer]?.[n.id]:undefined}])]);
+ops.skip_scale.name='Multiply';ops.skip_scale.purpose='Layer Scale · Multiply the layer residual by its broadcast scale coefficient.';
+tensors.embedding.name=`Layer ${layer} embedding`;
+tensors.attention_value.name='Attention output';tensors.o_proj_out.name='Projection output';tensors.post_attention_value.name='Attention output';tensors.post_ffn_value.name='Feed Forward output';tensors.ple_normalized.name='Per-Layer Gating output';
+tensors.attn_out.name='Attention residual output';tensors.ffn_out.name='Feed Forward residual output';tensors[outputByNode.ple_add].name='Per-Layer Gating residual output';
+for(const [id,op] of Object.entries(ops))for(const input of op.input)tensors[input].consumers.push(id);
+
+ const source=semanticModel.layers[layer].attrs.attn.kv_shared_from;
+ if(source!=null){tensors.shared_k.name=`K from Layer ${source}`;tensors.shared_v.name=`V from Layer ${source}`;}
+}
+activateLayer(0);
+const state={page:'model',layer:0,hiddenIo:new Set(),selection:null,collapsed:new Set(['attention','ffn','ple']),scope:null,menu:null,zoom:1,x:0,y:0};
+const $=id=>document.getElementById(id),escape=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));let graphHeight=760;let positions={};let edgeIds=new Set();
+const textMeasure=document.createElement('canvas').getContext('2d');
+function labelWidth(label,bold=false){textMeasure.font=`${bold===500?500:bold?700:400} 11px "Google Sans Text"`;return textMeasure.measureText(label).width;}
+function archMetric(anchor,members){
+ if(isModuleArch()&&overviewState.page==='ple_preparation')return pleArchMetric(anchor,members!==undefined);
+ const scope=isModuleArch()?mappingContext(anchor).scope:'decoder_layer_'+state.layer;
+ const input=isModuleArch()&&overviewData().nodes.find(n=>n.id===anchor)?.runtimeInput;
+ const metric=window.archMetricData(input?{...analysisContext,simulatedMetrics:[]}:analysisContext,scope,anchor,members);
+ if(input)metric.title=metric.title.replace('Tensor output','Tensor input');
+ return metric;
+}
+function metricTagWidth(metric){
+ textMeasure.font='500 13px "Google Sans Text"';return Math.ceil(textMeasure.measureText(metric.text).width)+14;
+}
+function metricTag(metric,x,y,configured){
+ const withIcon=typeof configured==='boolean'||configured==='summary',iconWidth=withIcon?20:0,w=metricTagWidth(metric)+iconWidth,h=24;
+ return `<g class="metric-tag arch-metric${withIcon?' tensor-metric':''}${metric.value===null?' is-empty':''}" data-metric-value="${metric.value??''}" aria-label="${escape(metric.title+' · '+metric.text)}" style="--metric-tag-bg:${escape(metric.bg)};--metric-tag-fg:${escape(metric.fg)}" transform="translate(${x},${y})"><title>${escape(metric.title)}</title><rect width="${w}" height="${h}" rx="3"/><rect class="metric-mask" width="${w}" height="${h}" rx="3"/>${withIcon?`<g class="tensor-glyph" transform="translate(5,${(h-12)/2})">${configured==='summary'?'<path class="summary-symbol" d="M6 1 11 3.5 6 6 1 3.5Z M1 6 6 8.5 11 6 M1 8.5 6 11 11 8.5"/>':tensorGlyph(configured)}</g>`:''}<text x="${iconWidth+(w-iconWidth)/2}" y="${h/2}" text-anchor="middle" dominant-baseline="central">${escape(metric.text)}</text></g>`;
+}
+function blockMetric(g){return archMetric(g.output,g.ops.flatMap(id=>ops[id].output));}
+function blockSummaryWidth(g){return metricTagWidth(blockMetric(g))+20;}
+function collapsedBlockWidth(g){return Math.max(80,Math.ceil(labelWidth(g.name,500)+40),blockSummaryWidth(g)+24);}
+function tensorDisplay(metric){return window.archTensorDisplay(metricTagWidth(metric));}
+function tensorLabelWidth(id){return 9+20+metricTagWidth(archMetric(id));}
+// Source: google-ai-edge/model-explorer styles.scss, graph_layout.ts and local renderer.
+// Google Sans Text: op 500 / group 700 at 11 scene units; label y=14, node height=26.
+// Icon atlas ink excludes 3px SDF padding: 7x13/14 at 32/50 scale; hit target 16x16.
+// Local Model Explorer renderer: radius 6, border 1.2, selection 2, edge 1,
+// node #777, group #aaa, edge #aaa; medium ops and bold group labels.
+
+// Position controls against visible text ink, not its advance width or the hit box.
+function titleMetrics(label){textMeasure.font='500 11px "Google Sans Text"';const m=textMeasure.measureText(label);return {baseline:13+(m.actualBoundingBoxAscent-m.actualBoundingBoxDescent)/2,left:-m.width/2-m.actualBoundingBoxLeft,right:-m.width/2+m.actualBoundingBoxRight};}
+function tensorPairs(id){return mappingPairsFor(id);}
+function isPaired(id){return tensorPairs(id).length>0;}
+// Configuration ranges follow the actual execution workspace. Every label, edge segment,
+// and fan-out carrying a tensor in one range shares this same interaction identity.
+function configurationScope(id){const tensor=tensors[id];return tensor?.producer?(tensor.group||'layer'):null;}
+function configurationLabel(scope){return groupNames[scope]||'Layer';}
+function upstreamConfiguration(id){
+ if(id==='input')return state.layer>0?'Layer '+(state.layer-1)+' / layer output':'Embedding output · configuration not exposed in this preview';
+ if(id==='embedding')return 'Decoder / Per-Layer Embedding / Combine output';
+ if(id==='shared_k'||id==='shared_v')return 'Layer '+semanticModel.layers[state.layer].attrs.attn.kv_shared_from+' / Attention Block';
+ return 'Upstream producer';
+}
+function tensorAttrs(id,keyboard=true){const scope=configurationScope(id);return `data-kind="tensor" data-id="${id}" ${scope?`data-mapping-anchor="${id}"`:''} ${keyboard?`role="button" tabindex="0" aria-label="Select tensor · ${escape(tensors[id].name)}" aria-pressed="${state.selection?.kind==='tensor'&&state.selection.id===id}"`:''}`;}
+function configButton(anchor,x,y,label='tensor pairs'){
+ return `<g class="subgraph-entry config-entry" role="button" tabindex="0" data-mapping-anchor="${anchor}" aria-label="Enter Mapping · ${escape(label.replace(/ tensor pairs$/,''))}" transform="translate(${x},${y})"><title>Enter Mapping</title><rect x=".5" y=".5" width="13" height="13" rx="2.5"/><text x="7" y="7" text-anchor="middle" dominant-baseline="central">&#xe5da;</text></g>`;
+}
+function tensorOutline(x,y,width,height=22){return `<rect class="tensor-outline" x="${x}" y="${y}" width="${width}" height="${height}" rx="3"/>`;}
+
+// All Arch views share the Layer Arch tensor and summary presentation.
+function archTensorTag({attributes,selected,paired,metric,cx,cy,boundary=false}){
+ const totalWidth=29+metricTagWidth(metric);
+ return `<g class="tensor${boundary?' boundary':''}${paired?' is-paired':''}${selected?' selected':''}" ${attributes} data-pair-status="${paired?'paired':'unpaired'}"><rect class="tensor-hit" x="${cx-6}" y="${cy-13}" width="${totalWidth+6}" height="26"/><path class="tensor-leader" d="M${cx} ${cy}h9"/>${metricTag(metric,cx+9,cy-12,paired)}${tensorOutline(cx+8,cy-13,totalWidth-6,26)}</g>`;
+}
+function archSummaryTag({kind,id,label,anchor,metric,cx,y}){
+ const width=metricTagWidth(metric)+20,x=cx-width/2;
+ return `<g class="summary-tensor" role="button" tabindex="0" data-kind="${kind}" data-id="${id}" data-mapping-anchor="${anchor}" aria-label="Select ${escape(label)} internal summary" aria-pressed="${state.selection?.kind===kind&&state.selection.id===id}">${metricTag(metric,x,y,'summary')}${tensorOutline(x-1,y-1,width+2,26)}</g>`;
+}
+
+
+// Architecture nodes are context; only tensors and configuration controls select.
+function attrs(kind,id){if(kind==='tensor')return tensorAttrs(id);return `data-arch-node="${kind}" data-id="${id}"`;}
+function tensorGlyph(configured){return configured?'<path class="cube-body" d="M6 .7L11 3.3v5.4L6 11.3 1 8.7V3.3z"/><path class="cube-seams" d="M1 3.3L6 6l5-2.7M6 6v5.3"/>':'<rect class="empty-frame" x="1" y="1" width="10" height="10" rx="1"/>';}
+function node(kind,id,x,y,w,h){
+const selected=state.selection?.kind===kind&&state.selection.id===id;
+const activeOp=state.selection?.kind==='op'?ops[state.selection.id]:null;
+const incoming=kind==='op'&&activeOp?.input.some(t=>!state.hiddenIo.has(t)&&tensors[t].producer===id);
+const outgoing=kind==='op'&&activeOp?.output.some(t=>!state.hiddenIo.has(t)&&tensors[t].consumers.includes(id));
+const relation=incoming?' io-incoming':outgoing?' io-outgoing':'';
+const border=selected?2:relation?1.5:1.2,nodeCx=x||320;
+if(kind==='tensor'){
+const cx=x+w/2,cy=y+h/2,metric=archMetric(id),totalWidth=tensorLabelWidth(id);
+positions[id]={x:cx,y,w:totalWidth,h};
+const boundary=['input','attn_out','output'].includes(id),paired=isPaired(id);
+return archTensorTag({attributes:tensorAttrs(id),selected,paired,metric,cx,cy,boundary});
+}
+if(['Add','Multiply'].includes(ops[id].name)){
+positions[id]={x:nodeCx-13,y,w:26,h:26};
+return `<g class="op${relation}${selected?' selected':''}" ${attrs(kind,id)} transform="translate(${nodeCx-13},${y})"><title>${escape(ops[id].role+' · '+ops[id].purpose)}</title><circle cx="13" cy="13" r="${13-border/2}"/><path class="math-symbol" d="${ops[id].name==='Add'?'M7.5 13h11M13 7.5v11':'M9 9l8 8M17 9l-8 8'}"/></g>`;
+}
+w=Math.max(80,Math.ceil(labelWidth(ops[id].name)+24));x=nodeCx-w/2;positions[id]={x,y,w,h};
+return `<g class="op${relation}${selected?' selected':''}" ${attrs(kind,id)} transform="translate(${x},${y})"><rect x="${border/2}" y="${border/2}" width="${w-border}" height="${h-border}" rx="${6-border/2}"/><text x="${w/2}" y="16.05" text-anchor="middle">${escape(ops[id].name)}</text></g>`;
+}
+function edge(path,tensor,residual=false,arrow=true,consumer=null){
+const selected=state.selection?.kind==='tensor'&&state.selection.id===tensor;
+const selectedOp=state.selection?.kind==='op'?ops[state.selection.id]:null;const direction=!state.hiddenIo.has(tensor)&&selectedOp?.input.includes(tensor)&&(!consumer||consumer===state.selection.id)?'incoming':!state.hiddenIo.has(tensor)&&selectedOp?.output.includes(tensor)?'outgoing':'';
+const paired=isPaired(tensor);const first=!edgeIds.has(tensor);edgeIds.add(tensor);
+const line=path.match(/^M([\d.]+) ([\d.]+) V([\d.]+)$/);
+const area=line?`<rect class="edge-area" x="${Number(line[1])-8}" y="${Math.min(Number(line[2]),Number(line[3]))}" width="16" height="${Math.abs(Number(line[3])-Number(line[2]))}"/>`:'';
+return `<g class="tensor-flow" ${tensorAttrs(tensor,false)}>${area}<path class="edge-hit" d="${path}"/><path class="edge${residual?' residual-flow':''}${!arrow?' no-arrow':''}${paired?' paired':''}${direction?' '+direction:''}${selected?' tensor-selected':''}" d="${path}" marker-end="url(#${selected?'tensor-arrow':direction?direction+'-arrow':paired?'paired-arrow':'arrow'})"/></g>`;
+}
+function boundaryNode(label,y){return `<g class="arch-boundary" data-arch-node="boundary" role="img" aria-label="${state.scope?'Module':'Layer'} ${label.toLowerCase()}" transform="translate(280,${y})"><rect x=".6" y=".6" width="78.8" height="24.8" rx="5.4"/><text x="40" y="16.05" text-anchor="middle">${label}</text></g>`;}
+function draw(){
+ const native=state.page==='model'&&overviewState.page==='model';$('workspace').classList.toggle('native-model-active',native);const nativeFrame=$('native-model-root');if(nativeFrame)nativeFrame.hidden=!native;
+if(state.page==='model'){drawModel();return;}
+hideIconTooltip();preloadDefaultLayerPairs();positions={};edgeIds=new Set();
+const columnGap=Math.max(180,...Object.values(ops).filter(o=>o.layout?.column).map(o=>tensorLabelWidth(o.output[0])+20));
+const parts=[],backgrounds=[],cx=320,groupLeft=Math.min(10,cx-columnGap-70),groupRight=Math.max(630,...Object.values(ops).filter(o=>o.layout).map(o=>cx+o.layout.column*columnGap+tensorLabelWidth(o.output[0])+16)),boxes={},starts={};
+const visible=state.scope?groups.filter(g=>g.id===state.scope):groups;
+const order=state.scope?[state.scope]:overviewOrder;
+let cursor=86;
+for(const id of order){const g=groups.find(g=>g.id===id);
+ if(!g){const o=ops[id],w=['Add','Multiply'].includes(o.name)?26:Math.max(80,Math.ceil(labelWidth(o.name)+24));boxes[id]={x:cx-w/2,cx,y:cursor,w,h:26};starts[id]={y:cursor,height:26};cursor+=60;continue;}
+ const collapsed=true,minRow=Math.min(...g.ops.map(id=>ops[id].layout.row)),maxRow=Math.max(...g.ops.map(id=>ops[id].layout.row));
+ // Leave the input tensor label clear of the horizontal header-bypass route.
+ if(!collapsed||id==='ple')cursor+=20;
+ const height=collapsed?58:54+(maxRow-minRow)*62+26+14+(id==='attention'?12:id==='ple'?16:0);
+ starts[id]={y:cursor,height,collapsed};
+ if(!collapsed)for(const opId of g.ops){const o=ops[opId],x=cx+o.layout.column*columnGap,w=['Add','Multiply'].includes(o.name)?26:Math.max(80,Math.ceil(labelWidth(o.name)+24));boxes[opId]={x:x-w/2,cx:x,y:cursor+54+(o.layout.row-minRow)*62+(id==='attention'&&o.layout.row>=4?12:id==='ple'&&o.layout.row>=2?16:0),w,h:26};}
+ cursor+=height+34;
+}
+parts.push(boundaryNode('Inputs',10));
+let previous={y:36,tensor:state.scope?visible[0].input:'input'};
+parts.push(node('tensor',previous.tensor,cx-88,53,176,26));
+for(const id of order){const g=groups.find(g=>g.id===id),{y,height,collapsed}=starts[id];
+ if(!g){parts.push(edge(`M${cx} ${previous.y} V${y}`,previous.tensor,false,true,id));parts.push(node('op',id,cx,y,0,26));previous={y:y+26,tensor:ops[id].output[0]};parts.push(node('tensor',previous.tensor,cx-88,y+27,176,26));continue;}
+ parts.push(edge(`M${cx} ${previous.y} V${collapsed?y:y-16}`,previous.tensor,false,collapsed));
+ const summary=blockMetric(g),summaryWidth=collapsed?blockSummaryWidth(g):0;const titleWidth=labelWidth(g.name,500),collapsedWidth=collapsedBlockWidth(g);const gx=collapsed?cx-collapsedWidth/2:groupLeft,gw=collapsed?collapsedWidth:groupRight-groupLeft;
+const selected=state.selection?.kind==='group'&&state.selection.id===g.id;const titleInk=titleMetrics(g.name),titleY=y+titleInk.baseline,titleCx=gx+gw/2;const titleLeft=titleCx+titleInk.left,titleRight=titleCx+titleInk.right;const iconGap=8,foldInkWidth=4.48,pairInkWidth=10;const foldCenter=titleLeft-iconGap-foldInkWidth/2;const foldX=foldCenter-8;const moreCenter=titleRight+iconGap+pairInkWidth/2;const groupBorder=selected?2:1.2;
+backgrounds.push(`<rect class="group-bg semantic-node${selected?' is-selected':''}" x="${gx+groupBorder/2}" y="${y+groupBorder/2}" width="${gw-groupBorder}" height="${height-groupBorder}" rx="${6-groupBorder/2}" data-arch-node="group" data-id="${g.id}"/>`);parts.push(`<g class="group-select" ${attrs('group',g.id)}><rect class="hit" x="${titleLeft-4}" y="${y+3}" width="${titleWidth+8}" height="20" rx="4"/><text class="title" x="${titleCx}" y="${titleY}" text-anchor="middle">${g.name}</text></g>`);
+if(collapsed)parts.push(archSummaryTag({kind:'summary',id:g.id,label:g.name,anchor:g.output,metric:summary,cx,y:y+28}));
+
+ if(configurationScope(g.output))parts.push(configButton(g.output,gx+gw+2,y,g.name+' tensor pairs'));
+ if(!collapsed){
+  const entryX=cx+Math.max(titleWidth/2+40,110),entryY=y+38;
+  const shared=Object.hasOwn(tensors,'shared_k')&&id==='attention';
+  if(shared){for(const [i,t] of ['shared_k','shared_v'].entries()){
+   const sx=cx+i*columnGap,sy=boxes.q_rope.y;
+   boxes[t]={cx:sx,y:sy-13};parts.push(node('tensor',t,sx-88,sy,176,26));
+  }}
+  parts.push(edge(`M${cx} ${y-16} H${entryX-8} Q${entryX} ${y-16} ${entryX} ${y-8} V${entryY-8} Q${entryX} ${entryY} ${entryX-8} ${entryY} H${cx}`,g.input,false,false));
+  for(const opId of g.ops){const o=ops[opId],box=boxes[opId];
+   const topInputs=o.input.filter(t=>t!=='embedding');
+   for(const [port,t] of topInputs.entries()){
+    const producer=tensors[t].producer,internal=g.ops.includes(producer),from=internal?boxes[producer]:boxes[t]||null;
+    if(!internal&&t!==g.input&&!boxes[t])continue;
+    const sx=from?from.cx:cx,sy=from?from.y+26:entryY,tx=box.cx+(topInputs.length>1&&o.name!=='Add'?(port-(topInputs.length-1)/2)*12:0),ty=box.y;
+    if(o.name==='Add'&&!internal){const lane=groupLeft+24;parts.push(edge(`M${cx} ${y-16} H${lane+8} Q${lane} ${y-16} ${lane} ${y-8} V${ty+5} Q${lane} ${ty+13} ${lane+8} ${ty+13} H${box.x}`,t,true,true,opId));continue;}
+    const bend=from?ty-10:entryY;
+    parts.push(edge(Math.abs(tx-sx)<.1?`M${sx} ${sy} V${ty}`:`M${sx} ${sy} V${bend} H${tx} V${ty}`,t,false,true,opId));
+   }
+   parts.push(node('op',opId,box.cx,box.y,0,26));
+   if(o.output[0]!==g.output)parts.push(node('tensor',o.output[0],box.cx-88,box.y+27,176,26));
+  }
+  const last=boxes[tensors[g.output].producer];parts.push(edge(`M${last.cx} ${last.y+26} V${y+height}`,g.output,false,false));
+ }
+ previous={y:y+height,tensor:g.output};parts.push(node('tensor',g.output,cx-88,y+height+1,176,26));
+}
+// Residuals belong to the layer overview and remain visible when module bodies fold.
+if(!state.scope)for(const [groupId,addId,tensor] of [['attention','add_attn','input'],['ffn','add_ffn','attn_out'],['ple','ple_add','ffn_out']]){
+ const add=boxes[addId],anchor=positions[tensor],sy=anchor.y+anchor.h/2,lane=starts[groupId].collapsed?cx-150:groupLeft-24;
+ parts.push(edge(`M${cx} ${sy} H${lane+8} Q${lane} ${sy} ${lane} ${sy+8} V${add.y+5} Q${lane} ${add.y+13} ${lane+8} ${add.y+13} H${add.x}`,tensor,true,true,addId));
+ parts.push(`<circle class="fork-point" data-tensor="${tensor}" cx="${cx}" cy="${sy}" r="2"/>`);
+}
+const ple=starts.ple;
+if(ple){const lane=visible.some(g=>!starts[g.id]?.collapsed)?groupRight+30:cx+220,target=ple.collapsed?{x:cx+collapsedBlockWidth(groups.find(g=>g.id==='ple'))/2,y:ple.y+ple.height/2}:{x:boxes.ple_mul.cx,y:boxes.ple_mul.y};
+ // The prepared layer embedding uses its own input port, distinct from hidden states.
+ const sourceX=cx+24;
+ const path=ple.collapsed?`M${sourceX} 36 V40 Q${sourceX} 48 ${sourceX+8} 48 H${lane-8} Q${lane} 48 ${lane} 56 V${target.y-8} Q${lane} ${target.y} ${lane-8} ${target.y} H${target.x}`:`M${sourceX} 36 V48 H${lane} V${target.y-16} H${target.x} V${target.y}`;
+ parts.push(edge(path,'embedding',false,true,'ple_mul'));
+ // Label follows the external branch beside its consumer, never across the main tensor labels.
+ parts.push(node('tensor','embedding',lane-88,ple.y-40,176,26));
+}
+parts.push(edge(`M${cx} ${previous.y} V${cursor}`,previous.tensor));parts.push(boundaryNode('Output',cursor));graphHeight=cursor+52;
+$('stage').innerHTML=`<svg class="architecture" width="100%" height="100%" role="group" aria-label="Layer ${state.layer} architecture graph"><defs><pattern id="unconfigured-hatch" patternUnits="userSpaceOnUse" width="5" height="5" patternTransform="rotate(45)"><rect x="4" width="1" height="5" style="fill:var(--hatch)"/></pattern><marker id="arrow" viewBox="0 0 6 6" refX="6" refY="3" markerWidth="6" markerHeight="6" markerUnits="userSpaceOnUse" orient="auto"><path d="M0 0 L6 3 L0 6 L2 3z"/></marker><marker id="tensor-arrow" viewBox="0 0 6 6" refX="6" refY="3" markerWidth="6" markerHeight="6" markerUnits="userSpaceOnUse" orient="auto"><path style="fill:var(--accent)" d="M0 0 L6 3 L0 6 L2 3z"/></marker>${['incoming','outgoing','paired','scope'].map(direction=>`<marker id="${direction}-arrow" viewBox="0 0 6 6" refX="6" refY="3" markerWidth="6" markerHeight="6" markerUnits="userSpaceOnUse" orient="auto"><path style="fill:var(--${direction==='paired'?'edge':direction})" d="M0 0 L6 3 L0 6 L2 3z"/></marker>`).join('')}</defs><style>${groups.map(g=>`.architecture:has(.group-select[data-id="${g.id}"]:hover,.fold[data-fold="${g.id}"]:hover,.more[data-popup="${g.id}"]:hover) .group-bg[data-id="${g.id}"]:not(.is-selected){stroke:var(--group-hover)}`).join('')}.module-io{border-bottom:1px solid var(--rule);font-size:11px}.module-io summary{padding:9px 0;cursor:pointer;color:var(--muted)}.module-io summary>span{float:right;font-family:var(--mono)}.module-io-row{display:grid;grid-template-columns:48px minmax(0,1fr);gap:3px 6px;padding:7px 0}.module-io-row>span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.module-io-row>small{grid-column:2;color:var(--muted);overflow-wrap:anywhere}.module-io-row>code{font:10px var(--mono)}
+.module-io-toggle{display:flex;align-items:center;gap:7px;font-size:11px;color:var(--muted);margin-bottom:14px}.module-io-toggle input{margin:0}
+</style><g id="graph-world">${backgrounds.join('')}${parts.join('')}</g></svg>`;
+// Configuration controls sit above edge hit areas, including the external PLE route.
+$('stage').querySelectorAll('.config-entry').forEach(entry=>entry.parentNode.appendChild(entry));
+updateGraphControls();applyCamera();renderNavigation();
+}
+function tensorLink(id){if(!configurationScope(id))return `<span class="hint">${executionStage==='prefill'?'Prefill execution graph is not connected.':escape(tensors[id].name)+' · no runtime binding in this view'}</span>`;return `<button class="link" ${tensorAttrs(id,false)}>${escape(tensors[id].name)}</button>`;}
+function opLink(id){return `<button class="node-row" data-kind="op" data-id="${id}"><i class="swatch ${ops[id].name==='Add'?'math-key':''}">${ops[id].name==='Add'?'+':''}</i><span>${ops[id].name}</span><span class="spacer"></span><b>${ops[id].purpose.includes('Pre-')?'pre':ops[id].purpose.includes('Post-')?'post':''}</b></button>`;}
+// Native Model Explorer info_panel layout and interactions (Apache-2.0).
+// The semantic model supplies the content; tensor configuration remains our action.
+const closedInfoSections=new Set();
+const infoIcons={chevron:'M9 6l6 6-6 6-1.4-1.4 4.6-4.6-4.6-4.6z',locate:'M11 2h2v2.1a8 8 0 0 1 6.9 6.9H22v2h-2.1a8 8 0 0 1-6.9 6.9V22h-2v-2.1A8 8 0 0 1 4.1 13H2v-2h2.1A8 8 0 0 1 11 4.1V2zm1 4a6 6 0 1 0 0 12 6 6 0 0 0 0-12zm0 3a3 3 0 1 1 0 6 3 3 0 0 1 0-6z',eye:'M12 4.5C7 4.5 2.7 7.6 1 12c1.7 4.4 6 7.5 11 7.5S21.3 16.4 23 12c-1.7-4.4-6-7.5-11-7.5zm0 12a4.5 4.5 0 1 1 0-9 4.5 4.5 0 0 1 0 9zm0-7.2a2.7 2.7 0 1 0 0 5.4 2.7 2.7 0 0 0 0-5.4z',unfold:'M12 5.83L15.17 9l1.41-1.41L12 3 7.41 7.59 8.83 9 12 5.83zm0 12.34L8.83 15l-1.41 1.41L12 21l4.59-4.59L15.17 15 12 18.17z',fold:'M7.41 18.59L8.83 20 12 16.83 15.17 20l1.41-1.41L12 14l-4.59 4.59zm9.18-13.18L15.17 4 12 7.17 8.83 4 7.41 5.41 12 10l4.59-4.59z'};
+function infoIcon(name){return `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="${infoIcons[name]}"/></svg>`;}
+function infoSection(key,title,content){const open=!closedInfoSections.has(key);return `<section class="info-section ${open?'':'is-closed'}" data-info-section="${key}"><div class="info-header"><button class="info-toggle" aria-label="${open?'Collapse':'Expand'} ${escape(title)}" aria-expanded="${open}" aria-controls="info-${key}" data-info-toggle="${key}">${infoIcon('chevron')}</button><span>${escape(title)}</span></div><div class="info-content" id="info-${key}" ${open?'':'hidden'}>${content}</div></section>`;}
+function infoValue(label,value){return `<div class="info-value" data-value-label="${escape(label)}"><span class="info-value-text">${escape(value)}</span><button class="info-value-toggle" data-value-toggle aria-label="Expand ${escape(label)}" aria-expanded="false" hidden>${infoIcon('unfold')}</button></div>`;}
+function infoTable(rows,bullet=false){return `<table class="info-metadata${bullet?' with-bullets':''}"><tbody>${rows.filter(([,v])=>v!=null).map(([key,value])=>`<tr><td class="info-key" title="${escape(key)}">${bullet?'<span class="info-bullet">▪</span>':''}${escape(key)}</td><td class="info-cell">${infoValue(key,value)}</td></tr>`).join('')}</tbody></table>`;}
+function locator(id,label){return `<button class="info-locator" data-locate="${id}" title="Locate ${escape(label)} in graph">${escape(label)}<span class="info-locator-icon">${infoIcon('locate')}</span></button>`;}
+function tensorRows(ids,direction){return `<div class="info-flat-items">${ids.map((id,i)=>{const t=tensors[id],source=t.producer,config=configurationScope(id);return `<div class="info-flat-item"><div class="info-name-row"><span class="info-index">${i}</span>${direction==='input'?(source?locator(source,ops[source].name):`<span class="info-name">${escape(t.name)}</span>`):`<span class="info-name">output</span>`}<span class="spacer"></span>${state.selection?.kind==='op'?`<button class="info-eye ${direction}" data-io-highlight="${id}" aria-label="${state.hiddenIo.has(id)?'Show':'Hide'} ${escape(t.name)} highlight" aria-pressed="${!state.hiddenIo.has(id)}" title="Toggle tensor highlight">${infoIcon('eye')}</button>`:''}</div><table class="info-metadata with-bullets"><tbody><tr><td class="info-key"><span class="info-bullet">▪</span>tensor_name</td><td class="info-cell">${config?`<button class="info-pair-link" ${tensorAttrs(id,false)} title="Inspect tensor">${escape(t.name)}</button>`:infoValue('tensor_name',t.name)}</td></tr>${id==='embedding'?`<tr><td class="info-key"><span class="info-bullet">▪</span>source</td><td class="info-cell">Decoder / Per-Layer Embedding</td></tr><tr><td class="info-key"><span class="info-bullet">▪</span>slice</td><td class="info-cell">[:, :, ${state.layer}, :] · [batch, sequence, 256]</td></tr>`:''}${Number.isInteger(t.runtimeTensor)?`<tr><td class="info-key"><span class="info-bullet">▪</span>tensor_id</td><td class="info-cell">t${t.runtimeTensor}</td></tr>`:''}${direction==='output'?t.consumers.map(c=>`<tr><td class="info-key"><span class="info-bullet">▪</span>connects to</td><td class="info-cell">${locator(c,ops[c].name)}</td></tr>`).join(''):''}</tbody></table></div>`;}).join('')}</div>`;}
+function attentionRows(layer=state.layer){const a=semanticModel.layers[layer].attrs.attn;return [['relation',a.relation],['head layout',a.kv_heads===1?'Multi-Query (MQA)':a.kv_heads===a.q_heads?'Multi-Head (MHA)':'Grouped-Query (GQA)'],['computation',a.computation],['scope',a.scope],['window',a.window],['mask',a.mask],['Q / KV heads',`${a.q_heads} / ${a.kv_heads}`],['head dimension',a.head_dim],['RoPE dimensions',a.rotary_dims],['RoPE base',a.rope_theta],['K / V source',a.kv_shared_from==null?'This layer':`Layer ${a.kv_shared_from}`]];}
+function layerRows(layer){const l=semanticModel.layers[layer];return [['model',semanticModel.name],['layer',layer],['type','Decoder block'],['attention',l.attrs.attn.scope],['K / V source',l.attrs.attn.kv_shared_from==null?'This layer':`Layer ${l.attrs.attn.kv_shared_from}`],['FFN width',l.attrs.ffn.intermediate_size],['PLE slice',l.attrs.ple.slice],['execution stage',executionStage==='decode'?'Decode':'Prefill'],['KV cache',executionStage==='decode'?'Read history and append current-token K/V':'Write input-sequence K/V; a cached prefix may be reused'],['runtime mapping',runtimeOptions({scope:'decoder_layer_'+layer,stage:executionStage}).length?'LiteRT-LM region available; reference graph required':'No matching runtime export; load a graph in Mapping']];}
+function ffnRows(){const a=semanticModel.layers[state.layer].attrs.ffn;return [['activation',a.activation],['intermediate width',a.intermediate_size],['hidden width',semanticModel.config.hidden_size]];}
+function pleRows(){const a=semanticModel.layers[state.layer].attrs.ple;return [['phase','Use prepared auxiliary embedding'],['input source','Decoder / Per-Layer Embedding'],['slice',`Layer ${state.layer} · [:, :, ${a.slice}, :]`],['input shape',`[batch, sequence, ${a.embedding_dim}]`],['flow','Current hidden states → gate → GELU → × prepared embedding → projection → RMSNorm'],['residual','Add the normalized update outside this block'],['generation','Prepared before the layer stack; this block consumes the selected slice']];}
+function measureInfoValues(){for(const v of $('details').querySelectorAll('.info-value')){if(v.classList.contains('expanded')||!v.getClientRects().length)continue;const text=v.querySelector('.info-value-text'),toggle=v.querySelector('.info-value-toggle');toggle.hidden=true;const overflow=text.scrollWidth>text.clientWidth;toggle.hidden=!overflow;v.classList.toggle('has-overflow',overflow);}}
+
+// Page identity includes the layer: cameras, selection and expansion never leak across layers.
+const pageViews=new Map();
+const pageKey=()=>selectedModel+':'+(state.page==='model'?`overview:${overviewState.page}:${overviewState.index}`:`layer:${state.layer}`);
+function rememberPage(){pageViews.set(pageKey(),{selection:state.selection,collapsed:new Set(state.collapsed),hiddenIo:new Set(state.hiddenIo),zoom:state.zoom,x:state.x,y:state.y});}
+function navigatePage(page,layer=state.layer){
+ if(page==='model'&&modelTree&&selectedModel==='gemma'){modelTree.start();return;}
+ if(!$('pair-view').hidden)closePairView();
+ if(state.page===page&&(page==='model'||state.layer===layer))return;
+ if(!Number.isInteger(layer)||!semanticModel.layers[layer])return;
+ rememberPage();closeGraphPopovers();hideIconTooltip();state.page=page;if(page==='model'){overviewState.page='model';overviewState.index=0;}state.layer=layer;state.scope=null;activateLayer(layer);
+ const saved=pageViews.get(pageKey());
+ Object.assign(state,saved||{selection:null,collapsed:new Set(['attention','ffn','ple']),hiddenIo:new Set(),zoom:1,x:0,y:0});
+ $('graph-search').value='';searchGraph();draw();details();if(!saved){if(page==='model')modelStart();else fit();}
+ $('viewport').focus();
+}
+function renderNavigation(){
+ if(mappingState.active){renderMappingNavigation();return;}
+ $('model-select').hidden=false;$('model-tree').hidden=selectedModel!=='gemma';$('modules-toggle').hidden=selectedModel!=='gemma';
+ const pairing=!$('pair-view').hidden,model=state.page==='model',label=`Layer ${state.layer}`;
+ document.querySelector('.appbar strong').textContent=pairing?'Tensor Mapping':model?(overviewState.page==='model'?'Model Overview':overviewTitle()):'Layer Arch';
+ document.querySelector('.canvas').classList.toggle('model-page',model);
+ document.querySelector('.canvas').classList.toggle('arch-page',state.page==='layer'||isModuleArch());
+ document.querySelector('.functional-block-legend').hidden=!(model&&!isModuleArch()&&overviewData().blocks?.length);
+ document.querySelector('.legend .block-key').closest('tr').lastElementChild.textContent=model&&!isModuleArch()?'Layer stack':'Block';
+ document.querySelector('.legend .block-key').classList.toggle('stack-legend-key',model&&!isModuleArch());
+ if(model){document.querySelectorAll('[data-legend-selected],[data-legend-io]').forEach(el=>el.hidden=!state.selection);}
+ $('crumb').hidden=false;
+ $('crumb').innerHTML=model?'<span aria-current="page">Model Overview</span>':`<button data-nav="model">Model Overview</button><span class="separator" aria-hidden="true">›</span>${pairing?`<button data-nav="layer">${label}</button><span class="separator" aria-hidden="true">›</span><span aria-current="page">Tensor Mapping</span>`:`<span aria-current="page">${label}</span>`}`;
+ if(model&&overviewState.page!=='model')$('crumb').innerHTML=`<button data-overview="model">Model Overview</button><span class="separator">›</span><span aria-current="page">${overviewTitle()}</span>`;
+ $('crumb').innerHTML='<span aria-current="page">'+escape(model?overviewTitle():label)+'</span>';
+ let stageControl=$('execution-stage-control');if(!stageControl){stageControl=document.createElement('label');stageControl.id='execution-stage-control';stageControl.innerHTML='<span>Execution</span><select id="execution-stage" aria-label="Execution stage"><option value="prefill">Prefill</option><option value="decode">Decode</option></select>';document.querySelector('.appbar .spacer').before(stageControl);stageControl.querySelector('select').addEventListener('change',e=>{const nextStage=e.target.value;if(!$('pair-view').hidden)closePairView();executionStage=nextStage;hideIconTooltip();state.scope=null;state.selection=null;if(!isModuleArch())activateLayer(state.layer);draw();details();});}stageControl.hidden=model&&overviewState.page!=='ple_preparation';$('execution-stage').value=executionStage;
+
+}
+function modelStart(){if(overviewState.page!=='model')fit();}
+const overviewState={page:'model',index:0,expanded:new Set(['ple_preparation_block']),scroll:new Map()};
+function overviewData(){return semanticModel.arch_graphs?.[overviewState.page]||semanticModel.overview_graphs[overviewState.page];}
+function isModuleArch(){return state.page==='model'&&!!semanticModel.arch_graphs?.[overviewState.page];}
+function overviewTitle(){return overviewState.page.endsWith('_layer')?`${overviewData().label} ${overviewState.index}`:overviewData().label;}
+function overviewNodes(){const nodes=[...overviewData().nodes];for(const s of nodes.filter(n=>n.kind==='stack'))for(let i=0;i<s.count;i++)nodes.push({id:`${s.prefix}_${i}`,label:`${s.prefix==='vision_layer'?'Vision ':s.prefix==='audio_layer'?'Audio ':''}Layer ${i}`,module:s.label,kind:s.prefix==='layer'?'layer':'encoder-layer',layer:i,stack:s.id});return nodes;}
+function navigateOverview(page,index=0){
+ if(page==='model'&&modelTree&&selectedModel==='gemma'){modelTree.start();return;}
+ if(!$('pair-view').hidden)closePairView();rememberPage();closeGraphPopovers();overviewState.page=page;overviewState.index=index;state.page='model';state.scope=null;
+ const saved=pageViews.get(pageKey());Object.assign(state,saved||{selection:null,hiddenIo:new Set(),zoom:1,x:0,y:0});
+ $('graph-search').value='';searchGraph();draw();details();if(!saved)fit();$('viewport').focus();
+}
+function toggleStack(id,force){
+ const before=positions[id],anchor=before?{x:state.x+before.x*state.zoom,y:state.y+before.y*state.zoom}:null;
+ const expanded=force??!overviewState.expanded.has(id);expanded?overviewState.expanded.add(id):overviewState.expanded.delete(id);
+ draw();details();const after=positions[id];if(anchor&&after){state.x=anchor.x-after.x*state.zoom;state.y=anchor.y-after.y*state.zoom;if(expanded){const h=$('viewport').clientHeight;state.y=Math.min(state.y,h-28-(after.y+after.h)*state.zoom);}applyCamera();}
+ // Keep the module and its labels at their current size. Expanding is not zoom-to-fit.
+ $('stage').querySelector(`[data-stack-toggle="${id}"]`)?.focus();
+}
+// Use the shared Model Explorer visual constants; this preview still renders SVG.
+// Rounded port routes keep the verified routing lanes and explicit non-junction bridges.
+function syncNativeTheme(){const frame=$('native-model-root');if(!frame)return;const styles=getComputedStyle(document.documentElement),theme=document.documentElement.dataset.theme||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');const palette=Object.fromEntries(['heat-low','heat-high','bg','surface','panel','group','rule','op-border','group-border','text','muted','accent','accent-wash','hatch','edge','scope','scope-wash','hover','shadow','op-hover','group-hover','icon-color','incoming','outgoing','crumb-border','crumb-bg','crumb-parent','crumb-current','crumb-separator'].map(name=>[name,styles.getPropertyValue('--'+name).trim()]));frame.contentWindow.postMessage({channel:'native-model-preview',type:'theme',theme,palette},location.origin);}
+function mountNativeModel(){let frame=$('native-model-root');if(!frame){frame=document.createElement('iframe');frame.id='native-model-root';frame.title='Model Overview · Native Model Explorer';frame.src='native-model.html?v=139&model='+selectedModel;frame.addEventListener('load',syncNativeTheme);document.querySelector('.canvas').append(frame);}frame.hidden=false;frame.contentWindow.postMessage({channel:'native-model-preview',type:'visible'},location.origin);}
+window.addEventListener('message',e=>{const frame=$('native-model-root');if(e.source!==frame?.contentWindow||e.origin!==location.origin||e.data?.channel!=='native-model-preview')return;if(['mounted','ready'].includes(e.data.type))syncNativeTheme();if(e.data.type==='enter-arch'&&selectedModel==='gemma'&&semanticModel.arch_graphs[e.data.id])navigateOverview(e.data.id);if(e.data.type==='arch')document.querySelector('.appbar strong').textContent=e.data.label;if(e.data.type==='details')$('details-toggle').setAttribute('aria-expanded',String(e.data.open));if(e.data.type==='enter'&&selectedModel==='gemma'){const {prefix,index}=e.data;if(!Number.isInteger(index)||index<0)return;if(prefix==='layer'&&index<35)navigatePage('layer',index);else if(['vision_layer','audio_layer'].includes(prefix)&&index<(prefix==='vision_layer'?16:12))navigateOverview(prefix,index);}});
+$('model-select').addEventListener('change',e=>{if(!$('pair-view').hidden)closePairView();selectedModel=e.target.value;pageViews.clear();if(selectedModel==='gemma')modelTree.start();else{state.page='model';overviewState.page='model';state.selection=null;draw();details();const frame=$('native-model-root');frame.src='native-model.html?v=139&model='+selectedModel;}const url=new URL(location.href);if(selectedModel==='gemma')url.searchParams.delete('model');else url.searchParams.set('model',selectedModel);history.replaceState(null,'',url);});
+new MutationObserver(syncNativeTheme).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
+function modelEdgePath(e){
+ const ps=e.points.map(p=>({...p}));
+ if(e.targetPort==='right'){const p=positions[e.to];ps[ps.length-1]={x:p.x+p.w,y:p.y+p.h/2};ps[ps.length-2].y=p.y+p.h/2;}
+let d=`M${ps[0].x} ${ps[0].y}`;
+ for(let i=1;i<ps.length;i++){
+  const a=ps[i-1],p=ps[i],next=ps[i+1],bridges=(e.bridges||[]).filter(b=>b.segment===i).sort((a,b)=>a.y-b.y);
+  for(const b of bridges)d+=` L${b.x} ${b.y-5} C${b.x-8} ${b.y-5} ${b.x-8} ${b.y+5} ${b.x} ${b.y+5}`;
+  if(next){const len=Math.hypot(p.x-a.x,p.y-a.y),out=Math.hypot(next.x-p.x,next.y-p.y),r=Math.min(e.cornerRadius??7,len/2,out/2);
+   if(r&&Math.abs((p.x-a.x)*(next.y-p.y)-(p.y-a.y)*(next.x-p.x))>.01){
+    d+=` L${p.x-(p.x-a.x)*r/len} ${p.y-(p.y-a.y)*r/len} Q${p.x} ${p.y} ${p.x+(next.x-p.x)*r/out} ${p.y+(next.y-p.y)*r/out}`;continue;
+   }
+  }d+=` L${p.x} ${p.y}`;
+ }return d;
+}
+// Shared Arch presentation for semantic modules and encoder layers.
+// The model remains the source of topology; the layout adds no semantic operators.
+function moduleArchLayout(){return window.ARCH_LAYOUTS[overviewState.page].collapsed;}
+function drawModuleArch(){
+ hideIconTooltip();preloadDefaultPlePairs();const page=overviewData(),layout=moduleArchLayout();positions={...layout.positions};
+ // Size fixed nodes before routing so side ports meet the rendered border.
+ for(const n of layout.nodes.filter(n=>n.fixed)){const p=positions[n.id],metric=archMetric(n.mappingAnchor,n.summaryMembers),w=Math.max(80,Math.ceil(labelWidth(n.label,500)+40),metricTagWidth(metric)+44);positions[n.id]={...p,x:p.x+(p.w-w)/2,w};}
+ const selected=state.selection?.kind==='module-tensor'?null:state.selection?.id,selectedNode=state.selection?.kind==='model-op'?layout.nodes.find(n=>n.id===selected):null,incoming=new Set(selectedNode?.inputs||[]),outgoing=new Set(layout.nodes.filter(n=>n.inputs.includes(selected)).map(n=>n.id));
+ const relation=id=>incoming.has(id)?'io-incoming':outgoing.has(id)?'io-outgoing':'';
+ const action=(kind,id,label)=>`data-arch-node="${kind}" data-id="${id}"`;
+ const frames=[];
+ const own=id=>page.mappingEnabled!==false&&page.nodes.find(n=>n.id===id)?.kind!=='boundary';
+ const mapAttrs=id=>`data-kind="module-tensor" data-id="${id}" ${own(id)?`data-mapping-anchor="${id}"`:''}`;
+ const routes=layout.edges.map(e=>{if(e.semanticOnly)return `<path class="edge semantic-edge" d="${modelEdgePath(e)}" marker-end="url(#module-arrow)"/>`;const tensorSelected=state.selection?.kind==='module-tensor'&&state.selection.id===e.tensor;const direction=selectedNode&&e.to===selected?'incoming':selectedNode&&e.tensor===selected?'outgoing':'';return `<g class="module-tensor-flow" ${mapAttrs(e.tensor)}>${own(e.tensor)?`<path class="mapping-edge-hit" d="${modelEdgePath(e)}"/>`:""}<path class="edge ${mappingPairsFor(e.tensor).length?'paired':''} ${direction} ${tensorSelected?'tensor-selected':''} ${e.arrow?'':'no-arrow'}" ${mapAttrs(e.tensor)} data-source="${e.tensor}" data-target="${e.to}" d="${modelEdgePath(e)}" ${e.arrow?`marker-end="url(#module-arrow${tensorSelected?'-selected':direction?'-'+direction:''})"`:''}/></g>`;});
+ const nodes=layout.nodes.map(n=>{const p=positions[n.id],math=['Add','Multiply'].includes(n.label),block=n.kind==='block',boundary=n.kind==='boundary',cls=boundary?'arch-boundary':'op';
+ if(n.fixed){const anchor=n.mappingAnchor,metric=archMetric(anchor,n.summaryMembers),cx=p.x+p.w/2,width=p.w,x=p.x;
+ return `<rect class="group-bg semantic-node" x="${x+.6}" y="${p.y+.6}" width="${width-1.2}" height="56.8" rx="5.4" data-arch-node="group" data-id="${n.id}"/><g class="group-select" ${action('model-op',n.id,n.label)}><text class="title" x="${cx}" y="${p.y+titleMetrics(n.label).baseline}" text-anchor="middle">${escape(n.label)}</text></g>${archSummaryTag({kind:'module-summary',id:n.id,label:n.label,anchor,metric,cx,y:p.y+28})}${configButton(anchor,x+width+2,p.y,n.label+' tensor pairs')}`;
+ }
+ return `<g class="${cls} ${relation(n.id)} ${selected===n.id?'selected':''}" ${action(block?'model-block':'model-op',n.id,n.attrs?.role||n.label)} transform="translate(${p.x} ${p.y})"><title>${escape(n.attrs?.role||n.label)}</title>${math?`<circle cx="13" cy="13" r="12.4"/><path class="math-symbol" d="${n.label==='Add'?'M7.5 13h11M13 7.5v11':'M9 9l8 8M17 9l-8 8'}"/>`:`<rect x=".6" y=".6" width="${p.w-1.2}" height="24.8" rx="5.4"/><text x="${p.w/2}" y="16.05" text-anchor="middle">${escape(n.label)}</text>`}</g>${!boundary&&own(n.id)&&(overviewState.page!=='ple_preparation'||block)?configButton(block?'combine':n.id,p.x+p.w+2,p.y,n.label+' tensor pairs'):''}`;
+ });
+ const labels=layout.tensors.map(t=>{const p=positions[t.id],cx=p.x+p.w/2,cy=p.y+p.h/2,label=t.tensor?.name||t.source,paired=mappingPairsFor(t.source).length>0,selected=state.selection?.kind==='module-tensor'&&state.selection.id===t.source;
+ return archTensorTag({attributes:`${mapAttrs(t.source)} role="button" tabindex="0" aria-pressed="${selected}" data-source="${t.source}" aria-label="Select tensor · ${escape(label)}"`,selected,paired,metric:archMetric(t.source),cx,cy});
+ });
+ $('stage').innerHTML=`<svg class="architecture module-arch" role="group" aria-label="${escape(selectedModel==='gemma'?'Gemma 4 E2B':window.MODEL_PREVIEWS[selectedModel].label)} ${escape(overviewTitle())} Arch"><defs><pattern id="unconfigured-hatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="6" stroke="var(--hatch)" stroke-width="1"/></pattern>${['','incoming','outgoing','scope','selected'].map(io=>`<marker id="module-arrow${io?'-'+io:''}" viewBox="0 0 6 6" refX="6" refY="3" markerWidth="6" markerHeight="6" markerUnits="userSpaceOnUse" orient="auto"><path style="fill:var(--${io==='selected'?'accent':io||'edge'})" d="M0 0L6 3L0 6L2 3z"/></marker>`).join('')}</defs><g id="graph-world">${frames.join('')}${routes.join('')}${nodes.join('')}${labels.join('')}</g></svg>`;
+ $('stage').querySelectorAll('.config-entry').forEach(entry=>entry.parentNode.appendChild(entry));
+ renderNavigation();updateGraphControls();applyCamera();
+}
+function archMetricShape(kind,id){
+ const module=isModuleArch();
+ if(module&&overviewState.page==='ple_preparation'&&kind==='module-summary'){const group=overviewData().blocks.find(n=>n.id===id);const shapes=new Set(pleArchRecords(group.mappingAnchor,true).map(r=>'['+r.reference.shape.join(', ')+']'));return shapes.size>1?'Multiple shapes':[...shapes][0]||'—';}
+ let ids=[id];
+ if(kind==='summary'||kind==='module-summary'){
+  const group=module?[...overviewData().blocks,...overviewData().nodes].find(n=>n.id===id):groups.find(g=>g.id===id);
+  ids=(module?group?.summaryMembers:group?.ops.flatMap(op=>ops[op].output))||[];
+  ids=[...new Set(ids)].filter(t=>t!==(module?group?.mappingAnchor:group?.output));
+ }
+ const shapes=ids.flatMap(anchor=>archTensorSources(anchor).map(pair=>{
+  const format=t=>Array.isArray(t?.shape)&&(t.shape.length||t.dtype&&t.dtype!=='unknown')?'['+t.shape.join(', ')+']':'—';
+  const reference=format(pair.reference),target=format(pair.target);
+  return reference===target?reference:'Ref '+reference+' · Target '+target;
+ }));
+ const unique=[...new Set(shapes)];
+ return unique.length>1?'Multiple shapes':unique[0]||'—';
+}
+// Default Details describe the current Arch and reuse the graph's metric values.
+function archDefaultDetails(){
+ const module=isModuleArch(),page=module?overviewData():null;
+ const info=[['Name',module?overviewTitle():`Transformer Layer ${state.layer}`],['Type',module?'Module Arch':'Transformer Layer Arch'],...(!module?[['Layer',state.layer]]:[]),['Stage',executionStage==='decode'?'Decode':'Prefill'],['Token Position',analysisContext?.position??'—']];
+ const rows=[];
+ const add=(label,metric,kind,id)=>rows.push(`<tr data-metric-shape="${escape(archMetricShape(kind,id))}" data-metric-selected="${state.selection?.kind===kind&&state.selection.id===id}"><td class="info-key">${escape(label)}</td><td>${escape(archMetricShape(kind,id))}</td><td class="info-cell"><span class="arch-details-metric" data-metric-bg="${escape(metric.bg)}" style="background:${escape(metric.bg)};color:${escape(metric.fg)};padding:2px 5px;border-radius:3px">${escape(metric.text)}</span></td></tr>`);
+ if(module){
+  const layout=moduleArchLayout();
+  // Interleave summaries and outputs in the same reading order as the Arch.
+  const entries=[
+   ...[...page.blocks,...page.nodes].filter(n=>n.summaryMembers).map(node=>({position:layout.positions[node.id],label:`${node.label} internal (${analysisContext?.summary==='min'?'Min':'Max'})`,anchor:node.mappingAnchor,members:node.summaryMembers,kind:'module-summary',id:node.id})),
+   ...layout.tensors.map(tensor=>({position:layout.positions[tensor.id],label:tensor.tensor?.name||tensor.source,anchor:tensor.source,kind:'module-tensor',id:tensor.source})),
+  ];
+  entries.sort((a,b)=>(a.position?.y??Infinity)-(b.position?.y??Infinity)||(a.position?.x??0)-(b.position?.x??0));
+  for(const entry of entries)add(entry.label,archMetric(entry.anchor,entry.members),entry.kind,entry.id);
+ }else{
+  for(const [id,tensor] of Object.entries(tensors))if(!tensor.producer&&positions[id])add(tensor.name,archMetric(id),'tensor',id);
+  for(const id of state.scope?[state.scope]:overviewOrder){
+   const group=groups.find(g=>g.id===id);
+   if(group){add(`${group.name} internal (${analysisContext?.summary==='min'?'Min':'Max'})`,blockMetric(group),'summary',group.id);add(tensors[group.output].name,archMetric(group.output),'tensor',group.output);}
+   else for(const output of ops[id].output)add(tensors[output].name,archMetric(output),'tensor',output);
+  }
+ }
+ return infoSection('arch-info','Analysis Info',infoTable(info))+infoSection('arch-metrics','Metric List',`<table class="info-metadata"><tbody>${rows.join('')}</tbody></table>`);
+}
+// PLE's Arch bindings resolve reference runtime ports; edits change their target.
+const loadedPleGraphs=new Map();
+function pleArchRecords(anchor,internal=false){
+ const c=mappingContext(anchor),graph=loadedPleGraphs.get(c.store),pairs=mappingState.pairs.get(c.store)||[];
+ return window.pleMapping.ports(graph,anchor,internal).map(({node,port,id})=>({reference:mappingTensor(graph,node,port),pair:pairs.find(p=>p.reference.id===id)}));
+}
+function pleArchMetric(anchor,internal){
+ const records=pleArchRecords(anchor,internal),values=records.map(r=>r.pair?mappingMetricPreview.read(r.pair):{state:'unpaired',value:null,text:'—'});
+ const metric=internal?window.pleMapping.aggregate(values,analysisContext?.summary):values[0]||{state:'missing',value:null,text:'—'};
+ return {...metric,text:metric.state==='pending'?'…':metric.text,bg:metric.bg||'var(--metric-empty-bg)',fg:metric.fg||'var(--muted)',title:`${internal?'Internal '+(analysisContext?.summary==='min'?'Min':'Max'):'Tensor'} · ${metric.state==='pending'?'Calculating':metric.text}${internal?' · '+metric.available+'/'+metric.total+' tensors available':''}`};
+}
+function archTensorSources(id){
+ if(isModuleArch()&&overviewState.page==='ple_preparation')return pleArchRecords(id).map(r=>r.pair||{reference:r.reference,target:null});
+ return mappingPairsFor(id);
+}
+function archTensorDetailItem(id){
+ const node=isModuleArch()?overviewData().nodes.find(n=>n.id===id):null;
+ const name=isModuleArch()?(moduleArchLayout().tensors.find(t=>t.source===id)?.tensor||node?.tensor)?.name||node?.label||id:tensors[id]?.name||id;
+ const pairs=archTensorSources(id);
+ return archPairDetails(pairs,name);
+}
+function archPairDetails(pairs,name){
+ const source=t=>t?[t.sourceGraph,t.name||t.displayLabel].filter(Boolean).join(' › '):'Not mapped';
+ const shape=t=>Array.isArray(t?.shape)&&(t.shape.length||t.dtype&&t.dtype!=='unknown')?'['+t.shape.join(', ')+']':'—';
+ // Each item represents a pair; provenance belongs to its two runtime sources.
+ return (pairs.length?pairs:[null]).map((pair,index)=>{
+  const title=(pair?.semanticLabel||name)+(pairs.length>1?' · Pair '+(index+1):'');
+  return `<div data-tensor-heading="${escape(title)}">${infoTable([['Reference',source(pair?.reference)],['Reference shape',shape(pair?.reference)],['Target',source(pair?.target)],['Target shape',shape(pair?.target)]],true)}</div>`;
+ }).join('');
+}
+function archSelectedTensorDetails(){
+ const selected=state.selection,module=isModuleArch();
+ if(!selected)return '';
+ let ids;
+ if(['summary','module-summary'].includes(selected.kind)){
+  const group=module?[...overviewData().blocks,...overviewData().nodes].find(n=>n.id===selected.id):groups.find(g=>g.id===selected.id);
+  if(!group)return '';
+  if(module&&overviewState.page==='ple_preparation'){const records=pleArchRecords(group.mappingAnchor,true);return infoSection('selected-tensor','Tensor Details',records.map(r=>archPairDetails([r.pair||{reference:r.reference,target:null}],r.reference.name.split('/').slice(-2).join(' / '))).join('')||'<p>No internal tensors</p>');}
+  const output=module?group.mappingAnchor:group.output;
+  ids=[...new Set(module?group.summaryMembers:group.ops.flatMap(id=>ops[id].output))].filter(id=>id!==output);
+ }else if(['tensor','module-tensor'].includes(selected.kind))ids=[selected.id];
+ else return '';
+ return infoSection('selected-tensor','Tensor Details',ids.length?ids.map(id=>archTensorDetailItem(id)).join(''):'<p>No internal tensors</p>');
+}
+function moduleArchDetails(){
+ const page=overviewData(),selection=state.selection,n=page.nodes.find(n=>n.id===selection?.id),b=page.blocks.find(b=>b.id===selection?.id);
+ if(['module-summary','module-tensor'].includes(selection?.kind)){
+  $('details').innerHTML=archDefaultDetails()+archSelectedTensorDetails();
+  $('status').textContent='Tensor selected';requestAnimationFrame(measureInfoValues);return;
+ }
+ const locate=id=>{const n=page.nodes.find(n=>n.id===id);return `<button class="info-locator" data-kind="model-op" data-id="${id}">${escape(n.label)}</button>`;};
+ const portRows=(ids,input)=>`<div class="info-flat-items">${ids.map((id,i)=>{const source=page.nodes.find(n=>n.id===id),t=source.outputs?.find(p=>p.targets.includes(n?.id))?.tensor||source.tensor;return `<div class="info-flat-item"><div class="info-name-row"><span class="info-index">${i}</span>${input?locate(id):'<span class="info-name">output</span>'}</div>${infoTable([['tensor_name',t.name],['tensor_shape',t.shape],...(!input?page.nodes.filter(n=>n.inputs.includes(id)).map(n=>['connects to',n.attrs?.role||n.label]):[])])}</div>`;}).join('')}</div>`;
+ let content;
+ if(b){content=infoSection('node','Block info',infoTable([['name',b.label],['children',b.nodes.length],['scope',overviewTitle()]]))+infoSection('children',`Children (${b.nodes.length})`,`<div class="info-flat-items">${b.nodes.map(id=>`<div class="info-flat-item">${locate(id)}</div>`).join('')}</div>`);}
+ else if(n){content=infoSection('node','Node info',infoTable([['name',n.label],['id',n.id],['namespace',page.blocks.find(b=>b.nodes.includes(n.id))?.label||overviewTitle()]]))+infoSection('attributes','Attributes',infoTable(Object.entries(n.attrs||{})))+(page.placeholder?'':infoSection('inputs',`Inputs (${n.inputs.length})`,portRows(n.inputs,true)));if(n.outputs)content+=infoSection('outputs',`Outputs (${n.outputs.length})`,n.outputs.map((p,i)=>`<div class="info-flat-item">${infoTable([['port',i],['tensor_name',p.tensor.name],['tensor_shape',p.tensor.shape],['connects to',p.targets.map(id=>page.nodes.find(n=>n.id===id).label).join(', ')]])}</div>`).join(''));else if(page.nodes.some(t=>t.inputs.includes(n.id)))content+=infoSection('outputs','Outputs (1)',portRows([n.id],false));}
+ else content=archDefaultDetails();
+ const producer=n?.kind!=='boundary'&&n?n:page.nodes.find(n=>n.id===page.nodes.find(n=>n.id==='output')?.inputs[0]);if(!embedded&&page.mappingEnabled!==false&&!b&&producer)content+=infoSection('mapping','Tensor Mapping',`<button class="info-locator" data-mapping-anchor="${producer.id}">Inspect tensor</button>`+infoTable([['semantic output',producer.tensor?.name||producer.label],['pairs',mappingPairsFor(producer.id).length]]));
+ $('details').innerHTML=content;$('status').textContent=n?.label||b?.label||overviewTitle();requestAnimationFrame(measureInfoValues);
+}
+
+function drawModel(){
+ if(isModuleArch()){drawModuleArch();return;}
+ if(overviewState.page==='model'){mountNativeModel();renderNavigation();return;}
+ hideIconTooltip();edgeIds=new Set();
+ const page=overviewData(),layoutKey=page.nodes.filter(n=>n.kind==='stack'&&overviewState.expanded.has(n.id)).map(n=>n.id).sort().join('|')||'collapsed';
+ const layout=window.MODEL_LAYOUTS[overviewState.page][layoutKey];
+ positions=Object.fromEntries(Object.entries(layout.positions).map(([id,p])=>[id,{...p}]));
+ const selected=state.selection?.id,body=[];
+ const chosenBlock=(layout.blocks||[]).find(b=>state.selection?.kind==='model-block'&&b.id===selected);
+ const selectedIds=new Set(chosenBlock?.nodes||[selected]);
+ const incoming=new Set(layout.edges.filter(e=>selectedIds.has(e.to)&&!selectedIds.has(e.from)).map(e=>e.from));
+ const outgoing=new Set(layout.edges.filter(e=>selectedIds.has(e.from)&&!selectedIds.has(e.to)).map(e=>e.to));
+ const ioClass=id=>incoming.has(id)?'io-incoming':outgoing.has(id)?'io-outgoing':'';
+ const blockFrames=(layout.blocks||[]).map(b=>`<g class="model-functional-block ${chosenBlock?.id===b.id?'selected':''}" data-kind="model-block" data-id="${b.id}" role="button" tabindex="0" aria-pressed="${chosenBlock?.id===b.id}" aria-label="Select ${escape(b.label)} block"><rect x="${b.x}" y="${b.y}" width="${b.w}" height="${b.h}" rx="6"/></g>`).join('');
+ const blockTitles=(layout.blocks||[]).map(b=>`<g class="model-block-title" aria-hidden="true"><text x="${b.x+12}" y="${b.y+17}">${escape(b.label)}</text></g>`).join('');
+ const edges=layout.edges.map(e=>{const io=selectedIds.has(e.to)&&!selectedIds.has(e.from)?'incoming':selectedIds.has(e.from)&&!selectedIds.has(e.to)?'outgoing':'';return `<path class="model-edge ${io}" data-source="${e.from}" data-target="${e.to}" d="${modelEdgePath(e)}" marker-end="url(#model-arrow${io?'-'+io:''})"/>`});
+ const entry=(attrs,label,x,y)=>`<g class="layer-entry" role="button" tabindex="0" aria-label="${escape(label)}" ${attrs} transform="translate(${x} ${y})"><title>${escape(label)}</title><rect width="18" height="18" rx="4"/><path transform="translate(1 1) scale(.6667)" d="M5 5h6v2H7v10h10v-4h2v6H5z M13 3h8v8h-2V6.4l-8.3 8.3-1.4-1.4L17.6 5H13z"/></g>`;
+ for(const n of page.nodes){const p=positions[n.id],chosen=state.selection?.kind!=='model-block'&&selected===n.id;
+  if(n.kind==='stack'){
+   const open=overviewState.expanded.has(n.id),label=`${open?'Collapse':'Expand'} ${n.label}`;
+   body.push(`<g class="stack-backs" aria-hidden="true"><rect x="${p.x+12}" y="${p.y+12}" width="${p.w-12}" height="${p.h-12}" rx="6"/><rect x="${p.x+6}" y="${p.y+6}" width="${p.w-12}" height="${p.h-12}" rx="6"/></g><g class="model-node model-stack ${ioClass(n.id)} ${chosen?'selected':''}" data-kind="model-op" data-id="${n.id}" role="button" tabindex="0" aria-label="Select ${n.label}"><rect x="${p.x}" y="${p.y}" width="${p.w-12}" height="${p.h-12}" rx="6"/><text x="${p.x+38}" y="${p.y+24}">${n.label}</text><text class="stack-count" x="${p.x+38}" y="${p.y+44}">${n.count} layers · 0–${n.count-1}</text></g><g class="fold stack-toggle" data-stack-toggle="${n.id}" role="button" tabindex="0" aria-label="${label}" aria-expanded="${open}" transform="translate(${p.x+10} ${p.y+10})"><rect width="20" height="20" rx="4"/><path transform="translate(2 2) scale(.6667)" d="${infoIcons[open?'fold':'unfold']}"/></g>`);
+   if(open){body.push(`<foreignObject x="${p.x+7}" y="${p.y+56}" width="${p.w-26}" height="${p.h-76}"><div xmlns="http://www.w3.org/1999/xhtml" class="stack-list" data-stack-list="${n.id}" role="list" aria-label="${n.label}" tabindex="0">${Array.from({length:n.count},(_,i)=>{const id=`${n.prefix}_${i}`,decoder=n.prefix==='layer';return `<div role="listitem" class="stack-row ${selected===id?'selected':''}"><button class="stack-select" data-kind="${decoder?'layer':'encoder-layer'}" data-id="${id}" aria-pressed="${selected===id}" aria-label="Select ${decoder?'Text':n.prefix==='vision_layer'?'Vision':'Audio'} Layer ${i}">Layer ${i}</button><button class="stack-enter" ${decoder?`data-enter-layer="${i}"`:`data-overview="${n.prefix}" data-overview-index="${i}"`} aria-label="Enter ${decoder?'Layer':n.prefix==='vision_layer'?'Vision Layer':'Audio Layer'} ${i} subgraph"><svg viewBox="0 0 24 24"><path d="M5 5h6v2H7v10h10v-4h2v6H5z M13 3h8v8h-2V6.4l-8.3 8.3-1.4-1.4L17.6 5H13z"/></svg></button></div>`;}).join('')}</div></foreignObject>`);}
+  }else{
+   const module=!!n.page,math=n.label==='Add';
+   body.push(`<g class="model-node ${ioClass(n.id)} ${module?'model-module':''} ${math?'model-math':''} ${chosen?'selected':''}" data-kind="model-op" data-id="${n.id}" role="button" tabindex="0" aria-label="Select ${escape(n.label)}" aria-pressed="${chosen}"><rect x="${p.x}" y="${p.y}" width="${p.w}" height="${p.h}" rx="${math?15:6}"/><text x="${p.x+p.w/2-(module?10:0)}" y="${p.y+p.h/2+(math?5:4)}" text-anchor="middle">${math?'+':escape(n.label)}</text></g>`);
+   if(module)body.push(entry(`data-overview="${n.page}"`,`Enter ${n.label} subgraph`,p.x+p.w-25,p.y+(p.h-18)/2));
+  }
+ }
+ $('stage').innerHTML=`<svg class="architecture" role="group" aria-label="Gemma 4 E2B ${overviewTitle()} graph"><defs>${['','incoming','outgoing'].map(io=>`<marker id="model-arrow${io?'-'+io:''}" viewBox="0 0 6 6" refX="6" refY="3" markerWidth="6" markerHeight="6" markerUnits="userSpaceOnUse" orient="auto"><path style="fill:var(--${io==='selected'?'accent':io||'edge'})" d="M0 0L6 3L0 6L2 3z"/></marker>`).join('')}</defs><g id="graph-world">${blockFrames}${edges.join('')}${(layout.junctions||[]).map(p=>`<circle class="model-junction" cx="${p.x}" cy="${p.y}" r="2"/>`).join('')}${blockTitles}${body.join('')}</g></svg>`;
+ for(const list of $('stage').querySelectorAll('[data-stack-list]')){list.scrollTop=overviewState.scroll.get(list.dataset.stackList)||0;list.addEventListener('scroll',()=>overviewState.scroll.set(list.dataset.stackList,list.scrollTop));}
+ updateGraphControls();renderNavigation();applyCamera();
+}
+function focusModelNode(id){
+ if(isModuleArch()){const b=overviewData().blocks.find(b=>b.nodes.includes(id));if(b){overviewState.expanded.add(b.id);draw();}}
+ const node=overviewNodes().find(n=>n.id===id);if(node?.stack){overviewState.expanded.add(node.stack);draw();const row=$('stage').querySelector(`[data-id="${id}"]`);row?.scrollIntoView({block:'nearest'});const p=positions[node.stack],r=$('viewport').getBoundingClientRect();state.zoom=Math.max(.9,state.zoom);state.x=r.width/2-(p.x+p.w/2)*state.zoom;state.y=Math.max(120,(r.height-p.h*state.zoom)/2)-p.y*state.zoom;applyCamera();return;}
+ const p=positions[id];if(!p)return;const r=$('viewport').getBoundingClientRect();state.zoom=Math.min(1.25,(r.width-40)/440);state.x=r.width/2-(p.x+p.w/2)*state.zoom;state.y=Math.max(140,r.height/2)-(p.y+p.h/2)*state.zoom;applyCamera();
+}
+function overviewDetails(){
+ if(isModuleArch()){moduleArchDetails();return;}
+ const s=state.selection,node=s?overviewNodes().find(n=>n.id===s.id):null;
+ let content;
+ const block=overviewData().blocks?.find(b=>s?.kind==='model-block'&&b.id===s.id);
+ if(block){content=infoSection('group','Group node info',infoTable([['name',block.label],['children',block.nodes.length]])+`<div class="nodes" style="margin:8px 24px">${block.nodes.map(id=>{const n=overviewData().nodes.find(n=>n.id===id);return `<button class="info-locator" data-kind="model-op" data-id="${id}">${escape(n.label)}</button>`;}).join('')}</div>`);}
+ else if(s?.kind==='layer'){const i=Number(s.id.slice(6));content=infoSection('layer','Layer info',infoTable(layerRows(i))+`<button class="info-locator" style="margin:8px 24px" data-enter-layer="${i}">Enter Layer ${i} subgraph ↗</button>`)+infoSection('attributes','Attention',infoTable(attentionRows(i)));}
+ else if(node?.kind==='encoder-layer'){const stack=overviewData().nodes.find(n=>n.id===node.stack);content=infoSection('layer','Layer info',infoTable([['name',`${stack.label} / Layer ${node.layer}`],['layer',node.layer],['type',stack.prefix==='vision_layer'?'Vision Transformer':'USM-style Conformer'],['runtime mapping','Not connected in this preview']])+`<button class="info-locator" style="margin:8px 24px" data-overview="${stack.prefix}" data-overview-index="${node.layer}">Enter ${node.label} subgraph ↗</button>`);}
+ else if(node){content=infoSection('node',node.kind==='stack'?'Module info':'Node info',infoTable([['name',node.label],['block',overviewData().blocks?.find(b=>b.nodes.includes(node.id))?.label],['description',node.description],...Object.entries(node.attrs||{})]));}
+ else if(overviewState.page==='model'){content=infoSection('model','Model info',infoTable([['model',semanticModel.name],['scope','Multimodal model'],['decoder layers',35],['vision layers',16],['audio layers',12],['hidden width',semanticModel.config.hidden_size],['runtime mapping','All module and layer workspaces'],['source','Checkpoint config + Transformers implementation']]));}
+ else{content=infoSection('layer',overviewState.page.endsWith('_layer')?'Layer info':'Module info',infoTable([['name',overviewTitle()],['model',semanticModel.name],['type',overviewState.page.startsWith('vision')?'Vision Transformer':'USM-style Conformer'],['runtime mapping','Not connected in this preview'],['source',overviewState.page.startsWith('vision')?'Gemma4VisionModel':'Gemma4AudioModel']]));}
+ $('details').innerHTML=content;$('status').textContent=block?block.label:node?node.label:overviewTitle()+' information';requestAnimationFrame(measureInfoValues);
+}
+
+function details(){
+ const pairing=!$('pair-view').hidden;$('details').hidden=pairing;$('pair-details').hidden=!pairing;if(pairing)return;
+ const s=state.selection;
+ if(state.page==='model'){overviewDetails();return;}
+ if(!s){$('status').textContent=`Layer ${state.layer} information`;$('details').innerHTML=archDefaultDetails();requestAnimationFrame(measureInfoValues);return;}
+ if(['tensor','summary'].includes(s.kind)){$('details').innerHTML=archDefaultDetails()+archSelectedTensorDetails();requestAnimationFrame(measureInfoValues);return;}
+ const group=['group','summary'].includes(s.kind)?groups.find(g=>g.id===s.id):null,op=s.kind==='op'?ops[s.id]:null,tensor=s.kind==='tensor'?tensors[s.id]:null;
+ const name=group?.name||op?.name||tensor?.name,namespace=group?.id||op?.group||tensor?.group;
+ let body=infoSection('node',s.kind==='summary'?'Summary info':group?'Node info':tensor?'Tensor info':'Node info',infoTable([[group?'node name':op?'op name':'tensor name',name],['id',s.id],['namespace',namespace?`layer_${state.layer} / ${namespace}`:`layer_${state.layer}`]]));
+ if(group){
+  if(s.kind==='summary'){const metric=blockMetric(group);body+=infoSection('summary','Internal summary',infoTable([['aggregation',metric.mode==='min'?'Min':'Max'],['value',metric.text],['available tensors',metric.available+' / '+metric.total],['scope','Internal tensors; final output excluded']]));}
+  if(group.id==='attention')body+=infoSection('attributes','Attributes',infoTable(attentionRows()));
+  if(group.id==='ffn')body+=infoSection('attributes','Attributes',infoTable(ffnRows()));
+  if(group.id==='ple')body+=infoSection('attributes','Attributes',infoTable(pleRows()));
+  const inputs=group.id==='ple'?[group.input,'embedding']:group.id==='attention'&&tensors.shared_k?[group.input,'shared_k','shared_v']:[group.input];
+  body+=infoSection('inputs',`Inputs (${inputs.length})`,tensorRows(inputs,'input'));
+  body+=infoSection('outputs','Outputs (1)',tensorRows([group.output],'output'));
+  body+=infoSection('internal','Internal tensors',infoTable(group.ops.flatMap(id=>ops[id].output).filter(id=>id!==group.output).map(id=>[tensors[id].name,archMetric(id).text])));
+ }else if(op){
+  const purpose=s.id==='attention_op'?'Compute attention weights from Q and K, then aggregate V into the attention output.':op.purpose;
+  body+=infoSection('attributes','Attributes',infoTable([['op type',op.name],['role',op.role],['description',purpose],...(s.id==='attention_op'?attentionRows():[]),...(op.group==='ffn'?ffnRows():[]),...(op.group==='ple'?pleRows():[]),...(s.id==='skip_scale'?[['operation','Layer Scale'],['parameter','scale · broadcast coefficient'],['computation','Layer output = residual × scale']]:[]),...semantic.contexts.filter(c=>c.consumers.includes(s.id)).map(c=>['context input',c.id])]));
+  body+=infoSection('inputs',`Inputs (${op.input.length})`,tensorRows(op.input,'input'));
+  body+=infoSection('outputs',`Outputs (${op.output.length})`,tensorRows(op.output,'output'));
+ }else if(tensor){const metric=archMetric(s.id);body+=infoSection('attributes','Attributes',infoTable([['producer',ops[tensor.producer]?.name||'External input'],['consumers',tensor.consumers.map(id=>ops[id]?.name||id).join(', ')],['metric',metric.text],['configuration owner',tensor.producer?configurationLabel(configurationScope(s.id)):upstreamConfiguration(s.id)],['configuration',tensor.producer?'Enter the producing block subgraph; edits are in Advanced configuration':'Upstream output; not configured by this layer'],...(tensor.producer?[['tensor pairs',tensorPairs(s.id).length]]:[])]));}
+ $('details').innerHTML=body+(executionStage==='prefill'?infoSection('execution','Execution',infoTable([['stage','Prefill'],['mapping',state.layer<15?'Prefill export region available; layer 14 is partial':'This export has no Prefill region for this layer']])):'');$('status').textContent=`Selected ${s.kind}: ${name}`;requestAnimationFrame(measureInfoValues);
+}
+$('details').addEventListener('click',e=>{
+ const toggle=e.target.closest('[data-info-toggle]');if(toggle){e.stopPropagation();const section=toggle.closest('.info-section'),content=section.querySelector('.info-content'),closed=section.classList.toggle('is-closed');content.hidden=closed;toggle.setAttribute('aria-expanded',String(!closed));const title=section.querySelector('.info-header>span').textContent;toggle.setAttribute('aria-label',(closed?'Expand ':'Collapse ')+title);closed?closedInfoSections.add(toggle.dataset.infoToggle):closedInfoSections.delete(toggle.dataset.infoToggle);measureInfoValues();return;}
+ const value=e.target.closest('.info-value');if(value&&(e.target.closest('[data-value-toggle]')||value.classList.contains('has-overflow')&&!value.classList.contains('expanded'))){e.stopPropagation();const expanded=value.classList.toggle('expanded'),button=value.querySelector('button');button.setAttribute('aria-expanded',String(expanded));button.setAttribute('aria-label',(expanded?'Collapse ':'Expand ')+value.dataset.valueLabel);button.innerHTML=infoIcon(expanded?'fold':'unfold');if(!expanded)measureInfoValues();return;}
+ const locate=e.target.closest('[data-locate]');if(locate){e.stopPropagation();const id=locate.dataset.locate;select(ops[id]?'op':'group',id);const p=positions[id];if(p){const r=$('viewport').getBoundingClientRect(),obscured=window.innerWidth<=700?document.querySelector('.details').getBoundingClientRect().width:0;state.x=(r.width-obscured)/2-(p.x+p.w/2)*state.zoom;state.y=r.height/2-(p.y+p.h/2)*state.zoom;applyCamera();}return;}
+ const eye=e.target.closest('[data-io-highlight]');if(eye){e.stopPropagation();const id=eye.dataset.ioHighlight;state.hiddenIo.has(id)?state.hiddenIo.delete(id):state.hiddenIo.add(id);const scroll=$('details').scrollTop;draw();details();$('details').scrollTop=scroll;return;}
+});
+new ResizeObserver(measureInfoValues).observe(document.querySelector('.details'));
+function select(kind,id){if((state.page==='layer'||isModuleArch())&&!['tensor','module-tensor','summary','module-summary'].includes(kind))return;const restoreStackFocus=document.activeElement?.classList.contains('stack-select');state.hiddenIo.clear();state.selection={kind,id};const group=kind==='op'?ops[id].group:kind==='tensor'?tensors[id].group:kind==='module-tensor'?null:id;if(group){if(state.scope&&state.scope!==group)state.scope=null;}draw();details();if(restoreStackFocus)$('stage').querySelector(`.stack-select[data-id="${id}"]`)?.focus();if(window.innerWidth<=700){$('workspace').classList.remove('details-hidden');$('workspace').classList.add('show-details');$('details-toggle').setAttribute('aria-expanded','true');}}
+const MIN_ZOOM=.1,MAX_ZOOM=4;
+function applyCamera(){
+ $('graph-world')?.setAttribute('transform',`translate(${state.x} ${state.y}) scale(${state.zoom})`);
+ // Match Model Explorer's white-node far-color transition: 30 world units below 7.5px.
+ const far=Math.max(0,Math.min(1,(7.5-30*state.zoom)/.5))/3;
+ $('stage').style.setProperty('--far-fill',`${far*100}%`);
+ $('reset').textContent=Math.round(state.zoom*100)+'%';
+ $('out').disabled=state.zoom<=MIN_ZOOM;$('in').disabled=state.zoom>=MAX_ZOOM;
+}
+function setZoom(z,anchor){hideIconTooltip();closeMenu();
+ const r=$('viewport').getBoundingClientRect(),a=anchor||{x:r.width/2,y:r.height/2};
+ const next=Math.max(MIN_ZOOM,Math.min(MAX_ZOOM,z)),ratio=next/state.zoom;
+ state.x=a.x-(a.x-state.x)*ratio;state.y=a.y-(a.y-state.y)*ratio;
+ state.zoom=next;applyCamera();
+}
+function fit(){
+ const r=$('viewport').getBoundingClientRect(),b=$('graph-world').getBBox();
+ const arch=state.page==='layer'||isModuleArch(),top=arch?32:100,bottom=arch?32:90;
+ state.zoom=Math.max(MIN_ZOOM,Math.min(1.15,(r.width-64)/b.width,(r.height-top-bottom)/b.height));
+ state.x=r.width/2-(b.x+b.width/2)*state.zoom;
+ state.y=top+(r.height-top-bottom)/2-(b.y+b.height/2)*state.zoom;
+ applyCamera();
+}
+function updateLayerExpansion(change,id,expanding){
+ const oldY=id?Number($('stage').querySelector(`.group-bg[data-id="${id}"]`)?.getAttribute('y')||70):10;
+ const screenX=state.x+320*state.zoom,screenY=state.y+oldY*state.zoom;
+ change();draw();details();
+ const newY=id?Number($('stage').querySelector(`.group-bg[data-id="${id}"]`)?.getAttribute('y')||70):10;
+ const block=id?$('stage').querySelector(`.group-bg[data-id="${id}"]`):null;
+ const blockWidth=block?Number(block.getAttribute('width')):620;
+ const readableZoom=Math.min(1,Math.max(.9,($('viewport').clientWidth-16)/(blockWidth+18)));
+ if(expanding)state.zoom=Math.max(readableZoom,state.zoom);
+ state.x=screenX-320*state.zoom;
+ if(expanding&&block)state.x=$('viewport').clientWidth/2-(Number(block.getAttribute('x'))+(blockWidth+18)/2)*state.zoom;
+ state.y=Math.max(80,Math.min($('viewport').clientHeight-100,screenY))-newY*state.zoom;
+ applyCamera();
+}
+function closeMenu(restoreFocus=false){const id=state.menu;if(!id)return;state.menu=null;$('graph-menu').hidden=true;const button=$('stage').querySelector(`[data-more="${id}"]`);button?.setAttribute('aria-expanded','false');if(restoreFocus)button?.focus();}
+function openMenu(button){const id=button.dataset.more;if(state.menu===id){closeMenu(true);return;}closeMenu();state.menu=id;button.setAttribute('aria-expanded','true');const menu=$('graph-menu');menu.innerHTML='<button role="menuitem" data-menu-action="popup">Inspect tensors</button>' ;menu.hidden=false;const r=button.getBoundingClientRect();menu.style.left=Math.max(8,Math.min(innerWidth-menu.offsetWidth-8,r.left))+'px';menu.style.top=Math.max(8,Math.min(innerHeight-menu.offsetHeight-8,r.bottom+4))+'px';menu.querySelector('button')?.focus();}
+function action(e){
+ if(e.target.closest('#stage [data-arch-node]'))return;
+ const mapping=e.target.closest('.config-entry[data-mapping-anchor]');if(mapping){openMapping(mapping.dataset.mappingAnchor);return;}
+ const archFold=e.target.closest('[data-arch-fold]');if(archFold){const id=archFold.dataset.archFold;overviewState.expanded.has(id)?overviewState.expanded.delete(id):overviewState.expanded.add(id);state.selection=null;draw();details();fit();$('stage').querySelector(`[data-arch-fold="${id}"]`)?.focus();return;}
+const overview=e.target.closest('[data-overview]');if(overview){navigateOverview(overview.dataset.overview,Number(overview.dataset.overviewIndex||0));if(overview.dataset.overview==='model')$('native-model-root').contentWindow.postMessage({channel:'native-model-preview',type:'model-root'},location.origin);return;}
+const stack=e.target.closest('[data-stack-toggle]');if(stack){toggleStack(stack.dataset.stackToggle);return;}
+const nav=e.target.closest('[data-nav]');if(nav){if(nav.dataset.nav==='layer'&&!$('pair-view').hidden)closePairView();else {navigatePage(nav.dataset.nav);if(nav.dataset.nav==='model')$('native-model-root').contentWindow.postMessage({channel:'native-model-preview',type:'model-root'},location.origin);}return;}
+const entry=e.target.closest('[data-enter-layer]');if(entry){navigatePage('layer',Number(entry.dataset.enterLayer));return;}
+
+const popupButton=e.target.closest('[data-popup]');if(popupButton?.dataset.popup){openPairView(popupButton.dataset.popup);return;}
+const more=e.target.closest('[data-more]');if(more){openMenu(more);return;}
+const menuAction=e.target.closest('[data-menu-action]');if(menuAction){const id=state.menu,what=menuAction.dataset.menuAction;closeMenu();if(what==='popup'){openPairView(id);return;}if(what==='fit'){fit();return;}if(what==='back'){state.scope=null;}else{state.selection={kind:'group',id};if(what==='collapse')state.collapsed.add(id);else state.collapsed.delete(id);if(what==='explore')state.scope=id;}draw();details();if(what==='explore'||what==='back')fit();$('stage').querySelector(`[data-more="${id}"]`)?.focus();return;}
+if(state.menu&&!e.target.closest('#graph-menu'))closeMenu();
+const back=e.target.closest('[data-back]');if(back){state.scope=null;draw();details();fit();return;}const explore=e.target.closest('[data-explore]');if(explore){state.scope=explore.dataset.explore;state.collapsed.delete(state.scope);state.selection={kind:'group',id:state.scope};draw();details();fit();return;}const fold=e.target.closest('[data-fold]');if(fold){const id=fold.dataset.fold;const expanding=state.collapsed.has(id);updateLayerExpansion(()=>{state.selection={kind:'group',id};expanding?state.collapsed.delete(id):state.collapsed.add(id);},id,expanding);const b=$('stage').querySelector(`[data-fold="${id}"]`);b?.focus();return;}const target=e.target.closest('[data-kind]');if(target){select(target.dataset.kind,target.dataset.id);}}
+function hideIconTooltip(){$('graph-tooltip').hidden=true;$('stage').querySelectorAll('.sync-covered,.sync-owner,.scope-active').forEach(el=>el.classList.remove('sync-covered','sync-owner','scope-active'));}
+function configurableTensorIds(scope){return new Set(Object.keys(tensors).filter(id=>configurationScope(id)===scope));}
+function highlightSyncScope(scope){
+ const ids=configurableTensorIds(scope);
+ $('stage').querySelectorAll('.tensor,.tensor-flow,.fork-point').forEach(el=>{if(ids.has(el.dataset.id||el.dataset.tensor))el.classList.add('sync-covered');});
+ return groupNames[scope];
+}
+function showIconTooltip(button){hideIconTooltip();const tip=$('graph-tooltip');tip.textContent=button.dataset.configScope?'Configure tensor pairs · '+highlightSyncScope(button.dataset.configScope):button.getAttribute('aria-label');tip.hidden=false;const r=button.getBoundingClientRect();tip.style.left=Math.max(8,Math.min(innerWidth-tip.offsetWidth-8,r.left+r.width/2-tip.offsetWidth/2))+'px';tip.style.top=Math.max(8,r.top-tip.offsetHeight-7)+'px';}
+$('stage').addEventListener('dblclick',e=>{const card=e.target.closest('.model-stack');if(card)toggleStack(card.dataset.id);});
+$('stage').addEventListener('pointerover',e=>{const b=e.target.closest('.fold,[data-config-scope]');if(b&&!b.contains(e.relatedTarget)){const previous=e.relatedTarget?.closest?.('[data-config-scope]');if(b.dataset.configScope&&previous?.dataset.configScope===b.dataset.configScope)return;showIconTooltip(b);}});
+$('stage').addEventListener('pointerout',e=>{const b=e.target.closest('.fold,[data-config-scope]');if(b&&!b.contains(e.relatedTarget)){const next=e.relatedTarget?.closest?.('[data-config-scope]');if(b.dataset.configScope&&next?.dataset.configScope===b.dataset.configScope)return;hideIconTooltip();}});
+$('stage').addEventListener('focusin',e=>{if(e.target.matches('.fold:focus-visible,[data-config-scope]:focus-visible'))showIconTooltip(e.target);});
+$('stage').addEventListener('focusout',hideIconTooltip);
+$('stage').addEventListener('pointerdown',hideIconTooltip);
+window.addEventListener('resize',hideIconTooltip);
+document.addEventListener('click',action);$('stage').addEventListener('keydown',e=>{if((e.key==='Enter'||e.key===' ')&&e.target.matches('g[role=button]')){e.preventDefault();const {kind,id,fold,more,popup}=e.target.dataset;action(e);if(more||popup||e.target.classList.contains('config-entry'))return;const selector=fold?'[data-fold="'+fold+'"]':'g[role="button"][data-kind="'+kind+'"][data-id="'+id+'"]';$('stage').querySelector(selector)?.focus();}if(e.key==='Escape'){state.selection=null;draw();details();$('viewport').focus();}});const zoomStops=[.1,.15,.2,.25,.35,.5,.7,1,1.4,2,2.8,4];$('in').onclick=()=>setZoom(zoomStops.find(z=>z>state.zoom+.001)||MAX_ZOOM);$('out').onclick=()=>setZoom(zoomStops.findLast(z=>z<state.zoom-.001)||MIN_ZOOM);$('reset').onclick=()=>setZoom(1);$('fit').onclick=fit;$('theme').onclick=()=>{const dark=document.documentElement.dataset.theme?document.documentElement.dataset.theme==='dark':matchMedia('(prefers-color-scheme: dark)').matches;document.documentElement.dataset.theme=dark?'light':'dark';};$('details-toggle').onclick=()=>{if($('workspace').classList.contains('native-model-active')){$('native-model-root').contentWindow.postMessage({channel:'native-model-preview',type:'details'},location.origin);return;}setDetailsOpen(!isDetailsOpen());};
+$('graph-menu').addEventListener('keydown',e=>{const items=[...$('graph-menu').querySelectorAll('button')],index=items.indexOf(document.activeElement);if(e.key==='Escape'){e.preventDefault();e.stopPropagation();closeMenu(true);}else if(e.key==='ArrowDown'||e.key==='ArrowUp'){e.preventDefault();items[(index+(e.key==='ArrowDown'?1:-1)+items.length)%items.length].focus();}else if(e.key==='Tab'){closeMenu();}});
+window.addEventListener('resize',()=>closeMenu());
+function updateGraphControls(){$('expand-blocks').hidden=state.page==='layer';$('collapse-blocks').hidden=state.page==='layer';if(isModuleArch()){const blocks=overviewData().blocks||[];document.querySelectorAll('[data-legend-selected]').forEach(e=>e.hidden=!state.selection);document.querySelectorAll('[data-legend-io]').forEach(e=>e.hidden=state.selection?.kind!=='model-op');$('expand-blocks').disabled=blocks.every(b=>overviewState.expanded.has(b.id));$('collapse-blocks').disabled=blocks.every(b=>!overviewState.expanded.has(b.id));return;}document.querySelectorAll('[data-legend-selected]').forEach(e=>e.hidden=!state.selection);document.querySelectorAll('[data-legend-io]').forEach(e=>e.hidden=state.selection?.kind!=='op');$('expand-blocks').disabled=state.page==='model'?overviewData().nodes.filter(n=>n.kind==='stack').every(n=>overviewState.expanded.has(n.id)):groups.every(g=>!state.collapsed.has(g.id));$('collapse-blocks').disabled=state.page==='model'?overviewData().nodes.filter(n=>n.kind==='stack').every(n=>!overviewState.expanded.has(n.id)):groups.every(g=>state.collapsed.has(g.id));}
+function closeGraphPopovers(){for(const id of ['graph-search-results','view-options-menu'])$(id).hidden=true;$('graph-search').setAttribute('aria-expanded','false');$('view-options').setAttribute('aria-expanded','false');}
+$('toolbar-fit').onclick=()=>{closeGraphPopovers();fit();};
+for(const [id,collapse] of [['expand-blocks',false],['collapse-blocks',true]])$(id).onclick=()=>{closeGraphPopovers();if(state.page==='layer')return;if(isModuleArch()){for(const b of overviewData().blocks)collapse?overviewState.expanded.delete(b.id):overviewState.expanded.add(b.id);state.selection=null;draw();details();fit();return;}if(state.page==='model'){for(const n of overviewData().nodes.filter(n=>n.kind==='stack'))collapse?overviewState.expanded.delete(n.id):overviewState.expanded.add(n.id);draw();details();if(collapse)fit();return;}updateLayerExpansion(()=>{state.scope=null;state.collapsed=new Set(collapse?groups.map(g=>g.id):[]);state.selection=null;state.hiddenIo.clear();},null,!collapse);};
+$('view-options').onclick=()=>{const open=$('view-options-menu').hidden;closeGraphPopovers();$('view-options-menu').hidden=!open;$('view-options').setAttribute('aria-expanded',String(open));};
+
+$('show-legend').onchange=e=>{document.querySelector('.legend').hidden=!e.target.checked;};
+function searchGraph(){const query=$('graph-search').value.trim(),out=$('graph-search-results');$('search-clear').hidden=!query;$('graph-search').setAttribute('aria-expanded',String(!!query));out.hidden=!query;if(!query)return;let pattern;try{pattern=new RegExp(query,'i');$('graph-search').removeAttribute('aria-invalid');}catch{$('graph-search').setAttribute('aria-invalid','true');out.innerHTML='<p role="status">Invalid regular expression</p>';return;}
+const candidates=state.page==='model'?overviewNodes().map(n=>({id:n.id,name:n.label,module:n.module,kind:['layer','encoder-layer'].includes(n.kind)?n.kind:'model-op'})):[...groups.map(g=>({id:g.id,name:g.name,kind:'group'})),...Object.entries(ops).filter(([id])=>overviewOps.has(id)).map(([id,n])=>({id,name:n.name,kind:'op'}))],matches=candidates.filter(n=>pattern.test(n.name)||pattern.test(n.id));out.innerHTML=matches.length?matches.map(n=>`<button data-search-id="${n.id}" data-search-kind="${n.kind}"><span>${escape(n.name)}</span><small>${n.module|| (n.kind==='model-op'?'Model':['layer','encoder-layer'].includes(n.kind)?'Layer':n.kind==='group'?'Block':groupNames[ops[n.id].group])}</small></button>`).join(''):'<p role="status">No matching nodes or blocks</p>';}
+$('graph-search').addEventListener('input',searchGraph);$('graph-search').addEventListener('focus',()=>{if($('graph-search').value)searchGraph();});
+$('search-clear').onclick=()=>{$('graph-search').value='';searchGraph();$('graph-search').focus();};
+$('graph-search').addEventListener('keydown',e=>{if(e.key==='Escape'){closeGraphPopovers();$('viewport').focus();}else if(['ArrowDown','Enter'].includes(e.key)){e.preventDefault();$('graph-search-results').querySelector('button')?.focus();}});
+$('graph-search-results').addEventListener('click',e=>{const b=e.target.closest('[data-search-id]');if(!b)return;e.stopPropagation();closeGraphPopovers();select(b.dataset.searchKind,b.dataset.searchId);if(state.page==='model')focusModelNode(b.dataset.searchId);else fit();});
+document.addEventListener('pointerdown',e=>{if(!e.target.closest('.graph-controls,.control-popover'))closeGraphPopovers();});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&e.target.closest('.graph-controls,.control-popover')){closeGraphPopovers();$('graph-search').focus();}});
+function isDetailsOpen(){return !$('workspace').classList.contains('details-hidden')&&(window.innerWidth>700||$('workspace').classList.contains('show-details'));}
+function setDetailsOpen(open){$('workspace').classList.toggle('details-hidden',!open);$('workspace').classList.toggle('show-details',open);$('details-toggle').setAttribute('aria-expanded',String(open));requestAnimationFrame(measureInfoValues);}
+document.querySelector('.info-hide').onclick=()=>setDetailsOpen(false);
+document.querySelector('.info-show').onclick=()=>setDetailsOpen(true);
+const infoResizer=document.querySelector('.info-resizer');let infoResize=null;
+function resizeDetails(width){const value=Math.max(240,Math.min(width,window.innerWidth-80));document.querySelector('.details').style.setProperty('--details-width',value+'px');infoResizer.setAttribute('aria-valuenow',String(Math.round(value)));}
+infoResizer.addEventListener('pointerdown',e=>{if(e.button)return;e.preventDefault();infoResize={x:e.clientX,width:document.querySelector('.details').getBoundingClientRect().width};infoResizer.setPointerCapture(e.pointerId);infoResizer.classList.add('resizing');});
+infoResizer.addEventListener('pointermove',e=>{if(infoResize)resizeDetails(infoResize.width+infoResize.x-e.clientX);});
+function finishInfoResize(){infoResize=null;infoResizer.classList.remove('resizing');}
+infoResizer.addEventListener('pointerup',finishInfoResize);infoResizer.addEventListener('pointercancel',finishInfoResize);
+infoResizer.addEventListener('keydown',e=>{if(!['ArrowLeft','ArrowRight'].includes(e.key))return;e.preventDefault();resizeDetails(document.querySelector('.details').getBoundingClientRect().width+(e.key==='ArrowLeft'?16:-16));});
+let drag=null;const vp=$('viewport');vp.addEventListener('pointerdown',e=>{if(e.button||e.target.closest('[data-arch-node],[data-mapping-anchor],[data-kind],[data-arch-fold],[data-fold],[data-more],[data-popup],[data-enter-layer],[data-overview],[data-stack-toggle],.stack-list'))return;closeMenu();drag={x:e.clientX,y:e.clientY,left:state.x,top:state.y,moved:false};vp.setPointerCapture(e.pointerId);vp.classList.add('drag');});vp.addEventListener('pointermove',e=>{if(!drag)return;const dx=e.clientX-drag.x,dy=e.clientY-drag.y;drag.moved ||=Math.abs(dx)+Math.abs(dy)>4;state.x=drag.left+dx;state.y=drag.top+dy;applyCamera();});vp.addEventListener('pointerup',()=>{if(drag&&!drag.moved){state.selection=null;draw();details();}drag=null;vp.classList.remove('drag');});vp.addEventListener('pointercancel',()=>{drag=null;vp.classList.remove('drag');});
+vp.addEventListener('wheel',e=>{if(e.target.closest('.stack-list')&&!e.ctrlKey&&!e.metaKey){e.stopPropagation();return;}e.preventDefault();if(e.ctrlKey||e.metaKey){const r=vp.getBoundingClientRect();setZoom(state.zoom*Math.exp(-e.deltaY*.002),{x:e.clientX-r.left,y:e.clientY-r.top});}else{state.x-=e.deltaX;state.y-=e.deltaY;applyCamera();}},{passive:false});
+vp.addEventListener('keydown',e=>{if(e.target!==vp)return;const movement={ArrowLeft:[40,0],ArrowRight:[-40,0],ArrowUp:[0,40],ArrowDown:[0,-40]}[e.key];if(movement){e.preventDefault();state.x+=movement[0];state.y+=movement[1];applyCamera();}else if(e.key==='+'||e.key==='='){e.preventDefault();setZoom(state.zoom*1.2);}else if(e.key==='-'){e.preventDefault();setZoom(state.zoom/1.2);}else if(e.key==='0'||e.key===' '){e.preventDefault();fit();}});
+let viewportSize=null;
+new ResizeObserver(([entry])=>{const {width,height}=entry.contentRect;if(viewportSize&&width>0&&height>0&&viewportSize.width>0&&viewportSize.height>0){state.x+=(width-viewportSize.width)/2;state.y+=(height-viewportSize.height)/2;applyCamera();}viewportSize={width,height};}).observe(vp);
+// Floating workspace stays over the same layer; demo pairs never leave this page.
+const pairViewState={layer:null,reference:null,target:null,pairs:new Map(),returnFocus:null,placed:false,cameras:{}};
+const rawGraphs=Object.fromEntries(Object.entries(window.RAW_OP_DATA.groups).map(([id,g])=>[id,{...g,tensors:{...g.tensors,...window.MODEL_EXPLORER_DATA.groups[id].boundaryTensors}}]));
+const rawTensorIndex=new Map(Object.values(rawGraphs).flatMap(g=>Object.values(g.tensors)).map(t=>[t.id,t]));
+function rawTensor(id){return rawTensorIndex.get(id);}
+function pairAllowed(layer){const graph=rawGraphs[layer];if(!graph)return new Set();const ownedOutputs=new Set(graph.nodes.flatMap(n=>n.outputs));return new Set(Object.values(graph.tensors).filter(t=>ownedOutputs.has(t.tensor)).map(t=>t.id));}
+function pairLabel(id){const t=rawTensor(id);return t?`t${t.tensor} · ${t.dtype} [${t.shape.join(', ')}]`:'—';}
+function mountPairExplorer(layer){const host=$('pair-graphs'),io=$('pair-show-aux').checked?'all':'primary';if(host.querySelector('iframe')?.dataset.layer===layer&&host.querySelector('iframe')?.dataset.io===io)return;host.innerHTML=`<iframe title="Model Explorer tensor pair graphs" data-layer="${layer}" data-io="${io}" src="pair-model-explorer.html?layer=${layer}&io=${io}&v=57" style="display:block;width:100%;height:100%;border:0" allow=""></iframe>`;}
+function syncPairExplorer(){if(mappingState.active){syncMapping();return;}const frame=$('pair-graphs').querySelector('iframe');if(!frame||!pairViewState.layer||frame.dataset.layer!==pairViewState.layer)return;const theme=document.documentElement.dataset.theme||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');const styles=getComputedStyle(document.documentElement),palette=Object.fromEntries(['heat-low','heat-high','bg','surface','panel','group','rule','op-border','group-border','text','muted','accent','accent-wash','hatch','edge','scope','scope-wash','hover','shadow','op-hover','group-hover','icon-color','incoming','outgoing','crumb-border','crumb-bg','crumb-parent','crumb-current','crumb-separator'].map(name=>[name,styles.getPropertyValue('--'+name).trim()]));frame.contentWindow.postMessage({channel:'pair-model-explorer-preview',type:'state',layer:pairViewState.layer,allowedTensorIds:[...pairAllowed(pairViewState.layer)],pairs:pairViewState.pairs.get(pairViewState.layer)||[],reference:pairViewState.reference,target:pairViewState.target,theme,palette},location.origin);}
+window.addEventListener('message',event=>{const frame=$('pair-graphs').querySelector('iframe');if(event.origin!==location.origin||event.source!==frame?.contentWindow||event.data?.channel!=='pair-model-explorer-preview'||event.data.layer!==pairViewState.layer)return;const data=event.data;if(data.type==='ready'||data.type==='mounted')syncPairExplorer();if(data.type==='tensor'&&['reference','target'].includes(data.side)&&pairAllowed(pairViewState.layer).has(data.id)){pairViewState[data.side]=data.id;renderPairView();}});
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change',syncPairExplorer);
+new MutationObserver(syncPairExplorer).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
+function pairSide(label,id){return `<div class="pair-side"><span>${label}</span><code>${id?escape(pairLabel(id)):'Select a tensor'}</code></div>`;}
+function renderPairView(){const g=groups.find(g=>g.id===pairViewState.layer);if(!g)return;$('pair-view-title').textContent=g.name;mountPairExplorer(g.id);const {reference,target}=pairViewState,existing=pairViewState.pairs.get(g.id)||[];
+ const boundary=window.MODEL_EXPLORER_DATA.groups[g.id].boundary;
+ if($('pair-boundary').dataset.layer!==g.id){$('pair-boundary').dataset.layer=g.id;$('pair-boundary').innerHTML='<h4>Module I/O</h4>'+[['Inputs',boundary.inputs],['Outputs',boundary.outputs],['Weights / constants',boundary.weightsAndConstants]].map(([label,items])=>`<details class="module-io"><summary>${label}<span>${items.length}</span></summary>${items.map(item=>{const t=rawGraphs[g.id].tensors[item.tensor],name=item.name,short=name.split('/').at(-1);return `<div class="module-io-row" title="${escape(name)}"><code>t${item.tensor}</code><span>${escape(short)}</span><small>${escape(item.shape||(t?`${t.dtype} [${t.shape.join(', ')}]`:''))}</small></div>`;}).join('')}</details>`).join('');}
+ $('pair-draft').hidden=!reference&&!target;$('pair-selection').innerHTML=pairSide('Reference',reference)+pairSide('Target',target);
+ const duplicate=existing.some(p=>p.reference===reference&&p.target===target);$('pair-add').disabled=!pairAllowed(g.id).has(reference)||!pairAllowed(g.id).has(target)||duplicate;$('pair-add').title=duplicate?'This tensor pair already exists':'';
+ syncPairExplorer();
+ $('pair-list').innerHTML=existing.length?existing.map((p,i)=>`<div class="pair-row"><div class="pair-values">${pairSide('Reference',p.reference)}${pairSide('Target',p.target)}</div><button data-remove-pair="${i}" aria-label="Remove pair ${i+1}">Remove</button></div>`).join(''):'<p class="pair-empty">No tensor pairs.</p>';details();
+}
+function openPairView(id){const g=groups.find(g=>g.id===id);if(g)openMapping(g.output);}
+function closePairView(){if(mappingState.active){closeMapping();return;}const view=$('pair-view');view.hidden=true;view.parentElement.classList.remove('pair-active');$('workspace').classList.remove('pair-mode');setDetailsOpen(pairViewState.detailsWasOpen);details();renderNavigation();$('viewport').inert=false;const focus=pairViewState.returnFocus;if(focus?.isConnected&&focus.getClientRects().length)focus.focus();else $('stage').querySelector(`[data-popup="${pairViewState.layer}"]`)?.focus();}
+$('stage').addEventListener('dblclick',e=>{const n=e.target.closest('[data-kind=layer]');if(n)navigatePage('layer',Number(n.dataset.id.slice(6)));});
+$('pair-show-aux').onchange=()=>{mountPairExplorer(pairViewState.layer);syncPairExplorer();};
+$('pair-add').onclick=()=>{const {reference,target,layer}=pairViewState;const allowed=pairAllowed(layer);if(!allowed.has(reference)||!allowed.has(target))return;const list=pairViewState.pairs.get(layer)||[];if(list.some(p=>p.reference===reference&&p.target===target))return;list.push({reference,target});pairViewState.pairs.set(layer,list);pairViewState.reference=null;pairViewState.target=null;renderPairView();draw();details();$('status').textContent='Tensor pair added to preview';};
+
+$('pair-details').addEventListener('click',e=>{if(mappingState.active)return;e.stopPropagation();const remove=e.target.closest('[data-remove-pair]');if(remove){pairViewState.pairs.get(pairViewState.layer)?.splice(Number(remove.dataset.removePair),1);renderPairView();draw();}});
+$('pair-view').addEventListener('keydown',e=>{if(e.key==='Escape'){e.preventDefault();e.stopPropagation();if(mappingState.active&&mappingState.draftSide)cancelDraftPair();else closePairView();return;}const pick=e.target.closest('[data-pick]');if(pick&&(e.key==='Enter'||e.key===' ')){e.preventDefault();pick.dispatchEvent(new MouseEvent('click',{bubbles:true}));}});
+// Runtime pairs are shared across semantic entries. Identical source graphs can
+// pair exact node/port identities; this does not assert equality of captured values.
+const mappingState={draftSide:null,selectionBeforeDraft:null,editing:false,active:false,context:null,graphs:{reference:null,target:null},options:{reference:[],target:[]},choices:{reference:null,target:null},selected:{reference:null,target:null},revisions:{reference:'',target:''},pairs:new Map(),imports:{reference:[],target:[]},views:new Map(),request:0};
+const mappingMetricPreview=window.createMappingMetricPreview({onChange:()=>{if(mappingState.active){syncMapping();renderMappingDetails();}else if(isModuleArch()&&overviewState.page==='ple_preparation'){drawModuleArch();moduleArchDetails();}}});
+const mappingDefaultPairs=new Map();
+function syncMappingMetricContext(){mappingMetricPreview.setContext(JSON.stringify([analysisContext?.stage,analysisContext?.position,analysisContext?.metricId]),analysisContext?.simulatedMetrics||[]);}
+function mappingMetricRows(){
+ if(!mappingState.active)return [];
+ const source=t=>t?[t.sourceGraph,t.name||t.displayLabel].filter(Boolean).join(' › '):'—',shape=t=>t?'['+t.shape.join(', ')+']':'—';
+ const list=currentMappingPairs(),rows=list.map(p=>({referenceSource:source(p.reference),targetSource:source(p.target),referenceShape:shape(p.reference),targetShape:shape(p.target),referenceId:p.reference.id,targetId:p.target.id,reference:p.reference.displayLabel,target:p.target.displayLabel,referenceName:p.reference.name,targetName:p.target.name,selected:p.reference.id===mappingState.selected.reference?.id||p.target.id===mappingState.selected.target?.id,metric:mappingMetricPreview.read(p)}));
+ for(const side of ['reference','target']){const graph=mappingState.graphs[side];if(!graph)continue;for(const n of graph.nodes){if(!pairableMappingNode(graph,n))continue;for(const port of n.outputsMetadata||[]){const t=mappingTensor(graph,n,port);if(list.some(p=>p[side].id===t.id))continue;rows.push({referenceId:'',targetId:'',reference:'—',target:'—',referenceName:'',targetName:'',[side+'Id']:t.id,[side]:t.displayLabel,[side+'Name']:t.name,[side+'Source']:source(t),[side+'Shape']:shape(t),selected:mappingState.selected[side]?.id===t.id,metric:{state:'unpaired',text:'Unpaired',value:null,label:'Unpaired'}});}}}
+ const order=side=>new Map((mappingState.graphs[side]?.nodes||[]).flatMap(n=>(n.outputsMetadata||[]).map(p=>mappingState.graphs[side].id+'::'+n.id+'::'+p.id)).map((id,index)=>[id,index]));
+ const referenceOrder=order('reference'),targetOrder=order('target');
+ return rows.sort((a,b)=>(referenceOrder.get(a.referenceId)??targetOrder.get(a.targetId)??Infinity)-(referenceOrder.get(b.referenceId)??targetOrder.get(b.targetId)??Infinity));
+}
+const mappingCache=new Map();
+function mappingContext(anchor){
+ if(isModuleArch()){
+  const page=overviewData(),block=page.blocks.find(b=>b.id===anchor);
+  if(block){const ids=new Set(block.nodes);anchor=page.nodes.find(n=>ids.has(n.id)&&page.nodes.some(t=>!ids.has(t.id)&&t.inputs.includes(n.id)))?.id||anchor;}
+  const key=overviewState.page,index=overviewState.index,scope=key.endsWith('_layer')?key+'_'+index:key,n=page.nodes.find(n=>n.id===anchor);
+  const region=n?.mappingRegion,stage=region==='projection'?executionStage:'any';
+  return {scope,key,index,anchor,label:n?.tensor?.name||n?.label||anchor,title:overviewTitle(),stage,region,anchors:key==='text_embedding'?['lookup','scale']:key==='ple_preparation'?['lookup','project','combine']:null,store:key==='ple_preparation'?scope+'::'+stage+'::'+region:key==='text_embedding'?scope:scope+'::'+(region==='projection'?stage+'::':'')+anchor};
+ }
+ const t=tensors[anchor];return {configurationScope:configurationScope(anchor),scope:'decoder_layer_'+state.layer,key:'decoder_layer',index:state.layer,anchor,label:t?.name||anchor,title:'Layer '+state.layer,stage:executionStage,store:'decoder_layer_'+state.layer+'::'+executionStage+'::'+anchor};
+}
+function mappingPairsFor(anchor){if(isModuleArch()&&overviewState.page==='ple_preparation')return pleArchRecords(anchor).flatMap(r=>r.pair?[r.pair]:[]);const c=mappingContext(anchor);return (mappingState.pairs.get(c.store)||[]).filter(p=>p.anchors?.includes(c.anchor)||p.anchor===c.anchor);}
+function runtimeOptions(context){
+
+ return (window.MAPPING_CATALOG.scopes[context.scope]||[]).filter(o=>(context.stage==='any'||o.stage==='any'||o.stage===context.stage)&&(!context.region||o.mappingRegion===context.region));}
+function mappingViewKey(context){return context.scope+'::'+context.stage+(context.region?'::'+context.region:'');}
+function mappingTensor(graph,node,port){const a=Object.fromEntries((port.attrs||[]).map(a=>[a.key,a.value])),shape=String(a.tensor_shape||a.shape||''),match=shape.match(/^([^\[]*)\[(.*)\]$/),label=a.tensor_index!=null?'t'+a.tensor_index:node.id+':'+port.id;return {id:graph.id+'::'+node.id+'::'+port.id,displayLabel:label,name:a.tensor_name||a.name||label,dtype:match?.[1]||'unknown',shape:match?match[2].split(','):shape?[shape]:[],sourceGraph:node.sourceGraph||graph.sourceGraph||graph.id,node:node.id,port:port.id,boundary:false};}
+function pairableMappingNode(graph,node){return !['GraphOutputs','pseudo_const'].includes(node.label)&&(!node.id.startsWith('boundary:')&&node.label!=='GraphInputs'||!!graph.mappingPresentation?.pairInputs);}
+function identicalGraphPairs(reference,target,context){
+ if(!reference||!target||reference.id!==target.id||JSON.stringify(reference.nodes)!==JSON.stringify(target.nodes))return [];
+ const entry=reference.mappingPresentation?.anchors?.[context.anchor],pairs=[];
+ for(const node of reference.nodes){if(!pairableMappingNode(reference,node))continue;for(const port of node.outputsMetadata||[]){const semantic=entry?.outputNode===node.id&&entry.outputPort===port.id;pairs.push({reference:mappingTensor(reference,node,port),target:mappingTensor(target,node,port),origin:'automatic',anchor:semantic?context.anchor:null,anchors:Object.entries(reference.mappingPresentation?.anchors||{}).filter(([,e])=>e.outputNode===node.id&&e.outputPort===port.id).map(([key])=>key),semanticLabel:null});}}
+ return pairs;
+}
+const automaticPairScopes=new Set(),runtimePairScopes=new Map(),defaultPleRequests=new Map(),defaultLayerRequests=new Map();
+function seedIdenticalPairs(context,reference,target){
+ if(!reference||!target)return;const key=reference.id+'::'+target.id;
+ if(!automaticPairScopes.has(key)){runtimePairScopes.set(key,identicalGraphPairs(reference,target,context));automaticPairScopes.add(key);}
+ // Runtime correspondence is shared by semantic entry points into the same graph pair.
+ mappingState.pairs.set(context.store,runtimePairScopes.get(key));
+}
+// Limit a Transformer Mapping workspace to the same Arch configuration range.
+// Boundary nodes retain the source tensor metadata; runtime node/port IDs stay intact.
+function scopeLayerMapping(graph,context){
+ if(context.key!=='decoder_layer')return graph;
+ const ranges={attention:['norm_out','attn_out'],ffn:['ffn_norm','ffn_out'],ple:['ple_gate_out','output']};
+ const range=ranges[context.configurationScope];
+ if(!range)return graph;
+ const anchors=graph.mappingPresentation?.anchors||{},start=anchors[range[0]],end=anchors[range[1]];
+ if(!start||!end)return {...graph,nodes:[],note:'This export does not include the complete configuration range.',mappingPresentation:{...graph.mappingPresentation,anchors:{}}};
+ const first=graph.nodes.findIndex(n=>n.id===start.outputNode),last=graph.nodes.findIndex(n=>n.id===end.outputNode);
+ if(first<0||last<first)return graph;
+ const selected=graph.nodes.slice(first,last+1).filter(n=>!n.id.startsWith('boundary:')),ids=new Set(selected.map(n=>n.id)),inputs=new Map(),byId=new Map(graph.nodes.map(n=>[n.id,n]));
+ const nodes=selected.map(node=>({...node,incomingEdges:(node.incomingEdges||[]).map(edge=>{
+  if(ids.has(edge.sourceNodeId))return edge;
+  const key=edge.sourceNodeId+'::'+edge.sourceNodeOutputId;
+  if(!inputs.has(key)){const meta=byId.get(edge.sourceNodeId)?.outputsMetadata?.find(p=>p.id===edge.sourceNodeOutputId);inputs.set(key,{...meta,id:String(inputs.size)});}
+  return {...edge,sourceNodeId:'boundary:inputs',sourceNodeOutputId:inputs.get(key).id};
+ })}));
+ const outputs=new Map();
+ for(const node of graph.nodes)if(!ids.has(node.id))for(const edge of node.incomingEdges||[])if(ids.has(edge.sourceNodeId))outputs.set(edge.sourceNodeId+'::'+edge.sourceNodeOutputId,edge);
+ outputs.set(end.outputNode+'::'+end.outputPort,{sourceNodeId:end.outputNode,sourceNodeOutputId:end.outputPort});
+ nodes.unshift({id:'boundary:inputs',label:'Inputs',namespace:'',attrs:[],incomingEdges:[],outputsMetadata:[...inputs.values()]});
+ nodes.push({id:'boundary:outputs',label:'Outputs',namespace:'',attrs:[],outputsMetadata:[],incomingEdges:[...outputs.values()].map((e,i)=>({sourceNodeId:e.sourceNodeId,sourceNodeOutputId:e.sourceNodeOutputId,targetNodeInputId:String(i)}))});
+ return {...graph,nodes,mappingPresentation:{...graph.mappingPresentation,anchors:Object.fromEntries(Object.entries(anchors).filter(([,a])=>ids.has(a.outputNode)))}};
+}
+function currentMappingPairs(){const c=mappingState.context,r=mappingState.graphs.reference,t=mappingState.graphs.target;return (mappingState.pairs.get(c.store)||[]).filter(p=>r&&t&&p.reference.id.startsWith(r.id+'::')&&p.target.id.startsWith(t.id+'::')&&r.nodes.some(n=>n.id===p.reference.node)&&t.nodes.some(n=>n.id===p.target.node));}
+function loadMappingOption(option){if(option.graph)return Promise.resolve(option.graph);if(!mappingCache.has(option.key))mappingCache.set(option.key,fetch(option.path+'?v=136').then(r=>{if(!r.ok)throw Error('Graph file unavailable');return r.json();}).then(graph=>option.mappingRegion?window.pleMapping.prepare(graph,option.mappingRegion):graph).catch(err=>{mappingCache.delete(option.key);throw err;}));return mappingCache.get(option.key);}
+function preloadDefaultPlePairs(){
+ if(!isModuleArch()||overviewState.page!=='ple_preparation')return;
+ for(const anchor of ['lookup','project','combine']){const context=mappingContext(anchor),option=runtimeOptions(context)[0];if(!option||defaultPleRequests.has(context.store))continue;const request=loadMappingOption(option).then(graph=>{loadedPleGraphs.set(context.store,graph);seedIdenticalPairs(context,graph,graph);syncMappingMetricContext();
+ if(!mappingState.active&&isModuleArch()&&overviewState.page==='ple_preparation'){drawModuleArch();moduleArchDetails();}}).catch(()=>{defaultPleRequests.delete(context.store);});defaultPleRequests.set(context.store,request);}
+}
+function preloadDefaultLayerPairs(){
+ if(state.page!=='layer')return;
+ const layer=state.layer,stage=executionStage,context=mappingContext('output'),key=mappingViewKey(context),option=runtimeOptions(context)[0];
+ if(!option||defaultLayerRequests.has(key))return;
+ const anchors=Object.keys(tensors).filter(id=>configurationScope(id));
+ defaultLayerRequests.set(key,loadMappingOption(option).then(graph=>{
+  for(const anchor of anchors)seedIdenticalPairs({...context,anchor,store:context.scope+'::'+stage+'::'+anchor},graph,graph);
+  if(!mappingState.active&&state.page==='layer'&&state.layer===layer&&executionStage===stage){draw();details();}
+ }).catch(()=>{defaultLayerRequests.delete(key);}));
+}
+function mappingPalette(side){const style=getComputedStyle(document.documentElement);const palette=Object.fromEntries(['heat-low','heat-high','bg','surface','panel','group','rule','op-border','group-border','text','muted','accent','accent-wash','hatch','edge','scope','scope-wash','hover','shadow','op-hover','group-hover','icon-color','incoming','outgoing','crumb-border','crumb-bg','crumb-parent','crumb-current','crumb-separator'].map(k=>[k,style.getPropertyValue('--'+k).trim()]));if(side)palette.bg=style.getPropertyValue('--mapping-'+side+'-bg').trim();return palette;}
+function syncMappingPane(side,load=false){if(!mappingState.active)return;const frame=$('pair-graphs').querySelector(`[data-mapping-pane="${side}"]`);if(!frame)return;const c=mappingState.context;frame.contentWindow.postMessage({channel:'mapping-pane-v1',side,type:load?'load':'state',revision:mappingState.revisions[side],anchor:c.anchor,...(load?{graph:mappingState.graphs[side]}:{}),theme:document.documentElement.dataset.theme||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'),palette:mappingPalette(side),drafting:!!mappingState.draftSide,candidateSide:mappingState.draftSide?(mappingState.draftSide==='reference'?'target':'reference'):null,pairs:currentMappingPairs().map(p=>({reference:p.reference.id,target:p.target.id,metric:mappingMetricPreview.read(p)})),chosen:Object.fromEntries(['reference','target'].map(s=>[s,mappingState.selected[s]?.id||null]))},location.origin);}
+function syncMapping(){for(const side of ['reference','target'])syncMappingPane(side);}
+async function chooseMappingGraph(side,key){const context=mappingState.context,request=mappingState.request;mappingState.choices[side]=key||null;mappingState.draftSide=null;mappingState.selected[side]=null;mappingState.graphs[side]=null;mappingState.revisions[side]=context.store+'::'+side+'::'+(key||'empty');const revision=mappingState.revisions[side];syncMappingPane(side,true);renderMappingDetails();
+ if(!key)return;const option=mappingState.options[side].find(o=>o.key===key);if(!option)return;
+ try{const graph=scopeLayerMapping(await loadMappingOption(option),context);if(request!==mappingState.request||revision!==mappingState.revisions[side])return;mappingState.graphs[side]=graph;if(context.key==='ple_preparation'&&side==='reference')loadedPleGraphs.set(context.store,graph);seedIdenticalPairs(context,mappingState.graphs.reference,mappingState.graphs.target);syncMappingMetricContext();rememberMappingDefaults();syncMappingPane(side,true);syncMapping();renderMappingDetails();}catch(err){if(request===mappingState.request){$('mapping-feedback').textContent=err.message;mappingCache.delete(key);}}
+}
+function draftPairInfo(){
+ if(!mappingState.draftSide)return null;
+ const {reference,target}=mappingState.selected,list=currentMappingPairs(),ready=!!reference&&!!target;
+ const existing=ready&&list.some(p=>p.reference.id===reference.id&&p.target.id===target.id);
+ return {reference:reference?.displayLabel||'',target:target?.displayLabel||'',ready,existing,conflicts:ready?list.filter(p=>p.reference.id===reference.id||p.target.id===target.id).length:0};
+}
+function cancelDraftPair(){mappingState.draftSide=null;mappingState.selected={reference:null,target:null};mappingState.selectionBeforeDraft=null;renderMappingDetails();syncMapping();}
+function mappingDefaultKey(){const {reference,target}=mappingState.graphs;return reference&&target?reference.id+'::'+target.id+'::'+(mappingState.context.configurationScope||mappingState.context.region||mappingState.context.scope):null;}
+function rememberMappingDefaults(){const key=mappingDefaultKey();if(key&&!mappingDefaultPairs.has(key))mappingDefaultPairs.set(key,structuredClone(mappingState.pairs.get(mappingState.context.store)||[]));}
+function mappingScopeTensorIds(side){const graph=mappingState.graphs[side];return new Set((graph?.nodes||[]).filter(n=>pairableMappingNode(graph,n)).flatMap(n=>(n.outputsMetadata||[]).map(p=>graph.id+'::'+n.id+'::'+p.id)));}
+function currentMappingDefaults(){const baseline=mappingDefaultPairs.get(mappingDefaultKey());if(!baseline)return null;const refs=mappingScopeTensorIds('reference'),targets=mappingScopeTensorIds('target');return baseline.filter(p=>refs.has(p.reference.id)&&targets.has(p.target.id));}
+function canResetMappingDefaults(){const defaults=currentMappingDefaults();if(!defaults)return false;const signature=pairs=>JSON.stringify(pairs.map(p=>JSON.stringify([p.reference.id,p.target.id,p.anchor||null,[...(p.anchors||[])].sort()])).sort());return signature(defaults)!==signature(currentMappingPairs());}
+function resetMappingDefaults(){
+ const defaults=currentMappingDefaults();if(!defaults)return;
+ const refs=mappingScopeTensorIds('reference'),targets=mappingScopeTensorIds('target'),list=mappingState.pairs.get(mappingState.context.store)||[];
+ // Mutate the shared correspondence list without touching pairs outside this range.
+ for(let i=list.length-1;i>=0;i--)if(refs.has(list[i].reference.id)||targets.has(list[i].target.id)){mappingMetricPreview.remove(list[i]);list.splice(i,1);}
+ list.push(...structuredClone(defaults));mappingState.pairs.set(mappingState.context.store,list);
+ cancelDraftPair();
+}
+function confirmDraftPair(){
+ const draft=draftPairInfo();if(!draft?.ready)return;
+ const {reference,target}=mappingState.selected,c=mappingState.context,list=mappingState.pairs.get(c.store)||[];
+ if(!draft.existing){
+  const source=list.find(p=>p[mappingState.draftSide].id===mappingState.selected[mappingState.draftSide].id);
+  const anchors=[...new Set([...(source?.anchors||[]),...(source?.anchor?[source.anchor]:[])])];
+  for(let i=list.length-1;i>=0;i--)if(list[i].reference.id===reference.id||list[i].target.id===target.id){mappingMetricPreview.remove(list[i]);list.splice(i,1);}
+  list.push({reference,target,origin:'manual',anchors,anchor:source?.anchor||null,semanticLabel:source?.semanticLabel||null});
+  mappingState.pairs.set(c.store,list);
+ }
+ const pair=list.find(p=>p.reference.id===reference.id&&p.target.id===target.id);if(pair&&!draft.existing){pair.previewMetricState='pending';pair.previewDelay=3000;mappingMetricPreview.compute(pair);}
+ mappingState.draftSide=null;mappingState.selectionBeforeDraft=null;renderMappingDetails();syncMapping();
+}
+function publishMappingView(){const c=mappingState.context;parent.postMessage({channel:'intermediate-graph-arch',type:'mapping-view',active:mappingState.active,editing:mappingState.editing,canResetDefaults:canResetMappingDefaults(),title:c?.title||'',anchor:c?.anchor||'',draft:draftPairInfo(),pairs:mappingMetricRows(),outputs:mappingState.active?(c.anchors||[]).map(id=>({id,label:overviewData().nodes.find(n=>n.id===id)?.label||id})):[]},location.origin);}
+function renderMappingNavigation(){
+ document.querySelector('.appbar strong').textContent='Tensor Mapping';$('crumb').hidden=true;
+ const stage=$('execution-stage-control');if(stage)stage.hidden=true;
+ $('pair-view').querySelector('.pair-navigation')?.remove();
+ let close=$('mapping-close');if(!close){close=document.createElement('button');close.id='mapping-close';close.type='button';close.setAttribute('aria-label','Close Mapping and return to Arch');close.title='Close Mapping · Return to Arch';close.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>';close.addEventListener('click',closeMapping);$('pair-view').append(close);}
+ $('mapping-help')?.remove();
+ const candidate=mappingState.draftSide?(mappingState.draftSide==='reference'?'target':'reference'):null;
+ for(const side of ['reference','target']){const pane=$('pair-graphs').querySelector(`[data-mapping-pane="${side}"]`)?.parentElement;if(!pane)continue;pane.classList.toggle('choosing',side===candidate);pane.querySelector('header')?.remove();}
+ let legend=$('mapping-legend');if(!legend){legend=document.createElement('aside');legend.id='mapping-legend';legend.setAttribute('aria-label','Mapping legend');$('pair-view').append(legend);}
+ const cube='<svg viewBox="0 0 12 12" aria-hidden="true">'+tensorGlyph(true)+'</svg>',sample=analysisContext?.simulatedMetrics?.[65];
+ legend.innerHTML=`<div class="mapping-legend-row"><span class="mapping-legend-item"><i class="mapping-legend-key unpaired"><svg viewBox="0 0 12 12" aria-hidden="true">${tensorGlyph(false)}</svg></i>Unpaired</span><span class="mapping-legend-item"><i class="mapping-legend-key">${cube}<b>—</b></i>Paired · No metric</span><span class="mapping-legend-item"><i class="mapping-legend-key">${cube}<i class="mapping-legend-spinner"></i></i>Calculating</span><span class="mapping-legend-item"><i class="mapping-legend-key metric" style="--key-bg:${escape(sample?.bgColor||'var(--metric-empty-bg)')};--key-fg:${escape(sample?.textColor||'var(--text)')}">${cube}<b>${escape(sample?.text||'0.12')}</b></i>Metric available</span><span class="mapping-legend-item"><i class="mapping-legend-key selected">${cube}</i>Selected</span><span class="mapping-legend-item"><i class="mapping-legend-key candidate">${cube}<svg class="pair-key" viewBox="0 0 16 16" aria-hidden="true"><path d="M6.4 5.2l1.9-1.9a3 3 0 014.3 4.3l-1.9 1.9M9.6 10.8l-1.9 1.9a3 3 0 01-4.3-4.3l1.9-1.9M5.8 10.2l4.4-4.4"/></svg></i>Pair candidate</span></div><div class="mapping-legend-row mapping-legend-actions" aria-label="Graph interactions"><span><kbd>Drag / Scroll</kbd> Pan</span><span><kbd>Ctrl + Scroll / Pinch</kbd> Zoom</span><span><kbd>Click collection</kbd> Expand / collapse</span><span><kbd>Click tensor → counterpart</kbd> Pair</span><span><kbd>Click selected / blank / Esc</kbd> Cancel</span></div>`;
+ legend.title='Click one tensor, then its counterpart to pair. Press Escape to cancel a selection.';
+ publishMappingView();
+}
+function syncAdvancedMapping(){const panel=$('pair-details');panel.hidden=true;$('pair-view').classList.remove('advanced-mode');}
+function renderMappingDetails(){
+ if(!mappingState.active)return;
+ $('pair-details').innerHTML='<p id="mapping-feedback" role="status"></p>';
+ syncAdvancedMapping();renderMappingNavigation();if(embedded)publishMappingDetails();
+}
+async function openMapping(anchor){const context=mappingContext(anchor);hideIconTooltip();closeMenu();mappingState.request++;mappingState.active=true;mappingState.editing=false;mappingState.draftSide=null;mappingState.selectionBeforeDraft=null;mappingState.graphs={reference:null,target:null};mappingState.context=context;mappingState.selected={reference:null,target:null};mappingState.options={reference:[...runtimeOptions(context),...mappingState.imports.reference.filter(o=>o.scope===context.scope)],target:[...runtimeOptions(context),...mappingState.imports.target.filter(o=>o.scope===context.scope)]};const remembered=mappingState.views.get(mappingViewKey(context))||{};
+ pairViewState.returnFocus=document.activeElement;pairViewState.detailsWasOpen=isDetailsOpen();$('pair-view').hidden=false;$('pair-view').parentElement.classList.add('pair-active');$('workspace').classList.remove('details-hidden');$('workspace').classList.add('pair-mode','show-details');$('viewport').inert=true;$('details-toggle').setAttribute('aria-expanded','true');$('details').hidden=true;$('pair-details').hidden=false;
+ $('pair-graphs').innerHTML=['reference','target'].map(side=>`<section class="mapping-pane"><iframe title="${side==='reference'?'Reference':'Target'} execution graph" data-mapping-pane="${side}" src="mapping_pane.html?side=${side}&v=177"></iframe></section>`).join('');renderMappingNavigation();renderMappingDetails();for(const side of ['reference','target'])await chooseMappingGraph(side,mappingState.options[side].some(o=>o.key===remembered[side])?remembered[side]:mappingState.options[side][0]?.key||null);$('pair-view').querySelector('iframe')?.focus();
+}
+function closeMapping(){mappingState.views.set(mappingViewKey(mappingState.context),{...mappingState.choices});mappingState.request++;mappingState.active=false;mappingState.editing=false;mappingState.draftSide=null;mappingState.selectionBeforeDraft=null;syncAdvancedMapping();publishMappingView();$('pair-view').hidden=true;$('pair-view').parentElement.classList.remove('pair-active');$('workspace').classList.remove('pair-mode');$('viewport').inert=false;setDetailsOpen(pairViewState.detailsWasOpen);draw();details();renderNavigation();$('viewport').focus();}
+window.addEventListener('message',ev=>{const d=ev.data;if(d?.channel!=='mapping-pane-v1'||ev.origin!==location.origin||!mappingState.active||!['reference','target'].includes(d.side))return;const frame=$('pair-graphs').querySelector(`[data-mapping-pane="${d.side}"]`);if(ev.source!==frame?.contentWindow)return;if(d.type==='mounted'){syncMappingPane(d.side,true);return;}if(d.revision!==mappingState.revisions[d.side])return;if(d.type==='cancel-selection'){cancelDraftPair();return;}if(d.type==='tensor'){const t=d.tensor,g=mappingState.graphs[d.side],n=g?.nodes.find(n=>n.id===t.node);if(!n||!(n.outputsMetadata||[]).some(m=>m.id===t.port)||t.id!==g.id+'::'+t.node+'::'+t.port||t.boundary)return;{
+ if(!mappingState.draftSide){mappingState.selectionBeforeDraft={...mappingState.selected};mappingState.draftSide=d.side;mappingState.selected={reference:null,target:null,[d.side]:t};}
+ else if(mappingState.draftSide===d.side){if(mappingState.selected[d.side]?.id===t.id){cancelDraftPair();return;}mappingState.selected={reference:null,target:null,[d.side]:t};}
+ else {mappingState.selected[d.side]=t;confirmDraftPair();return;}
+ }renderMappingDetails();syncMapping();}});
+
+$('pair-details').addEventListener('click',ev=>{const b=ev.target.closest('[data-info-toggle]');if(!b){const value=ev.target.closest('.info-value');if(value&&(ev.target.closest('[data-value-toggle]')||value.classList.contains('has-overflow')&&!value.classList.contains('expanded'))){const expanded=value.classList.toggle('expanded'),button=value.querySelector('button');button.setAttribute('aria-expanded',String(expanded));button.setAttribute('aria-label',(expanded?'Collapse ':'Expand ')+value.dataset.valueLabel);button.innerHTML=infoIcon(expanded?'fold':'unfold');if(!expanded)measureInfoValues();}return;}const key=b.dataset.infoToggle;closedInfoSections.has(key)?closedInfoSections.delete(key):closedInfoSections.add(key);renderMappingDetails();});
+
+function highlightMappingAnchor(el){
+ const anchor=el?.classList.contains('config-entry')?el.dataset.mappingAnchor:null,scope=anchor&&!isModuleArch()?configurationScope(anchor):null;
+ $('stage').querySelectorAll('[data-mapping-anchor]').forEach(n=>n.classList.toggle('mapping-hover',!!anchor&&(scope?configurationScope(n.dataset.mappingAnchor)===scope:mappingContext(n.dataset.mappingAnchor).store===mappingContext(anchor).store)));
+ $('stage').querySelectorAll('.fork-point').forEach(n=>n.classList.toggle('mapping-hover',!!scope&&configurationScope(n.dataset.tensor)===scope));
+}
+function focusedConfig(){return document.activeElement?.matches('.config-entry:focus-visible')?document.activeElement:null;}
+$('stage').addEventListener('pointerover',ev=>highlightMappingAnchor(ev.target.closest('.config-entry[data-mapping-anchor]')||focusedConfig()));
+$('stage').addEventListener('pointerout',ev=>highlightMappingAnchor(ev.relatedTarget?.closest?.('.config-entry[data-mapping-anchor]')||focusedConfig()));
+
+$('stage').addEventListener('focusin',ev=>highlightMappingAnchor(ev.target.closest('.config-entry[data-mapping-anchor]')));
+$('stage').addEventListener('focusout',ev=>highlightMappingAnchor(ev.relatedTarget?.closest?.('.config-entry[data-mapping-anchor]')));
+
+
+const analysisChannel='intermediate-graph-arch';
+function publishMappingDetails(){
+ if(!mappingState.active)return;
+ const c=mappingState.context,list=currentMappingPairs(),selected=mappingState.selected;
+ const pair=selected.reference||selected.target?list.find(p=>p.reference.id===selected.reference?.id||p.target.id===selected.target?.id):list.find(p=>p.anchors?.includes(c.anchor));
+ const sections=[{label:'Pairing',items:[{label:'Arch output',value:c.label},...(c.configurationScope?[{label:'Range',value:configurationLabel(c.configurationScope)}]:[]),{label:'Stage',value:c.stage==='any'?'Shared lookup':c.stage},{label:'Source',value:'Preview · both sides use the same bundled LiteRT-LM graph; not active-session mapping'},{label:'Metric source',value:'Generated preview values with simulated calculation delay'},{label:'Pairs',value:String(list.length)},{label:'Method',value:list.every(p=>p.origin==='automatic')?'Automatic · identical graph, node and output port':'Includes user-edited pairs'}]}];
+
+ parent.postMessage({channel:analysisChannel,type:'selection',sections},location.origin);
+}
+function publishDetails(){
+ if(mappingState.active){publishMappingDetails();return;}
+ const sections=[...$('details').querySelectorAll('.info-section')].map(section=>({
+  label:section.querySelector('.info-header>span')?.textContent||'Details',
+  tensorItems:[...section.querySelectorAll('[data-tensor-heading]')].map(item=>({label:item.getAttribute('data-tensor-heading'),children:[...item.querySelectorAll('table tr')].map(row=>({label:row.querySelector('td')?.textContent?.replace('▪','').trim()||'',value:row.querySelector('.info-value-text')?.textContent?.trim()||''}))})),
+  items:[...section.querySelectorAll('table tr')].map(row=>({label:row.querySelector('td,th')?.textContent?.replace('▪','').trim()||'',value:(row.querySelector('.info-value-text')||row.querySelector('td:last-child'))?.textContent?.trim()||'',shape:row.getAttribute('data-metric-shape')||undefined,metricBg:row.querySelector('[data-metric-bg]')?.getAttribute('data-metric-bg')||undefined,selected:row.getAttribute('data-metric-selected')==='true'})).filter(item=>item.label&&!['model','pairs','runtime mapping'].includes(item.label.toLowerCase()))
+ })).filter(section=>section.items.length||section.label==='Tensor Details').map(section=>{const counts=new Map();section.items=section.items.map(item=>{const count=(counts.get(item.label)||0)+1;counts.set(item.label,count);return {...item,label:count>1?item.label+' '+count:item.label};});return section;});
+ parent.postMessage({channel:analysisChannel,type:'selection',sections},location.origin);
+}
+new MutationObserver(publishDetails).observe($('details'),{childList:true,subtree:true});
+window.addEventListener('message',event=>{
+ if(event.source!==parent||event.origin!==location.origin||event.data?.channel!==analysisChannel)return;
+ if(event.data.type==='mapping-action'&&mappingState.active){
+  if(event.data.action==='back')closeMapping();
+  else if(event.data.action==='confirm')confirmDraftPair();
+  else if(event.data.action==='cancel')cancelDraftPair();
+  else if(event.data.action==='reset-default')resetMappingDefaults();
+  return;
+ }
+ if(event.data.type==='reset-view'){
+  if(mappingState.active){for(const side of ['reference','target'])$('pair-graphs').querySelector(`[data-mapping-pane="${side}"]`)?.contentWindow.postMessage({channel:'mapping-pane-v1',side,type:'reset-view',revision:mappingState.revisions[side]},location.origin);}
+  else{closeGraphPopovers();if($('graph-world'))fit();}
+  return;
+ }
+ if(event.data.type!=='context')return;
+ const data=event.data;analysisContext=data;syncMappingMetricContext();
+ document.querySelector('.legend').hidden=data.legend===false;
+ if(data.palette){if(data.palette.reference)document.documentElement.style.setProperty('--mapping-reference-bg',data.palette.reference);if(data.palette.target)document.documentElement.style.setProperty('--mapping-target-bg',data.palette.target);document.documentElement.style.setProperty('--host-canvas',data.palette.canvas);document.documentElement.style.setProperty('--host-list',data.palette.list);document.documentElement.style.setProperty('--host-scroll-thumb',data.palette.scrollThumb);document.documentElement.style.setProperty('--heat-low',data.palette.low);document.documentElement.style.setProperty('--heat-high',data.palette.high);}executionStage=data.stage==='prefill'?'prefill':'decode';
+ document.documentElement.dataset.theme=data.theme==='dark'?'dark':'light';
+ window.GEMMA_METRIC_DEMO={values:{}, stage:executionStage, summary:data.summary==='min'?'min':'max',layers:{decoder_stack:data.layers||[]},color:value=>data.colors?.[String(value)]||{bgColor:'transparent',textColor:'var(--muted)'},format:value=>data.formatted?.[String(value)]||String(value)};
+ modelTree?.refresh();if(mappingState.active){if(mappingState.context.stage!=='any'&&mappingState.context.stage!==executionStage){openMapping(mappingState.context.anchor);return;}syncMapping();renderMappingDetails();return;}if(state.page==='layer')activateLayer(state.layer);if(overviewState.page!=='model'||state.page==='layer'){draw();details();}
+});
+parent.postMessage({channel:analysisChannel,type:'ready'},location.origin);
+
+modelTree=window.createModelTree({model:()=>selectedModel,layer:i=>{if(state.page==='layer'&&state.layer===i){state.selection=null;draw();details();}else navigatePage('layer',i);},arch:(key,index=0)=>navigateOverview(key,index),inspect:(name,attrs)=>{if(mappingState.active)closeMapping();$('details').innerHTML=infoSection('module','Module info',infoTable([['name',name],...Object.entries(attrs)]));setDetailsOpen(true);requestAnimationFrame(measureInfoValues);}});
+$('modules-toggle').onclick=()=>{const open=$('workspace').classList.toggle('show-model-tree');$('modules-toggle').setAttribute('aria-expanded',String(open));};
+Promise.all([document.fonts.load('400 11px "Google Sans Text"'),document.fonts.load('500 11px "Google Sans Text"'),document.fonts.load('700 11px "Google Sans Text"')]).then(()=>{if(selectedModel==='gemma')modelTree.start();else{draw();details();}});
+})();
+</script></html>

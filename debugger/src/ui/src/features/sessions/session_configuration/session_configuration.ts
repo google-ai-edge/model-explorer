@@ -16,32 +16,22 @@
  * ==============================================================================
  */
 
+import {ChangeDetectionStrategy, Component, computed, inject, input, signal} from '@angular/core';
 import {DatePipe} from '@angular/common';
-import {
-  ChangeDetectionStrategy,
-  Component,
-  computed,
-  inject,
-  input,
-  signal,
-} from '@angular/core';
+import {MAT_DIALOG_DATA, MatDialogModule} from '@angular/material/dialog';
 import {MatButtonModule} from '@angular/material/button';
 import {MatCheckboxModule} from '@angular/material/checkbox';
-import {MAT_DIALOG_DATA, MatDialogModule} from '@angular/material/dialog';
 import {MatIconModule} from '@angular/material/icon';
 import {MatTooltipModule} from '@angular/material/tooltip';
+import {
+  runtimeOptionFields,
+  runtimeOptionValue,
+  runtimeOptionKeys,
+  pytorchRuntimeOptionKeys,
+} from '../runtime_options';
 import {SessionSummary} from '../../../data/contracts/session_summary';
 import {SessionListService} from '../../../data/session_list_service';
-import {
-  sessionConfigurationLocked,
-  sessionStatusLabel,
-} from '../../../data/session_status';
-import {
-  pytorchRuntimeOptionKeys,
-  runtimeOptionFields,
-  runtimeOptionKeys,
-  runtimeOptionValue,
-} from '../runtime_options';
+import {sessionConfigurationLocked, sessionStatusLabel} from '../../../data/session_status';
 @Component({
   selector: 'session-configuration',
   imports: [
@@ -57,22 +47,14 @@ import {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class SessionConfiguration {
-  private readonly dialogSession = inject<SessionSummary | null>(
-    MAT_DIALOG_DATA,
-    {optional: true},
-  );
-  readonly sessionInput = input<SessionSummary | null>(null, {
-    alias: 'session',
-  });
+  private readonly dialogSession = inject<SessionSummary | null>(MAT_DIALOG_DATA, {optional: true});
+  readonly sessionInput = input<SessionSummary | null>(null, {alias: 'session'});
   readonly embedded = input(false);
   readonly sessions = inject(SessionListService);
   readonly statusLabel = sessionStatusLabel;
   get session() {
     const original = this.sessionInput() ?? this.dialogSession!;
-    return (
-      this.sessions.allItems().find((item) => item.id === original.id) ??
-      original
-    );
+    return this.sessions.allItems().find((item) => item.id === original.id) ?? original;
   }
   get canEdit() {
     return (
@@ -83,8 +65,7 @@ export class SessionConfiguration {
   }
   get canDuplicate() {
     return (
-      !!this.sessions.listing()?.capabilities.duplicate &&
-      !sessionConfigurationLocked(this.session)
+      !!this.sessions.listing()?.capabilities.duplicate && !sessionConfigurationLocked(this.session)
     );
   }
   get editUnavailableReason() {
@@ -114,9 +95,7 @@ export class SessionConfiguration {
     {label: 'Model Artifact', key: 'artifact'},
   ];
   get runtimeFields() {
-    const onlyPyTorch = this.session.runs.every(
-      (run) => run.runtime === 'PyTorch',
-    );
+    const onlyPyTorch = this.session.runs.every((run) => run.runtime === 'PyTorch');
     const fields = onlyPyTorch
       ? runtimeOptionFields.filter((field) =>
           (pytorchRuntimeOptionKeys as readonly string[]).includes(field.key),
@@ -127,10 +106,23 @@ export class SessionConfiguration {
       : this.session.runs.some((run) => run.runtime === 'PyTorch')
         ? 'Model dtype'
         : '';
-    return [
-      ...fields,
-      ...(precision ? [{label: precision, key: 'precision'}] : []),
-    ];
+    return [...fields, ...(precision ? [{label: precision, key: 'precision'}] : [])];
+  }
+  /** Session settings that differ between the sides; shown, never blocked (see configuration overview). */
+  get differenceNote() {
+    if (!this.sameRuntime) return '';
+    const keys = this.runtimeFields.filter(
+      (f) => this.value('ref', f.key) !== this.value('target', f.key),
+    );
+    if (!keys.length) return '';
+    return (
+      (keys.length === 1
+        ? 'One Session setting differs'
+        : keys.length + ' Session settings differ') +
+      ' between Reference and Target: ' +
+      keys.map((f) => f.label).join(', ') +
+      '. Numeric differences may come from these settings, not only from the model or backend.'
+    );
   }
   readonly visibleRuntimeFields = computed(() =>
     this.runtimeFields.filter(
@@ -141,9 +133,7 @@ export class SessionConfiguration {
     ),
   );
   value(side: string, key: string) {
-    const run = this.session.runs.find((r) => r.id === side) as
-      | Record<string, unknown>
-      | undefined;
+    const run = this.session.runs.find((r) => r.id === side) as Record<string, unknown> | undefined;
     const value = run?.[key];
     if (key === 'precision' && !this.session.has_capture)
       return run?.['runtime'] === 'PyTorch'
@@ -151,14 +141,8 @@ export class SessionConfiguration {
           ? 'Default'
           : String(value)
         : '—';
-    if (
-      !this.session.has_capture &&
-      (runtimeOptionKeys as readonly string[]).includes(key)
-    )
-      return runtimeOptionValue(
-        run ?? {},
-        key as (typeof runtimeOptionKeys)[number],
-      );
+    if (!this.session.has_capture && (runtimeOptionKeys as readonly string[]).includes(key))
+      return runtimeOptionValue(run ?? {}, key as (typeof runtimeOptionKeys)[number]);
     return value == null || value === ''
       ? 'Not captured'
       : typeof value === 'object'

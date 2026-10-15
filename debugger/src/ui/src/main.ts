@@ -19,6 +19,6 @@
 import {bootstrapApplication} from '@angular/platform-browser';
 import {provideAnimationsAsync} from '@angular/platform-browser/animations/async';
 import {ReportPage} from './app/report/report_page';
-bootstrapApplication(ReportPage, {providers: [provideAnimationsAsync()]}).catch(
-  (error) => console.error(error),
+bootstrapApplication(ReportPage, {providers: [provideAnimationsAsync()]}).catch((error) =>
+  console.error(error),
 );

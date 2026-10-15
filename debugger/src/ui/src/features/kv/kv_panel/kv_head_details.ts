@@ -29,11 +29,15 @@ import {
   viewChild,
 } from '@angular/core';
 import {MatIconModule} from '@angular/material/icon';
-import type {KvHeadChannel, KvHeadEvidence} from '../../../data/contracts/kv';
 import {ExplorerInfoSection} from '../../../shared/explorer_info_section/explorer_info_section';
 import {ExplorerInfoValue} from '../../../shared/explorer_info_value/explorer_info_value';
-import {formatMetric} from '../../../shared/format/format';
+import type {KvHeadChannel, KvHeadEvidence} from '../../../data/contracts/kv';
 import {KvMetricValues} from './kv_metric_values';
+import {formatMetric} from '../../../shared/format/format';
+
+import {KvChannelChart} from './kv_channel_chart';
+import {channelBins, type ChannelReduction} from './kv_channel_bins';
+import type {KvRangeBin} from '../../../data/contracts/kv';
 
 type Side = 'ref' | 'target';
 interface Domain {
@@ -47,68 +51,97 @@ const PAGE_SIZE = 256;
 @Component({
   selector: 'kv-head-details',
   standalone: true,
-  imports: [
-    MatIconModule,
-    ExplorerInfoSection,
-    ExplorerInfoValue,
-    KvMetricValues,
-  ],
+  imports: [KvChannelChart, MatIconModule, ExplorerInfoSection, ExplorerInfoValue, KvMetricValues],
   templateUrl: './kv_head_details.ng.html',
   styleUrl: './kv_head_details.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class KvHeadDetails {
+  readonly channelRange = input<KvRangeBin | null>(null);
+  readonly channelFull = input<KvRangeBin | null>(null);
+  readonly channelReduction = input<ChannelReduction>('mean');
+  readonly channelCapacity = input(128);
+  readonly channelZoom = output<KvRangeBin>();
+  readonly channelCapacityChange = output<number>();
+  readonly plotOnly = input(false);
+  readonly hidePlot = input(false);
   readonly evidence = input<KvHeadEvidence | null>(null);
   readonly loading = input(false);
   readonly error = input('');
   readonly retry = output<void>();
   readonly view = model<'index' | 'scatter'>('index');
-  readonly channel = signal(0);
+  readonly selectedBin = input<KvRangeBin | null>(null);
+  readonly aggregateSelection = computed(() => {
+    const selection = this.selectedBin();
+    return selection && selection.end - selection.start > 1 ? selection : null;
+  });
+  readonly channel = model<number | null>(null);
   readonly windowStart = signal(0);
   readonly copyStatus = signal('');
   readonly numericalExpanded = model(true);
   readonly channelsExpanded = model(true);
-  private readonly plotContainer =
-    viewChild<ElementRef<HTMLElement>>('plotContainer');
+  private readonly plotContainer = viewChild<ElementRef<HTMLElement>>('plotContainer');
   readonly plotWidth = signal(290);
   readonly plotHeight = 230;
-  readonly plotViewBox = computed(
-    () => `0 0 ${this.plotWidth()} ${this.plotHeight}`,
-  );
+  readonly plotViewBox = computed(() => `0 0 ${this.plotWidth()} ${this.plotHeight}`);
   readonly sides: Side[] = ['ref', 'target'];
   readonly channels = computed(() =>
-    [...(this.evidence()?.channels ?? [])].sort(
-      (a, b) => a.channel - b.channel,
-    ),
+    [...(this.evidence()?.channels ?? [])].sort((a, b) => a.channel - b.channel),
   );
   readonly selectedIndex = computed(() =>
-    Math.max(
-      0,
-      this.channels().findIndex((c) => c.channel === this.channel()),
-    ),
+    this.channel() === null
+      ? -1
+      : Math.max(
+          0,
+          this.channels().findIndex((c) => c.channel === this.channel()),
+        ),
   );
   readonly selected = computed<KvHeadChannel | undefined>(
     () => this.channels()[this.selectedIndex()],
   );
   readonly plotChannels = computed(() =>
-    this.channels().slice(this.windowStart(), this.windowStart() + PAGE_SIZE),
+    this.plotOnly() && this.channelRange()
+      ? this.channels().filter(
+          (c) => c.channel >= this.channelRange()!.start && c.channel < this.channelRange()!.end,
+        )
+      : this.channels().slice(this.windowStart(), this.windowStart() + PAGE_SIZE),
   );
-  readonly hasPages = computed(() => this.channels().length > PAGE_SIZE);
-  readonly canNextPage = computed(
-    () => this.windowStart() + PAGE_SIZE < this.channels().length,
-  );
+  readonly canNextPage = computed(() => this.windowStart() + PAGE_SIZE < this.channels().length);
   readonly lastChannel = computed(() => this.channels().at(-1)?.channel ?? 0);
   readonly firstChannel = computed(() => this.channels()[0]?.channel ?? 0);
   readonly largest = computed(() => {
     const value = this.evidence()?.largest_channel;
     return value != null &&
-      this.channels().some(
-        (c) => c.channel === value && this.finite(c.abs_delta),
-      )
+      this.channels().some((c) => c.channel === value && this.finite(c.abs_delta))
       ? value
       : null;
   });
+  readonly selectionLabel = computed(() => {
+    const bin = this.aggregateSelection();
+    return bin
+      ? `Head dimensions ${bin.start}–${bin.end - 1}`
+      : `Head dimension ${this.selected()?.channel ?? '—'}`;
+  });
+  readonly selectionOutsideRange = computed(() => {
+    const range = this.channelRange(),
+      channel = this.selected()?.channel;
+    return (
+      this.plotOnly() &&
+      !this.aggregateSelection() &&
+      range &&
+      channel !== undefined &&
+      (channel < range.start || channel >= range.end)
+    );
+  });
   readonly scalarRows = computed(() => {
+    const selection = this.aggregateSelection();
+    if (selection) {
+      const bin = channelBins(this.channels(), selection, 1, this.channelReduction())[0];
+      return [
+        {label: 'Ref', value: bin?.ref ?? null, signed: false},
+        {label: 'Target', value: bin?.target ?? null, signed: false},
+      ];
+    }
     const point = this.selected();
     return [
       {label: 'Ref', value: point?.ref ?? null, signed: false},
@@ -119,28 +152,20 @@ export class KvHeadDetails {
   });
   readonly finitePairs = computed(() =>
     ['ok', 'partial'].includes(this.evidence()?.status ?? '')
-      ? this.plotChannels().filter(
-          (c) => this.finite(c.ref) && this.finite(c.target),
-        )
+      ? this.plotChannels().filter((c) => this.finite(c.ref) && this.finite(c.target))
       : [],
   );
   readonly hasValues = computed(() =>
-    this.plotChannels().some(
-      (c) => this.finite(c.ref) || this.finite(c.target),
-    ),
+    this.plotChannels().some((c) => this.finite(c.ref) || this.finite(c.target)),
   );
   readonly domain = computed<Domain>(() => {
     // A channel-page change must not change the head's value scale.
     const rows =
       this.view() === 'scatter'
-        ? this.channels().filter(
-            (c) => this.finite(c.ref) && this.finite(c.target),
-          )
+        ? this.channels().filter((c) => this.finite(c.ref) && this.finite(c.target))
         : this.channels();
     return this.valueDomain(
-      rows
-        .flatMap((c) => [c.ref, c.target])
-        .filter((v): v is number => this.finite(v)),
+      rows.flatMap((c) => [c.ref, c.target]).filter((v): v is number => this.finite(v)),
     );
   });
   readonly box = computed(() => {
@@ -160,32 +185,18 @@ export class KvHeadDetails {
     const expanded = (factor: number): Domain => {
       const center = (base.low + base.high) / 2,
         span = (base.high - base.low) * factor;
-      return {
-        low: center - span / 2,
-        high: center + span / 2,
-        scale: base.scale,
-      };
+      return {low: center - span / 2, high: center + span / 2, scale: base.scale};
     };
     // Scatter uses equal value units on both axes, including in tall/narrow panels.
     return this.view() === 'scatter'
-      ? {
-          x: expanded(Math.max(1, width / height)),
-          y: expanded(Math.max(1, height / width)),
-        }
+      ? {x: expanded(Math.max(1, width / height)), y: expanded(Math.max(1, height / width))}
       : {x: base, y: base};
   });
   readonly xTickCount = computed(() =>
-    Math.max(
-      2,
-      Math.min(7, Math.floor((this.box().right - this.box().left) / 65) + 1),
-    ),
+    Math.max(2, Math.min(7, Math.floor((this.box().right - this.box().left) / 65) + 1)),
   );
-  readonly tickValues = computed(() =>
-    this.domainTicks(this.axisDomains().y, 5),
-  );
-  readonly scatterTicks = computed(() =>
-    this.domainTicks(this.axisDomains().x, this.xTickCount()),
-  );
+  readonly tickValues = computed(() => this.domainTicks(this.axisDomains().y, 5));
+  readonly scatterTicks = computed(() => this.domainTicks(this.axisDomains().x, this.xTickCount()));
   readonly channelTicks = computed(() => {
     const rows = this.plotChannels();
     if (!rows.length) return [];
@@ -193,30 +204,29 @@ export class KvHeadDetails {
       ...new Set(
         Array.from(
           {length: this.xTickCount()},
-          (_, i) =>
-            rows[Math.round(((rows.length - 1) * i) / (this.xTickCount() - 1))]
-              .channel,
+          (_, i) => rows[Math.round(((rows.length - 1) * i) / (this.xTickCount() - 1))].channel,
         ),
       ),
     ];
   });
-  readonly paths = computed(() =>
-    this.sides.map((side) => ({side, d: this.channelPath(side)})),
-  );
+  readonly paths = computed(() => this.sides.map((side) => ({side, d: this.channelPath(side)})));
 
   constructor() {
     effect((onCleanup) => {
       const element = this.plotContainer()?.nativeElement;
       if (!element) return;
       const observer = new ResizeObserver(([entry]) => {
-        if (entry.contentRect.width > 0)
-          this.plotWidth.set(entry.contentRect.width);
+        if (entry.contentRect.width > 0) this.plotWidth.set(entry.contentRect.width);
       });
       observer.observe(element);
       onCleanup(() => observer.disconnect());
     });
     effect(() => {
       const data = this.evidence();
+      if (this.plotOnly()) {
+        this.windowStart.set(0);
+        return;
+      }
       // An evidence response is tied to one exact head/position/batch selection.
       const rows = this.channels(),
         largest = data?.largest_channel;
@@ -257,18 +267,12 @@ export class KvHeadDetails {
       high = max / scale,
       pad = Math.max((high - low) * 0.08, 0.08);
     const limit = Number.MAX_VALUE / scale;
-    return {
-      low: Math.max(-limit, low - pad),
-      high: Math.min(limit, high + pad),
-      scale,
-    };
+    return {low: Math.max(-limit, low - pad), high: Math.min(limit, high + pad), scale};
   }
   private domainTicks(domain: Domain, count: number) {
     return Array.from(
       {length: count},
-      (_, i) =>
-        (domain.low + ((domain.high - domain.low) * i) / (count - 1)) *
-        domain.scale,
+      (_, i) => (domain.low + ((domain.high - domain.low) * i) / (count - 1)) * domain.scale,
     ).filter(Number.isFinite);
   }
   x(channel: number) {
@@ -277,26 +281,18 @@ export class KvHeadDetails {
       last = rows.at(-1)?.channel ?? first;
     const box = this.box();
     return (
-      box.left +
-      ((channel - first + 0.5) / Math.max(1, last - first + 1)) *
-        (box.right - box.left)
+      box.left + ((channel - first + 0.5) / Math.max(1, last - first + 1)) * (box.right - box.left)
     );
   }
   valueY(value: number) {
     const d = this.axisDomains().y,
       b = this.box();
-    return (
-      b.bottom -
-      ((value / d.scale - d.low) / (d.high - d.low)) * (b.bottom - b.top)
-    );
+    return b.bottom - ((value / d.scale - d.low) / (d.high - d.low)) * (b.bottom - b.top);
   }
   scatterX(value: number) {
     const d = this.axisDomains().x,
       b = this.box();
-    return (
-      b.left +
-      ((value / d.scale - d.low) / (d.high - d.low)) * (b.right - b.left)
-    );
+    return b.left + ((value / d.scale - d.low) / (d.high - d.low)) * (b.right - b.left);
   }
   private channelPath(side: Side) {
     let path = '',
@@ -320,15 +316,13 @@ export class KvHeadDetails {
     return path;
   }
   pointTitle(row: KvHeadChannel) {
-    return `Channel ${row.channel}\nRef ${this.valueText(row.ref)}\nTarget ${this.valueText(row.target)}\nSigned Δ ${this.valueText(row.delta, true)}\n|Δ| ${this.valueText(row.abs_delta)}`;
+    return `Head dimension ${row.channel}\nRef ${this.valueText(row.ref)}\nTarget ${this.valueText(row.target)}\nSigned Δ ${this.valueText(row.delta, true)}\n|Δ| ${this.valueText(row.abs_delta)}`;
   }
   selectChannel(value: number) {
     const rows = this.channels();
     if (!rows.length || !Number.isFinite(value)) return;
     const nearest = rows.reduce((best, row) =>
-      Math.abs(row.channel - value) < Math.abs(best.channel - value)
-        ? row
-        : best,
+      Math.abs(row.channel - value) < Math.abs(best.channel - value) ? row : best,
     );
     this.channel.set(nearest.channel);
     const index = rows.indexOf(nearest);
@@ -337,18 +331,12 @@ export class KvHeadDetails {
   }
   moveChannel(delta: number) {
     const rows = this.channels(),
-      next =
-        rows[
-          Math.max(0, Math.min(rows.length - 1, this.selectedIndex() + delta))
-        ];
+      next = rows[Math.max(0, Math.min(rows.length - 1, this.selectedIndex() + delta))];
     if (next) this.selectChannel(next.channel);
   }
   movePage(delta: number) {
     const rows = this.channels(),
-      index = Math.max(
-        0,
-        Math.min(rows.length - 1, this.windowStart() + delta * PAGE_SIZE),
-      );
+      index = Math.max(0, Math.min(rows.length - 1, this.windowStart() + delta * PAGE_SIZE));
     if (rows[index]) this.selectChannel(rows[index].channel);
   }
   commitChannel(event: Event) {
@@ -363,9 +351,7 @@ export class KvHeadDetails {
       this.commitChannel(event);
     } else if (event.key === 'Escape') {
       event.stopPropagation();
-      (event.target as HTMLInputElement).value = String(
-        this.selected()?.channel ?? 0,
-      );
+      (event.target as HTMLInputElement).value = String(this.selected()?.channel ?? 0);
     }
   }
   chartKey(event: KeyboardEvent) {
@@ -376,11 +362,7 @@ export class KvHeadDetails {
     else if (event.key === 'End') this.selectChannel(this.lastChannel());
     else this.moveChannel(event.key === 'ArrowLeft' ? -1 : 1);
   }
-  async copyValue(
-    label: string,
-    value: number | string | null,
-    signed = false,
-  ) {
+  async copyValue(label: string, value: number | string | null, signed = false) {
     if (value === null) return;
     try {
       await navigator.clipboard.writeText(this.valueText(value, signed));

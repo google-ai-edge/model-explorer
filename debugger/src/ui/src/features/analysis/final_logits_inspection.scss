@@ -1,0 +1,136 @@
+/**
+ * @license
+ * Copyright 2026 The AI Edge Model Explorer Authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ==============================================================================
+ */
+
+@use '../../shared/styles/analysis_toolbar' as toolbar;
+@use '../../shared/styles/display_settings' as display;
+:host {
+  display: block;
+  min-width: 0;
+  --kv-canvas: var(--me-surface-container-color);
+  --kv-panel: var(--me-surface-color);
+  --kv-muted: var(--me-on-surface-variant-color);
+  --kv-line: var(--me-outline-hairline-color);
+  --kv-accent: var(--me-primary-color);
+  color: var(--me-on-surface-color);
+}
+.controls {
+  @include toolbar.layout;
+  & {
+    @include toolbar.fixed-actions;
+  }
+}
+.tensor-axis-legend {
+  white-space: nowrap;
+  color: var(--kv-muted);
+  font: 11px/20px var(--me-font-family);
+}
+.toolbar-view,
+.position-control,
+.toolbar-range {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  font: 12px/20px var(--me-font-family);
+}
+.view-picker {
+  flex: 0 0 160px;
+  width: 160px;
+}
+.tool-divider {
+  content: '';
+  height: 24px;
+  flex: 0 0 1px;
+  background: var(--me-outline-hairline-color);
+}
+.position-control input {
+  width: 66px;
+  min-width: 0;
+  font: inherit;
+  padding: 3px 4px;
+  border: 1px solid var(--me-outline-hairline-color);
+  border-radius: 3px;
+  background: var(--me-surface-color);
+  color: inherit;
+}
+.icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--me-primary-color);
+  cursor: pointer;
+  mat-icon {
+    width: 18px;
+    height: 18px;
+    font-size: 18px;
+  }
+  &:disabled {
+    opacity: 0.4;
+    cursor: default;
+  }
+}
+.tensor-line-canvas {
+  height: 360px;
+  min-height: 280px;
+  &.expanded {
+    height: max(300px, calc(100dvh - 340px));
+  }
+}
+.state-message,
+.plot-caption {
+  margin: 8px 12px;
+  color: var(--me-on-surface-variant-color);
+  font: 12px/20px var(--me-font-family);
+}
+.plot-caption {
+  text-align: center;
+}
+.view-display-button.mat-mdc-icon-button {
+  --mdc-icon-button-state-layer-size: 32px;
+  --mdc-icon-button-icon-size: 20px;
+  width: 32px;
+  height: 32px;
+  padding: 6px;
+  mat-icon {
+    width: 20px;
+    height: 20px;
+    font-size: 20px;
+  }
+}
+.chart-display {
+  @include display.styles;
+}
+input:focus-visible,
+.icon-button:focus-visible {
+  outline: 2px solid var(--me-primary-color);
+  outline-offset: -2px;
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}

@@ -16,12 +16,7 @@
  * ==============================================================================
  */
 
-import {
-  ChangeDetectionStrategy,
-  Component,
-  ElementRef,
-  inject,
-} from '@angular/core';
+import {ChangeDetectionStrategy, Component, inject, ElementRef} from '@angular/core';
 import {MatButtonModule} from '@angular/material/button';
 import {MatIconModule} from '@angular/material/icon';
 import {MatTooltipModule} from '@angular/material/tooltip';
@@ -40,9 +35,7 @@ export class WelcomeCard {
     const home = this.element.nativeElement.closest('home-page');
     this.preferences.setShowWelcome(false);
     requestAnimationFrame(() =>
-      home
-        ?.querySelector<HTMLElement>('button.new-session, #editor-title')
-        ?.focus(),
+      home?.querySelector<HTMLElement>('button.new-session, #editor-title')?.focus(),
     );
   }
 }

@@ -23,13 +23,17 @@
 // must stay behind the text and the mismatch colors. The markup comes from tokenMarkup via
 // innerHTML, so these rules live outside Angular encapsulation.
 // The Display settings panel renders in the CDK overlay, outside its component element.
-$mark: color-mix(
-  in srgb,
-  var(--on2, var(--me-on-surface-variant-color)) 70%,
-  transparent
+$mark: var(
+  --token-detail-color,
+  color-mix(
+    in srgb,
+    var(--on2, var(--me-on-surface-variant-color)) 70%,
+    transparent
+  )
 );
 $stroke: 0.85px;
 
+analysis-token-strip .token,
 conversation-panel .tokens button,
 conversation-panel .input-tokens .input-token,
 conversation-panel .virtualTextLine .token,
@@ -122,4 +126,10 @@ conversation-panel .virtualTextLine .readingToken,
     color: $mark;
     vertical-align: middle;
   }
+}
+
+// Preserve whitespace-only spans inside the single-line, ellipsized inspector title.
+// Collapsed spaces otherwise have zero height and their marker falls outside its clip.
+.token-inspector .token-pair-value .invisible-char {
+  white-space: pre;
 }

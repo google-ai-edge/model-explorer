@@ -1,0 +1,111 @@
+/**
+ * @license
+ * Copyright 2026 The AI Edge Model Explorer Authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ==============================================================================
+ */
+
+@mixin overlays {
+  .chart-tooltip {
+    position: absolute;
+    z-index: 5;
+    pointer-events: none;
+    padding: 6px 8px;
+    border: 1px solid var(--me-outline-variant-color);
+    border-radius: 3px;
+    background: var(--me-surface-color);
+    color: var(--me-on-surface-color);
+    font: 12px/18px var(--me-font-family);
+    box-shadow: 0 2px 6px #0002;
+  }
+
+  .cache-location {
+    position: absolute;
+    pointer-events: none;
+    box-sizing: border-box;
+    border: 3px solid var(--me-primary-color);
+    border-radius: 3px;
+    box-shadow: 0 0 0 2px var(--me-surface-color);
+    z-index: 5;
+  }
+}
+
+@mixin selection {
+  .position-column-axis {
+    position: absolute;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    cursor: pointer;
+    &:focus-visible {
+      outline: 1px solid var(--kv-accent);
+      outline-offset: 0;
+    }
+  }
+  .column-preview {
+    position: absolute;
+    pointer-events: none;
+    background: color-mix(in srgb, var(--kv-accent) 9%, transparent);
+    border-inline: 1px solid
+      color-mix(in srgb, var(--kv-accent) 40%, transparent);
+    box-sizing: border-box;
+  }
+
+  .cell-hover,
+  .cell-selected,
+  .axis-selection {
+    position: absolute;
+    pointer-events: none;
+    box-sizing: border-box;
+    border: 1px solid var(--kv-accent);
+    background: color-mix(in srgb, var(--kv-accent) 10%, transparent);
+  }
+  .cell-hover {
+    border-style: dashed;
+    background: color-mix(in srgb, var(--kv-accent) 16%, transparent);
+  }
+  .point-hover {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 2;
+  }
+  .cell-selected {
+    border-width: 2px;
+  }
+  .axis-selection {
+    top: 0;
+    height: 100%;
+    border-width: 0 1px 2px;
+    background: color-mix(in srgb, var(--kv-accent) 18%, transparent);
+  }
+
+  .axis-bin,
+  .axis-hover {
+    position: absolute;
+    pointer-events: none;
+    top: 0;
+    height: 100%;
+    box-sizing: border-box;
+  }
+  .axis-bin {
+    border-inline-end: 1px solid var(--kv-line);
+    background: color-mix(in srgb, var(--kv-accent) 3%, transparent);
+  }
+  .axis-hover {
+    border: 1px dashed var(--kv-accent);
+    background: color-mix(in srgb, var(--kv-accent) 12%, transparent);
+  }
+}

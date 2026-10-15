@@ -62,8 +62,8 @@ conversation-panel .virtualTextLine .readingToken {
   font-size: 14px;
   font-family: var(--me-font-family);
   border: 0;
-  color: var(--me-on-surface-color);
-  background: transparent;
+  color: var(--token-node-text, var(--me-on-surface-color));
+  background: var(--token-node-surface, transparent);
 }
 conversation-panel .virtualTextLine .token {
   cursor: pointer;
@@ -74,7 +74,7 @@ conversation-panel .virtualTextLine .token.step-partner:not(.selected-token) {
   @include token.token-pair-hover;
 }
 conversation-panel .virtualTextLine .token.hover-origin:not(.selected-token) {
-  @include token.token-pair-hover(20%);
+  @include token.token-pair-hover;
 }
 conversation-panel .virtualTextLine .token:focus-visible,
 conversation-panel .virtualTextLine .selected-token {
@@ -116,7 +116,7 @@ conversation-panel .virtualTextLine .gapAnchor .missingOutput {
 }
 
 conversation-panel .virtualTextHost .token.template-token {
-  color: light-dark(#8293a8, #9aaec5);
+  color: var(--token-detail-color, light-dark(#8293a8, #9aaec5));
 }
 
 conversation-panel .conversationScrollbar {
@@ -174,13 +174,6 @@ conversation-panel
   .token.selected-token {
   @include token.token-selection;
 }
-conversation-panel
-  .reading:not(.chat-reading)
-  [data-runtime='ref']
-  .virtualTextLine
-  .token.selected-token {
-  outline-width: 1px;
-}
 
 conversation-panel .virtualTextLine,
 conversation-panel .virtualTextLine .vCell {
@@ -192,8 +185,39 @@ conversation-panel
   .virtualTextLine
   .token.boundaries {
   @include token.token-outline;
+  height: calc(24px + 2 * var(--token-border-width, 1px));
+  line-height: 24px;
 }
 
 conversation-panel .virtualTextLine {
   @include token.numeric-colors;
+}
+conversation-panel
+  .reading:not(.chat-reading)
+  .virtualTextLine
+  .token.linked-token-focus:not(.selected-token) {
+  @include token.token-selection;
+}
+
+conversation-panel
+  .reading[data-token-color='token_match']
+  .virtualTextLine
+  .gapAnchor
+  .missingOutput {
+  background-color: var(--b0);
+}
+conversation-panel
+  .reading[data-token-color='token_match']
+  .target
+  .virtualTextLine
+  .gapAnchor
+  .missingOutput {
+  background-color: var(--b4);
+}
+conversation-panel
+  .reading:not([data-token-color='none']):not([data-token-color='token_match'])
+  .virtualTextLine
+  .gapAnchor
+  .missingOutput {
+  background-color: var(--gap-worst);
 }

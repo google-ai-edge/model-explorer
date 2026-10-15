@@ -16,6 +16,10 @@
  * ==============================================================================
  */
 
+import {FinalLogitsInspection} from '../../analysis/final_logits_inspection';
+import {FinalLogitsTrends, type LogitPositionSeries} from '../../analysis/final_logits_trends';
+import {runtimeSeries} from '../../analysis/runtime_series';
+import type {KvRangeSelection} from '../../kv/kv_panel/kv_range_types';
 import {
   afterNextRender,
   Component,
@@ -32,22 +36,16 @@ import {
 } from '@angular/core';
 import {MatIconModule} from '@angular/material/icon';
 import {MatTooltipModule} from '@angular/material/tooltip';
-import {
-  TokenAnalysisPair,
-  TokenMetricKey,
-} from '../../../data/contracts/token_analysis';
 import {ConfigPicker} from '../../../shared/config_picker/config_picker';
-import {formatFixed} from '../../../shared/format/format';
-import {
-  loadTokenPlotly,
-  PlotHost,
-  PlotlyApi,
-} from '../../../shared/plotly_loader';
 import {AlignmentMode, ForkPair, TokenPair} from '../token_alignment';
+import {TokenAnalysisPair} from '../../../data/contracts/token_analysis';
 import {pairKey, presentValue, TOKEN_COLOR_MAX} from '../token_analysis';
 import {TOKEN_METRICS} from '../token_metric_metadata';
+import {TokenMetricKey} from '../../../data/contracts/token_analysis';
 import {
   isSideTrendMetric,
+  isFinalLogitMetric,
+  FINAL_LOGIT_METRICS,
   normalizeTrendRange,
   sampleTokenTrend,
   SIDE_TREND_METRICS,
@@ -55,6 +53,8 @@ import {
   trendTickStep,
   trendTokenLine,
 } from '../token_trends';
+import {loadPlotly, PlotHost, PlotlyApi} from '../../../shared/plotly_loader';
+import {formatFixed} from '../../../shared/format/format';
 
 /**
  * Custom properties keep `light-dark(...)` unresolved in getComputedStyle; a probe
@@ -66,8 +66,7 @@ function resolvedColor(host: HTMLElement, token: string): string {
     probe = host.ownerDocument.createElement('span');
     probe.className = 'color-probe';
     probe.setAttribute('aria-hidden', 'true');
-    probe.style.cssText =
-      'position:absolute;width:0;height:0;overflow:hidden;pointer-events:none';
+    probe.style.cssText = 'position:absolute;width:0;height:0;overflow:hidden;pointer-events:none';
     host.appendChild(probe);
   }
   probe.style.color = `var(${token})`;
@@ -76,88 +75,287 @@ function resolvedColor(host: HTMLElement, token: string): string {
 /** Candidates' Plotly layout, range/reset and picking policy in an Angular lifecycle. */
 @Component({
   selector: 'token-trends',
-  imports: [ConfigPicker, MatIconModule, MatTooltipModule],
-  template: ` <section
-    class="turnTrendPanel"
-    [attr.aria-label]="'Turn ' + turn() + ' comparison trends'"
-  >
-    <div
-      class="trendGraphTools"
-      role="group"
-      [attr.aria-label]="'Chart controls for turn ' + turn()"
-    >
-      <span>Turn {{ turn() }}</span>
-      <div class="trendMetricChoice">
-        <span>Metric</span
-        ><config-picker
-          [compact]="true"
-          [label]="'Metric for turn ' + turn()"
-          plural="metrics"
-          [popupWidth]="360"
-          [value]="metric().label"
-          [options]="options"
-          (valueChange)="changeMetric($event)"
-        />
-      </div>
-      <label
-        >Positions
-        <input
-          type="number"
-          min="0"
-          [max]="maximum() - 1"
-          step="1"
-          [value]="range()[0]"
-          [attr.aria-label]="'Start position for turn ' + turn()"
-          (change)="commit($event, false)"
-          (keydown)="inputKey($event, false)" /></label
-      ><span>–</span>
-      <input
-        type="number"
-        min="1"
-        [max]="maximum()"
-        step="1"
-        [value]="range()[1]"
-        [attr.aria-label]="'End position for turn ' + turn()"
-        (change)="commit($event, true)"
-        (keydown)="inputKey($event, true)"
+  imports: [
+    FinalLogitsInspection,
+    FinalLogitsTrends,
+    ConfigPicker,
+    MatIconModule,
+    MatTooltipModule,
+  ],
+  template: `@if (inspectionActive()) {
+      <final-logits-inspection
+        [panelId]="panelId()"
+        [turn]="turn()"
+        [position]="inspectionPosition()"
+        [fullRange]="fullPositionRange()"
+        [analysis]="inspectionAnalysis()"
+        [settings]="settings()"
+        [expanded]="expanded()"
+        (settingsChange)="settingsChange.emit($event)"
+        (positionChange)="inspectPosition($event)"
+        (expand)="expand.emit()"
       />
-      <button
-        type="button"
-        [disabled]="!customRange()"
-        [attr.aria-label]="'Reset chart view for turn ' + turn()"
-        matTooltip="Reset view"
-        (click)="reset()"
+    } @else if (logitsOnly()) {
+      <final-logits-trends
+        [metrics]="logitMetrics()"
+        [inspectionEnabled]="logitMode() !== 'distribution'"
+        (inspect)="openInspection($event)"
+        [analysisLabel]="logitMode() === 'distribution' ? 'Sampling Distribution' : 'Final Logits'"
+        [modeLabel]="
+          logitMode() === 'distribution' ? 'Distribution Comparison' : 'Tensor Comparison'
+        "
+        [metricLabel]="logitMetricLabel()"
+        [positionSeries]="logitSeries()"
+        [settings]="settings()"
+        [selectedIndex]="selected()"
+        [selectedRange]="selectedRange()"
+        [expanded]="expanded()"
+        (settingsChange)="settingsChange.emit($event)"
+        (metricChange)="setLogitMetric($event)"
+        (expand)="expand.emit()"
+        (selectPosition)="selectPosition.emit($event)"
+        (selectRange)="selectRange.emit($event)"
+        (backgroundClick)="backgroundClick.emit($event)"
+        (positionHover)="positionHover.emit($event)"
+      />
+      @if (loading()) {
+        <p role="status">Loading captured metrics…</p>
+      }
+    } @else {
+      <section
+        class="turnTrendPanel"
+        [attr.aria-label]="'Turn ' + turn() + ' comparison line chart'"
       >
-        <mat-icon>center_focus_strong</mat-icon>
-      </button>
-    </div>
-    <div
-      #plot
-      class="turnPlotly"
-      tabindex="0"
-      role="group"
-      [attr.aria-label]="
-        'Turn ' +
-        turn() +
-        ' comparison chart. Drag to zoom. Use left and right arrows to select positions.'
-      "
-    ></div>
-    @if (error()) {
-      <p role="alert">{{ error() }} <button type="button" (click)="retry()">Retry chart</button></p>
-    }
-    @if (loading()) {
-      <p role="status">Loading captured metrics…</p>
-    }
-    @if (outside()) {
-      <div class="trendSelectionNotice">
-        <span>Selected position is outside the visible range.</span
-        ><button type="button" (click)="reveal()">Show selection</button>
-      </div>
-    }
-  </section>`,
+        <div
+          class="trendGraphTools"
+          role="group"
+          [attr.aria-label]="'Chart controls for turn ' + turn()"
+        >
+          <span>Turn {{ turn() }}</span>
+          <div class="trendMetricChoice">
+            <span>Metric</span
+            ><config-picker
+              [compact]="true"
+              [label]="'Metric for turn ' + turn()"
+              plural="metrics"
+              [popupWidth]="360"
+              [value]="metric().label"
+              [options]="options()"
+              (valueChange)="changeMetric($event)"
+            />
+          </div>
+          <label
+            >Positions
+            <input
+              type="number"
+              min="0"
+              [max]="maximum() - 1"
+              step="1"
+              [value]="range()[0]"
+              [attr.aria-label]="'Start position for turn ' + turn()"
+              (change)="commit($event, false)"
+              (keydown)="inputKey($event, false)" /></label
+          ><span>–</span>
+          <input
+            type="number"
+            min="1"
+            [max]="maximum()"
+            step="1"
+            [value]="range()[1]"
+            [attr.aria-label]="'End position for turn ' + turn()"
+            (change)="commit($event, true)"
+            (keydown)="inputKey($event, true)"
+          />
+          <button
+            type="button"
+            [disabled]="!customRange()"
+            [attr.aria-label]="'Reset chart view for turn ' + turn()"
+            matTooltip="Reset view"
+            (click)="reset()"
+          >
+            <mat-icon>center_focus_strong</mat-icon>
+          </button>
+        </div>
+        <div
+          #plot
+          class="turnPlotly"
+          tabindex="0"
+          role="group"
+          [attr.aria-label]="
+            'Turn ' +
+            turn() +
+            ' comparison chart. Drag to zoom. Use left and right arrows to select positions.'
+          "
+        ></div>
+        @if (error()) {
+          <p role="alert">
+            {{ error() }} <button type="button" (click)="retry()">Retry chart</button>
+          </p>
+        }
+        @if (loading()) {
+          <p role="status">Loading captured metrics…</p>
+        }
+        @if (outside()) {
+          <div class="trendSelectionNotice">
+            <span>Selected position is outside the visible range.</span
+            ><button type="button" (click)="reveal()">Show selection</button>
+          </div>
+        }
+      </section>
+    }`,
   styleUrl: './token_trends.scss',
 })
 export class TokenTrends implements OnDestroy {
+  readonly panelId = input('');
+  readonly finalChart = viewChild(FinalLogitsTrends);
+  readonly inspection = viewChild(FinalLogitsInspection);
+  readonly inspectionActive = computed(
+    () =>
+      this.logitsOnly() &&
+      this.logitMode() === 'comparison' &&
+      this.settings().logitView === 'inspection',
+  );
+  private rowPosition(row: TokenPair) {
+    return (
+      this.globalStart() +
+      (this.alignment() === 'content' ? row.index : ((row.ref ?? row.target)?.step ?? row.index))
+    );
+  }
+  readonly fullPositionRange = computed(() => {
+    const rows = this.rows();
+    if (!rows.length) return {start: this.globalStart(), end: this.globalStart() + 1};
+    let start = Infinity;
+    let end = -Infinity;
+    for (const row of rows) {
+      const position = this.rowPosition(row);
+      if (position < start) start = position;
+      if (position > end) end = position;
+    }
+    return {start, end: end + 1};
+  });
+  readonly inspectionPosition = computed(() => {
+    const full = this.fullPositionRange();
+    const preferred =
+      this.settings().logitPosition ??
+      this.selectedComparisonPosition() ??
+      this.settings().positionRange?.start ??
+      full.start;
+    return Math.max(full.start, Math.min(full.end - 1, preferred));
+  });
+  private readonly selectedComparisonPosition = computed(() => {
+    const range = this.selectedRange();
+    const index = (range ? this.finalChart()?.representativeIndex(range) : null) ?? this.selected();
+    const row = this.rows().find((row) => row.index === index);
+    const position = row ? this.rowPosition(row) : null;
+    if (position !== null && (!range || (position >= range.start && position < range.end)))
+      return position;
+    return range?.start;
+  });
+  readonly inspectionAnalysis = computed(() => {
+    const row = this.rows().find((row) => this.rowPosition(row) === this.inspectionPosition());
+    return row ? this.analysis().get(pairKey(this.turn(), row)) : undefined;
+  });
+  openInspection(plot: 'index' | 'scatter' = 'index') {
+    const full = this.fullPositionRange();
+    const preferred = this.selectedComparisonPosition() ?? this.inspectionPosition();
+    const position = Math.max(full.start, Math.min(full.end - 1, preferred));
+    if (this.logitMode() === 'distribution') return;
+    this.settingsChange.emit({
+      ...this.settings(),
+      logitView: 'inspection',
+      logitPlot: plot,
+      logitPosition: position,
+      logitOffset: 0,
+    });
+  }
+  inspectPosition(position: number) {
+    this.settingsChange.emit({...this.settings(), logitPosition: position, logitOffset: 0});
+    const row = this.rows().find((row) => this.rowPosition(row) === position);
+    if (row)
+      this.selectRange.emit({
+        index: row.index,
+        range: {start: position, end: position + 1, layer: null},
+      });
+  }
+  locateView() {
+    if (this.inspection()) this.inspection()!.locateView();
+    else this.finalChart()?.locateView();
+  }
+  locateRange() {
+    if (this.inspection()) this.inspection()!.locatePosition();
+    else this.finalChart()?.locateRange();
+  }
+  locateMetric() {
+    this.finalChart()?.locateMetric();
+  }
+  locateFinal(side?: string, position?: number) {
+    this.finalChart()?.locate(side, position);
+  }
+  readonly expanded = input(false);
+  readonly expand = output<void>();
+  readonly globalStart = input(0);
+  readonly positionHover = output<KvRangeSelection | null>();
+  readonly logitMode = input<'comparison' | 'distribution'>('comparison');
+  readonly logitMetrics = computed(() =>
+    (this.logitMode() === 'distribution'
+      ? SIDE_TREND_METRICS
+      : [...FINAL_LOGIT_METRICS, ...TOKEN_METRICS.filter((m) => ['kl', 'js'].includes(m.key))]
+    ).map((m) => ({id: m.key, label: m.label.replace(/^(Logits|Per runtime) · /, '')})),
+  );
+  readonly logitMetricLabel = computed(() => {
+    const label = this.logitMetrics().find((m) => m.id === this.settings().metric)?.label ?? '';
+    const unit =
+      this.settings().metric === 'margin'
+        ? 'pp'
+        : this.settings().metric === 'selected_probability'
+          ? '%'
+          : this.metric().unit;
+    return label + (['bits', 'nats', '%', 'pp'].includes(unit) ? ' (' + unit + ')' : '');
+  });
+  setLogitMetric(metric: string) {
+    const found = this.logitMetrics().find((m) => m.id === metric);
+    if (found) this.settingsChange.emit({...this.settings(), metric: found.id});
+  }
+  readonly logitSeries = computed<LogitPositionSeries[]>(() => {
+    const sides = this.sideSeries(),
+      start = this.globalStart();
+    if (sides)
+      return (['ref', 'target'] as const).map((side) => ({
+        name: runtimeSeries(side).name,
+        runtime: side,
+        legendLabel: runtimeSeries(side).label,
+        color: runtimeSeries(side).color,
+        points: this.rows().flatMap((row, index) =>
+          row[side]
+            ? [
+                {
+                  position: start + (this.alignment() === 'content' ? row.index : row[side]!.step),
+                  index,
+                  value: sides[side][index],
+                },
+              ]
+            : [],
+        ),
+      }));
+    return [
+      {
+        name: this.logitMode() === 'distribution' ? 'Distribution comparison' : 'Final logits',
+        color: '#4285f4',
+        points: this.rows().flatMap((row, index) => {
+          const token = this.pairAt(row).ref ?? row.target;
+          return token
+            ? [
+                {
+                  position: start + (this.alignment() === 'content' ? row.index : token.step),
+                  index,
+                  value: this.series()[index],
+                },
+              ]
+            : [];
+        }),
+      },
+    ];
+  });
   readonly turn = input.required<number>();
   readonly rows = input.required<TokenPair[]>();
   readonly analysis = input.required<Map<string, TokenAnalysisPair>>();
@@ -169,21 +367,25 @@ export class TokenTrends implements OnDestroy {
   readonly alignment = input<AlignmentMode>('content');
   readonly settingsChange = output<TokenTrendState>();
   readonly selectPosition = output<number>();
-  readonly options = [...TOKEN_METRICS, ...SIDE_TREND_METRICS].map(
-    (m) => m.label,
+  readonly selectedRange = input<KvRangeSelection | null>(null);
+  readonly selectRange = output<{index: number; range: KvRangeSelection}>();
+  readonly backgroundClick = output<MouseEvent>();
+  readonly logitsOnly = input(false);
+  readonly options = computed(() =>
+    [
+      ...TOKEN_METRICS.filter((m) => !this.logitsOnly() || ['kl', 'js'].includes(m.key)),
+      ...SIDE_TREND_METRICS,
+    ].map((m) => m.label),
   );
   readonly maximum = computed(() => Math.max(1, this.rows().length - 1));
   readonly metric = computed(
     () =>
-      [...TOKEN_METRICS, ...SIDE_TREND_METRICS].find(
+      [...TOKEN_METRICS, ...SIDE_TREND_METRICS, ...FINAL_LOGIT_METRICS].find(
         (m) => m.key === this.settings().metric,
       ) ?? TOKEN_METRICS[0],
   );
   readonly range = computed(() =>
-    normalizeTrendRange(this.rows().length, [
-      this.settings().start,
-      this.settings().end,
-    ]),
+    normalizeTrendRange(this.rows().length, [this.settings().start, this.settings().end]),
   );
   readonly customRange = computed(
     () => this.range()[0] !== 0 || this.range()[1] !== this.maximum(),
@@ -191,8 +393,7 @@ export class TokenTrends implements OnDestroy {
   readonly outside = computed(
     () =>
       this.selected() !== null &&
-      (this.selected()! < this.range()[0] ||
-        this.selected()! > this.range()[1]),
+      (this.selected()! < this.range()[0] || this.selected()! > this.range()[1]),
   );
   readonly series = computed(() => {
     const data = this.analysis(),
@@ -200,8 +401,10 @@ export class TokenTrends implements OnDestroy {
       turn = this.turn();
     if (isSideTrendMetric(key)) return [];
     return this.rows().map((row) => {
-      const value = data.get(pairKey(turn, this.pairAt(row)))?.metrics[key]
-        ?.value;
+      const pair = data.get(pairKey(turn, this.pairAt(row)));
+      if (isFinalLogitMetric(key))
+        return pair?.final_logits?.raw[key === 'logit_max_abs' ? 'max_abs' : 'rmse'].value ?? null;
+      const value = pair?.metrics[key]?.value;
       return value == null ? null : presentValue(key, value);
     });
   });
@@ -209,6 +412,7 @@ export class TokenTrends implements OnDestroy {
    *  two tokens of its generation step when the text alignment left one side empty. Paired
    *  metrics exist for that pair; per-runtime lines keep every token at its own row. */
   private pairAt(row: TokenPair): TokenPair {
+    if (this.logitsOnly()) return row;
     const fork = this.fork();
     return fork?.filled && fork.index === row.index ? fork.pair : row;
   }
@@ -221,19 +425,17 @@ export class TokenTrends implements OnDestroy {
     const pick = (side: 'ref' | 'target') =>
       this.rows().map((pair) =>
         pair[side]
-          ? (data.get(pairKey(turn, pair))?.distribution?.[side]?.[key] ?? null)
+          ? ((this.logitMode() === 'distribution'
+              ? data.get(pairKey(turn, pair))?.sampling_distribution
+              : data.get(pairKey(turn, pair))?.distribution)?.[side]?.[key] ?? null)
           : null,
       );
     return {ref: pick('ref'), target: pick('target')};
   });
   /** The first aligned position where the two runtimes produced different tokens. */
-  readonly firstDivergence = computed(() =>
-    this.rows().findIndex((row) => row.match === false),
-  );
+  readonly firstDivergence = computed(() => this.rows().findIndex((row) => row.match === false));
   readonly width = signal(800);
-  readonly sampled = computed(() =>
-    sampleTokenTrend(this.series(), this.range(), this.width()),
-  );
+  readonly sampled = computed(() => sampleTokenTrend(this.series(), this.range(), this.width()));
   readonly error = signal('');
   private readonly plot = viewChild<ElementRef<PlotHost>>('plot');
   private readonly zone = inject(NgZone);
@@ -291,7 +493,7 @@ export class TokenTrends implements OnDestroy {
     this.settingsChange.emit({...this.settings(), start, end});
   }
   changeMetric(label: string) {
-    const metric = [...TOKEN_METRICS, ...SIDE_TREND_METRICS].find(
+    const metric = [...TOKEN_METRICS, ...SIDE_TREND_METRICS, ...FINAL_LOGIT_METRICS].find(
       (m) => m.label === label,
     )?.key;
     if (metric) this.settingsChange.emit({...this.settings(), metric});
@@ -302,9 +504,7 @@ export class TokenTrends implements OnDestroy {
       range = this.range();
     if (Number.isFinite(value))
       this.setRange(
-        end
-          ? [range[0], Math.max(range[0] + 1, value)]
-          : [Math.min(value, range[1] - 1), range[1]],
+        end ? [range[0], Math.max(range[0] + 1, value)] : [Math.min(value, range[1] - 1), range[1]],
       );
     input.value = String(this.range()[end ? 1 : 0]);
   }
@@ -316,9 +516,7 @@ export class TokenTrends implements OnDestroy {
     }
     if (event.key === 'Escape') {
       event.stopPropagation();
-      (event.target as HTMLInputElement).value = String(
-        this.range()[end ? 1 : 0],
-      );
+      (event.target as HTMLInputElement).value = String(this.range()[end ? 1 : 0]);
     }
   }
   reset() {
@@ -328,18 +526,13 @@ export class TokenTrends implements OnDestroy {
     const idx = this.selected();
     if (idx === null) return;
     const span = this.range()[1] - this.range()[0],
-      lo = Math.max(
-        0,
-        Math.min(this.maximum() - span, idx - Math.floor(span / 2)),
-      );
+      lo = Math.max(0, Math.min(this.maximum() - span, idx - Math.floor(span / 2)));
     this.setRange([lo, lo + span]);
   }
   private pick(index: number) {
     if (!this.rows().length) return;
     this.zone.run(() =>
-      this.selectPosition.emit(
-        Math.max(0, Math.min(this.rows().length - 1, Math.round(index))),
-      ),
+      this.selectPosition.emit(Math.max(0, Math.min(this.rows().length - 1, Math.round(index)))),
     );
     this.plot()?.nativeElement.focus({preventScroll: true});
   }
@@ -352,8 +545,7 @@ export class TokenTrends implements OnDestroy {
         ? this.range()[0]
         : event.key === 'End'
           ? this.range()[1]
-          : (this.selected() ?? this.range()[0]) +
-            (event.key === 'ArrowLeft' ? -1 : 1),
+          : (this.selected() ?? this.range()[0]) + (event.key === 'ArrowLeft' ? -1 : 1),
     );
   }
   retry() {
@@ -414,11 +606,7 @@ export class TokenTrends implements OnDestroy {
       },
       options,
     );
-    window.addEventListener(
-      'dblclick',
-      () => clearTimeout(this.timer),
-      options,
-    );
+    window.addEventListener('dblclick', () => clearTimeout(this.timer), options);
     host.on('plotly_doubleclick', () => clearTimeout(this.timer));
     host.addEventListener(
       'pointercancel',
@@ -438,7 +626,7 @@ export class TokenTrends implements OnDestroy {
     }
     this.painting = true;
     try {
-      this.api = await loadTokenPlotly();
+      this.api = await loadPlotly();
       if (this.destroyed) return;
       const style = getComputedStyle(host),
         css = (name: string) => style.getPropertyValue(name).trim(),
@@ -446,8 +634,7 @@ export class TokenTrends implements OnDestroy {
         mode = document.documentElement.dataset['theme'],
         dark =
           mode === 'dark' ||
-          (mode !== 'light' &&
-            matchMedia('(prefers-color-scheme: dark)').matches);
+          (mode !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches);
       const metric = this.metric(),
         key = metric.key,
         rows = this.rows(),
@@ -463,10 +650,7 @@ export class TokenTrends implements OnDestroy {
         sides = this.sideSeries(),
         palette = key === 'kl' || key === 'js';
       const family = palette ? 'semantic' : 'activation';
-      const colors = [
-        color(`--heat-${family}-low`),
-        color(`--heat-${family}-high`),
-      ];
+      const colors = [color(`--heat-${family}-low`), color(`--heat-${family}-high`)];
       const pointOutline = color(`--heat-${family}-point`),
         muted = color('--me-on-surface-variant-color'),
         rule = color('--me-outline-variant-color'),
@@ -487,7 +671,7 @@ export class TokenTrends implements OnDestroy {
           [0, colors[0]],
           [1, colors[1]],
         ],
-        pointMax = isSideTrendMetric(key) ? 1 : TOKEN_COLOR_MAX[key],
+        pointMax = isSideTrendMetric(key) || isFinalLogitMetric(key) ? 1 : TOKEN_COLOR_MAX[key],
         shapes: unknown[] = [],
         annotations: unknown[] = [];
       const axis = {
@@ -509,9 +693,7 @@ export class TokenTrends implements OnDestroy {
       const available = sideSamples
           ? sideSamples.ref.available + sideSamples.target.available
           : sample.available,
-        peak = sideSamples
-          ? Math.max(sideSamples.ref.max, sideSamples.target.max)
-          : sample.max;
+        peak = sideSamples ? Math.max(sideSamples.ref.max, sideSamples.target.max) : sample.max;
       if (!available)
         annotations.push({
           xref: 'paper',
@@ -521,9 +703,8 @@ export class TokenTrends implements OnDestroy {
           text: this.loading()
             ? 'Loading captured metrics…'
             : key === 'kl' || key === 'js' || sides
-              ? 'Full-vocabulary logits not captured' +
-                (sides ? '' : ' or not comparable')
-              : 'Activation metric not captured or not comparable',
+              ? 'Full-vocabulary logits not captured' + (sides ? '' : ' or not comparable')
+              : 'Layer Activation metric not captured or not comparable',
           showarrow: false,
         });
       if (unit || metric.reading)
@@ -608,11 +789,7 @@ export class TokenTrends implements OnDestroy {
               name = side === 'ref' ? 'Reference' : 'Target',
               chosen = idx === null ? null : sides![side][idx];
             const text = (v: number | null | undefined) =>
-              v == null
-                ? '—'
-                : percent
-                  ? (v * 100).toFixed(1) + '%'
-                  : formatFixed(v, 3) + ' bits';
+              v == null ? '—' : percent ? (v * 100).toFixed(1) + '%' : formatFixed(v, 3) + ' bits';
             return [
               {
                 type: 'scatter',
@@ -625,16 +802,8 @@ export class TokenTrends implements OnDestroy {
                 customdata: data.x.map((x) =>
                   [
                     position(x),
-                    trendTokenLine(
-                      'Reference',
-                      rows[x]?.ref,
-                      text(sides!.ref[x]),
-                    ),
-                    trendTokenLine(
-                      'Target',
-                      rows[x]?.target,
-                      text(sides!.target[x]),
-                    ),
+                    trendTokenLine('Reference', rows[x]?.ref, text(sides!.ref[x])),
+                    trendTokenLine('Target', rows[x]?.target, text(sides!.target[x])),
                   ].join('<br>'),
                 ),
                 hovertemplate: '%{customdata}<extra></extra>',
@@ -645,11 +814,7 @@ export class TokenTrends implements OnDestroy {
                 mode: 'markers',
                 x: idx === null || chosen == null ? [] : [idx],
                 y: chosen == null ? [] : [chosen],
-                marker: {
-                  size: 10,
-                  color: line,
-                  line: {width: 2, color: accent},
-                },
+                marker: {size: 10, color: line, line: {width: 2, color: accent}},
                 hoverinfo: 'skip',
                 showlegend: false,
               },
@@ -683,10 +848,8 @@ export class TokenTrends implements OnDestroy {
                 ': <b>' +
                 (v === null
                   ? '—'
-                  : formatFixed(
-                      v,
-                      key === 'relative_l2' || key === 'norm_ratio' ? 2 : 4,
-                    ) + (unit ? ' ' + unit : '')) +
+                  : formatFixed(v, key === 'relative_l2' || key === 'norm_ratio' ? 2 : 4) +
+                    (unit ? ' ' + unit : '')) +
                 '</b>',
             ].join('<br>');
           }),
@@ -719,13 +882,7 @@ export class TokenTrends implements OnDestroy {
           font: {family: css('--me-font-family'), size: 12, color: muted},
           margin: {l: 76, r: 24, t: 30, b: 50},
           showlegend: !!sides,
-          legend: {
-            orientation: 'h',
-            x: 1,
-            xanchor: 'right',
-            y: 1,
-            yanchor: 'bottom',
-          },
+          legend: {orientation: 'h', x: 1, xanchor: 'right', y: 1, yanchor: 'bottom'},
           hovermode: 'closest',
           hoverdistance: 14,
           hoverlabel: {
@@ -763,21 +920,13 @@ export class TokenTrends implements OnDestroy {
           },
           yaxis: {
             ...axis,
-            range: [
-              0,
-              percent ? 1.05 : available ? Math.max(1e-8, peak) * 1.1 : 1,
-            ],
+            range: [0, percent ? 1.05 : available ? Math.max(1e-8, peak) * 1.1 : 1],
             fixedrange: true,
             gridcolor: rule,
             tickformat: percent ? '.0%' : peak < 0.01 ? '.2e' : '.3~g',
           },
         },
-        {
-          displayModeBar: false,
-          responsive: true,
-          scrollZoom: false,
-          doubleClick: 'reset',
-        },
+        {displayModeBar: false, responsive: true, scrollZoom: false, doubleClick: 'reset'},
       );
       if (!this.destroyed && !this.bound) this.bind(host);
       this.error.set('');

@@ -16,13 +16,9 @@
  * ==============================================================================
  */
 
-import {Component, ElementRef, inject, signal} from '@angular/core';
+import {Component, inject, signal, ElementRef} from '@angular/core';
+import {MatDialogModule, MatDialogRef, MAT_DIALOG_DATA} from '@angular/material/dialog';
 import {MatButtonModule} from '@angular/material/button';
-import {
-  MAT_DIALOG_DATA,
-  MatDialogModule,
-  MatDialogRef,
-} from '@angular/material/dialog';
 import {SessionSummary} from '../../../data/contracts/session_summary';
 import {SessionListService} from '../../../data/session_list_service';
 import {sessionConfigurationLocked} from '../../../data/session_status';
@@ -41,9 +37,7 @@ export class SessionDelete {
   readonly error = signal('');
   async remove() {
     if (this.saving()) return;
-    const current = this.sessions
-      .items()
-      .find((item) => item.id === this.session.id);
+    const current = this.sessions.items().find((item) => item.id === this.session.id);
     if (
       !current ||
       !this.sessions.listing()?.capabilities.delete ||
@@ -62,9 +56,7 @@ export class SessionDelete {
     } catch (e) {
       this.error.set((e as Error).message);
       requestAnimationFrame(() =>
-        this.element.nativeElement
-          .querySelector<HTMLElement>('[role="alert"]')
-          ?.focus(),
+        this.element.nativeElement.querySelector<HTMLElement>('[role="alert"]')?.focus(),
       );
     } finally {
       this.saving.set(false);

@@ -16,15 +16,9 @@
  * ==============================================================================
  */
 
-import {
-  computed,
-  DestroyRef,
-  effect,
-  inject,
-  Injectable,
-  signal,
-  untracked,
-} from '@angular/core';
+import {computed, DestroyRef, effect, inject, Injectable, signal, untracked} from '@angular/core';
+import {ReportApiService} from '../../data/report_api_service';
+import {ReportStateService} from '../../data/report_state_service';
 import type {
   ComparisonRow,
   NodeDetails,
@@ -32,8 +26,6 @@ import type {
   SelectionResult,
   TensorRecord,
 } from '../../data/contracts/types';
-import {ReportApiService} from '../../data/report_api_service';
-import {ReportStateService} from '../../data/report_state_service';
 
 export interface GraphInspectionContext {
   layer: number;
@@ -83,10 +75,7 @@ export class GraphInspectionService {
       return this.selectedReference() && this.selectedTarget()
         ? 'Awaiting comparison'
         : 'Select two captured tensors';
-    if (
-      this.selectedTensor() &&
-      (!this.selectedReference() || !this.selectedTarget())
-    )
+    if (this.selectedTensor() && (!this.selectedReference() || !this.selectedTarget()))
       return 'Unmapped tensor';
     return (
       (this.details()?.saved.status.startsWith('stale')
@@ -94,15 +83,10 @@ export class GraphInspectionService {
         : this.row()?.status) ?? 'Not captured'
     );
   });
-  readonly metrics = computed(() =>
-    this.operation() ? {} : (this.result()?.metrics ?? {}),
-  );
+  readonly metrics = computed(() => (this.operation() ? {} : (this.result()?.metrics ?? {})));
   readonly scalarMetrics = computed<Record<string, number | null>>(() =>
     Object.fromEntries(
-      Object.entries(this.metrics()).map(([key, metric]) => [
-        key,
-        metric.value ?? null,
-      ]),
+      Object.entries(this.metrics()).map(([key, metric]) => [key, metric.value ?? null]),
     ),
   );
   readonly canMap = computed(
@@ -139,9 +123,7 @@ export class GraphInspectionService {
         const context = this.context();
         if (
           context &&
-          (captureId !== this.captureId ||
-            context.batch !== batch ||
-            context.layer !== layer)
+          (captureId !== this.captureId || context.batch !== batch || context.layer !== layer)
         )
           this.close();
       });
@@ -164,9 +146,7 @@ export class GraphInspectionService {
   }
 
   tensor(side: GraphSide, id: string): TensorRecord | undefined {
-    return this.details()?.tensors.find(
-      (tensor) => tensor.run === side && tensor.id === id,
-    );
+    return this.details()?.tensors.find((tensor) => tensor.run === side && tensor.id === id);
   }
 
   async select(context: GraphInspectionContext) {
@@ -190,11 +170,9 @@ export class GraphInspectionService {
       this.details.set(details);
       this.initialize(details);
     } catch (error) {
-      if (this.current(generation) && !controller.signal.aborted)
-        this.error.set(String(error));
+      if (this.current(generation) && !controller.signal.aborted) this.error.set(String(error));
     } finally {
-      if (this.current(generation) && !controller.signal.aborted)
-        this.loading.set(false);
+      if (this.current(generation) && !controller.signal.aborted) this.loading.set(false);
     }
   }
 
@@ -212,15 +190,10 @@ export class GraphInspectionService {
   private row(): ComparisonRow | undefined {
     const context = this.context(),
       comparison = this.state.comparison();
-    if (
-      !context ||
-      comparison?.batch !== context.batch ||
-      !context.semantic.startsWith('anchor:')
-    )
+    if (!context || comparison?.batch !== context.batch || !context.semantic.startsWith('anchor:'))
       return;
     return comparison.rows.find(
-      (row) =>
-        row.layer === context.layer && row.anchor === context.semantic.slice(7),
+      (row) => row.layer === context.layer && row.anchor === context.semantic.slice(7),
     );
   }
 
@@ -253,10 +226,8 @@ export class GraphInspectionService {
       result: saved.comparison ?? result,
     };
     this.restoreCommitted();
-    this.awaitingRows =
-      !record && this.state.comparison()?.batch !== this.context()?.batch;
-    if (record && !this.result() && validReference && validTarget)
-      void this.compare(true);
+    this.awaitingRows = !record && this.state.comparison()?.batch !== this.context()?.batch;
+    if (record && !this.result() && validReference && validTarget) void this.compare(true);
   }
 
   selectTensor(selection: GraphTensorSelection) {
@@ -266,16 +237,10 @@ export class GraphInspectionService {
     this.operation.set(null);
     this.selectedTensor.set(selection);
     if (this.mapping()) {
-      (selection.side === 'ref'
-        ? this.selectedReference
-        : this.selectedTarget
-      ).set(selection.id);
+      (selection.side === 'ref' ? this.selectedReference : this.selectedTarget).set(selection.id);
       void this.compare();
     } else if (
-      selection.id ===
-      (selection.side === 'ref'
-        ? this.committed.reference
-        : this.committed.target)
+      selection.id === (selection.side === 'ref' ? this.committed.reference : this.committed.target)
     ) {
       this.selectedReference.set(this.committed.reference);
       this.selectedTarget.set(this.committed.target);
@@ -340,9 +305,7 @@ export class GraphInspectionService {
     const context = this.context(),
       reference = this.selectedReference(),
       target = this.selectedTarget();
-    return context && reference && target
-      ? {...context, reference, target}
-      : null;
+    return context && reference && target ? {...context, reference, target} : null;
   }
 
   private abortComparison() {
@@ -368,11 +331,7 @@ export class GraphInspectionService {
       request === this.comparisonGeneration &&
       !controller.signal.aborted;
     try {
-      const result = await this.api.compareSelection(
-        this.captureId,
-        selection,
-        controller.signal,
-      );
+      const result = await this.api.compareSelection(this.captureId, selection, controller.signal);
       if (!current()) return;
       this.result.set(result);
       if (commit) this.committed = {...this.committed, result};
@@ -393,9 +352,7 @@ export class GraphInspectionService {
     try {
       const saved = await this.api.saveMapping(captureId, selection);
       if (this.current(generation)) {
-        this.details.update((details) =>
-          details ? {...details, saved} : details,
-        );
+        this.details.update((details) => (details ? {...details, saved} : details));
         this.committed = {
           reference: selection.reference,
           target: selection.target,
@@ -427,9 +384,7 @@ export class GraphInspectionService {
         target: '',
       });
       if (this.current(generation)) {
-        this.details.update((details) =>
-          details ? {...details, saved} : details,
-        );
+        this.details.update((details) => (details ? {...details, saved} : details));
         this.committed = {reference: '', target: '', result: null};
         this.restoreCommitted();
         this.awaitingRows = true;

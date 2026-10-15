@@ -28,6 +28,20 @@ export interface TokenPair {
   target?: CapturedToken;
   match: boolean | null;
 }
+/** A token's context position on its own side; without a captured one, `start + step`. */
+export function tokenPosition(token: CapturedToken, start: number): number {
+  return token.position ?? start + token.step;
+}
+/**
+ * The KV position pairs of aligned tokens: columns count from `start`, the Reference side's
+ * origin, and each side is read at its own positions, which differ when the histories do.
+ */
+export function positionPairs(pairs: TokenPair[], start: number): [number | null, number | null][] {
+  return pairs.map((pair) => [
+    pair.ref ? tokenPosition(pair.ref, start) : null,
+    pair.target ? tokenPosition(pair.target, start) : null,
+  ]);
+}
 const sameText = (a: CapturedToken, b: CapturedToken) =>
   a.text !== null && b.text !== null && a.text === b.text;
 /** Adapted from debugger-shell's conversation-step-zero.html alignedPairs.
@@ -42,37 +56,26 @@ export function alignTokens(
 ): TokenPair[] {
   const rows: Omit<TokenPair, 'index' | 'match'>[] = [];
   if (ref === undefined || target === undefined) {
-    for (const token of ref ?? target ?? []) {
-      rows.push(ref ? {ref: token} : {target: token});
-    }
+    for (const token of ref ?? target ?? []) rows.push(ref ? {ref: token} : {target: token});
     return rows.map((row, index) => ({...row, index, match: null}));
   }
   if (precomputed && mode === 'content') {
-    let previousRef = -1;
-    let previousTarget = -1;
+    let previousRef = -1,
+      previousTarget = -1;
     for (const row of precomputed) {
-      if (row.ref == null && row.target == null) {
+      if (row.ref == null && row.target == null)
         throw new Error('Invalid captured alignment: empty row');
-      }
       for (const side of ['ref', 'target'] as const) {
-        const index = row[side];
-        const tokens = side === 'ref' ? ref : target;
-        const previous = side === 'ref' ? previousRef : previousTarget;
+        const index = row[side],
+          tokens = side === 'ref' ? ref : target,
+          previous = side === 'ref' ? previousRef : previousTarget;
         if (index != null) {
-          if (
-            !Number.isInteger(index) ||
-            index !== previous + 1 ||
-            index >= tokens.length
-          ) {
+          if (!Number.isInteger(index) || index !== previous + 1 || index >= tokens.length)
             throw new Error(
               'Invalid captured alignment: token indices must cover each side in order',
             );
-          }
-          if (side === 'ref') {
-            previousRef = index;
-          } else {
-            previousTarget = index;
-          }
+          if (side === 'ref') previousRef = index;
+          else previousTarget = index;
         }
       }
       rows.push({
@@ -80,70 +83,48 @@ export function alignTokens(
         target: row.target == null ? undefined : target[row.target],
       });
     }
-    if (previousRef + 1 !== ref.length || previousTarget + 1 !== target.length) {
+    if (previousRef + 1 !== ref.length || previousTarget + 1 !== target.length)
       throw new Error('Invalid captured alignment: incomplete token coverage');
-    }
   } else if (mode === 'steps') {
-    const a = new Map(ref.map((t) => [t.step, t]));
-    const b = new Map(target.map((t) => [t.step, t]));
-    for (const step of [...new Set([...a.keys(), ...b.keys()])].sort(
-      (a, b) => a - b,
-    )) {
+    const a = new Map(ref.map((t) => [t.step, t])),
+      b = new Map(target.map((t) => [t.step, t]));
+    for (const step of [...new Set([...a.keys(), ...b.keys()])].sort((a, b) => a - b))
       rows.push({ref: a.get(step), target: b.get(step)});
-    }
-  } else {
+  } else
     for (const phase of ['thinking', 'response']) {
-      let a = ref.filter((t) => (t.phase ?? 'response') === phase);
-      let b = target.filter((t) => (t.phase ?? 'response') === phase);
+      let a = ref.filter((t) => (t.phase ?? 'response') === phase),
+        b = target.filter((t) => (t.phase ?? 'response') === phase);
       // Trim equal context before allocating the LCS matrix. Long captures often differ in a small window.
-      let prefix = 0;
-      let suffix = 0;
-      while (
-        prefix < a.length &&
-        prefix < b.length &&
-        sameText(a[prefix], b[prefix])
-      ) {
-        prefix++;
-      }
+      let prefix = 0,
+        suffix = 0;
+      while (prefix < a.length && prefix < b.length && sameText(a[prefix], b[prefix])) prefix++;
       while (
         suffix < a.length - prefix &&
         suffix < b.length - prefix &&
         sameText(a[a.length - 1 - suffix], b[b.length - 1 - suffix])
-      ) {
+      )
         suffix++;
-      }
-      for (let k = 0; k < prefix; k++) {
-        rows.push({ref: a[k], target: b[k]});
-      }
+      for (let k = 0; k < prefix; k++) rows.push({ref: a[k], target: b[k]});
       const tail = a
         .slice(a.length - suffix)
         .map((token, k) => ({ref: token, target: b[b.length - suffix + k]}));
       a = a.slice(prefix, a.length - suffix);
       b = b.slice(prefix, b.length - suffix);
-      if ((a.length + 1) * (b.length + 1) > 4_000_000) {
-        throw new Error(
-          'Context alignment exceeds the supported size. Select Steps alignment.',
-        );
-      }
-      const dp = Array.from(
-        {length: a.length + 1},
-        () => new Uint32Array(b.length + 1),
-      );
-      for (let i = a.length - 1; i >= 0; i--) {
-        for (let j = b.length - 1; j >= 0; j--) {
+      if ((a.length + 1) * (b.length + 1) > 4_000_000)
+        throw new Error('Context alignment exceeds the supported size. Select Steps alignment.');
+      const dp = Array.from({length: a.length + 1}, () => new Uint32Array(b.length + 1));
+      for (let i = a.length - 1; i >= 0; i--)
+        for (let j = b.length - 1; j >= 0; j--)
           dp[i][j] = sameText(a[i], b[j])
             ? 1 + dp[i + 1][j + 1]
             : Math.max(dp[i + 1][j], dp[i][j + 1]);
-        }
-      }
-      let i = 0;
-      let j = 0;
-      let removed: CapturedToken[] = [];
-      let added: CapturedToken[] = [];
+      let i = 0,
+        j = 0;
+      let removed: CapturedToken[] = [],
+        added: CapturedToken[] = [];
       const flush = () => {
-        for (let k = 0; k < Math.max(removed.length, added.length); k++) {
+        for (let k = 0; k < Math.max(removed.length, added.length); k++)
           rows.push({ref: removed[k], target: added[k]});
-        }
         removed = [];
         added = [];
       };
@@ -151,21 +132,13 @@ export function alignTokens(
         if (i < a.length && j < b.length && sameText(a[i], b[j])) {
           flush();
           rows.push({ref: a[i++], target: b[j++]});
-        } else if (
-          i < a.length &&
-          (j === b.length || dp[i + 1][j] >= dp[i][j + 1])
-        ) {
+        } else if (i < a.length && (j === b.length || dp[i + 1][j] >= dp[i][j + 1]))
           removed.push(a[i++]);
-        } else {
-          added.push(b[j++]);
-        }
+        else added.push(b[j++]);
       }
       flush();
-      for (const row of tail) {
-        rows.push(row);
-      }
+      for (const row of tail) rows.push(row);
     }
-  }
   return rows.map((row, index) => ({
     ...row,
     index,
@@ -200,29 +173,18 @@ export function forkPair(
   target: readonly CapturedToken[] | undefined,
 ): ForkPair | null {
   const index = rows.findIndex((row) => row.match !== true);
-  if (index < 0 || rows[index].match !== false) {
-    return null;
-  }
-  for (let k = 0; k < index; k++) {
-    if (rows[k].ref?.step !== rows[k].target?.step) {
-      return null;
-    }
-  }
-  const row = rows[index];
-  const step = (row.ref ?? row.target)?.step;
-  if (typeof step !== 'number') {
-    return null;
-  }
-  if (row.ref && row.target) {
+  if (index < 0 || rows[index].match !== false) return null;
+  for (let k = 0; k < index; k++) if (rows[k].ref!.step !== rows[k].target!.step) return null;
+  const row = rows[index],
+    step = (row.ref ?? row.target)?.step;
+  if (typeof step !== 'number') return null;
+  if (row.ref && row.target)
     return row.ref.step === row.target.step
       ? {index, pair: row, filled: null, partner: null}
       : null;
-  }
-  const filled = row.ref ? 'target' : 'ref';
-  const token = (filled === 'ref' ? ref : target)?.find((t) => t.step === step);
-  if (!token) {
-    return null;
-  }
+  const filled = row.ref ? 'target' : 'ref',
+    token = (filled === 'ref' ? ref : target)?.find((t) => t.step === step);
+  if (!token) return null;
   const partner = rows.findIndex((r) => r[filled] === token);
   return {
     index,
@@ -246,16 +208,11 @@ export function decodeOutcome(
   ref: readonly CapturedToken[] | undefined,
   target: readonly CapturedToken[] | undefined,
 ): DecodeOutcome {
-  if (!ref || !target) {
-    return {kind: 'uncaptured', step: null, prefix: 0};
-  }
-  const first = rows.findIndex((row) => row.match !== true);
-  const prefix = first < 0 ? rows.length : first;
-  if (first < 0) {
-    return {kind: 'identical', step: null, prefix};
-  }
-  const divergedStep = fork?.pair.target?.step ?? fork?.pair.ref?.step ?? null;
-  return fork && divergedStep !== null
-    ? {kind: 'diverged', step: divergedStep, prefix}
+  if (!ref || !target) return {kind: 'uncaptured', step: null, prefix: 0};
+  const first = rows.findIndex((row) => row.match !== true),
+    prefix = first < 0 ? rows.length : first;
+  if (first < 0) return {kind: 'identical', step: null, prefix};
+  return fork
+    ? {kind: 'diverged', step: fork.pair.target!.step, prefix}
     : {kind: 'unknown', step: null, prefix};
 }

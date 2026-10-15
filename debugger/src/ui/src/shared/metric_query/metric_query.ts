@@ -43,11 +43,7 @@ export interface MetricQuery<Row> {
   /** True when a numeric field is referenced, so per-row metrics must be loaded first. */
   requiresMetrics: boolean;
 }
-export const METRIC_QUERY_LIMITS = {
-  characters: 1000,
-  terms: 200,
-  depth: 32,
-} as const;
+export const METRIC_QUERY_LIMITS = {characters: 1000, terms: 200, depth: 32} as const;
 
 type Comparison = '>' | '<' | '>=' | '<=' | '=' | '==' | '!=';
 interface Token {
@@ -92,33 +88,25 @@ export function compileMetricQuery<Row extends object>(
   language: MetricQueryLanguage,
 ): MetricQuery<Row> {
   const tokens = tokenizeMetricQuery(source);
-  const requiresMetrics = tokens.some(
-    (token) => language.fields[token.text]?.type === 'number',
-  );
-  if (tokens.length === 0)
-    return Object.assign(() => true as Truth, {requiresMetrics});
+  const requiresMetrics = tokens.some((token) => language.fields[token.text]?.type === 'number');
+  if (tokens.length === 0) return Object.assign(() => true as Truth, {requiresMetrics});
 
   let cursor = 0;
   const peek = () => tokens[cursor]?.text;
   const take = () => tokens[cursor++];
   const keyword = (word: string) => peek()?.toUpperCase() === word;
   const fail = (message: string, token = tokens[cursor]): never => {
-    throw new Error(
-      `${message} at column ${token?.column ?? source.length + 1}`,
-    );
+    throw new Error(`${message} at column ${token?.column ?? source.length + 1}`);
   };
   const checkDepth = (depth: number) => {
-    if (depth > METRIC_QUERY_LIMITS.depth)
-      fail('Formula nesting is limited to 32 levels');
+    if (depth > METRIC_QUERY_LIMITS.depth) fail('Formula nesting is limited to 32 levels');
   };
 
   function scalar(): Scalar<Row> {
     const token = tokens[cursor];
     if (!token) return fail('Expected a metric or value');
     take();
-    const field = Object.hasOwn(language.fields, token.text)
-      ? language.fields[token.text]
-      : null;
+    const field = Object.hasOwn(language.fields, token.text) ? language.fields[token.text] : null;
     if (field) {
       const key = (field.key ?? token.text) as keyof Row;
       const name = field.key ?? token.text;
@@ -126,28 +114,24 @@ export function compileMetricQuery<Row extends object>(
         ? {
             type: 'number',
             field: name,
-            read: (row) =>
-              Number.isFinite(row?.[key]) ? (row[key] as number) : null,
+            read: (row) => (Number.isFinite(row?.[key]) ? (row[key] as number) : null),
           }
         : {
             type: 'boolean',
             field: name,
-            read: (row) =>
-              typeof row?.[key] === 'boolean' ? (row[key] as boolean) : null,
+            read: (row) => (typeof row?.[key] === 'boolean' ? (row[key] as boolean) : null),
           };
     }
     if (/^-?(?:\d|\.)/.test(token.text)) {
       const percent = token.text.endsWith('%');
       const literal = Number(percent ? token.text.slice(0, -1) : token.text);
-      if (!Number.isFinite(literal))
-        return fail('Number must be finite', token);
+      if (!Number.isFinite(literal)) return fail('Number must be finite', token);
       const value = percent ? literal * language.percentScale : literal;
       return {type: 'number', percent, read: () => value};
     }
     if (/^(true|false)$/i.test(token.text))
       return {type: 'boolean', read: () => token.text.toLowerCase() === 'true'};
-    if (/^[A-Za-z_]/.test(token.text))
-      return fail(`Unknown metric: ${token.text}`, token);
+    if (/^[A-Za-z_]/.test(token.text)) return fail(`Unknown metric: ${token.text}`, token);
     return fail('Expected a metric or value', token);
   }
 
@@ -162,25 +146,20 @@ export function compileMetricQuery<Row extends object>(
     }
     const left = scalar();
     if (!COMPARISONS.has(peek() ?? '')) {
-      if (left.type !== 'boolean')
-        return fail(`Add a comparison after ${left.field ?? 'value'}`);
+      if (left.type !== 'boolean') return fail(`Add a comparison after ${left.field ?? 'value'}`);
       return (row) => left.read(row) as Truth;
     }
     const operatorToken = take();
     const operator = operatorToken.text as Comparison;
     const right = scalar();
-    if (left.type !== right.type)
-      return fail('Compare values of the same type', operatorToken);
+    if (left.type !== right.type) return fail('Compare values of the same type', operatorToken);
     if (left.type === 'boolean' && !['=', '==', '!='].includes(operator))
       return fail('Use =, == or != for booleans', operatorToken);
     if (
       (left.percent && right.field !== language.percentField) ||
       (right.percent && left.field !== language.percentField)
     )
-      return fail(
-        `% is only valid with ${language.percentField}`,
-        operatorToken,
-      );
+      return fail(`% is only valid with ${language.percentField}`, operatorToken);
     return (row) => {
       const a = left.read(row),
         b = right.read(row);

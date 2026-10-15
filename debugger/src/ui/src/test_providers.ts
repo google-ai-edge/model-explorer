@@ -19,5 +19,4 @@
 import {provideNoopAnimations} from '@angular/platform-browser/animations';
 
 /** Providers every TestBed spec gets from `ng test` (angular.json → providersFile). */
-export const testProviders = [provideNoopAnimations()];
-export default testProviders;
+export default [provideNoopAnimations()];

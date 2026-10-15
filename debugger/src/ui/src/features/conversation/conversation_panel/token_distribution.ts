@@ -16,276 +16,164 @@
  * ==============================================================================
  */
 
-import {Component, computed, input} from '@angular/core';
-import {MatTooltipModule} from '@angular/material/tooltip';
-import {
+import {Component, computed, input, linkedSignal, signal} from '@angular/core';
+import {MatIconModule} from '@angular/material/icon';
+import type {
+  SamplingDistributionRow,
   TokenAnalysisPair,
-  TokenProbability,
 } from '../../../data/contracts/token_analysis';
-import {formatFixed} from '../../../shared/format/format';
-import {spokenTokenText, tokenMarkup} from '../conversation_content';
-/** Candidate ordering, pinned selected IDs and pp units follow candidates HTML. */
+import {ExplorerInfoSection} from '../../../shared/explorer_info_section/explorer_info_section';
+import {ExplorerInfoValue} from '../../../shared/explorer_info_value/explorer_info_value';
+import type {ExplorerValueSegment} from '../../../shared/explorer_info_value/explorer_help_term';
+import {ExplorerPagination} from '../../../shared/explorer_pagination/explorer_pagination';
+import {formatAnalysisMetric} from '../../../shared/format/format';
+
+export type SamplingCandidateColumn = 'id' | 'ref' | 'target';
+type SortDirection = 'ascending' | 'descending';
+
+/** Inspect one position's sampling evidence; never substitute the raw-logit softmax. */
 @Component({
   selector: 'token-distribution',
-  imports: [MatTooltipModule],
-  template: `
-    @if (hasDistribution()) {
-      <h3>Summary</h3>
-      <table aria-label="Full-vocabulary distribution summary">
-        <colgroup>
-          <col class="property" />
-          <col />
-          <col />
-          <col class="delta" />
-        </colgroup>
-        <thead>
-          <tr>
-            <th></th>
-            <th>Reference</th>
-            <th>Target</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <th>Entropy (bits)</th>
-            <td>{{ entropy('ref') }}</td>
-            <td>{{ entropy('target') }}</td>
-            <td></td>
-          </tr>
-          <tr>
-            <th>Selected rank</th>
-            <td>{{ rank('ref') }}</td>
-            <td>{{ rank('target') }}</td>
-            <td></td>
-          </tr>
-          <tr>
-            <th>Selected probability</th>
-            <td>{{ share('ref', 'selected_probability') }}</td>
-            <td>{{ share('target', 'selected_probability') }}</td>
-            <td></td>
-          </tr>
-          <tr>
-            <th
-              matTooltip="Probability of the most likely token minus the second most likely, in percentage points: how close this step was to choosing differently."
-              matTooltipPosition="above"
-            >
-              Top-2 margin
-            </th>
-            <td>{{ share('ref', 'margin', ' pp') }}</td>
-            <td>{{ share('target', 'margin', ' pp') }}</td>
-            <td></td>
-          </tr>
-        </tbody>
-      </table>
-      <div class="candidate-heading">
-        <h3>Candidates</h3>
-        <span>{{ distribution()?.rows?.length ?? 0 }} tokens</span>
-      </div>
-      @if (distribution()?.context === 'different') {
-        <p class="info-note context-note" [matTooltip]="distribution()?.reason ?? ''">
-          Different contexts · each runtime's own candidates, not comparable
-        </p>
-      }
-      @if (distribution()?.rows?.length) {
-        <table
-          class="probability-table"
-          aria-label="Model token probabilities; highlighted cells indicate selected tokens"
-        >
-          <colgroup>
-            <col class="property" />
-            <col />
-            <col />
-            <col class="delta" />
-          </colgroup>
-          <thead>
-            <tr>
-              <th>Token</th>
-              <th>Reference</th>
-              <th>Target</th>
-              @if (distribution()?.compatible) {
-                <th>
-                  <span
-                    tabindex="0"
-                    matTooltip="Target minus Reference probability, in percentage points"
-                    >ΔP (pp)</span
-                  >
-                </th>
-              }
-            </tr>
-          </thead>
-          <tbody>
-            @for (row of distribution()!.rows; track row.id) {
-              <tr [attr.data-candidate-id]="row.id">
-                <th>
-                  <span
-                    class="candidate-token"
-                    tabindex="0"
-                    [attr.title]="
-                      'Token ID ' + row.id + (row.label === null ? ' · Text not captured' : '')
-                    "
-                    [attr.aria-label]="
-                      'Token ID ' +
-                      row.id +
-                      ': ' +
-                      (row.label === null ? 'text not captured' : spoken(row.label))
-                    "
-                    [innerHTML]="row.label === null ? '#' + row.id : markup(row.label)"
-                  ></span>
-                </th>
-                @for (side of sides; track side) {
-                  <td>
-                    <span
-                      tabindex="0"
-                      [attr.data-selected-side]="row[side]?.selected ? side : null"
-                      [attr.aria-label]="
-                        (row[side]?.selected ? 'Selected token probability ' : '') +
-                        probability(row[side])
-                      "
-                      [matTooltip]="tooltip(row[side])"
-                      >{{ probability(row[side]) }}</span
-                    >
-                  </td>
-                }
-                @if (distribution()?.compatible) {
-                  <td>{{ delta(row.delta) }}</td>
-                }
-              </tr>
-            }
-          </tbody>
-        </table>
-      }
-      @if (distribution()?.reason && distribution()?.context !== 'different') {
-        <p class="info-note">{{ distribution()?.reason }}</p>
-      }
-    } @else {
-      <p class="info-note">
-        {{
-          loading()
-            ? 'Loading captured distribution…'
-            : error()
-              ? 'Distribution unavailable.'
-              : 'Full-vocabulary logits not captured.'
-        }}
-      </p>
-    }
-  `,
-  styles: `
-    @use '../../../theme/explorer_info' as info;
-    @use '../../../theme/token_diff' as token;
-    :host {
-      display: block;
-      @include token.semantic-colors;
-    }
-    @include info.metadata;
-    table {
-      margin-left: calc(var(--info-indent, 12px) + 12px);
-      width: calc(100% - 28px - var(--info-indent, 12px));
-      max-width: calc(100% - 28px - var(--info-indent, 12px));
-    }
-    @include info.comparison-grid;
-    h3 {
-      margin: 6px 12px 2px var(--info-indent, 12px);
-      font: 500 12px/20px var(--me-font-family);
-      color: var(--me-on-surface-color);
-    }
-    table {
-      table-layout: fixed;
-    }
-    th:first-child {
-      padding-right: 4px;
-    }
-    td {
-      font-variant-numeric: tabular-nums;
-    }
-    td span {
-      display: inline-block;
-      vertical-align: top;
-      max-width: 100%;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      padding: 0 2px;
-      box-sizing: border-box;
-      border-radius: 2px;
-    }
-    .candidate-token {
-      display: inline-block;
-      max-width: 100%;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: pre;
-      vertical-align: top;
-      color: var(--me-on-surface-color);
-    }
-    .candidate-heading {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding-right: 16px;
-    }
-    .candidate-heading > span {
-      font: 11px/20px var(--me-font-family);
-      color: var(--me-on-surface-variant-color);
-    }
-    [data-selected-side='ref'] {
-      background: var(--b0);
-    }
-    [data-selected-side='target'] {
-      background: var(--b4);
-    }
-    span:focus-visible {
-      outline: 1px solid var(--me-primary-color);
-      outline-offset: -1px;
-    }
-  `,
+  imports: [MatIconModule, ExplorerInfoSection, ExplorerInfoValue, ExplorerPagination],
+  templateUrl: './token_distribution.ng.html',
+  styleUrl: './token_distribution.scss',
 })
 export class TokenDistribution {
   readonly analysis = input<TokenAnalysisPair>();
+  readonly singlePosition = input(true);
   readonly loading = input(false);
   readonly error = input('');
-  readonly distribution = computed(() => this.analysis()?.distribution);
-  readonly hasDistribution = computed(
-    () =>
-      this.distribution()?.ref.entropy !== undefined ||
-      this.distribution()?.target.entropy !== undefined,
+  readonly distribution = computed(() => this.analysis()?.sampling_distribution);
+  readonly sides = [
+    {key: 'ref', label: 'Reference', short: 'Ref'},
+    {key: 'target', label: 'Target', short: 'Target'},
+  ] as const;
+  readonly columns = [
+    {key: 'id', label: 'Token ID', title: 'Token ID'},
+    {key: 'ref', label: 'Ref', title: 'Reference probability'},
+    {key: 'target', label: 'Target', title: 'Target probability'},
+  ] as const;
+  readonly summaryFields = [
+    {key: 'selected_id', label: 'Selected token'},
+    {key: 'candidate_count', label: 'Candidate count'},
+    {key: 'selected_rank', label: 'Selected rank'},
+  ] as const;
+  readonly hasDistribution = computed(() =>
+    this.sides.some(({key}) => Number.isFinite(this.distribution()?.[key].entropy)),
   );
-  readonly sides = ['ref', 'target'] as const;
-  readonly markup = tokenMarkup;
-  readonly spoken = spokenTokenText;
-  entropy(side: 'ref' | 'target') {
-    return formatFixed(this.distribution()?.[side].entropy, 3);
+  readonly unavailable = computed(() =>
+    this.loading()
+      ? 'Loading sampling distribution…'
+      : this.error()
+        ? 'Sampling distribution unavailable: ' + this.error()
+        : (this.distribution()?.reason ??
+          'Sampling distribution unavailable. Sampling evidence was not captured.'),
+  );
+  readonly sort = signal<{column: SamplingCandidateColumn; direction: SortDirection}>({
+    column: 'id',
+    direction: 'ascending',
+  });
+  readonly sortedRows = computed(() => {
+    const {column, direction} = this.sort();
+    const value = (row: SamplingDistributionRow) =>
+      column === 'id' ? row.id : row[column]?.probability;
+    return [...(this.distribution()?.rows ?? [])].sort((a, b) => {
+      const av = value(a),
+        bv = value(b);
+      const aValid = typeof av === 'number' && Number.isFinite(av);
+      const bValid = typeof bv === 'number' && Number.isFinite(bv);
+      return (
+        Number(bValid) - Number(aValid) ||
+        (aValid && bValid ? (av! - bv!) * (direction === 'ascending' ? 1 : -1) : 0) ||
+        a.id - b.id
+      );
+    });
+  });
+  readonly pageSize = 16;
+  readonly pageIndex = linkedSignal({source: () => this.analysis(), computation: () => 0});
+  readonly pages = computed(() => Math.max(1, Math.ceil(this.sortedRows().length / this.pageSize)));
+  readonly currentPage = computed(() => Math.min(this.pageIndex(), this.pages() - 1));
+  readonly rows = computed(() => {
+    const start = this.currentPage() * this.pageSize;
+    return this.sortedRows().slice(start, start + this.pageSize);
+  });
+  readonly identityWidth = linkedSignal({
+    source: () => ({rows: this.rows(), pending: this.loading() || !!this.error()}),
+    computation: (current, previous) => {
+      if (current.pending && !current.rows.length) return previous?.value ?? 64;
+      return Math.max(
+        64,
+        Math.ceil(Math.max(0, ...current.rows.map((row) => String(row.id).length)) * 6.75 + 14),
+      );
+    },
+  });
+  columnSortDirection(column: SamplingCandidateColumn) {
+    return this.sort().column === column ? this.sort().direction : 'none';
   }
-  /** A probability of one side's own distribution, as a percentage or in percentage points. */
-  share(
-    side: 'ref' | 'target',
-    key: 'selected_probability' | 'margin',
-    unit = '%',
-  ) {
+  sortBy(column: SamplingCandidateColumn) {
+    this.sort.set({
+      column,
+      direction: this.columnSortDirection(column) === 'ascending' ? 'descending' : 'ascending',
+    });
+    this.pageIndex.set(0);
+  }
+  changePage(delta: number) {
+    this.pageIndex.set(Math.max(0, Math.min(this.pages() - 1, this.currentPage() + delta)));
+  }
+  summaryValue(side: 'ref' | 'target', key: (typeof this.summaryFields)[number]['key']) {
     const value = this.distribution()?.[side][key];
-    return value == null || !Number.isFinite(value)
-      ? '—'
-      : (value * 100).toFixed(1) + unit;
+    if (value == null || !Number.isFinite(value)) return '—';
+    if (key === 'selected_rank') return '#' + value;
+    return String(value);
   }
-  rank(side: 'ref' | 'target') {
-    const v = this.distribution()?.[side].selected_rank;
-    return v == null ? '—' : '#' + v;
+  summarySegments(side: 'ref' | 'target', key: (typeof this.summaryFields)[number]['key']) {
+    if (key !== 'selected_id') return [];
+    const distribution = this.distribution();
+    const id = distribution?.[side].selected_id;
+    if (id == null) return [];
+    const candidate = distribution?.rows.find((row) => row.id === id);
+    const compatible = candidate?.[side] != null || distribution?.vocabulary_compatible === true;
+    return this.tokenSegments({id, label: compatible ? (candidate?.label ?? null) : null});
   }
-  // Preserve candidates HTML formatTokenScore's display thresholds.
-  probability(value: TokenProbability | null) {
-    const p = value?.probability;
-    if (p == null || !Number.isFinite(p)) return '—';
-    if (p === 0) return '0%';
-    if (p < 0.001) return '<0.1%';
-    return (p * 100).toFixed(1) + '%';
+  tokenSegments(row: Pick<SamplingDistributionRow, 'id' | 'label'>): ExplorerValueSegment[] {
+    return [
+      {
+        text: String(row.id),
+        help: {
+          title: 'Token',
+          text: row.label === null ? 'Text not captured' : row.label,
+          rows: [],
+        },
+      },
+    ];
   }
-  delta(value: number | null) {
-    return value === null
-      ? '—'
-      : (value > 0 ? '+' : '') + formatFixed(value, 2);
+  probability(value: SamplingDistributionRow['ref']) {
+    return formatAnalysisMetric('selected_probability', value?.probability);
   }
-  tooltip(value: TokenProbability | null) {
-    return value
-      ? 'Logit ' + value.logit + ' · Rank #' + value.rank
-      : 'Probability not captured';
+  probabilitySegments(
+    row: SamplingDistributionRow,
+    side: 'ref' | 'target',
+  ): ExplorerValueSegment[] {
+    const value = row[side];
+    if (!value) return [];
+    return [
+      {
+        text: this.probability(value),
+        help: {
+          title: `${side === 'ref' ? 'Reference' : 'Target'} · Token ${row.id}`,
+          rows: [
+            {
+              label: 'Probability',
+              value: Number.isFinite(value.probability) ? String(value.probability) : 'Unavailable',
+            },
+            {
+              label: 'Rank',
+              value: value.rank == null ? 'Outside sampling support' : '#' + value.rank,
+            },
+            {label: 'Generated', value: value.selected ? 'Yes · selected token' : 'No'},
+          ],
+        },
+      },
+    ];
   }
 }

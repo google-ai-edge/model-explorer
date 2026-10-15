@@ -17,23 +17,21 @@
  */
 
 import {Component, ElementRef, inject, signal} from '@angular/core';
+import {ConfigPicker} from '../../../shared/config_picker/config_picker';
 import {FormsModule} from '@angular/forms';
+import {MAT_DIALOG_DATA, MatDialogModule, MatDialogRef} from '@angular/material/dialog';
 import {MatButtonModule} from '@angular/material/button';
-import {
-  MAT_DIALOG_DATA,
-  MatDialogModule,
-  MatDialogRef,
-} from '@angular/material/dialog';
 import {MatIconModule} from '@angular/material/icon';
 import {MatTooltipModule} from '@angular/material/tooltip';
-import type {RuntimeCapability} from '../../../data/contracts/runtime';
 import type {RuntimeOptions as Options} from '../../../data/contracts/session_summary';
-import {ConfigPicker} from '../../../shared/config_picker/config_picker';
 import {
+  activationDataTypes,
+  advancedRuntimeOptionFields,
+  runtimeOptionKeys,
   pytorchRuntimeOptionKeys,
   RuntimeOptionKey,
-  runtimeOptionKeys,
 } from '../runtime_options';
+import type {RuntimeCapability} from '../../../data/contracts/runtime';
 export interface RuntimeOptionsData {
   side: string;
   other: string;
@@ -46,6 +44,7 @@ export interface RuntimeOptionsData {
   native?: boolean;
   ios?: boolean;
 }
+const SWITCH_LABELS = ['Default', 'On', 'Off'];
 @Component({
   selector: 'runtime-options',
   imports: [
@@ -75,12 +74,15 @@ export class RuntimeOptions {
     {label: 'Audio', key: 'audioBackend', threads: 'audioCpuThreads'},
     {label: 'Vision', key: 'visionBackend', threads: null},
   ] as const;
+  readonly activationOptions = ['Default', ...activationDataTypes];
+  readonly switchLabels = SWITCH_LABELS;
+  readonly advanced = advancedRuntimeOptionFields;
   readonly extras = [
     {
-      label: 'Prefill batch sizes',
-      key: 'prefillBatchSizes',
+      label: 'Prefill chunk size',
+      key: 'prefillChunkSize',
       group: 'Batching',
-      help: 'Maximum prefill chunk sizes, separated by commas, for example 128, 512. Leave blank for the runtime default. Supported sizes depend on the model.',
+      help: 'Maximum prefill chunk size (set_prefill_chunk_size); CPU backend with dynamic models only. Leave blank for the runtime default.',
     },
     {
       label: 'Context length',
@@ -90,10 +92,7 @@ export class RuntimeOptions {
     },
   ] as const;
   constructor() {
-    this.draft.forceF32 ??= false;
-    for (const key of this.keys) {
-      if (key !== 'forceF32') this.draft[key] ??= '';
-    }
+    for (const key of this.keys) this.draft[key] ??= '';
     // Escape and the backdrop discard the draft; only Apply validates and returns it.
     this.ref.disableClose = true;
     this.ref.backdropClick().subscribe(() => this.cancel());
@@ -107,22 +106,29 @@ export class RuntimeOptions {
   cancel() {
     this.ref.close(undefined);
   }
+  /** Whether this runtime, and the connected Runner build, take the option at all. */
   supported(key: RuntimeOptionKey) {
-    if (this.data.native) return ['backend', 'contextLength'].includes(key);
     if (
       this.pytorch &&
-      !pytorchRuntimeOptionKeys.includes(
-        key as (typeof pytorchRuntimeOptionKeys)[number],
-      )
+      !pytorchRuntimeOptionKeys.includes(key as (typeof pytorchRuntimeOptionKeys)[number])
     )
       return false;
     const supported = this.data.capability?.supported_options;
     if (supported) return supported.includes(key);
+    if (this.data.native) return ['backend', 'contextLength'].includes(key);
     return (
       !this.data.local ||
       ['backend', 'cpuThreads', 'contextLength'].includes(key) ||
       (this.pytorch && key === 'precision')
     );
+  }
+  /** Supported, and paired with the selected text backend (CPU- or GPU-only members). */
+  editable(key: RuntimeOptionKey) {
+    if (!this.supported(key)) return false;
+    const field = this.advanced.find((f) => f.key === key);
+    if (field?.backend) return (this.draft.backend || 'CPU') === field.backend;
+    if (key === 'prefillChunkSize' || key === 'cpuThreads') return this.draft.backend === 'CPU';
+    return true;
   }
   backendOptions(key: RuntimeOptionKey) {
     if (this.data.ios) return ['CPU'];
@@ -138,65 +144,57 @@ export class RuntimeOptions {
     return (this.data.capability?.contextLengths ?? [1024, 4096]).map(String);
   }
   precisionOptions() {
-    return (
-      this.data.capability?.precisions ?? ['', 'float32', 'float16', 'bfloat16']
-    ).map((value) => value || 'Default');
+    return (this.data.capability?.precisions ?? ['', 'float32', 'float16', 'bfloat16']).map(
+      (value) => value || 'Default',
+    );
   }
-  selectBackend(
-    key: 'backend' | 'audioBackend' | 'visionBackend',
-    value: string,
-  ) {
+  switchLabel(key: RuntimeOptionKey) {
+    return this.draft[key] === 'on' ? 'On' : this.draft[key] === 'off' ? 'Off' : 'Default';
+  }
+  setSwitch(key: RuntimeOptionKey, label: string) {
+    this.draft[key] = label === 'On' ? 'on' : label === 'Off' ? 'off' : '';
+  }
+  selectBackend(key: 'backend' | 'audioBackend' | 'visionBackend', value: string) {
     this.draft[key] = value === 'Default' ? '' : value;
-    if (key === 'backend' && this.draft.backend !== 'CPU')
-      this.draft.cpuThreads = '';
+    if (key === 'backend') this.clearUnpaired();
     if (key === 'audioBackend' && this.draft.audioBackend !== 'CPU')
       this.draft.audioCpuThreads = '';
   }
+  /** Members paired with the other text backend fall back to the runtime default. */
+  private clearUnpaired() {
+    for (const key of this.keys)
+      if (!this.editable(key) && this.supported(key)) this.draft[key] = '';
+  }
   canCopy() {
-    return (
-      !this.data.otherRuntime || this.data.otherRuntime === this.data.runtime
-    );
+    return !this.data.otherRuntime || this.data.otherRuntime === this.data.runtime;
   }
   hasValue(key: RuntimeOptionKey) {
     return this.draft[key] !== '' && this.draft[key] != null;
   }
   reset(key: RuntimeOptionKey) {
     if (!this.supported(key)) return;
-    if (key === 'forceF32') this.draft.forceF32 = false;
-    else
-      this.draft[key] = this.data.native
-        ? key === 'backend'
-          ? (this.backendOptions(key)[0] ?? 'CPU')
-          : key === 'contextLength'
-            ? (this.contextOptions()[0] ?? '1024')
-            : ''
-        : '';
-    if (key === 'backend') this.draft.cpuThreads = '';
+    this.draft[key] = this.data.native
+      ? key === 'backend'
+        ? (this.backendOptions(key)[0] ?? 'CPU')
+        : key === 'contextLength'
+          ? (this.contextOptions()[0] ?? '1024')
+          : ''
+      : '';
+    if (key === 'backend') this.clearUnpaired();
     if (key === 'audioBackend') this.draft.audioCpuThreads = '';
   }
   copy() {
     if (!this.canCopy()) return;
     this.previous = {...this.draft};
     for (const key of this.keys) {
-      if (!this.supported(key)) continue;
-      if (key === 'forceF32')
-        this.draft.forceF32 = !!this.data.otherRun.forceF32;
-      else this.draft[key] = this.data.otherRun[key] ?? '';
+      if (this.supported(key)) this.draft[key] = this.data.otherRun[key] ?? '';
     }
-    if (
-      !this.backendOptions('backend').includes(this.draft.backend || 'Default')
-    )
+    if (!this.backendOptions('backend').includes(this.draft.backend || 'Default'))
       this.reset('backend');
-    if (
-      this.data.native &&
-      !this.contextOptions().includes(this.draft.contextLength ?? '')
-    )
+    if (this.data.native && !this.contextOptions().includes(this.draft.contextLength ?? ''))
       this.reset('contextLength');
-    if (this.draft.backend !== 'CPU') this.draft.cpuThreads = '';
-    if (
-      this.pytorch &&
-      !this.precisionOptions().includes(this.draft.precision || 'Default')
-    )
+    this.clearUnpaired();
+    if (this.pytorch && !this.precisionOptions().includes(this.draft.precision || 'Default'))
       this.draft.precision = '';
     this.copied.set(true);
   }
@@ -207,29 +205,9 @@ export class RuntimeOptions {
   }
   close() {
     const form = this.element.nativeElement.querySelector('form')!;
-    const batch = form.querySelector<HTMLInputElement>('[data-batch-sizes]');
-    if (batch && !batch.disabled) {
-      const value = batch.value.trim();
-      batch.setCustomValidity(
-        !value ||
-          (/^\d+(\s*,\s*\d+)*$/.test(value) &&
-            value
-              .split(',')
-              .every((n) => Number(n) >= 1 && Number(n) <= 2147483647))
-          ? ''
-          : 'Enter positive integer sizes separated by commas, for example 128, 512',
-      );
-    }
     if (!form.reportValidity()) return;
     this.ref.close(
-      Object.fromEntries(
-        this.keys.map((key) => [
-          key,
-          key === 'forceF32'
-            ? !!this.draft[key]
-            : String(this.draft[key] ?? ''),
-        ]),
-      ),
+      Object.fromEntries(this.keys.map((key) => [key, String(this.draft[key] ?? '')])),
     );
   }
 }

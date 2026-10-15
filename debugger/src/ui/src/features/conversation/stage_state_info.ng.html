@@ -1,0 +1,1135 @@
+<!--
+ Copyright 2026 The AI Edge Model Explorer Authors.
+
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+ ==============================================================================
+-->
+@if (
+  graph()?.view() !== 'graph' &&
+  !logitMetricInfo() &&
+  !samplingInfo() &&
+  !logitInspection() &&
+  !kvMetricInfo() &&
+  !activationInfo() &&
+  !(panel().kind === 'kv' && kv()?.tensorView())
+) {
+  <explorer-info-section label="Analysis Info">
+    <explorer-info-list
+      [items]="[{label: 'Name', value: label(), locateLabel: 'Locate analysis view'}]"
+      (locate)="locateAnalysis.emit()"
+    />
+    <table>
+      <tbody>
+        <tr>
+          <th>Stage</th>
+          <td>
+            Turn {{ panel().turn }} · {{ panel().stage === 'prefill' ? 'Prefill' : 'Decode' }}
+          </td>
+        </tr>
+        <tr>
+          <th>Token Range</th>
+          <td>{{ range().start }}–{{ range().end - 1 }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </explorer-info-section>
+}
+@if (graph()?.view() === 'graph') {
+  <explorer-info-section label="Analysis Info">
+    <explorer-info-list [items]="graphArchInfoItems()" (locate)="locateGraphArchDefinition($event)" />
+  </explorer-info-section>
+  <ng-container [ngTemplateOutlet]="graph()?.detailsTemplate() ?? null" />
+} @else if (samplingInfo()) {
+  <explorer-info-section label="Analysis Info">
+    <explorer-info-list [items]="samplingInfoItems()" (locate)="locateDefinition($event)" />
+  </explorer-info-section>
+  <explorer-info-section label="Statistics" [count]="1">
+    <div class="analysis-items" role="list">
+      @for (section of sections(); track section.label) {
+        <div
+          class="analysis-item"
+          role="listitem"
+          aria-label="Sampling distribution statistics summary"
+          [attr.aria-busy]="section.loading"
+        >
+          <div class="item-heading">
+            <span class="item-index">0</span><span class="item-name">Sampling distribution</span>
+            <button
+              explorer-locator
+              aria-label="Locate Sampling distribution Line chart"
+              title="Locate Sampling distribution Line chart"
+              (click)="locateStatistic(section.label)"
+            ></button>
+          </div>
+          <ng-container
+            [ngTemplateOutlet]="metricStatistics"
+            [ngTemplateOutletContext]="{$implicit: section}"
+          />
+          @if (tokenError()) {
+            <p class="note statistic-table-note" role="alert">{{ tokenError() }}</p>
+          }
+        </div>
+      }
+    </div>
+  </explorer-info-section>
+  <explorer-info-section label="Distribution Metadata" [count]="tensorRuntimes.length">
+    <div class="analysis-items" role="list">
+      @for (runtime of tensorRuntimes; track runtime.side; let i = $index) {
+        <div
+          class="analysis-item"
+          role="listitem"
+          [attr.aria-label]="runtime.label + ' sampling source'"
+        >
+          <div class="item-heading">
+            <span class="item-index">{{ i }}</span
+            ><span class="item-name">{{ runtime.label }}</span>
+          </div>
+          @if (tokenLoading()) {
+            <p class="note statistic-table-note" role="status">Loading distribution metadata…</p>
+          } @else if (tokenError()) {
+            <p class="note statistic-table-note">Distribution metadata unavailable.</p>
+          } @else {
+            <explorer-info-section
+              class="source-section"
+              label="Sampling distribution"
+              [compact]="true"
+              ><explorer-info-list [bullets]="true" [items]="samplingSourceItems(runtime.side)"
+            /></explorer-info-section>
+          }
+        </div>
+      }
+    </div>
+  </explorer-info-section>
+  <explorer-info-section label="Metric Metadata" [count]="1">
+    <div class="analysis-items" role="list">
+      <div class="analysis-item" role="listitem" [attr.aria-label]="metricLabel() + ' output'">
+        <div class="item-heading">
+          <span class="item-index">0</span><span class="item-name">{{ metricLabel() }}</span>
+        </div>
+        <explorer-info-section
+          class="source-section"
+          label="Sampling distribution"
+          [compact]="true"
+        >
+          <explorer-info-list [bullets]="true" [items]="samplingMetricMetadata()" />
+        </explorer-info-section>
+      </div>
+    </div>
+  </explorer-info-section>
+  <explorer-info-section label="Distribution Inspection" [count]="1">
+    <div class="analysis-items" role="list">
+      <div
+        class="analysis-item sampling-inspection-item"
+        role="listitem"
+        aria-label="Sampling distribution inspection"
+      >
+        <div class="item-heading">
+          <span class="item-index">0</span><span class="item-name">Sampling distribution</span>
+        </div>
+        <sampling-distribution-inspection
+          class="sampling-details-table"
+          [singlePosition]="samplingSinglePosition()"
+          [refDistribution]="samplingInspectionSource('ref')"
+          [targetDistribution]="samplingInspectionSource('target')"
+        />
+      </div>
+    </div>
+  </explorer-info-section>
+} @else if (activationInspectionMode()) {
+  @let source = activationInspection();
+  @let page = activationInspectionPage();
+  <explorer-info-section label="Analysis Info">
+    <explorer-info-list
+      [items]="activationInspectionInfoItems()"
+      (locate)="locateActivationInspection($event)"
+    />
+  </explorer-info-section>
+  <explorer-info-section label="Statistics" [count]="1">
+    <div class="analysis-items" role="list">
+      <div
+        class="analysis-item"
+        role="listitem"
+        aria-label="Intermediate Tensors tensor statistics"
+        [attr.aria-busy]="!source || source.loading()"
+      >
+        <div class="item-heading">
+          <span class="item-index">0</span>
+          <button
+            explorer-locator
+            label="Intermediate Tensors"
+            aria-label="Locate Intermediate Tensors tensor chart"
+            (click)="source?.locateTensor()"
+          ></button>
+        </div>
+        @if (!source || source.loading()) {
+          <p class="note statistic-table-note" role="status">Loading statistics…</p>
+        } @else if (source.error()) {
+          <p class="note statistic-table-note" role="alert">
+            {{ source.error() }} <button (click)="source.retry()">Retry</button>
+          </p>
+        } @else {
+          <ng-container
+            [ngTemplateOutlet]="elementStatistics"
+            [ngTemplateOutletContext]="{
+              label: 'Intermediate Tensors',
+              rows: activationInspectionStatistics(),
+              kind: 'activations',
+            }"
+          />
+          @for (notice of source.notices(); track notice) {
+            <p class="note statistic-table-note">{{ notice }}</p>
+          }
+        }
+      </div>
+    </div>
+  </explorer-info-section>
+  <explorer-info-section label="Tensor Metadata" [count]="tensorRuntimes.length">
+    <div class="analysis-items" role="list">
+      @for (runtime of tensorRuntimes; track runtime.side; let i = $index) {
+        <div
+          class="analysis-item"
+          role="listitem"
+          [attr.aria-label]="runtime.label + ' Intermediate Tensors tensor'"
+        >
+          <div class="item-heading">
+            <span class="item-index">{{ i }}</span
+            ><span class="item-name">{{ runtime.label }}</span>
+          </div>
+          <explorer-info-section
+            class="source-section"
+            label="Intermediate Tensors"
+            [compact]="true"
+          >
+            <explorer-info-list
+              [bullets]="true"
+              [items]="activationInspectionMetadata(runtime.side)"
+            />
+          </explorer-info-section>
+        </div>
+      }
+    </div>
+  </explorer-info-section>
+  <explorer-info-section label="Tensor Values" [count]="1">
+    <div class="analysis-items" role="list">
+      <div
+        class="analysis-item"
+        role="listitem"
+        aria-label="Intermediate Tensors tensor values"
+        [attr.aria-busy]="!source || source.loading()"
+      >
+        <div class="item-heading">
+          <span class="item-index">0</span>
+          <button
+            explorer-locator
+            label="Intermediate Tensors"
+            aria-label="Locate Intermediate Tensors tensor chart"
+            (click)="source?.locateTensor()"
+          ></button>
+          <explorer-pagination
+            class="tensor-pagination"
+            label="Intermediate Tensors value pages"
+            previousLabel="Previous Intermediate Tensors values page"
+            nextLabel="Next Intermediate Tensors values page"
+            [index]="page.index"
+            [pages]="page.pages"
+            (change)="changeActivationPage($event)"
+          />
+        </div>
+        @if (!source || source.loading()) {
+          <p class="note statistic-table-note" role="status">
+            Loading Intermediate Tensors values…
+          </p>
+        } @else if (source.error()) {
+          <p class="note statistic-table-note" role="alert">
+            {{ source.error() }} <button (click)="source.retry()">Retry</button>
+          </p>
+        } @else {
+          <table
+            explorer-statistic-table
+            class="inspector-table tensor-selection-table"
+            label="Intermediate Tensors tensor values"
+            [rows]="page.rows"
+            [header]="activationValuesHeader"
+            [row]="activationValuesRow"
+            [columnCount]="5"
+            emptyText="No captured activation elements."
+          ></table>
+        }
+        <ng-template #activationValuesHeader>
+          <tr class="layer-columns">
+            @for (column of tensorValueSortColumns; track column.key) {
+              <th
+                [title]="column.title"
+                [attr.aria-sort]="tensorValueSortDirection('activations', column.key)"
+              >
+                <button
+                  class="column-sort"
+                  type="button"
+                  [disabled]="activationInspectionRows().length < 2"
+                  [attr.aria-label]="
+                    'Sort Intermediate Tensors by ' +
+                    column.label +
+                    ' ' +
+                    (tensorValueSortDirection('activations', column.key) === 'ascending'
+                      ? 'descending'
+                      : 'ascending')
+                  "
+                  (click)="sortActivationValues(column.key)"
+                >
+                  <span class="sort-label">{{ column.label }}</span>
+                  <span class="sort-icon" aria-hidden="true"
+                    ><mat-icon>{{
+                      tensorValueSortDirection('activations', column.key) === 'none'
+                        ? 'swap_vert'
+                        : tensorValueSortDirection('activations', column.key) === 'ascending'
+                          ? 'arrow_upward'
+                          : 'arrow_downward'
+                    }}</mat-icon></span
+                  >
+                </button>
+              </th>
+            }
+          </tr>
+        </ng-template>
+        <ng-template #activationValuesRow let-row>
+          <tr
+            [class.tensor-element-selected]="activationElementSelected(row.index)"
+            [attr.aria-label]="
+              'Index ' + row.index + (activationElementSelected(row.index) ? ', selected' : '')
+            "
+          >
+            <td>{{ row.label }}</td>
+            @for (value of row.values; track $index) {
+              <td>
+                <ng-container
+                  [ngTemplateOutlet]="tensorNumericCell"
+                  [ngTemplateOutletContext]="{
+                    label: row.label + ' ' + tensorValueColumns[$index],
+                    value: formatTensorValue(value),
+                  }"
+                />
+              </td>
+            }
+          </tr>
+        </ng-template>
+      </div>
+    </div>
+  </explorer-info-section>
+} @else if (logitInspection()) {
+  <explorer-info-section label="Analysis Info">
+    <explorer-info-list [items]="logitInspectionInfoItems()" (locate)="locateDefinition($event)" />
+  </explorer-info-section>
+  <explorer-info-section label="Statistics" [count]="1">
+    <div class="analysis-items" role="list">
+      <div
+        class="analysis-item"
+        role="listitem"
+        aria-label="Final logits tensor statistics"
+        [attr.aria-busy]="finalLogits()?.loading()"
+      >
+        <div class="item-heading">
+          <span class="item-index">0</span><span class="item-name">Final logits</span>
+        </div>
+        @if (finalLogits()?.loading()) {
+          <p class="note statistic-table-note" role="status">Loading statistics…</p>
+        } @else if (finalLogits()?.error()) {
+          <p class="note statistic-table-note" role="alert">{{ finalLogits()?.error() }}</p>
+        } @else {
+          <ng-container
+            [ngTemplateOutlet]="elementStatistics"
+            [ngTemplateOutletContext]="{
+              label: 'Final logits',
+              rows: logitInspectionStatistics(),
+              kind: 'logits',
+            }"
+          />
+          @if (logitInspectionData()?.reason) {
+            <p class="note statistic-table-note">{{ logitInspectionData()?.reason }}</p>
+          }
+        }
+      </div>
+    </div>
+  </explorer-info-section>
+  <explorer-info-section label="Tensor Metadata" [count]="tensorRuntimes.length">
+    <div class="analysis-items" role="list">
+      @for (runtime of tensorRuntimes; track runtime.side; let i = $index) {
+        <div
+          class="analysis-item"
+          role="listitem"
+          [attr.aria-label]="runtime.label + ' final logits tensor'"
+        >
+          <div class="item-heading">
+            <span class="item-index">{{ i }}</span
+            ><span class="item-name">{{ runtime.label }}</span>
+          </div>
+          @if (finalLogits()?.loading()) {
+            <p class="note statistic-table-note" role="status">Loading tensor metadata…</p>
+          } @else if (finalLogits()?.error()) {
+            <p class="note statistic-table-note" role="alert">
+              Analysis unavailable: {{ finalLogits()?.error() }}
+            </p>
+          } @else {
+            <explorer-info-section class="source-section" label="Final logits" [compact]="true">
+              <explorer-info-list
+                [bullets]="true"
+                [items]="logitInspectionMetadata(runtime.side)"
+              />
+            </explorer-info-section>
+          }
+        </div>
+      }
+    </div>
+  </explorer-info-section>
+  @if (finalLogits(); as source) {
+    <explorer-info-section label="Tensor Values" [count]="1">
+      <div class="analysis-items" role="list">
+        <div
+          class="analysis-item"
+          role="listitem"
+          aria-label="Final logits tensor values"
+          [attr.aria-busy]="source.valuesLoading()"
+        >
+          <div class="item-heading">
+            <span class="item-index">0</span><span class="item-name">Final logits</span>
+            <explorer-pagination
+              class="tensor-pagination"
+              label="Final logits value pages"
+              previousLabel="Previous Final logits values page"
+              nextLabel="Next Final logits values page"
+              [index]="source.pageIndex()"
+              [pages]="source.pages()"
+              (change)="source.changePage($event)"
+            />
+          </div>
+          @if (source.valuesLoading()) {
+            <p class="note statistic-table-note" role="status">Loading Final logits values…</p>
+          } @else if (source.valuesError()) {
+            <p class="note statistic-table-note" role="alert">{{ source.valuesError() }}</p>
+          } @else {
+            <table
+              explorer-statistic-table
+              class="inspector-table tensor-selection-table"
+              label="Final logits tensor values"
+              [rows]="source.rows()"
+              [header]="logitValuesHeader"
+              [row]="logitValuesRow"
+              [columnCount]="5"
+              emptyText="No captured logits elements."
+            ></table>
+            @for (notice of source.pageValuesNotices(); track notice) {
+              <p class="note statistic-table-note">{{ notice }}</p>
+            }
+          }
+          <ng-template #logitValuesHeader>
+            <tr class="layer-columns">
+              @for (column of tensorValueSortColumns; track column.key) {
+                <th
+                  [title]="column.title"
+                  [attr.aria-sort]="source.columnSortDirection(column.key)"
+                >
+                  <button
+                    class="column-sort"
+                    type="button"
+                    [disabled]="source.total() < 2"
+                    [attr.aria-label]="
+                      'Sort Final logits by ' +
+                      column.label +
+                      ' ' +
+                      (source.columnSortDirection(column.key) === 'ascending'
+                        ? 'descending'
+                        : 'ascending')
+                    "
+                    (click)="source.sortBy(column.key)"
+                  >
+                    <span class="sort-label">{{ column.label }}</span>
+                    <span class="sort-icon" aria-hidden="true"
+                      ><mat-icon>{{
+                        source.columnSortDirection(column.key) === 'none'
+                          ? 'swap_vert'
+                          : source.columnSortDirection(column.key) === 'ascending'
+                            ? 'arrow_upward'
+                            : 'arrow_downward'
+                      }}</mat-icon></span
+                    >
+                  </button>
+                </th>
+              }
+            </tr>
+          </ng-template>
+          <ng-template #logitValuesRow let-row>
+            <tr
+              tabindex="0"
+              [attr.data-vocabulary-index]="row.index"
+              [class.tensor-element-selected]="source.selectedIndex() === row.index"
+              [attr.aria-label]="'Vocabulary index ' + row.index"
+              [attr.aria-selected]="source.selectedIndex() === row.index"
+              (click)="source.selectElement(row.index)"
+              (keydown)="selectLogitRow($event, row.index)"
+            >
+              <td>
+                <span class="stat-cell">
+                  <explorer-info-value
+                    [inline]="true"
+                    [label]="'Vocabulary index ' + row.index"
+                    [value]="row.label"
+                    [segments]="logitIndexSegments(row)"
+                  />
+                  <span class="stat-locator"
+                    ><button
+                      explorer-locator
+                      [attr.aria-label]="'Locate vocabulary index ' + row.index"
+                      [title]="'Locate vocabulary index ' + row.index"
+                      (click)="$event.stopPropagation(); source.locateElement(row.index)"
+                    ></button
+                  ></span>
+                </span>
+              </td>
+              @for (column of logitValueColumns; track column.key) {
+                <td>
+                  <ng-container
+                    [ngTemplateOutlet]="tensorNumericCell"
+                    [ngTemplateOutletContext]="{
+                      label: 'Vocabulary index ' + row.index + ' ' + column.title,
+                      value: source.formatValue(row[column.key]),
+                    }"
+                  />
+                </td>
+              }
+            </tr>
+          </ng-template>
+        </div>
+      </div>
+    </explorer-info-section>
+  }
+} @else if (logitMetricInfo()) {
+  <explorer-info-section label="Analysis Info">
+    <explorer-info-list [items]="logitInfoItems()" (locate)="locateDefinition($event)" />
+  </explorer-info-section>
+  <explorer-info-section label="Statistics" [count]="1">
+    <div class="analysis-items" role="list">
+      @for (section of sections(); track section.label) {
+        <div
+          class="analysis-item"
+          role="listitem"
+          [attr.aria-label]="logitGroupLabel() + ' statistics summary'"
+          [attr.aria-busy]="section.loading"
+        >
+          <div class="item-heading">
+            <span class="item-index">0</span>
+            <span class="item-name">{{ logitGroupLabel() }}</span>
+            <button
+              explorer-locator
+              [attr.aria-label]="'Locate ' + logitGroupLabel() + ' Line chart'"
+              [title]="'Locate ' + logitGroupLabel() + ' Line chart'"
+              (click)="locateStatistic(logitGroupLabel())"
+            ></button>
+          </div>
+          <ng-container
+            [ngTemplateOutlet]="metricStatistics"
+            [ngTemplateOutletContext]="{$implicit: section}"
+          />
+          @if (tokenError()) {
+            <p class="note statistic-table-note" role="alert">{{ tokenError() }}</p>
+          }
+        </div>
+      }
+    </div>
+  </explorer-info-section>
+  <explorer-info-section label="Tensor Metadata" [count]="tensorRuntimes.length">
+    <div class="analysis-items" role="list">
+      @for (runtime of tensorRuntimes; track runtime.side; let i = $index) {
+        <div
+          class="analysis-item"
+          role="listitem"
+          [attr.aria-label]="runtime.label + ' logits input'"
+        >
+          <div class="item-heading">
+            <span class="item-index">{{ i }}</span
+            ><span class="item-name">{{ runtime.label }}</span>
+          </div>
+          @if (tokenLoading()) {
+            <p class="note statistic-table-note" role="status">Loading tensor metadata…</p>
+          } @else if (tokenError()) {
+            <p class="note statistic-table-note" role="alert">
+              Analysis unavailable: {{ tokenError() }}
+            </p>
+          } @else {
+            <explorer-info-section class="source-section" label="Final logits" [compact]="true">
+              <explorer-info-list [bullets]="true" [items]="logitSourceItems(runtime.side)" />
+            </explorer-info-section>
+          }
+        </div>
+      }
+    </div>
+  </explorer-info-section>
+  <explorer-info-section label="Metric Metadata" [count]="1">
+    <div class="analysis-items" role="list">
+      <div class="analysis-item" role="listitem" [attr.aria-label]="metricLabel() + ' output'">
+        <div class="item-heading">
+          <span class="item-index">0</span><span class="item-name">{{ metricLabel() }}</span>
+        </div>
+        <explorer-info-section class="source-section" [label]="logitGroupLabel()" [compact]="true">
+          <explorer-info-list [bullets]="true" [items]="logitMetricMetadata()" />
+        </explorer-info-section>
+      </div>
+    </div>
+  </explorer-info-section>
+} @else if (panel().kind === 'kv' && kv()?.tensorView()) {
+  @let source = kv()!;
+  <explorer-info-section label="Analysis Info">
+    <explorer-info-list [items]="inspectionInfoItems()" (locate)="locateInspection($event)" />
+  </explorer-info-section>
+  <explorer-info-section label="Statistics" [count]="source.tensorGroups().length">
+    <div class="analysis-items" role="list">
+      @for (group of source.tensorGroups(); track group.kind; let i = $index) {
+        <div
+          class="analysis-item"
+          role="listitem"
+          [attr.aria-label]="group.label + ' element statistics'"
+          [attr.aria-busy]="group.request.loading()"
+        >
+          <div class="item-heading">
+            <span class="item-index">{{ i }}</span>
+            <button
+              explorer-locator
+              [label]="group.label"
+              [attr.aria-label]="'Locate ' + group.label + ' tensor chart'"
+              (click)="source.locateTensor(group.kind)"
+            ></button>
+          </div>
+          @if (group.request.loading()) {
+            <p class="note statistic-table-note" role="status">
+              Loading {{ group.label }} statistics…
+            </p>
+          } @else if (group.request.error()) {
+            <p class="note statistic-table-note" role="alert">
+              {{ group.request.error() }}
+              <button (click)="source.tensorRetry.update(source.incrementTensorRetry)">
+                Retry
+              </button>
+            </p>
+          } @else {
+            <ng-container
+              [ngTemplateOutlet]="elementStatistics"
+              [ngTemplateOutletContext]="{
+                label: group.label,
+                rows: tensorStatistics()[group.kind],
+                kind: group.kind,
+              }"
+            />
+          }
+        </div>
+      }
+    </div>
+  </explorer-info-section>
+  <explorer-info-section label="Tensor Metadata" [count]="tensorRuntimes.length">
+    <div class="analysis-items" role="list">
+      @for (runtime of tensorRuntimes; track runtime.side; let i = $index) {
+        <div
+          class="analysis-item"
+          role="listitem"
+          [attr.aria-label]="runtime.label + ' tensor metadata'"
+        >
+          <div class="item-heading">
+            <span class="item-index">{{ i }}</span
+            ><span class="item-name">{{ runtime.label }}</span>
+          </div>
+          @for (group of source.tensorGroups(); track group.kind) {
+            <explorer-info-section class="source-section" [label]="group.label" [compact]="true">
+              <explorer-info-list
+                [bullets]="true"
+                [items]="inspectionMetadata(group.kind, runtime.side)"
+              />
+            </explorer-info-section>
+          }
+        </div>
+      }
+    </div>
+  </explorer-info-section>
+  <explorer-info-section label="Tensor Values" [count]="source.tensorGroups().length">
+    <div class="analysis-items" role="list">
+      @for (group of source.tensorGroups(); track group.kind; let i = $index) {
+        <div
+          class="analysis-item"
+          role="listitem"
+          [attr.aria-label]="group.label + ' tensor values'"
+          [attr.aria-busy]="group.request.loading()"
+        >
+          @let page = tensorInspectionPage(group.kind);
+          <div class="item-heading">
+            <span class="item-index">{{ i }}</span>
+            <button
+              explorer-locator
+              [label]="group.label"
+              [attr.aria-label]="'Locate ' + group.label + ' tensor chart'"
+              (click)="source.locateTensor(group.kind)"
+            ></button>
+            <explorer-pagination
+              class="tensor-pagination"
+              [label]="group.label + ' value pages'"
+              [previousLabel]="'Previous ' + group.label + ' values page'"
+              [nextLabel]="'Next ' + group.label + ' values page'"
+              [index]="page.index"
+              [pages]="page.pages"
+              (change)="changeTensorPage(group.kind, $event)"
+            />
+          </div>
+          @if (group.request.loading()) {
+            <p class="note statistic-table-note" role="status">Loading {{ group.label }} values…</p>
+          } @else if (group.request.error()) {
+            <p class="note statistic-table-note" role="alert">
+              {{ group.request.error() }}
+              <button (click)="source.tensorRetry.update(source.incrementTensorRetry)">
+                Retry
+              </button>
+            </p>
+          } @else {
+            <table
+              explorer-statistic-table
+              class="inspector-table tensor-selection-table"
+              [label]="group.label + ' tensor values'"
+              [rows]="page.rows"
+              [header]="selectionHeader"
+              [row]="selectionRow"
+              [columnCount]="5"
+              emptyText="No captured elements."
+            ></table>
+            <ng-template #selectionHeader>
+              <tr class="layer-columns">
+                @for (column of tensorValueSortColumns; track column.key) {
+                  <th
+                    [title]="column.title"
+                    [attr.aria-sort]="tensorValueSortDirection(group.kind, column.key)"
+                  >
+                    <button
+                      class="column-sort"
+                      type="button"
+                      [disabled]="(tensorInspectionRows()[group.kind]?.length ?? 0) < 2"
+                      [attr.aria-label]="
+                        'Sort ' +
+                        group.label +
+                        ' by ' +
+                        column.label +
+                        ' ' +
+                        (tensorValueSortDirection(group.kind, column.key) === 'ascending'
+                          ? 'descending'
+                          : 'ascending')
+                      "
+                      (click)="sortTensorValues(group.kind, column.key)"
+                    >
+                      <span class="sort-label">{{ column.label }}</span>
+                      <span class="sort-icon" aria-hidden="true"
+                        ><mat-icon>{{
+                          tensorValueSortDirection(group.kind, column.key) === 'none'
+                            ? 'swap_vert'
+                            : tensorValueSortDirection(group.kind, column.key) === 'ascending'
+                              ? 'arrow_upward'
+                              : 'arrow_downward'
+                        }}</mat-icon></span
+                      >
+                    </button>
+                  </th>
+                }
+              </tr>
+            </ng-template>
+            <ng-template #selectionRow let-row>
+              <tr
+                [class.tensor-element-selected]="tensorElementSelected(row.index)"
+                [attr.aria-label]="
+                  'Index ' + row.index + (tensorElementSelected(row.index) ? ', selected' : '')
+                "
+              >
+                <td>{{ row.label }}</td>
+                @for (value of row.values; track $index) {
+                  <td>
+                    <ng-container
+                      [ngTemplateOutlet]="tensorNumericCell"
+                      [ngTemplateOutletContext]="{
+                        label: row.label + ' ' + tensorValueColumns[$index],
+                        value: formatTensorValue(value),
+                      }"
+                    />
+                  </td>
+                }
+              </tr>
+            </ng-template>
+          }
+        </div>
+      }
+    </div>
+  </explorer-info-section>
+} @else if (kvMetricInfo() || activationInfo()) {
+  <explorer-info-section label="Analysis Info">
+    <explorer-info-list
+      [items]="activationInfo() ? activationInfoItems() : metricInfoItems()"
+      (locate)="locateDefinition($event)"
+    />
+  </explorer-info-section>
+  <explorer-info-section label="Statistics" [count]="sections().length">
+    <div class="analysis-items" role="list">
+      @for (section of sections(); track section.label; let i = $index) {
+        <div
+          class="analysis-item"
+          role="listitem"
+          [attr.aria-label]="section.label + ' metrics statistics'"
+          [attr.aria-busy]="section.loading"
+        >
+          <div class="item-heading">
+            <span class="item-index">{{ i }}</span>
+            <explorer-info-value
+              class="statistic-title"
+              [inline]="true"
+              [label]="section.label + ' statistics summary'"
+              [value]="section.label + ' metrics'"
+              [contentTemplate]="statisticTitle"
+            />
+            <ng-template #statisticTitle
+              ><span class="item-name">{{ section.label }} metrics</span
+              ><button
+                explorer-locator
+                [attr.aria-label]="'Locate ' + section.label + ' ' + statisticView()"
+                [title]="'Locate ' + section.label + ' ' + statisticView()"
+                (click)="$event.stopPropagation(); locateStatistic(section.label)"
+              ></button
+            ></ng-template>
+          </div>
+          <ng-container
+            [ngTemplateOutlet]="metricStatistics"
+            [ngTemplateOutletContext]="{$implicit: section}"
+          />
+        </div>
+      }
+    </div>
+  </explorer-info-section>
+  @if (kvMetricInfo()) {
+    <explorer-info-section label="Tensor Metadata" [count]="tensorRuntimes.length">
+      <div class="analysis-items" role="list">
+        @for (runtime of tensorRuntimes; track runtime.side; let i = $index) {
+          <div class="analysis-item" role="listitem" [attr.aria-label]="runtime.label + ' input'">
+            <div class="item-heading">
+              <span class="item-index">{{ i }}</span
+              ><span class="item-name">{{ runtime.label }}</span>
+            </div>
+            @for (group of kvMetadata(); track group.kind) {
+              @let source = group.sources[i];
+              <explorer-info-section class="source-section" [label]="group.label" [compact]="true">
+                <explorer-info-list [bullets]="true" [items]="metadataItems(source)" />
+              </explorer-info-section>
+            }
+          </div>
+        }
+      </div>
+    </explorer-info-section>
+  }
+  <explorer-info-section label="Metric Metadata" [count]="1">
+    <div class="analysis-items" role="list">
+      <div class="analysis-item" role="listitem" [attr.aria-label]="metricLabel() + ' output'">
+        <div class="item-heading">
+          <span class="item-index">0</span><span class="item-name">{{ metricLabel() }}</span>
+        </div>
+        @if (activationInfo()) {
+          <explorer-info-section
+            class="source-section"
+            label="Intermediate Tensors"
+            [compact]="true"
+          >
+            <explorer-info-list [bullets]="true" [items]="activationMetricMetadata()" />
+          </explorer-info-section>
+        } @else {
+          @for (group of kvMetadata(); track group.kind) {
+            <explorer-info-section class="source-section" [label]="group.label" [compact]="true">
+              <explorer-info-list [bullets]="true" [items]="metadataItems(group.output, true)" />
+            </explorer-info-section>
+          }
+        }
+      </div>
+    </div>
+  </explorer-info-section>
+} @else {
+  @for (section of sections(); track section.label) {
+    <explorer-info-section
+      class="representation-section metric-representation"
+      [label]="section.label"
+    >
+      <button
+        section-action
+        explorer-locator
+        [attr.aria-label]="'Locate ' + section.label + ' ' + statisticView()"
+        [title]="'Locate ' + section.label + ' ' + statisticView()"
+        (click)="locateStatistic(section.label)"
+      ></button>
+      <div class="statistic-group" [attr.aria-busy]="section.loading">
+        <explorer-info-section
+          class="value-definition table-section cache-table-section"
+          label="Value Definition"
+          [compact]="true"
+          [rowToggle]="true"
+        >
+          <explorer-info-list
+            class="value-definition-properties"
+            [items]="valueDefinition()"
+            (locate)="locateDefinition($event)"
+          />
+        </explorer-info-section>
+        <explorer-info-section
+          class="table-section cache-table-section"
+          label="Statistics"
+          [compact]="true"
+          [rowToggle]="true"
+        >
+          <ng-container
+            [ngTemplateOutlet]="metricStatistics"
+            [ngTemplateOutletContext]="{$implicit: section}"
+          />
+        </explorer-info-section>
+        @if (graphSelection()) {
+          <explorer-info-section
+            class="table-section cache-table-section"
+            label="Tensor data"
+            [compact]="true"
+            [rowToggle]="true"
+            [expanded]="false"
+          >
+            <ng-container [ngTemplateOutlet]="graph()?.detailsTemplate() ?? null" />
+          </explorer-info-section>
+        }
+      </div>
+    </explorer-info-section>
+  }
+}
+<ng-content />
+
+<ng-template
+  #sortHeader
+  let-group="group"
+  let-columns="columns"
+  let-count="count"
+  let-defaultColumn="defaultColumn"
+>
+  <tr class="layer-columns">
+    @for (column of columns; track column) {
+      <th
+        [attr.colspan]="columns.length === 4 && $last ? 2 : 1"
+        [attr.aria-sort]="sortDirection(group, column, defaultColumn)"
+      >
+        <button
+          class="column-sort"
+          (click)="sortBy(group, column, defaultColumn)"
+          [disabled]="count < 2"
+          [attr.aria-label]="sortAction(group, column, defaultColumn)"
+          [title]="
+            count < 2
+              ? 'Sorting requires at least two rows'
+              : sortAction(group, column, defaultColumn)
+          "
+        >
+          <span class="sort-label">{{ statisticLabel(column) }}</span>
+          <span class="sort-icon" aria-hidden="true">
+            <mat-icon>{{
+              sortDirection(group, column, defaultColumn) === 'none'
+                ? 'swap_vert'
+                : sortDirection(group, column, defaultColumn) === 'ascending'
+                  ? 'arrow_upward'
+                  : 'arrow_downward'
+            }}</mat-icon>
+          </span>
+        </button>
+      </th>
+    }
+  </tr>
+</ng-template>
+
+<ng-template #metricStatistics let-section>
+  @if (section.loading) {
+    <p class="note statistic-table-note" role="status">Loading statistics…</p>
+  } @else {
+    <table
+      explorer-statistic-table
+      class="layer-table"
+      [label]="section.label + ' statistics'"
+      [rows]="section.rows"
+      [header]="layerHeader"
+      [row]="layerRow"
+      [columnCount]="4"
+      rowClass="kv-layer"
+      [emptyText]="activationInfo() ? '-' : section.error ? '—' : 'No visible groups.'"
+    ></table>
+  }
+  <ng-template #layerHeader>
+    <ng-container
+      [ngTemplateOutlet]="sortHeader"
+      [ngTemplateOutletContext]="{
+        group: section.label,
+        columns: sortColumns,
+        count: section.rows.length,
+        defaultColumn: 'layer',
+      }"
+    />
+  </ng-template>
+  <ng-template #layerRow let-row>
+    <tr class="statistic-row">
+      <td>
+        <span class="stat-cell"
+          ><span>{{
+            samplingInfo()
+              ? row.label
+              : logitMetricInfo()
+                ? logitGroupLabel()
+                : row.layer === null
+                  ? '—'
+                  : 'L' + row.layer
+          }}</span
+          ><span class="stat-locator" aria-hidden="true"></span
+        ></span>
+      </td>
+      @for (stat of statisticColumns; track stat) {
+        <td
+          [attr.colspan]="$last ? 2 : 1"
+          [title]="statisticLabel(stat) + ': ' + metricValueTitle(statistic(row.stats, stat))"
+        >
+          @let position =
+            stat === 'min'
+              ? row.stats.min_position
+              : stat === 'max'
+                ? row.stats.max_position
+                : null;
+          <ng-container
+            [ngTemplateOutlet]="tensorNumericCell"
+            [ngTemplateOutletContext]="{
+              label: section.label + ' ' + row.label + ' ' + statisticLabel(stat),
+              value: fmtCompact(statistic(row.stats, stat)),
+              color: statisticColor(statistic(row.stats, stat)),
+              location:
+                position === null
+                  ? null
+                  : {
+                      row: row,
+                      index: position,
+                      title:
+                        'Locate ' +
+                        statisticLabel(stat) +
+                        ' · ' +
+                        row.label +
+                        ' · Position ' +
+                        position,
+                      label: 'Locate ' + stat + ' position in ' + row.label,
+                    },
+            }"
+          />
+        </td>
+      }
+    </tr>
+  </ng-template>
+</ng-template>
+
+<ng-template #elementStatistics let-label="label" let-rows="rows" let-kind="kind">
+  <table
+    explorer-statistic-table
+    class="inspector-table"
+    [label]="label + ' element statistics'"
+    [rows]="rows"
+    [header]="tensorStatisticsHeader"
+    [row]="tensorStatisticsRow"
+    [columnCount]="4"
+  ></table>
+  <ng-template #tensorStatisticsHeader>
+    <tr>
+      <th>Group</th>
+      @for (stat of statisticColumns; track stat) {
+        <th [attr.colspan]="$last ? 2 : 1">
+          <span class="stat-cell"
+            ><span>{{ statisticLabel(stat) }}</span
+            ><span class="stat-locator" aria-hidden="true"></span
+          ></span>
+        </th>
+      }
+    </tr>
+  </ng-template>
+  <ng-template #tensorStatisticsRow let-row>
+    <tr>
+      <td>{{ row.label === 'Reference' ? 'Ref' : row.label }}</td>
+      @for (stat of statisticColumns; track stat) {
+        <td [attr.colspan]="$last ? 2 : 1">
+          @let index =
+            stat === 'min'
+              ? row.stats.min_position
+              : stat === 'max'
+                ? row.stats.max_position
+                : null;
+          <ng-container
+            [ngTemplateOutlet]="tensorNumericCell"
+            [ngTemplateOutletContext]="{
+              label: label + ' ' + row.label + ' ' + statisticLabel(stat),
+              value: formatTensorValue(row.stats[stat]),
+              location:
+                index === null
+                  ? null
+                  : {
+                      kind: kind,
+                      index: index,
+                      title:
+                        'Locate ' +
+                        statisticLabel(stat) +
+                        ' · ' +
+                        row.label +
+                        ' · Element ' +
+                        index,
+                      label:
+                        'Locate ' +
+                        label +
+                        ' ' +
+                        row.label +
+                        ' ' +
+                        statisticLabel(stat) +
+                        ' element ' +
+                        index,
+                    },
+            }"
+          />
+        </td>
+      }
+    </tr>
+  </ng-template>
+</ng-template>
+
+<ng-template
+  #tensorNumericCell
+  let-label="label"
+  let-value="value"
+  let-location="location"
+  let-color="color"
+>
+  <span class="stat-cell">
+    <explorer-info-value
+      class="stat-value"
+      [style.background-color]="color"
+      [inline]="true"
+      [label]="label"
+      [value]="value"
+    />
+    <span class="stat-locator">
+      @if (location) {
+        <button
+          explorer-locator
+          [title]="location.title"
+          [attr.aria-label]="location.label"
+          (click)="
+            location.row
+              ? goPosition(location.row, location.index, false)
+              : locateTensorStatistic(location.kind, location.index)
+          "
+        ></button>
+      }
+    </span>
+  </span>
+</ng-template>

@@ -61,3 +61,27 @@ report-app .debugger-shell {
     outline-offset: 3px;
   }
 }
+
+report-app .debugger-shell {
+  button.graph-link.add-analysis {
+    justify-content: flex-start;
+    background: transparent;
+    color: var(--stage-detail-color, var(--on2));
+  }
+  button.graph-link.analysis-entry {
+    justify-content: flex-start;
+    background: transparent;
+    color: var(--stage-detail-color, var(--on2));
+  }
+  button.graph-link.analysis-entry:not(:disabled):hover,
+  button.graph-link.add-analysis:not(:disabled):hover {
+    background: var(--hover);
+    color: var(--stage-detail-color, var(--on2));
+  }
+  .stage-analysis.open button.graph-link.analysis-entry {
+    border: 1px solid var(--stage-structure-border, var(--outline));
+    border-bottom: 0;
+    border-radius: 4px 4px 0 0;
+    background: var(--analysis-surface);
+  }
+}

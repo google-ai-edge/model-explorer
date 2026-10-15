@@ -16,8 +16,8 @@
  * ==============================================================================
  */
 
-import type {RuntimeOptions} from './session_summary';
 import type {Anchor} from './types';
+import type {RuntimeOptions} from './session_summary';
 
 /** Saved evidence returned by /api/session; configuration alone is not capture evidence. */
 export interface CapturedRun extends RuntimeOptions {
@@ -87,8 +87,14 @@ export interface CapturedToken {
   /** False for a sampled stop token the runtime filtered from the text; it still has its own logits. */
   released?: boolean;
   stop?: boolean;
+  /** Absent when the runner did not name the token's ID. */
   id?: number;
   step: number;
+  /**
+   * The token's global context position on its own side. A turn's `step_start` is the Reference
+   * side's; the Target's tokens sit elsewhere when the two histories differ in length.
+   */
+  position?: number;
   batch?: number;
   source_forward_id?: number;
   phase?: 'thinking' | 'response';

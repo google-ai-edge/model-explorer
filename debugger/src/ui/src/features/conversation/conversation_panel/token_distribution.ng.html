@@ -1,0 +1,172 @@
+<!--
+ Copyright 2026 The AI Edge Model Explorer Authors.
+
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+ ==============================================================================
+-->
+<explorer-info-section label="Candidates" [count]="1">
+  <div class="analysis-items" role="list">
+    <div
+      class="analysis-item"
+      role="listitem"
+      aria-label="Sampling distribution candidates"
+      [attr.aria-busy]="singlePosition() && loading()"
+    >
+      <div class="item-heading">
+        <span class="item-index">0</span><span class="item-name">Sampling distribution</span>
+        <explorer-pagination
+          class="candidate-pagination"
+          label="Sampling candidate pages"
+          previousLabel="Previous sampling candidates page"
+          nextLabel="Next sampling candidates page"
+          [index]="singlePosition() ? currentPage() : 0"
+          [pages]="singlePosition() ? pages() : 1"
+          (change)="changePage($event)"
+        />
+      </div>
+      @if (!singlePosition()) {
+        <p class="info-note">
+          Select one position in the line chart to inspect its sampling candidates.
+        </p>
+      } @else if (loading() || error() || !hasDistribution()) {
+        <p class="info-note" [attr.role]="error() ? 'alert' : 'status'">{{ unavailable() }}</p>
+      } @else {
+        <table class="summary-table" aria-label="Sampling distribution at the selected position">
+          <thead>
+            <tr>
+              <th>Property</th>
+              <th>Ref</th>
+              <th>Target</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (field of summaryFields; track field.key) {
+              <tr>
+                <th>{{ field.label }}</th>
+                @for (side of sides; track side.key) {
+                  <td>
+                    <explorer-info-value
+                      [inline]="true"
+                      [label]="side.label + ' ' + field.label"
+                      [value]="summaryValue(side.key, field.key)"
+                      [segments]="summarySegments(side.key, field.key)"
+                    />
+                  </td>
+                }
+              </tr>
+            }
+          </tbody>
+        </table>
+        @if (!sortedRows().length) {
+          <p class="info-note">
+            {{ distribution()?.reason ?? 'No sampling candidates available.' }}
+          </p>
+        } @else {
+          @if (distribution()?.context === 'different') {
+            <p class="info-note">Different contexts · each runtime’s own sampling distribution.</p>
+          }
+          @if (!distribution()?.rows_complete) {
+            <p class="info-note">
+              Partial candidate list · probabilities retain the full sampling distribution.
+            </p>
+          }
+          <table
+            class="inspector-table candidate-table"
+            aria-label="Sampling candidate probabilities"
+            [style.--candidate-id-width.px]="identityWidth()"
+          >
+            <colgroup>
+              <col class="identity" />
+              <col />
+              <col />
+            </colgroup>
+            <thead>
+              <tr>
+                @for (column of columns; track column.key) {
+                  <th [title]="column.title" [attr.aria-sort]="columnSortDirection(column.key)">
+                    <button
+                      class="column-sort"
+                      type="button"
+                      [disabled]="sortedRows().length < 2"
+                      [attr.aria-label]="
+                        'Sort candidates by ' +
+                        column.title +
+                        ' ' +
+                        (columnSortDirection(column.key) === 'ascending'
+                          ? 'descending'
+                          : 'ascending')
+                      "
+                      (click)="sortBy(column.key)"
+                    >
+                      <span class="sort-label">{{ column.label }}</span
+                      ><mat-icon aria-hidden="true">{{
+                        columnSortDirection(column.key) === 'none'
+                          ? 'swap_vert'
+                          : columnSortDirection(column.key) === 'ascending'
+                            ? 'arrow_upward'
+                            : 'arrow_downward'
+                      }}</mat-icon>
+                    </button>
+                  </th>
+                }
+              </tr>
+            </thead>
+            <tbody>
+              @for (row of rows(); track row.id) {
+                <tr [attr.data-candidate-id]="row.id">
+                  <td>
+                    <explorer-info-value
+                      [inline]="true"
+                      [label]="'Token ID ' + row.id"
+                      [value]="row.id"
+                      [segments]="tokenSegments(row)"
+                    />
+                  </td>
+                  @for (side of sides; track side.key) {
+                    <td>
+                      <div
+                        class="candidate-value"
+                        [class.selected]="row[side.key]?.selected"
+                        [attr.data-selected-side]="row[side.key]?.selected ? side.key : null"
+                      >
+                        <span class="selected-marker-slot">
+                          @if (row[side.key]?.selected) {
+                            <mat-icon
+                              class="selected-marker"
+                              [attr.aria-label]="side.label + ' generated token'"
+                              title="Generated token"
+                              >check</mat-icon
+                            >
+                          }
+                        </span>
+                        <explorer-info-value
+                          [inline]="true"
+                          [label]="side.label + ' token ' + row.id + ' probability'"
+                          [value]="probability(row[side.key])"
+                          [segments]="probabilitySegments(row, side.key)"
+                        />
+                      </div>
+                    </td>
+                  }
+                </tr>
+              }
+            </tbody>
+          </table>
+          <p class="info-note candidate-key">
+            <mat-icon aria-hidden="true">check</mat-icon>Generated token
+          </p>
+        }
+      }
+    </div>
+  </div>
+</explorer-info-section>

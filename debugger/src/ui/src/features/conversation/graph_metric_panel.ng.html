@@ -1,0 +1,514 @@
+<!--
+ Copyright 2026 The AI Edge Model Explorer Authors.
+
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+ ==============================================================================
+-->
+@if (inspectionMode() && fullRange()) {
+  <layer-activation-inspection
+    [turn]="turn()"
+    [stage]="stage()"
+    [alignment]="positionAlignment()"
+    [fullRange]="fullRange()!"
+    [layers]="layers()"
+    [anchors]="anchors()"
+    [initial]="inspectionInitial()"
+    [expanded]="expanded()"
+    (compare)="showComparison($event)"
+    (inspect)="inspectionChanged($event)"
+    (stateChange)="cacheInspection($event)"
+    (inspectStage)="backgroundClick.emit($event)"
+    (expand)="expand.emit()"
+    (positionHover)="positionHover.emit($event)"
+  />
+} @else {
+  <div
+    class="controls activation-controls"
+    [class.graph-toolbar]="view() === 'graph'"
+    role="toolbar"
+    [attr.aria-label]="label() + ' controls'"
+  >
+    <div class="toolbar-scroll">
+      <div class="toolbar-view">
+        <span>View</span>
+        <config-picker
+          class="view-picker"
+          [attr.title]="visualizationLabel()"
+          label="Visualization"
+          plural="visualizations"
+          [value]="visualizationLabel()"
+          [options]="visualizationOptions"
+          [groups]="visualizationGroups"
+          [optionLabels]="visualizationLabels"
+          [compact]="true"
+          [searchable]="false"
+          (valueChange)="chooseView($event)"
+        />
+      </div>
+      <span class="tool-divider" aria-hidden="true"></span>
+      @if (view() === 'graph') {
+        <label class="position-control"
+          >Token Position
+          <button
+            type="button"
+            class="icon-button"
+            aria-label="Previous token position"
+            [disabled]="graphPosition() === null || graphPosition()! <= fullRange()!.start"
+            (click)="setGraphPosition(graphPosition()! - 1)"
+          >
+            <mat-icon>chevron_left</mat-icon>
+          </button>
+          <input
+            type="number"
+            step="1"
+            aria-label="Token Position"
+            [disabled]="graphPosition() === null"
+            [min]="fullRange()?.start ?? 0"
+            [max]="(fullRange()?.end ?? 1) - 1"
+            [value]="graphPosition()"
+            (change)="commitGraphPosition($event)"
+            (keydown.enter)="commitGraphPosition($event)"
+          />
+          <button
+            type="button"
+            class="icon-button"
+            aria-label="Next token position"
+            [disabled]="graphPosition() === null || graphPosition()! >= fullRange()!.end - 1"
+            (click)="setGraphPosition(graphPosition()! + 1)"
+          >
+            <mat-icon>chevron_right</mat-icon>
+          </button>
+        </label>
+      } @else {
+        <div class="toolbar-range" role="group" aria-label="Token Range controls">
+          <analysis-position-range
+            label="Token Range"
+            [range]="range()"
+            [full]="fullRange()"
+            (rangeChange)="viewport.set($event)"
+          />
+          <analysis-view-actions
+            [range]="range()"
+            [full]="fullRange()"
+            [expandable]="false"
+            (resetView)="viewport.set(null)"
+          />
+        </div>
+      }
+      <span class="tool-divider" aria-hidden="true"></span>
+      <analysis-heatmap-controls
+        [showRangeControls]="false"
+        [showAggregation]="view() !== 'graph'"
+        [metrics]="metrics"
+        [metric]="metric()"
+        [aggregation]="aggregation()"
+        (aggregationChange)="setAggregation($event)"
+        (metricChange)="changeMetric($event)"
+      />
+      @if (view() === 'graph') {
+        <span class="tool-divider" aria-hidden="true"></span>
+        <div
+          class="toolbar-summary"
+          title="Collapsed modules: Min / Max of internal tensors, excluding the final output. Missing data is shown as —."
+        >
+          <span>Summary</span>
+          <config-picker
+            label="Module summary"
+            [compact]="true"
+            [searchable]="false"
+            [value]="moduleSummaryLabels[moduleSummary()]"
+            [options]="['Min', 'Max']"
+            (valueChange)="setModuleSummary($event)"
+          />
+        </div>
+      }
+    </div>
+    <div class="toolbar-actions">
+      @if (view() === 'graph' && archView()?.mapping()?.active) {
+        <button type="button" class="mapping-reset-default"
+          [disabled]="!archView()?.mapping()?.canResetDefaults"
+          matTooltip="Restore default tensor pairs in this Mapping range"
+          (click)="archView()?.mappingAction('reset-default')">Reset default</button>
+      }
+      <div class="toolbar-legend">
+        @if (view() === 'trends') {
+          <span class="layer-count" aria-label="Layer legend"
+            >Layers {{ selectedLayers().length }}/{{ layers().length }}</span
+          >
+        } @else {
+          <span class="legend" aria-label="Metric scale">
+            {{ metric() === 'cosine_similarity' ? '1' : '0' }} <i></i>
+            {{ metric() === 'cosine_similarity' ? '−1' : formatChart(maximum()) }}
+          </span>
+        }
+      </div>
+      <button
+        mat-icon-button
+        cdkOverlayOrigin
+        #displayOrigin="cdkOverlayOrigin"
+        class="view-display-button"
+        aria-label="Display"
+        [matTooltip]="
+          view() === 'graph'
+            ? 'Display'
+            : 'Display · Position bins: ' +
+              (binsDisabled() ? '-' : reductionLabels[positionReduction()])
+        "
+        [attr.aria-expanded]="displayOpen()"
+        (click)="toggleDisplay()"
+      >
+        <mat-icon>visibility</mat-icon>
+      </button>
+      @if (!expanded()) {
+        <analysis-view-actions
+          class="panel-expand"
+          [showReset]="false"
+          [expanded]="expanded()"
+          (expandView)="expand.emit()"
+        />
+      }
+    </div>
+    <ng-template
+      overlayDialog
+      [origin]="displayOrigin"
+      [open]="displayOpen()"
+      placement="below-end"
+      [width]="360"
+      (closed)="closeDisplay()"
+    >
+      <div class="chart-display">
+        <section class="settings-panel" overlayPanel aria-label="Chart display">
+          <header>
+            <strong>Display</strong>
+            <button mat-icon-button aria-label="Close chart display" (click)="closeDisplay()">
+              <mat-icon>close</mat-icon>
+            </button>
+          </header>
+          @if (view() === 'graph') {
+            <div class="setting arch-display-options">
+              <label
+                ><input
+                  type="checkbox"
+                  [checked]="graphDisplayDraft().legend"
+                  (change)="toggleGraphDisplayOption('legend')"
+                />
+                Legends</label
+              >
+            </div>
+          } @else {
+            <div class="setting">
+              <label>Position bins</label>
+              <config-picker
+                label="Position bins"
+                plural="functions"
+                [compact]="true"
+                [searchable]="false"
+                [options]="reductionOptions"
+                [value]="binsDisabled() ? '-' : reductionLabels[displayReduction()]"
+                [disabled]="binsDisabled()"
+                (valueChange)="draftReduction($event)"
+              />
+              <button
+                mat-button
+                [disabled]="binsDisabled() || displayDraft().bins === null"
+                aria-label="Reset Position bins to default"
+                (click)="resetDisplayReduction()"
+              >
+                Reset to default
+              </button>
+            </div>
+          }
+          @if (view() === 'trends') {
+            <div class="setting" #layerDisplay>
+              <div class="series-heading">
+                <label>Layers</label
+                ><span class="series-count"
+                  >{{ displayDraft().layers.length }}/{{ layers().length }}</span
+                >
+              </div>
+              @if (layers().length > 8) {
+                <input
+                  class="series-search"
+                  type="search"
+                  aria-label="Search layers"
+                  placeholder="Search layers"
+                  [value]="displayQuery()"
+                  (input)="displayQuery.set($any($event.target).value)"
+                />
+              }
+              <div
+                class="series-options"
+                role="group"
+                aria-label="Visible layers"
+                (mouseleave)="highlightedLayer.set(null)"
+              >
+                @for (layer of displayFilteredLayers(); track layer) {
+                  <label
+                    (mouseenter)="highlightedLayer.set(layer)"
+                    (focusin)="highlightedLayer.set(layer)"
+                    (focusout)="highlightedLayer.set(null)"
+                  >
+                    <input
+                      type="checkbox"
+                      [attr.aria-label]="'Show Layer ' + layer"
+                      [checked]="displayDraft().layers.includes(layer)"
+                      (change)="toggleDisplayLayer(layer)"
+                    />
+                    <i [style.border-top-color]="layerColor(layer)"></i
+                    ><span>Layer {{ layer }}</span>
+                  </label>
+                } @empty {
+                  <p class="series-empty">No matching layers</p>
+                }
+              </div>
+              <div class="series-actions">
+                <button
+                  mat-button
+                  [disabled]="displayLayersDefault()"
+                  aria-label="Reset Layers to default"
+                  (click)="draftLayers(defaultLayers())"
+                >
+                  Reset to default
+                </button>
+                <button
+                  mat-button
+                  [disabled]="!displayDraft().layers.length"
+                  aria-label="Clear Layers"
+                  (click)="draftLayers([])"
+                >
+                  Clear
+                </button>
+              </div>
+            </div>
+          }
+          <footer>
+            <span role="status" class="sr-only">{{
+              displayDirty() ? 'Unapplied changes' : 'Display settings applied'
+            }}</span>
+            <button
+              mat-flat-button
+              color="primary"
+              [disabled]="!displayDirty()"
+              (click)="applyDisplay()"
+            >
+              Apply
+            </button>
+          </footer>
+        </section>
+      </div>
+    </ng-template>
+  </div>
+  @if (view() === 'graph') {
+    <div class="arch-chart" [class.expanded]="expanded()">
+      <intermediate-graph-arch [context]="archContext()" (selection)="inspectArch($event)" />
+    </div>
+  } @else if (request.loading()) {
+    <p role="status">Loading tensor comparisons…</p>
+  } @else if (request.error()) {
+    <p role="alert">
+      {{ request.error() }} <button (click)="retry.update(increment)">Retry</button>
+    </p>
+  } @else if (!source().length) {
+    <p>Analysis unavailable: Position × Layer tensors not captured.</p>
+  } @else {
+    <div
+      class="chart"
+      [style.height]="
+        expanded() ? 'calc(100dvh - 294px)' : heatmapChartHeight(layers().length) + 'px'
+      "
+    >
+      <kv-range-chart
+        (positionHover)="positionHover.emit($event)"
+        [analysisLabel]="label()"
+        [view]="view() === 'trends' ? 'trends' : 'heatmap'"
+        [layers]="layers()"
+        [bins]="bins()"
+        [visibleRange]="range()"
+        [fullRange]="fullRange()"
+        [overview]="overview()"
+        [rows]="rows()"
+        [kind]="label()"
+        [metric]="metric()"
+        [positionReduction]="positionReduction()"
+        [selected]="selected()"
+        [series]="series()"
+        [highlightedLayer]="highlightedLayer()"
+        [scaleMaximum]="maximum()"
+        [format]="formatChart"
+        (select)="select($event)"
+        (backgroundClick)="backgroundClick.emit($event)"
+        (zoom)="viewport.set($event)"
+        (capacity)="capacity.set($event)"
+      />
+    </div>
+  }
+}
+<ng-template #details>
+  @if (view() === 'graph') {
+    @if (archView()?.mapping(); as mapping) {
+      @if (mapping.active) {
+        <explorer-info-section label="Metric List">
+          <table class="inspector-table arch-metric-list mapping-metric-list" aria-label="Mapping metric list">
+            <colgroup><col /><col /><col class="mapping-shape-column" /><col class="mapping-metric-column" /></colgroup>
+            <thead><tr><th>Reference</th><th>Target</th><th>Shape</th><th>
+              <span class="stat-cell">
+                <explorer-info-value class="stat-value" [inline]="true" label="Metric" [value]="metricName()" />
+                <span class="stat-locator" aria-hidden="true"></span>
+              </span>
+            </th></tr></thead>
+            <tbody>
+              @for (pair of mapping.pairs || []; track pair.referenceId + pair.targetId) {
+                <tr [class.arch-metric-selected]="pair.selected" [attr.aria-selected]="pair.selected || null">
+                  <td>
+                    <explorer-info-value [inline]="true" label="Reference source" [value]="mappingSourceLabel(pair.referenceName)" />
+                  </td>
+                  <td>
+                    <explorer-info-value [inline]="true" label="Target source" [value]="mappingSourceLabel(pair.targetName)" />
+                  </td>
+                  <td><explorer-info-value [inline]="true" label="Tensor shape"
+                    [value]="mappingPairShape(pair.referenceShape, pair.targetShape)" /></td>
+                  <td><span class="stat-cell">
+                    @if (pair.metric; as metric) {
+                      <span class="stat-value mapping-metric-cell" [style.background-color]="metric.state === 'ready' ? metric.bg : null">
+                        @if (metric.state === 'pending') { <i class="mapping-metric-spinner" aria-label="Calculating metric"></i> }
+                        <explorer-info-value [inline]="true" [label]="metric.label" [value]="metric.text" />
+                      </span>
+                    }
+                    <span class="stat-locator" aria-hidden="true"></span>
+                  </span></td>
+                </tr>
+              } @empty { <tr><td colspan="4">No tensor pairs</td></tr> }
+            </tbody>
+          </table>
+        </explorer-info-section>
+        @if (mappingTensorDetails().length) {
+          <explorer-info-section label="Tensor Details">
+            <explorer-info-list [items]="mappingTensorDetails()" />
+          </explorer-info-section>
+        }
+      }
+    }
+    @for (section of archDetails(); track $index) {
+      @if (!archView()?.mapping()?.active && section.label !== 'Analysis Info') {
+      <explorer-info-section [label]="section.label">
+        @if (section.label === 'Metric List') {
+          <table class="inspector-table arch-metric-list" aria-label="Arch metric list">
+            <colgroup><col class="arch-metric-point" /><col class="arch-metric-shape" /><col /></colgroup>
+            <thead><tr><th>Tensor</th><th>Shape</th><th>
+              <span class="stat-cell">
+                <explorer-info-value class="stat-value" [inline]="true" label="Metric" [value]="metricName()" />
+                <span class="stat-locator" aria-hidden="true"></span>
+              </span>
+            </th></tr></thead>
+            <tbody>
+              @for (item of section.items; track item.label) {
+                <tr [class.arch-metric-selected]="item.selected" [attr.aria-selected]="item.selected || null">
+                  <td><explorer-info-value [inline]="true" label="Tensor" [value]="item.label" /></td>
+                  <td><explorer-info-value [inline]="true" label="Tensor shape" [value]="item.shape ?? '—'" /></td>
+                  <td><span class="stat-cell">
+                    <explorer-info-value class="stat-value" [inline]="true"
+                      [label]="item.label + ' metric'" [value]="item.value"
+                      [style.background-color]="item.metricBg" />
+                    <span class="stat-locator" aria-hidden="true"></span>
+                  </span></td>
+                </tr>
+              } @empty { <tr><td colspan="3">No metric data</td></tr> }
+            </tbody>
+          </table>
+        } @else if (section.label === 'Tensor Details') {
+          @if (section.tensorItems?.length) {
+            <explorer-info-list [indexed]="true" [items]="section.tensorItems!" />
+          } @else {
+            <explorer-info-list [items]="[{label: 'Internal tensors', value: 'None'}]" />
+          }
+        } @else {
+          <explorer-info-list [items]="section.items" />
+        }
+      </explorer-info-section>
+      }
+    }
+    @if (!archView()?.mapping()?.active && archDetails()[0]?.label !== 'Analysis Info') {
+    <explorer-info-section label="Metric context">
+      <explorer-info-list
+        [items]="[
+          {label: 'Metric', value: metricName()},
+          {label: 'Token Position', value: graphPosition() === null ? '—' : '' + graphPosition()},
+          {label: 'Layer metric', value: 'Layer output at the selected token position'},
+          {label: 'Source', value: request.data()?.provenance?.label ?? 'No comparison data'},
+          {
+            label: 'Scope',
+            value:
+              'Block summaries include internal tensors only; final outputs are displayed separately.',
+          },
+        ]"
+      />
+    </explorer-info-section>
+    }
+  } @else {
+    <section class="metric-values-section" aria-label="Metric values">
+      @if (request.data()?.provenance?.kind === 'synthetic') {
+        <p class="provenance">Source: Test data</p>
+      }
+      <table class="metric-values" aria-label="Tensor comparison metric values">
+        <thead>
+          <tr>
+            <th class="numeric">Position</th>
+            <th class="numeric">Layer</th>
+            <th>Point</th>
+            @for (metric of metrics; track metric.id) {
+              <th class="numeric">
+                <explorer-info-value
+                  [inline]="true"
+                  [label]="metric.label + ' column'"
+                  [value]="metric.label.replace(' (%)', '')"
+                />
+              </th>
+            }
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (r of detailsRows(); track r.position + ':' + r.layer + ':' + r.anchor) {
+            <tr>
+              <td class="numeric">
+                <explorer-info-value [inline]="true" label="Position" [value]="r.position" />
+              </td>
+              <td class="numeric">
+                <explorer-info-value [inline]="true" label="Layer" [value]="r.layer" />
+              </td>
+              <td>
+                <explorer-info-value [inline]="true" label="Point" [value]="r.anchor || '-'" />
+              </td>
+              @for (metric of metrics; track metric.id) {
+                <td class="numeric">
+                  <explorer-info-value
+                    [inline]="true"
+                    [label]="'Position ' + r.position + ' Layer ' + r.layer + ' ' + metric.label"
+                    [value]="formatMetric(metric.id, r.metrics[metric.source]?.value)"
+                  />
+                </td>
+              }
+              <td>
+                <explorer-info-value [inline]="true" label="Status" [value]="r.status || '-'" />
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td [attr.colspan]="metrics.length + 4">-</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </section>
+  }
+</ng-template>

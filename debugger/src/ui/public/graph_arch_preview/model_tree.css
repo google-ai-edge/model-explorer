@@ -1,0 +1,48 @@
+/**
+ * @license
+ * Copyright 2026 The AI Edge Model Explorer Authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ==============================================================================
+ */
+
+/* Model Explorer io-tree: Google Sans Text 13px, 18px disclosure,
+   16px locator, neutral hover; metric chips reuse the native provider palette. */
+:root{--tree-hover:#f3f3f3;--tree-selected:#e8f0fe;--tree-selected-text:#00639b}
+@media(prefers-color-scheme:dark){:root{--tree-hover:#303134;--tree-selected:#23496a;--tree-selected-text:#8ab4f8}}
+:root[data-theme=dark]{--tree-hover:#303134;--tree-selected:#23496a;--tree-selected-text:#8ab4f8}
+:root[data-theme=light]{--tree-hover:#f3f3f3;--tree-selected:#e8f0fe;--tree-selected-text:#00639b}
+.model-tree{flex:0 0 278px;width:278px;min-height:0;overflow:auto;border-right:1px solid var(--rule);background:var(--surface);font:400 13px/22px 'Google Sans Text',Arial,Helvetica,sans-serif;letter-spacing:normal}
+.model-tree-title{position:sticky;top:0;z-index:1;background:var(--surface);padding:10px 12px;font-size:12px;font-weight:500;border-bottom:1px solid var(--rule)}
+.model-tree nav{padding:4px 0 16px}
+.model-tree button{font:inherit;font-weight:400;letter-spacing:normal;display:flex;align-items:center;gap:6px;width:100%;height:28px;min-height:24px;border:0;border-radius:0;text-align:left;padding:0 12px 0 calc(28px + var(--depth,0)*12px);background:transparent;white-space:nowrap;color:var(--text)}
+.model-tree button:hover{background:var(--tree-hover)}
+.model-tree button.active,.model-tree button.active:hover{background:var(--tree-selected)}
+.model-tree button.active .tree-label{color:var(--tree-selected-text);font-weight:500}
+.model-tree button:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+.model-tree .tree-label{min-width:0;overflow:hidden;text-overflow:ellipsis;font:inherit}
+.model-tree .material-icon{font-family:'Material Icons';font-weight:400;font-size:18px;line-height:18px;width:18px;height:18px;color:var(--muted);display:inline-flex;align-items:center;justify-content:center;flex:none}
+.model-tree .tree-entry{font-size:16px;width:16px;height:16px;line-height:16px;opacity:.5}
+.model-tree button:hover .tree-entry,.model-tree button:focus-visible .tree-entry{opacity:.8}
+.model-tree button.active .tree-entry{color:var(--tree-selected-text);opacity:1}
+.tree-metric{margin-left:auto;flex:none;padding:0 4px;border-radius:3px;background:var(--metric-bg);color:var(--metric-fg);font:400 11px/18px 'Google Sans Text',Arial,sans-serif;min-width:42px;text-align:right}
+.tree-count{margin-left:auto;color:var(--muted);font-size:11px}
+.model-tree button.tree-group{padding-left:calc(4px + var(--depth,0)*12px);gap:6px}
+.model-tree [hidden]{display:none!important}
+#workspace.native-model-active>.model-tree{display:block!important}#modules-toggle{display:none}
+@media(max-width:1100px){.model-tree{flex-basis:264px;width:264px}}
+@media(max-width:900px){#modules-toggle{display:block}.model-tree{display:none;position:absolute;inset:0 auto 0 0;width:278px;z-index:8;box-shadow:var(--shadow)}.show-model-tree .model-tree{display:block}.appbar .tag{display:none}}
+
+#workspace>.model-tree[hidden],#modules-toggle[hidden]{display:none!important}
+
+@media(max-width:700px){.appbar strong{display:none}#execution-stage-control>span{display:none}}

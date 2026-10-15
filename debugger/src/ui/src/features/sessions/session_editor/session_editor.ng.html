@@ -32,8 +32,8 @@
   <form #form="ngForm" (ngSubmit)="save()">
     <section class="identity" role="group" aria-label="Session">
       <h3>Session</h3>
-      <label>
-        <span>Name</span>
+      <label
+        ><span>Name</span>
         <div class="name-control">
           <input
             name="name"
@@ -43,8 +43,7 @@
             [(ngModel)]="config.name"
             (ngModelChange)="customName = true"
             [disabled]="saving() || !!uploading()"
-          />
-          <button
+          /><button
             type="button"
             mat-icon-button
             aria-label="Generate suggested name"
@@ -54,14 +53,13 @@
           >
             <mat-icon>auto_fix_high</mat-icon>
           </button>
-        </div>
-      </label>
+        </div></label
+      >
     </section>
     <section role="group" aria-label="Comparison">
       <h3>Comparison</h3>
-      <label class="model-label">
-        Model
-        <config-picker
+      <label class="model-label"
+        >Model<config-picker
           label="Model"
           plural="models"
           [searchable]="true"
@@ -69,8 +67,7 @@
           [options]="models()"
           [disabled]="saving() || !!uploading()"
           (valueChange)="config.model = $event; customName || suggest()"
-        ></config-picker>
-      </label>
+      /></label>
       @if (sessions.listing()?.generation_available) {
         <button
           type="button"
@@ -96,9 +93,8 @@
           <section [attr.data-run]="run.id">
             <h3>{{ run.id === 'ref' ? 'Reference' : 'Target' }}</h3>
             <div class="device-field">
-              <label>
-                Device
-                <config-picker
+              <label
+                >Device<config-picker
                   [label]="run.id === 'ref' ? 'Reference device' : 'Target device'"
                   [value]="deviceLabel(run.device)"
                   [options]="deviceOptions(run)"
@@ -106,8 +102,7 @@
                   [descriptions]="deviceDescriptions(run)"
                   [disabled]="saving() || !!uploading()"
                   (valueChange)="selectDevice(run, $event)"
-                ></config-picker>
-              </label>
+              /></label>
               @if (runnerDevice(run.device); as device) {
                 <div class="runner-observation">
                   <div class="runtime-notice" role="status">
@@ -148,9 +143,8 @@
             @if (runnerDevice(run.device); as device) {
               <div class="build-field">
                 @if (device.runnerState === 'not_running') {
-                  <label>
-                    Model Server build
-                    <config-picker
+                  <label
+                    >Model Server build<config-picker
                       [label]="
                         run.id === 'ref'
                           ? 'Reference Model Server build'
@@ -167,8 +161,7 @@
                         runtime.buildLoading()[device.id]
                       "
                       (valueChange)="selectBuild(run, $event)"
-                    ></config-picker>
-                  </label>
+                  /></label>
                   <p class="runtime-notice" role="status">
                     {{
                       runtime.buildLoading()[device.id]
@@ -193,8 +186,8 @@
                 }
               </div>
             }
-            <label>
-              Runtime
+            <label
+              >Runtime
               <div class="runtime-control">
                 <config-picker
                   [label]="run.id === 'ref' ? 'Reference runtime' : 'Target runtime'"
@@ -202,8 +195,7 @@
                   [options]="runtimes()"
                   [disabled]="saving() || !!uploading()"
                   (valueChange)="selectRuntime(run, $event)"
-                ></config-picker>
-                <button
+                /><button
                   type="button"
                   mat-button
                   [disabled]="saving() || !!uploading()"

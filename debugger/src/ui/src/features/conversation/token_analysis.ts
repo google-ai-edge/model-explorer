@@ -16,14 +16,14 @@
  * ==============================================================================
  */
 
+import {TOKEN_METRICS} from './token_metric_metadata';
+import type {TokenPair} from './token_alignment';
 import type {
-  TokenAnalysisPair,
-  TokenMetric,
   TokenMetricKey,
+  TokenMetric,
+  TokenAnalysisPair,
 } from '../../data/contracts/token_analysis';
 import {formatSignificant} from '../../shared/format/format';
-import type {TokenPair} from './token_alignment';
-import {TOKEN_METRICS} from './token_metric_metadata';
 export type TokenColor = 'token_match' | 'none' | TokenMetricKey;
 export const analysisKey = (
   turn: number,
@@ -34,10 +34,10 @@ export const pairKey = (turn: number, pair: TokenPair) =>
   analysisKey(turn, pair.ref?.step, pair.target?.step);
 export const colorLabel = (key: TokenColor) =>
   key === 'none'
-    ? 'None'
+    ? '-'
     : key === 'token_match'
       ? 'Token · Match'
-      : (TOKEN_METRICS.find((m) => m.key === key)?.label ?? 'None');
+      : (TOKEN_METRICS.find((m) => m.key === key)?.label ?? '-');
 export const TOKEN_COLOR_MAX: Record<TokenMetricKey, number> = {
   kl: 0.01,
   js: 1,
@@ -48,10 +48,7 @@ export const TOKEN_COLOR_MAX: Record<TokenMetricKey, number> = {
 };
 export const normalizeColor = (value: boolean | TokenColor): TokenColor =>
   value === true ? 'token_match' : value === false ? 'none' : value;
-export function heatLevel(
-  color: TokenColor,
-  record: TokenAnalysisPair | undefined,
-) {
+export function heatLevel(color: TokenColor, record: TokenAnalysisPair | undefined) {
   if (color === 'none' || color === 'token_match') return null;
   const value = record?.metrics[color]?.value;
   return value == null
@@ -66,32 +63,20 @@ export function presentValue(key: TokenMetricKey, value: number) {
   const present = TOKEN_METRICS.find((m) => m.key === key)?.present;
   return present ? present(value) : value;
 }
-export function metricText(
-  metric: TokenMetric | undefined,
-  key?: TokenMetricKey,
-) {
+export function metricText(metric: TokenMetric | undefined, key?: TokenMetricKey) {
   return metric?.value == null
     ? metric?.reason && !metric.reason.toLowerCase().includes('not captured')
       ? 'Unavailable'
       : 'Not captured'
-    : formatSignificant(
-        key ? presentValue(key, metric.value) : metric.value,
-        5,
-      );
+    : formatSignificant(key ? presentValue(key, metric.value) : metric.value, 5);
 }
-export function queryRecord(
-  pair: TokenPair,
-  analysis: TokenAnalysisPair | undefined,
-) {
+export function queryRecord(pair: TokenPair, analysis: TokenAnalysisPair | undefined) {
   if (!analysis) return {token_match: pair.match};
   const distance = analysis.metrics['cosine_distance']?.value;
   return {
     token_match: pair.match,
     ...Object.fromEntries(
-      TOKEN_METRICS.map((m) => [
-        m.key,
-        analysis?.metrics[m.key]?.value ?? null,
-      ]),
+      TOKEN_METRICS.map((m) => [m.key, analysis?.metrics[m.key]?.value ?? null]),
     ),
     cosine_similarity: distance == null ? null : 1 - distance,
   };

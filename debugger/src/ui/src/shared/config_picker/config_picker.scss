@@ -22,39 +22,16 @@
   display: block;
   min-width: 0;
 }
-:host > button.mat-mdc-button-base.mat-mdc-button {
-  @include controls.configuration-input;
-  width: 100%;
-  display: flex;
-  justify-content: space-between;
-  text-align: left;
-  letter-spacing: normal;
-  color: var(--me-on-surface-color);
-  &:disabled {
-    opacity: 0.5;
-  }
-}
-:host > button ::ng-deep .mat-mdc-button-touch-target {
-  height: 100%;
-}
-.value {
-  display: block;
-  max-width: 100%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-:host ::ng-deep .mdc-button__label {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
+@include controls.configuration-picker-trigger;
 .picker {
   @include controls.configuration-popup;
+  border: 1px solid var(--me-outline-variant-color);
+  border-radius: 0 0 4px 4px;
   width: 100%;
   padding: 8px;
   max-height: min(320px, calc(100dvh - 16px));
-  overflow: auto;
+  overflow-y: auto;
+  overflow-x: hidden;
   font: 13px/20px var(--me-font-family);
 }
 .picker input {
@@ -63,7 +40,8 @@
 }
 [role='listbox'] {
   max-height: 240px;
-  overflow: auto;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 input + [role='listbox'] {
   margin-top: 8px;
@@ -72,12 +50,13 @@ input + [role='listbox'] {
   display: flex;
   justify-content: space-between;
   width: 100%;
-  height: 32px;
-  min-height: 32px;
+  min-width: 0;
+  height: 24px;
+  min-height: 24px;
   border-radius: 0;
   padding: 0 8px;
   letter-spacing: normal;
-  font: 400 13px/20px var(--me-font-family);
+  font: 400 12px/16px var(--me-font-family);
   color: var(--mat-button-text-label-text-color);
 }
 .picker ::ng-deep .mat-mdc-button-touch-target {
@@ -86,10 +65,14 @@ input + [role='listbox'] {
 [role='option'][aria-selected='true'] {
   background: var(--me-secondary-container-color);
 }
+[role='option'][mat-button]:disabled {
+  opacity: 0.5;
+}
 mat-icon {
-  font-size: 20px;
-  width: 20px;
-  height: 20px;
+  font-size: 16px;
+  line-height: 16px;
+  width: 16px;
+  height: 16px;
 }
 p {
   margin: 12px 8px;
@@ -127,17 +110,24 @@ p {
   overflow: hidden;
   text-overflow: ellipsis;
 }
-// Model Explorer graph_selector_panel: one 16px line plus 4px vertical insets.
-.picker.compact [role='option'][mat-button].mat-mdc-button-base.mat-mdc-button {
-  height: 24px;
-  min-height: 24px;
-  font: 400 12px/16px var(--me-font-family);
-}
 .compact .option-text {
   white-space: nowrap;
 }
-.compact mat-icon {
-  width: 16px;
-  height: 16px;
-  font-size: 16px;
+
+.inline-description .option-text {
+  flex-direction: row;
+  align-items: baseline;
+  gap: 16px;
+  width: 100%;
+  white-space: nowrap;
+  small {
+    margin-left: auto;
+    flex-shrink: 0;
+  }
+}
+
+.option-group-label {
+  padding: 4px 8px;
+  font: 400 12px/16px var(--me-font-family);
+  color: var(--me-on-surface-low-color);
 }

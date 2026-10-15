@@ -19,8 +19,14 @@
 export interface PlotHost extends HTMLElement {
   on(name: string, listener: (event: Record<string, unknown>) => void): void;
   _fullLayout?: {
-    xaxis: {_offset: number; _length: number; p2d: (value: number) => number};
-    yaxis: {_offset: number; _length: number};
+    xaxis: {
+      _offset: number;
+      _length: number;
+      p2d: (value: number) => number;
+      d2p: (value: number) => number;
+    };
+    yaxis: {_offset: number; _length: number; d2p: (value: number) => number};
+    yaxis2?: {_offset: number; _length: number; d2p: (value: number) => number};
   };
 }
 export interface PlotlyApi {
@@ -30,16 +36,17 @@ export interface PlotlyApi {
     layout: Record<string, unknown>,
     config: Record<string, unknown>,
   ): Promise<void>;
+  restyle(host: HTMLElement, update: Record<string, unknown>, indices?: number[]): Promise<void>;
   purge(host: HTMLElement): void;
 }
 let pending: Promise<PlotlyApi> | null = null;
-export function loadTokenPlotly(): Promise<PlotlyApi> {
+export function loadPlotly(): Promise<PlotlyApi> {
   const windowWithPlotly = window as Window & {Plotly?: PlotlyApi};
   if (windowWithPlotly.Plotly) return Promise.resolve(windowWithPlotly.Plotly);
   if (!pending)
     pending = new Promise<PlotlyApi>((resolve, reject) => {
       const script = document.createElement('script');
-      script.src = 'vendor/plotly.min.js';
+      script.src = 'assets/plotly.min.js';
       script.async = true;
       script.onload = () =>
         windowWithPlotly.Plotly
@@ -53,4 +60,20 @@ export function loadTokenPlotly(): Promise<PlotlyApi> {
       document.head.append(script);
     });
   return pending;
+}
+
+/** Resolve theme colors to Plotly-compatible RGB (including CSS color(srgb ...)). */
+export function plotlyColor(host: HTMLElement, value: string): string {
+  const probe = document.createElement('span');
+  probe.style.color = value;
+  host.append(probe);
+  const result = getComputedStyle(probe).color;
+  probe.remove();
+  const srgb = result.match(/^color\(srgb ([\d.]+) ([\d.]+) ([\d.]+)/);
+  return srgb
+    ? `rgb(${srgb
+        .slice(1, 4)
+        .map((v) => Math.round(Number(v) * 255))
+        .join(',')})`
+    : result;
 }

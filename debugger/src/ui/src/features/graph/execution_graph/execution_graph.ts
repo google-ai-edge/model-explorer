@@ -28,32 +28,20 @@ import {
   viewChild,
 } from '@angular/core';
 import {NodeDetails} from '../../../data/contracts/types';
-import type {
-  ExecutionNodeSelection,
-  ExecutionOperation,
-  ExecutionOutboundMessage,
-} from './runtime/execution_data';
 
-export type {ExecutionNodeSelection, ExecutionOperation};
-
-type ExecutionGraphHit = Partial<ExecutionOperation & ExecutionNodeSelection>;
-
-interface ExecutionGraphMessage {
-  channel?: string;
-  type?: ExecutionOutboundMessage['type'];
-  hit?: ExecutionGraphHit;
+export interface ExecutionOperation {
+  side: 'ref' | 'target';
+  nodeId: string;
+  graphId: string;
 }
 
-/**
- * Hosts the Reference and Target execution graph visualizer inside an isolated
- * iframe so the pinned visualizer's Angular/Zone runtime stays decoupled from the host app.
- */
+/** The iframe isolates the pinned visualizer's Angular/Zone runtime from this app. */
 @Component({
   selector: 'app-execution-graph',
   standalone: true,
   template: `<iframe
     #frame
-    src="graph-execution/index.html?v=5f4bd1b82bdb0495"
+    src="graph_execution/index.html?v=e0f5fcfb8bc662c0"
     title="Reference and Target execution graphs"
     (load)="send()"
   ></iframe>`,
@@ -85,7 +73,7 @@ export class ExecutionGraph {
   readonly mapping = input(false);
   readonly dark = input(false);
   readonly operation = input<ExecutionOperation | null>(null);
-  readonly tensorSelected = output<ExecutionNodeSelection>();
+  readonly tensorSelected = output<{side: 'ref' | 'target'; id: string}>();
   readonly operationSelected = output<ExecutionOperation>();
   private readonly frame = viewChild<ElementRef<HTMLIFrameElement>>('frame');
   private readonly ready = signal(false);
@@ -97,14 +85,11 @@ export class ExecutionGraph {
     });
   }
 
-  /** Posts the current execution graph topology, selections, and theme to the iframe. */
-  send(): void {
+  send() {
     const details = this.details();
     const payload = {
       // The frame renders topology and records only; sources and saved mappings stay here.
-      details: details
-        ? {tensors: details.tensors, executions: details.executions}
-        : null,
+      details: details ? {tensors: details.tensors, executions: details.executions} : null,
       reference: this.reference(),
       target: this.target(),
       metric: this.metric(),
@@ -116,49 +101,36 @@ export class ExecutionGraph {
     this.post({type: 'render', payload});
   }
 
-  /** Resets both Reference and Target graph viewports to fit the entire graph. */
-  fit(): void {
+  fit() {
     this.post({type: 'action', action: 'fit'});
   }
-
-  /** Zooms both Reference and Target graph viewports to a readable node scale. */
-  readable(): void {
+  readable() {
     this.post({type: 'action', action: 'readable'});
   }
 
-  private post(message: Record<string, unknown>): void {
+  private post(message: Record<string, unknown>) {
     this.frame()?.nativeElement.contentWindow?.postMessage(
       {channel: 'model-debugger-execution', ...message},
       location.origin,
     );
   }
 
-  /** Handles ready, tensorSelected, and operationSelected postMessage events from the iframe. */
   @HostListener('window:message', ['$event'])
-  receive(event: MessageEvent<unknown>): void {
+  receive(event: MessageEvent) {
     if (
       event.origin !== location.origin ||
       event.source !== this.frame()?.nativeElement.contentWindow
-    ) {
+    )
       return;
-    }
-    const message = event.data as ExecutionGraphMessage | null | undefined;
-    if (
-      !message ||
-      typeof message !== 'object' ||
-      message.channel !== 'model-debugger-execution'
-    ) {
-      return;
-    }
+    const message = event.data;
+    if (!message || message.channel !== 'model-debugger-execution') return;
     if (message.type === 'ready') {
       this.ready.set(true);
       this.send();
       return;
     }
     const hit = message.hit;
-    if (!hit || (hit.side !== 'ref' && hit.side !== 'target')) {
-      return;
-    }
+    if (!hit || (hit.side !== 'ref' && hit.side !== 'target')) return;
     const details = this.details();
     if (
       message.type === 'tensorSelected' &&
@@ -173,17 +145,11 @@ export class ExecutionGraph {
       typeof hit.graphId === 'string' &&
       details?.executions.some((run) =>
         run.graphs.some(
-          (graph) =>
-            graph.id === hit.graphId &&
-            graph.nodes.some((node) => node.id === hit.nodeId),
+          (graph) => graph.id === hit.graphId && graph.nodes.some((node) => node.id === hit.nodeId),
         ),
       )
     ) {
-      this.operationSelected.emit({
-        side: hit.side,
-        nodeId: hit.nodeId,
-        graphId: hit.graphId,
-      });
+      this.operationSelected.emit({side: hit.side, nodeId: hit.nodeId, graphId: hit.graphId});
     }
   }
 }

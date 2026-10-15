@@ -1,0 +1,148 @@
+/**
+ * @license
+ * Copyright 2026 The AI Edge Model Explorer Authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ==============================================================================
+ */
+
+@use '../../../theme/token_diff' as token;
+:host {
+  @include token.semantic-colors;
+  display: grid;
+  grid-template-columns: 28px 42px minmax(0, 1fr) 28px;
+  gap: 4px;
+  padding: 8px 16px;
+  background: color-mix(in srgb, var(--surface) 50%, var(--analysis-surface));
+  border-bottom: 1px solid var(--outline);
+  font: 12px/20px var(--me-font-family);
+  color: var(--on);
+  min-width: 0;
+}
+.runtime-labels {
+  color: var(--me-on-surface-variant-color);
+}
+.runtime-labels {
+  display: grid;
+  grid-template-rows: 28px 28px;
+  align-items: center;
+}
+button {
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  background: transparent;
+  border: 0;
+}
+button:disabled {
+  cursor: default;
+  opacity: 0.4;
+}
+button:focus-visible {
+  outline: 2px solid var(--me-primary-color);
+  outline-offset: -2px;
+}
+.page-control {
+  width: 28px;
+  height: 28px;
+  padding: 2px;
+  align-self: center;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--me-primary-color);
+}
+.page-control:hover:not(:disabled) {
+  background: var(--me-primary-container-color);
+}
+.page-control mat-icon {
+  width: 20px;
+  height: 20px;
+  font-size: 20px;
+}
+.viewport {
+  display: flex;
+  gap: 0;
+  min-width: 0;
+  min-height: 56px;
+  overflow: hidden;
+}
+.token-column {
+  display: grid;
+  grid-template-rows: 28px 28px;
+  flex: none;
+  padding: 0;
+  border-radius: 2px;
+  min-width: 0;
+}
+.token-column:focus-visible {
+  outline: none;
+}
+.token-column:hover:not(:disabled) .token-row,
+.token-column.selected .token-row,
+.token-column:focus-visible .token-row {
+  border-color: var(--me-primary-color);
+  border-style: dashed;
+}
+.token-row {
+  @include token.token-outline;
+  box-sizing: border-box;
+  align-self: center;
+  height: 26px;
+  color: light-dark(
+    color-mix(in srgb, var(--me-on-surface-color) 55%, var(--surface)),
+    var(--me-on-surface-variant-color)
+  );
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  min-width: 0;
+}
+.token-row.target {
+  color: var(--me-on-surface-color);
+}
+.token-row.mismatch {
+  // Keep the quieter Reference text readable over the mismatch fill in dark mode.
+  background: light-dark(
+    var(--b0),
+    color-mix(in srgb, var(--b0) 70%, var(--surface))
+  );
+}
+.token-row.target.mismatch {
+  background: var(--b4);
+}
+.token {
+  @include token.token-type;
+  font: inherit;
+
+  white-space: pre;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+.ellipsis {
+  flex: none;
+  color: var(--me-on-surface-variant-color);
+}
+.empty {
+  align-self: center;
+  color: var(--me-on-surface-variant-color);
+}
+@media (max-width: 520px) {
+  :host {
+    grid-template-columns: 24px 38px minmax(0, 1fr) 24px;
+    padding: 8px;
+  }
+}

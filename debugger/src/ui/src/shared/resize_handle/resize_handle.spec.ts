@@ -41,12 +41,9 @@ describe('ResizeHandle', () => {
   function render() {
     const fixture = TestBed.createComponent(Host);
     fixture.detectChanges();
-    const handle: HTMLElement =
-      fixture.nativeElement.querySelector('[resizeHandle]');
+    const handle: HTMLElement = fixture.nativeElement.querySelector('[resizeHandle]');
     const key = (key: string, shiftKey = false) => {
-      handle.dispatchEvent(
-        new KeyboardEvent('keydown', {key, shiftKey, bubbles: true}),
-      );
+      handle.dispatchEvent(new KeyboardEvent('keydown', {key, shiftKey, bubbles: true}));
       fixture.detectChanges();
     };
     return {fixture, host: fixture.componentInstance, handle, key};

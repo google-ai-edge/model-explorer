@@ -22,18 +22,11 @@ export interface StoredChats {
   drafts: Record<string, string>;
   active: Record<string, string>;
 }
-export const emptyChats = (): StoredChats => ({
-  chats: {},
-  drafts: {},
-  active: {},
-});
+export const emptyChats = (): StoredChats => ({chats: {}, drafts: {}, active: {}});
 /** Applied on write and on read; longer drafts are truncated rather than lost. */
 export const MAX_DRAFT_LENGTH = 16000;
 /** Keep only entries for Sessions the server still lists; empty drafts are dropped too. */
-export function pruneStoredChats(
-  stored: StoredChats,
-  sessionIds: Iterable<string>,
-): StoredChats {
+export function pruneStoredChats(stored: StoredChats, sessionIds: Iterable<string>): StoredChats {
   const known = new Set(sessionIds);
   const owned = (key: string) => known.has(key.split(':')[0]);
   return {
@@ -41,9 +34,7 @@ export function pruneStoredChats(
       Object.entries(stored.chats).filter(([session]) => known.has(session)),
     ),
     drafts: Object.fromEntries(
-      Object.entries(stored.drafts).filter(
-        ([key, value]) => owned(key) && value !== '',
-      ),
+      Object.entries(stored.drafts).filter(([key, value]) => owned(key) && value !== ''),
     ),
     active: Object.fromEntries(
       Object.entries(stored.active).filter(([session]) => known.has(session)),
@@ -71,11 +62,9 @@ export function parseStoredChats(raw: string | null): StoredChats {
         .map((c) => ({id: c.id, name: c.name.slice(0, 160)}));
     }
     for (const [key, value] of Object.entries(data.drafts ?? {}))
-      if (typeof value === 'string')
-        result.drafts[key] = value.slice(0, MAX_DRAFT_LENGTH);
+      if (typeof value === 'string') result.drafts[key] = value.slice(0, MAX_DRAFT_LENGTH);
     for (const [session, id] of Object.entries(data.active ?? {}))
-      if (typeof id === 'string' && id.length > 0)
-        result.active[session] = id as string;
+      if (typeof id === 'string' && id.length > 0) result.active[session] = id as string;
   } catch {
     /* Corrupt or unavailable storage must not prevent opening a capture. */
   }

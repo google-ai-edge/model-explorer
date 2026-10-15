@@ -17,6 +17,7 @@
  */
 
 /** Requested run options; these fields do not prove accelerator residency. */
+/** Session-level options as saved: text values, '' for the runtime default (session_rules.py RUN_FIELDS). */
 export interface RuntimeOptions {
   backend?: string;
   precision?: string;
@@ -24,9 +25,19 @@ export interface RuntimeOptions {
   audioBackend?: string;
   audioCpuThreads?: string;
   visionBackend?: string;
-  forceF32?: boolean;
-  prefillBatchSizes?: string;
+  activationDataType?: string;
+  prefillChunkSize?: string;
   contextLength?: string;
+  enableYnnpack?: string;
+  speculativeDecoding?: string;
+  parallelFileSectionLoading?: string;
+  singleThreadedExecution?: string;
+  useRingbuffersLocalAttention?: string;
+  gpuDecodeStepsPerSync?: string;
+  gpuWaitForWeightUploads?: string;
+  gpuMetalResidencySet?: string;
+  loraRank?: string;
+  audioLoraRank?: string;
 }
 export type SessionExecutionPhase =
   | 'inactive'
@@ -88,6 +99,10 @@ export interface SessionSummary {
   tap_prepared?: boolean;
   job_id?: string;
   has_capture: boolean;
+  /** The Session ran and ended; it never starts a Runner again (duplicate it to run again). */
+  execution_ended?: boolean;
+  /** 'imported': created from Runner CLI bundles; its captures are read-only and it never starts a Runner. */
+  origin?: 'imported';
   runs: (RuntimeOptions & {
     id: string;
     runtime?: string;
@@ -106,12 +121,7 @@ export interface SessionSummary {
 export interface SessionListing {
   sessions: SessionSummary[];
   configuration_template: SessionSummary;
-  capabilities: {
-    create: boolean;
-    rename: boolean;
-    duplicate: boolean;
-    delete: boolean;
-  };
+  capabilities: {create: boolean; rename: boolean; duplicate: boolean; delete: boolean};
   unavailable_reason: string;
   generation_available?: boolean;
 }

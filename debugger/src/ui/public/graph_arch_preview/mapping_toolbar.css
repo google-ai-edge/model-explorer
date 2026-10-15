@@ -1,0 +1,31 @@
+/**
+ * @license
+ * Copyright 2026 The AI Edge Model Explorer Authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ==============================================================================
+ */
+
+/* Native Model Explorer toolbar and search; omit tools outside Mapping. */
+.toolbar{z-index:10;max-width:calc(100% - 24px)}
+.toolbar view-on-node,.toolbar .trace-io,.toolbar .flatten-layers,.toolbar .download-png,.toolbar edge-overlays-dropdown,.toolbar snapshot-manager,.toolbar>.vertical-divider{display:none!important}
+.toolbar search-bar{flex:1;min-width:0}
+.toolbar search-bar .container{width:auto;min-width:0}
+.toolbar search-bar .input-container{width:clamp(110px,calc(100vw - 150px),250px);min-width:0;box-sizing:border-box}
+.toolbar search-bar input{min-width:0;width:100%}
+.toolbar .mat-icon-container{flex:none}
+.toolbar .mat-icon-container:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.toolbar search-bar .search-results-container{max-width:calc(100vw - 32px);max-height:min(340px,calc(100vh - 72px))!important;box-sizing:border-box}
+
+/* Reserve space structurally so native fitting/zoom never sits under the toolbar. */
+:host(.native-ple) renderer-wrapper>.container{box-sizing:border-box;padding:56px 0 0}

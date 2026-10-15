@@ -357,3 +357,32 @@ td {
     opacity: 1;
   }
 }
+
+// The analysis panel owns the title and view picker; retain the shared Channels plot.
+:host ::ng-deep explorer-info-section.plot-only > section > .header {
+  display: none;
+}
+:host ::ng-deep explorer-info-section.plot-only > section > .items-container {
+  margin-top: 0;
+}
+
+.channel-readout {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin: 4px 12px;
+}
+.channel-readout > span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+.channel-readout explorer-info-value {
+  min-width: 0;
+  flex: 1;
+}
+.readout-label {
+  color: var(--me-on-surface-variant-color);
+  white-space: nowrap;
+}

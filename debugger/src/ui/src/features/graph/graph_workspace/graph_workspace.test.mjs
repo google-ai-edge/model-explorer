@@ -24,14 +24,13 @@ import {fileURLToPath} from 'node:url';
 
 const names = {
   report_state_service: 'ReportStateService',
+  workspace_state_service: 'WorkspaceStateService',
   architecture_view: 'ArchitectureView',
   execution_graph: 'ExecutionGraph',
   graph_inspection_service: 'GraphInspectionService',
   graph_details: 'GraphDetails',
-  explicit_pairs: 'ExplicitPairs',
   graph_view_store: 'GraphViewStore',
   resize_handle: 'ResizeHandle',
-  find_navigator: 'FindNavigator',
 };
 const {outputFiles} = await build({
   entryPoints: [fileURLToPath(new URL('./graph_workspace.ts', import.meta.url))],
@@ -45,8 +44,7 @@ const {outputFiles} = await build({
       setup(builder) {
         builder.onResolve({filter: /.*/}, ({path}) => {
           const name = path.split('/').at(-1);
-          if (path.startsWith('@angular/') || names[name] || name === 'plotly_loader')
-            return {path: name, namespace: 'stub'};
+          if (path.startsWith('@angular/') || names[name]) return {path: name, namespace: 'stub'};
         });
         builder.onLoad({filter: /.*/, namespace: 'stub'}, ({path}) => ({
           contents:
@@ -64,13 +62,9 @@ const {outputFiles} = await build({
       `
               : path === 'forms'
                 ? 'export class FormsModule {}'
-                : path === 'common'
-                  ? 'export class TitleCasePipe {}'
-                  : path === 'icon'
-                    ? 'export class MatIconModule {}'
-                    : path === 'plotly_loader'
-                      ? 'export const loadTokenPlotly=async()=>{};'
-                      : `export class ${names[path]} {}`,
+                : path === 'icon'
+                  ? 'export class MatIconModule {}'
+                  : `export class ${names[path]} {}`,
         }));
       },
     },
@@ -86,7 +80,7 @@ const model = {
   layers: [{def: 0}, {def: 0}],
   semantic_graph: [{nodes: [], anchors: [{id: 'output'}]}],
 };
-function fixture(initial = null) {
+function fixture(initial = null, target = null) {
   const effects = [],
     renders = [],
     destroys = [],
@@ -125,12 +119,14 @@ function fixture(initial = null) {
       this.context.set(null);
     },
   };
+  const navigation = {graphTarget: signal(target)};
   const module = {exports: {}};
   vm.runInNewContext(outputFiles[0].text, {
     module,
     exports: module.exports,
     effects,
     renders,
+    queueMicrotask: (callback) => callback(),
     window: {innerWidth: 1000},
     ResizeObserver: class {
       observe() {}
@@ -138,6 +134,7 @@ function fixture(initial = null) {
     },
     dependencies: {
       ReportStateService: state,
+      WorkspaceStateService: navigation,
       GraphInspectionService: inspection,
       GraphViewStore: views,
       ElementRef: {nativeElement: {querySelector: () => null, clientWidth: 1000}},
@@ -163,6 +160,7 @@ function fixture(initial = null) {
     workspace,
     state,
     inspection,
+    navigation,
     values,
     requests,
     effects,
@@ -197,27 +195,28 @@ const snapshot = () => ({
   viewport: {layer: 0, zoom: 1.2, left: 30, top: 200},
 });
 
-test('in-place batch changes save outgoing state and restore independent query, selection and viewport', () => {
+test('in-place batch changes save outgoing state and restore independent Details size, selection and viewport', () => {
   const f = fixture();
-  f.workspace.query.set({...f.workspace.query(), text: 'batch A'});
+  f.workspace.detailsWidth.set(450);
   f.workspace.viewport = {layer: 0, zoom: 1.2, left: 30, top: 200};
   f.inspection.select({layer: 0, batch: 0, semantic: 'anchor:output'});
   f.effects[0]();
   f.workspace.executionOpen.set(true);
   f.changeBatch(1);
   assert.equal(f.values.get(f.key('a', 0)).execution, true);
-  assert.equal(f.values.get(f.key('a', 0)).query.text, 'batch A');
+  assert.equal(f.values.get(f.key('a', 0)).detailsWidth, 450);
   assert.equal(f.workspace.executionOpen(), false);
   assert.equal(f.workspace.restoredViewport().top, 0);
-  f.workspace.query.set({...f.workspace.query(), text: 'batch B'});
+  assert.equal(f.workspace.executionOpen(), false);
+  f.workspace.detailsWidth.set(310);
   f.workspace.viewport = {layer: 0, zoom: 0.8, left: 4, top: 400};
   f.changeBatch(0);
-  assert.equal(f.workspace.query().text, 'batch A');
+  assert.equal(f.workspace.detailsWidth(), 450);
   assert.equal(f.workspace.viewport.top, 200);
   assert.equal(f.workspace.executionOpen(), true);
   assert.equal(f.inspection.context().batch, 0);
   f.changeBatch(1);
-  assert.equal(f.workspace.query().text, 'batch B');
+  assert.equal(f.workspace.detailsWidth(), 310);
   assert.equal(f.workspace.viewport.top, 400);
   assert.equal(f.workspace.executionOpen(), false);
 });
@@ -230,6 +229,10 @@ test('provider close before destruction retains reading context without caching 
   assert.equal(saved.execution, true);
   assert.equal(saved.viewport.top, 200);
   assert.equal('detailsPayload' in saved, false);
+  assert.equal('trends' in saved, false);
+  assert.equal('trendHeight' in saved, false);
+  assert.equal('query' in saved, false);
+  assert.equal('results' in saved, false);
 });
 
 test('capture replacement saves the outgoing identity once and cannot overwrite it after reset', () => {
@@ -239,38 +242,11 @@ test('capture replacement saves the outgoing identity once and cannot overwrite 
   f.inspection.close();
   f.effects[0]();
   f.effects[1]();
-  f.workspace.query.set({...f.workspace.query(), text: 'new capture reset'});
+  f.workspace.detailsWidth.set(500);
   f.destroy();
-  assert.equal(f.values.get(f.key('a', 0)).query.text, 'saved');
+  assert.equal(f.values.get(f.key('a', 0)).detailsWidth, 350);
   assert.equal(f.values.get(f.key('a', 0)).execution, true);
   assert.equal(f.values.has(f.key('b', 0)), false);
-});
-
-test('bookmark navigation wins over an incoming ordinary snapshot and preserves the outgoing metric', () => {
-  const f = fixture(snapshot());
-  f.values.set(f.key('a', 1), {
-    ...snapshot(),
-    metric: 'CosSim',
-    query: {...snapshot().query, text: 'ordinary B'},
-  });
-  const bookmark = {
-    capture: 'a',
-    batch: 1,
-    layer: 0,
-    semantic: 'anchor:output',
-    metric: 'RMSE',
-    execution: true,
-  };
-  f.workspace.restoreBookmark(bookmark);
-  f.inspection.close();
-  f.effects[0]();
-  f.effects[1]();
-  f.render();
-  f.effects[0]();
-  assert.equal(f.values.get(f.key('a', 0)).metric, 'CosSim');
-  assert.equal(f.state.metric(), 'RMSE');
-  assert.equal(f.workspace.executionOpen(), true);
-  assert.equal(f.inspection.context().batch, 1);
 });
 
 test('a queued restore cannot select a node after the capture is replaced', () => {
@@ -282,4 +258,86 @@ test('a queued restore cannot select a node after the capture is replaced', () =
   f.effects[0]();
   f.render();
   assert.equal(f.requests.length, 0);
+});
+
+test('explicit layer and sync point replace the saved graph selection and are consumed once', () => {
+  const f = fixture(snapshot(), {capture: 'a', batch: 0, layer: 1, anchor: 'output'});
+  assert.equal(f.state.layer(), 1);
+  assert.deepEqual({...f.inspection.context()}, {layer: 1, batch: 0, semantic: 'anchor:output'});
+  assert.equal(f.requests.length, 1);
+  assert.equal(f.navigation.graphTarget(), null);
+  assert.equal(f.workspace.executionOpen(), false);
+  assert.equal(f.workspace.viewport, null);
+  assert.equal(f.workspace.navigationMessage(), '');
+});
+
+test('an unknown sync point opens the layer architecture without substituting a saved tensor', () => {
+  const f = fixture(snapshot(), {capture: 'a', batch: 0, layer: 1, anchor: 'custom_point'});
+  assert.equal(f.state.layer(), 1);
+  assert.equal(f.inspection.context(), null);
+  assert.equal(f.requests.length, 0);
+  assert.equal(f.workspace.executionOpen(), false);
+  assert.equal(
+    f.workspace.navigationMessage(),
+    'Sync point custom_point is not mapped in this layer graph.',
+  );
+});
+
+test('legacy observation-choice targets enter the selected batch structure directly', () => {
+  const f = fixture(snapshot(), {
+    capture: 'a',
+    batch: 0,
+    layer: 1,
+    anchor: 'output',
+    chooseObservation: true,
+  });
+  assert.equal(f.state.batchId(), 0);
+  assert.equal(f.state.layer(), 1);
+  assert.deepEqual({...f.inspection.context()}, {layer: 1, batch: 0, semantic: 'anchor:output'});
+  assert.equal(f.navigation.graphTarget(), null);
+  assert.equal(f.requests.length, 1);
+  assert.equal(f.workspace.executionOpen(), false);
+  assert.equal('panel' in f.workspace, false);
+  assert.equal('choosingContextObservation' in f.workspace, false);
+  f.render();
+  assert.equal(f.requests.length, 1);
+});
+
+test('a stale capture target is consumed without changing the active graph', () => {
+  const f = fixture(null, {capture: 'other', batch: 0, layer: 1, anchor: 'output'});
+  assert.equal(f.navigation.graphTarget(), null);
+  assert.equal(f.state.layer(), 0);
+  assert.equal(f.requests.length, 0);
+});
+
+test('unmapped sync point notice clears only after real layer navigation', () => {
+  const f = fixture(null, {
+    capture: 'a',
+    batch: 0,
+    layer: 1,
+    anchor: 'custom_point',
+    chooseObservation: true,
+  });
+  const message = f.workspace.navigationMessage();
+  f.workspace.selectLayer(1);
+  assert.equal(f.workspace.navigationMessage(), message);
+  f.inspection.mapping.set(true);
+  f.workspace.selectLayer(0);
+  f.workspace.inspect('anchor:output');
+  assert.equal(f.workspace.navigationMessage(), message);
+  f.inspection.mapping.set(false);
+  f.workspace.selectLayer(0);
+  assert.equal(f.workspace.navigationMessage(), '');
+});
+
+test('manual valid graph inspection and batch navigation clear an obsolete sync point notice', () => {
+  const target = {capture: 'a', batch: 0, layer: 1, anchor: 'custom_point'};
+  const inspected = fixture(null, target);
+  inspected.workspace.inspect('anchor:output');
+  assert.equal(inspected.workspace.navigationMessage(), '');
+  assert.equal(inspected.inspection.context().semantic, 'anchor:output');
+
+  const changed = fixture(null, target);
+  changed.changeBatch(1);
+  assert.equal(changed.workspace.navigationMessage(), '');
 });

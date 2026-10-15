@@ -1,0 +1,20 @@
+# What the tests share: nothing here is built into the Runner. model_test.bzl
+# declares a test that loads a model, once on the CPU and once on the GPU.
+
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
+
+cc_library(
+    name = "test_utils",
+    testonly = True,
+    hdrs = ["test_utils.h"],
+    visibility = [
+        "//model_debugger/runner:__pkg__",
+        "//model_debugger/runner/llm:__pkg__",
+        "//model_debugger/runner/service:__pkg__",
+    ],
+    deps = [
+        "//model_debugger/runner/service:cache_directory",
+        "@com_google_googletest//:gtest",
+        "@protocol//model_debugger/v1:runner_cc_proto",
+    ],
+)

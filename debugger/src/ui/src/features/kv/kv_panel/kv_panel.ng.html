@@ -16,6 +16,8 @@
 -->
 <section
   class="kv-workspace"
+  [class.embedded]="embedded()"
+  [style.height]="embedded() ? 'auto' : null"
   [class.results-overlay]="resultsOverlay()"
   [class.details-overlay]="detailsOverlay()"
   [class.resizing]="resizing()"
@@ -24,131 +26,587 @@
 >
   <main class="analysis" aria-label="KV Analysis">
     <div class="toolbar" role="group" aria-label="KV analysis controls">
-      <button
-        cdkOverlayOrigin
-        #contextOrigin="cdkOverlayOrigin"
-        class="context-button"
-        aria-label="Choose KV observation"
-        [title]="context()?.label ?? 'Choose KV observation'"
-        [attr.aria-expanded]="popup() === 'context'"
-        (click)="popup.set('context')"
-      >
-        <span class="turn-label">Turn {{ selectedTurn() }}</span
-        ><span class="moment-label"
-          >·
-          {{
-            context()?.moment === 'terminal'
-              ? 'Generation end'
-              : context()?.moment === 'prefill_post'
-                ? 'After Prefill'
-                : context()?.moment === 'prefill_pre'
-                  ? 'Before Prefill'
-                  : (context()?.phase ?? 'Observation')
-          }}</span
-        ><mat-icon>arrow_drop_down</mat-icon>
-      </button>
-      @if (context()?.basis) {
-        <span
-          class="context-basis"
-          role="note"
-          [title]="
-            'Logical context derived from the runtime dump (' +
-            (context()?.context_basis ?? context()?.basis) +
-            '), not a recorded native trace. Both sides must derive the same context to be compared.'
-          "
-          >Inferred context</span
-        >
-      }
-      <span class="tool-divider context-divider" aria-hidden="true"></span>
-      <div class="view-switch" role="group" aria-label="Chart view">
-        <button
-          title="Heatmap"
-          aria-label="Heatmap"
-          [attr.aria-pressed]="view() === 'heatmap'"
-          (click)="view.set('heatmap')"
-        >
-          <mat-icon>grid_on</mat-icon><span>Heatmap</span>
-        </button>
-        <button
-          title="Trends"
-          aria-label="Trends"
-          [attr.aria-pressed]="view() === 'trends'"
-          (click)="view.set('trends')"
-        >
-          <mat-icon>show_chart</mat-icon><span>Trends</span>
-        </button>
-      </div>
-      <button
-        mat-icon-button
-        class="undo-zoom"
-        aria-label="Undo zoom"
-        matTooltip="Undo zoom"
-        [disabled]="!zoomHistory().length"
-        (click)="undoZoom()"
-      >
-        <mat-icon>undo</mat-icon>
-      </button>
-      <span class="tool-divider" aria-hidden="true"></span>
-      <span class="display-summary">{{ metricLabel() }} · {{ kind() === 'key' ? 'K' : 'V' }}</span>
-      <button
-        mat-icon-button
-        cdkOverlayOrigin
-        #displayOrigin="cdkOverlayOrigin"
-        class="display-button"
-        aria-label="Display settings"
-        [attr.aria-expanded]="popup() === 'display'"
-        [matTooltip]="
-          metricLabel() + ' · ' + (kind() === 'key' ? 'Key' : 'Value') + ' · ' + headLabel()
-        "
-        (click)="openDisplay()"
-      >
-        <mat-icon>visibility</mat-icon>
-      </button>
-      <div class="find-controls" role="group" aria-label="Find controls">
-        <button
-          mat-button
-          cdkOverlayOrigin
-          #findOrigin="cdkOverlayOrigin"
-          class="find-trigger"
-          aria-label="Find by metric"
-          [class.has-condition]="!!formula()"
-          [matTooltip]="formula() || 'Find by metric'"
-          [attr.aria-expanded]="popup() === 'find'"
-          (click)="openFind()"
-        >
-          <mat-icon>filter_alt</mat-icon><span class="find-label">Find</span>
-          @if (formula()) {
-            <span class="condition-preview">{{ formula() }}</span>
+      <div class="toolbar-scroll">
+        @if (!embedded()) {
+          <button
+            cdkOverlayOrigin
+            #contextOrigin="cdkOverlayOrigin"
+            class="context-button"
+            aria-label="Choose KV observation"
+            [title]="context()?.label ?? 'Choose KV observation'"
+            [attr.aria-expanded]="popup() === 'context'"
+            (click)="popup.set('context')"
+          >
+            <span class="turn-label">Turn {{ selectedTurn() }}</span
+            ><span class="moment-label"
+              >·
+              {{
+                context()?.moment === 'terminal'
+                  ? 'Generation end'
+                  : context()?.moment === 'prefill_post'
+                    ? 'After Prefill'
+                    : context()?.moment === 'prefill_pre'
+                      ? 'Before Prefill'
+                      : (context()?.phase ?? 'Observation')
+              }}</span
+            ><mat-icon>arrow_drop_down</mat-icon>
+          </button>
+          @if (context()?.basis) {
+            <span
+              class="context-basis"
+              role="note"
+              [title]="
+                'Logical context derived from the runtime dump (' +
+                (context()?.context_basis ?? context()?.basis) +
+                '), not a recorded native trace. Both sides must derive the same context to be compared.'
+              "
+              >Inferred context</span
+            >
           }
-        </button>
-        @if (formula()) {
-          <find-navigator
-            [index]="resultIndex()"
-            [total]="resultTotal()"
-            [busy]="findLoading()"
-            [countAction]="true"
-            countLabel="Toggle result table"
-            [countTooltip]="showResults() ? 'Hide results' : 'Show results'"
-            [countExpanded]="showResults()"
-            countControls="kv-find-results"
-            (first)="firstResult()"
-            (previous)="moveResult(-1)"
-            (next)="moveResult(1)"
-            (count)="setResults(!showResults())"
-          />
+          <span class="tool-divider context-divider" aria-hidden="true"></span>
+          <ng-template
+            overlayDialog
+            [origin]="contextOrigin"
+            [open]="popup() === 'context'"
+            (closed)="closePopup()"
+          >
+            <section class="kv-popup" overlayPanel aria-label="KV observation">
+              <header>
+                <strong>OBSERVATION</strong
+                ><button
+                  mat-icon-button
+                  class="popup-close"
+                  aria-label="Close observation"
+                  (click)="closePopup()"
+                >
+                  <mat-icon>close</mat-icon>
+                </button>
+              </header>
+              <label
+                >Turn
+                <select
+                  aria-label="KV turn"
+                  cdkFocusInitial
+                  [value]="selectedTurn()"
+                  (change)="chooseTurn(+$any($event.target).value)"
+                >
+                  @for (turn of state.session()?.turns ?? []; track turn.n) {
+                    <option [value]="turn.n" [selected]="turn.n === selectedTurn()">
+                      Turn {{ turn.n }}
+                    </option>
+                  }
+                </select></label
+              >
+              <div class="context-list">
+                @for (c of analysis()?.contexts ?? []; track c.id) {
+                  <button [attr.aria-pressed]="context()?.id === c.id" (click)="chooseContext(c)">
+                    <span>{{ c.label }}</span
+                    ><small
+                      >{{ c.layers.length }} tensors ·
+                      {{ c.source === 'explicit' ? 'Explicit comparison' : c.runtime }}</small
+                    >
+                  </button>
+                }
+                @if (loading()) {
+                  <p role="status">Loading observations…</p>
+                }
+              </div>
+            </section>
+          </ng-template>
         }
+        <div class="toolbar-view">
+          <span>View</span>
+          <config-picker
+            class="kv-view-picker"
+            [attr.title]="visualizationLabel()"
+            label="Visualization"
+            plural="visualizations"
+            [value]="visualizationLabel()"
+            [options]="visualizationOptions"
+            [groups]="visualizationGroups"
+            [optionLabels]="visualizationLabels"
+            [compact]="true"
+            [searchable]="false"
+            (valueChange)="chooseVisualization($event)"
+          />
+        </div>
+        <span class="toolbar-section-divider" aria-hidden="true"></span>
+        @if (tensorView()) {
+          <label class="tensor-position-control"
+            >Token Position
+            <button
+              class="icon-button"
+              aria-label="Previous tensor position"
+              [disabled]="
+                tensorPosition() === null || tensorPosition()! <= (fullRange()?.start ?? 0)
+              "
+              (click)="moveTensorPosition(-1)"
+            >
+              <mat-icon>chevron_left</mat-icon>
+            </button>
+            <input
+              aria-label="Token Position"
+              type="number"
+              step="1"
+              placeholder="Select"
+              [min]="fullRange()?.start ?? 0"
+              [max]="(fullRange()?.end ?? 1) - 1"
+              [value]="tensorPosition() ?? ''"
+              (change)="
+                setTensorPosition($any($event.target).value);
+                $any($event.target).value = tensorPosition() ?? ''
+              "
+              (keydown.enter)="setTensorPosition($any($event.target).value)"
+            />
+            <button
+              class="icon-button"
+              aria-label="Next tensor position"
+              [disabled]="
+                tensorPosition() === null || tensorPosition()! >= (fullRange()?.end ?? 1) - 1
+              "
+              (click)="moveTensorPosition(1)"
+            >
+              <mat-icon>chevron_right</mat-icon>
+            </button>
+          </label>
+          <span class="tensor-control"
+            ><span>Tensor Index</span>
+            <analysis-tensor-index
+              [dimensions]="tensorIndexDimensions()"
+              (valueChange)="setTensorIndex($event)"
+            />
+          </span>
+        }
+        <div
+          class="toolbar-range"
+          [class.tensor-range]="tensorView()"
+          role="group"
+          [attr.aria-label]="
+            tensorView()
+              ? tensorPlot() === 'scatter'
+                ? 'Value Range controls'
+                : 'Element Range controls'
+              : 'Token Range controls'
+          "
+        >
+          @if (tensorView() && tensorPlot() === 'scatter') {
+            <analysis-value-range
+              [range]="tensorValueRange()"
+              (rangeChange)="tensorValueZoom.set($event)"
+            />
+            <analysis-view-actions
+              [range]="tensorValueRange()"
+              [full]="tensorValueFull()"
+              [expandable]="false"
+              (resetView)="tensorValueZoom.set(null)"
+            />
+          } @else if (tensorView()) {
+            <analysis-position-range
+              label="Element Range"
+              [range]="tensorChannelRange()"
+              [full]="tensorChannelFull()"
+              (rangeChange)="tensorChannelZoom.set($event)"
+            />
+            <analysis-view-actions
+              [range]="tensorChannelRange()"
+              [full]="tensorChannelFull()"
+              [expandable]="false"
+              (resetView)="tensorChannelZoom.set(null)"
+            />
+          } @else {
+            <analysis-position-range
+              label="Token Range"
+              [range]="visibleRange()"
+              [full]="fullRange()"
+              (rangeChange)="zoomTo($event)"
+            />
+            <analysis-view-actions
+              [range]="visibleRange()"
+              [full]="fullRange()"
+              [expandable]="false"
+              (resetView)="resetView()"
+            />
+          }
+        </div>
+        @if (!tensorView()) {
+          <span class="display-summary" [hidden]="embedded()"
+            >{{ metricLabel() }} · {{ kind() === 'key' ? 'Key cache' : 'Value cache' }}</span
+          >
+          <button
+            mat-icon-button
+            cdkOverlayOrigin
+            #displayOrigin="cdkOverlayOrigin"
+            class="display-button"
+            [hidden]="embedded()"
+            aria-label="Display settings"
+            [attr.aria-expanded]="popup() === 'display'"
+            [matTooltip]="
+              metricLabel() + ' · ' + (kind() === 'key' ? 'Key' : 'Value') + ' · ' + headLabel()
+            "
+            (click)="openDisplay()"
+          >
+            <mat-icon>visibility</mat-icon>
+          </button>
+          @if (embedded()) {
+            <span class="toolbar-section-divider" aria-hidden="true"></span>
+            <analysis-heatmap-controls
+              [showRangeControls]="false"
+              [metrics]="metrics"
+              [metric]="metric()"
+              [dimensions]="heatmapDimensions()"
+              [aggregation]="aggregation()"
+              (aggregationChange)="setAggregation($event)"
+              [range]="visibleRange()"
+              [fullRange]="fullRange()"
+              (rangeChange)="zoomTo($event)"
+              (metricChange)="setHeatmapMetric($event)"
+              (dimensionChange)="setHeatmapDimension($event)"
+            />
+          }
+          @if (!embedded()) {
+            <div class="find-controls" role="group" aria-label="Find controls">
+              <button
+                mat-button
+                cdkOverlayOrigin
+                #findOrigin="cdkOverlayOrigin"
+                class="find-trigger"
+                aria-label="Find by metric"
+                [class.has-condition]="!!formula()"
+                [matTooltip]="formula() || 'Find by metric'"
+                [attr.aria-expanded]="popup() === 'find'"
+                (click)="openFind()"
+              >
+                <mat-icon>filter_alt</mat-icon><span class="find-label">Find</span>
+                @if (formula()) {
+                  <span class="condition-preview">{{ formula() }}</span>
+                }
+              </button>
+              @if (formula()) {
+                <find-navigator
+                  [index]="resultIndex()"
+                  [total]="resultTotal()"
+                  [busy]="findLoading()"
+                  [countAction]="true"
+                  countLabel="Toggle result table"
+                  [countTooltip]="showResults() ? 'Hide results' : 'Show results'"
+                  [countExpanded]="showResults()"
+                  [countControls]="panelId() ? panelId() + '-results' : 'kv-find-results'"
+                  (first)="firstResult()"
+                  (previous)="moveResult(-1)"
+                  (next)="moveResult(1)"
+                  (count)="setResults(!showResults())"
+                />
+              }
+              <button
+                mat-icon-button
+                class="bookmark-current"
+                [hidden]="embedded()"
+                aria-label="Bookmark current location"
+                [matTooltip]="isSaved() ? 'Remove bookmark' : 'Add bookmark'"
+                [attr.aria-pressed]="isSaved()"
+                [disabled]="!bookmarkSelection()"
+                (click)="toggleBookmark()"
+              >
+                <mat-icon>{{ isSaved() ? 'bookmark' : 'bookmark_add' }}</mat-icon>
+              </button>
+            </div>
+            <ng-template
+              overlayDialog
+              [origin]="findOrigin"
+              [open]="popup() === 'find'"
+              (closed)="closePopup()"
+            >
+              <section class="kv-popup find-popup" overlayPanel aria-label="Find">
+                <header>
+                  <strong>FIND</strong
+                  ><button
+                    mat-icon-button
+                    class="popup-close"
+                    aria-label="Close Find"
+                    (click)="closePopup()"
+                  >
+                    <mat-icon>close</mat-icon>
+                  </button>
+                </header>
+                <form (ngSubmit)="applyFind()">
+                  <label for="kv-formula">Formula</label
+                  ><input
+                    id="kv-formula"
+                    name="formula"
+                    aria-label="Find formula"
+                    [(ngModel)]="draftFormula"
+                    maxlength="1000"
+                    autocomplete="off"
+                    spellcheck="false"
+                    cdkFocusInitial
+                    (input)="queryError.set('')"
+                  />
+                  <p>
+                    Find heads across this observation. Results group matches by Layer × Position ×
+                    Tensor, independently of Display.
+                  </p>
+                  @if (queryError()) {
+                    <p role="alert">{{ queryError() }}</p>
+                  }
+                  <details>
+                    <summary>Formula reference</summary>
+                    <p><code>relative_l2</code> · <code>max_abs</code></p>
+                    <p>
+                      Compare &gt; &gt;= &lt; &lt;= == != · Combine AND OR NOT · Group with
+                      parentheses.
+                    </p>
+                    <p>
+                      Relative L2 uses ratios: 0.1 = 10%. Missing values remain unknown, including
+                      under NOT.
+                    </p>
+                  </details>
+                  <div class="examples">
+                    <button
+                      class="outlined"
+                      type="button"
+                      (click)="draftFormula = 'relative_l2 > 10%'"
+                    >
+                      Relative L2 &gt; 10%</button
+                    ><button
+                      class="outlined"
+                      type="button"
+                      (click)="draftFormula = 'relative_l2 > 10% AND max_abs > 0.1'"
+                    >
+                      L2 + cosine distance
+                    </button>
+                  </div>
+                  <footer>
+                    <button mat-button type="button" (click)="clearFind()">Clear</button
+                    ><button mat-flat-button color="primary" type="submit">Apply</button>
+                  </footer>
+                </form>
+              </section>
+            </ng-template>
+          }
+          <ng-template
+            overlayDialog
+            [origin]="displayOrigin"
+            [open]="popup() === 'display'"
+            (closed)="closePopup()"
+          >
+            <section class="kv-popup" overlayPanel aria-label="Display">
+              <header>
+                <strong>DISPLAY</strong
+                ><button
+                  mat-icon-button
+                  class="popup-close"
+                  aria-label="Close Display"
+                  (click)="closePopup()"
+                >
+                  <mat-icon>close</mat-icon>
+                </button>
+              </header>
+              <form (ngSubmit)="applyDisplay()">
+                <label
+                  >Metric
+                  <select
+                    name="metric"
+                    aria-label="Display metric"
+                    [(ngModel)]="draftMetric"
+                    cdkFocusInitial
+                  >
+                    @for (m of metrics; track m.id) {
+                      <option [value]="m.id">{{ m.label }}</option>
+                    }
+                  </select></label
+                ><label
+                  >Tensor
+                  <select name="kind" aria-label="Display tensor" [(ngModel)]="draftKind">
+                    <option value="key">Key</option>
+                    <option value="value">Value</option>
+                  </select></label
+                ><label
+                  >{{ embedded() ? 'Aggregation' : 'Head' }}
+                  <select name="head" aria-label="Display head" [(ngModel)]="draftHead">
+                    <option value="min">Min</option>
+                    <option value="max">Max over heads</option>
+                    <option value="mean">Mean over heads</option>
+                    @if (!embedded()) {
+                      @for (h of heads(); track h) {
+                        <option [value]="'' + h">Head {{ h }}</option>
+                      }
+                    }
+                  </select></label
+                ><label
+                  >Color scale
+                  <select name="scale" aria-label="Color scale" [(ngModel)]="draftScale">
+                    <option value="auto">Snapshot range</option>
+                    <option value="thresholds">Fixed thresholds</option>
+                  </select></label
+                >
+                <p>
+                  Snapshot range keeps colors fixed while zooming. Find conditions remain unchanged.
+                  Undefined heads are excluded from aggregation.
+                </p>
+                <footer>
+                  <button mat-flat-button color="primary" type="submit">Apply</button>
+                </footer>
+              </form>
+            </section>
+          </ng-template>
+        }
+      </div>
+      <div class="toolbar-actions">
+        <div class="toolbar-legend">
+          @if (!tensorView()) {
+            <ng-container [ngTemplateOutlet]="chartLegend" />
+          } @else if (tensorPlot() === 'index') {
+            <analysis-runtime-legend [runtimes]="tensorVisibleRuntimes()" />
+          } @else {
+            <div class="tensor-axis-legend" aria-label="Tensor scatter axes">
+              X: Ref · Y: Target
+            </div>
+          }
+        </div>
         <button
           mat-icon-button
-          class="bookmark-current"
-          aria-label="Bookmark current location"
-          [matTooltip]="isSaved() ? 'Remove bookmark' : 'Add bookmark'"
-          [attr.aria-pressed]="isSaved()"
-          [disabled]="!bookmarkSelection()"
-          (click)="toggleBookmark()"
+          cdkOverlayOrigin
+          #viewDisplayOrigin="cdkOverlayOrigin"
+          class="view-display-button"
+          aria-label="Display"
+          [disabled]="tensorView() && tensorPlot() === 'scatter'"
+          [matTooltip]="
+            tensorView() && tensorPlot() === 'scatter'
+              ? 'No display settings for Scatter plot'
+              : displaySummary()
+          "
+          [attr.aria-expanded]="
+            popup() === 'view-display' && !(tensorView() && tensorPlot() === 'scatter')
+          "
+          (click)="toggleChartDisplay()"
         >
-          <mat-icon>{{ isSaved() ? 'bookmark' : 'bookmark_add' }}</mat-icon>
+          <mat-icon>visibility</mat-icon>
         </button>
+        <analysis-view-actions
+          class="panel-expand"
+          [showReset]="false"
+          [hidden]="expanded()"
+          [expanded]="expanded()"
+          [expandable]="embedded()"
+          (expandView)="expand.emit()"
+        />
       </div>
+      <ng-template
+        overlayDialog
+        [origin]="viewDisplayOrigin"
+        [open]="popup() === 'view-display' && !(tensorView() && tensorPlot() === 'scatter')"
+        placement="below-end"
+        [width]="360"
+        (closed)="closePopup()"
+      >
+        <div class="chart-display">
+          <section class="settings-panel" overlayPanel aria-label="Chart display">
+            <header>
+              <strong>Display</strong>
+              <button mat-icon-button aria-label="Close chart display" (click)="closePopup()">
+                <mat-icon>close</mat-icon>
+              </button>
+            </header>
+            <div class="setting">
+              <label>Bins</label>
+              <config-picker
+                label="Bins"
+                plural="functions"
+                [compact]="true"
+                [searchable]="false"
+                [options]="channelBinOptions"
+                [value]="displayBinsDisabled() ? '-' : displayDraft().bins"
+                [disabled]="displayBinsDisabled()"
+                (valueChange)="draftDisplayBins($event)"
+              />
+              <button
+                mat-button
+                [disabled]="displayBinsDisabled() || displayDraft().bins === displayDefaultBins()"
+                aria-label="Reset Bins to default"
+                (click)="draftDisplayBins(displayDefaultBins())"
+              >
+                Reset to default
+              </button>
+            </div>
+            @if (displaySeries().length) {
+              <div class="setting" #layerDisplay>
+                <div class="series-heading">
+                  <label>{{ displaySeriesLabel() }}</label
+                  ><span class="series-count"
+                    >{{ displayDraft().visible.length }}/{{ displaySeries().length }}</span
+                  >
+                </div>
+                @if (displaySeries().length > 8) {
+                  <input
+                    class="series-search"
+                    type="search"
+                    [attr.aria-label]="'Search ' + displaySeriesLabel().toLowerCase()"
+                    [placeholder]="'Search ' + displaySeriesLabel().toLowerCase()"
+                    [value]="displayQuery()"
+                    (input)="displayQuery.set($any($event.target).value)"
+                  />
+                }
+                <div
+                  class="series-options"
+                  role="group"
+                  [attr.aria-label]="'Visible ' + displaySeriesLabel().toLowerCase()"
+                  (mouseleave)="highlightDisplaySeries(null)"
+                >
+                  @for (series of displayFilteredSeries(); track series.id) {
+                    <label
+                      (mouseenter)="highlightDisplaySeries(series.id)"
+                      (focusin)="highlightDisplaySeries(series.id)"
+                      (focusout)="highlightDisplaySeries(null)"
+                    >
+                      <input
+                        type="checkbox"
+                        [attr.aria-label]="'Show ' + series.label"
+                        [checked]="displayDraft().visible.includes(series.id)"
+                        (change)="toggleDisplaySeries(series.id)"
+                      />
+                      <i [style.border-top-color]="series.color" [class.dashed]="series.dashed"></i
+                      ><span>{{ series.label }}</span>
+                    </label>
+                  } @empty {
+                    <p class="series-empty">No matching {{ displaySeriesLabel().toLowerCase() }}</p>
+                  }
+                </div>
+                <div class="series-actions">
+                  <button
+                    mat-button
+                    [disabled]="displaySeriesDefault()"
+                    [attr.aria-label]="'Reset ' + displaySeriesLabel() + ' to default'"
+                    (click)="draftDisplayVisible(displayDefaultVisible())"
+                  >
+                    Reset to default
+                  </button>
+                  <button
+                    mat-button
+                    [disabled]="!displayDraft().visible.length"
+                    [attr.aria-label]="'Clear ' + displaySeriesLabel()"
+                    (click)="draftDisplayVisible([])"
+                  >
+                    Clear
+                  </button>
+                </div>
+              </div>
+            }
+            <footer>
+              <span role="status" class="sr-only">{{
+                displayDirty() ? 'Unapplied changes' : 'Display settings applied'
+              }}</span>
+              <button
+                mat-flat-button
+                color="primary"
+                [disabled]="!displayDirty()"
+                (click)="applyChartDisplay()"
+              >
+                Apply
+              </button>
+            </footer>
+          </section>
+        </div>
+      </ng-template>
     </div>
     @if (bookmarkError()) {
       <p class="notice-banner bookmark-error" role="alert">{{ bookmarkError() }}</p>
@@ -183,7 +641,116 @@
     } @else {
       <div class="analysis-body">
         <section class="canvas" aria-label="Visualization">
-          @if (!fullRange()) {
+          @if (tensorView()) {
+            <div class="tensor-plots">
+              @if (
+                tensorPlot() === 'index' &&
+                tensorReady() &&
+                tensorHead() !== null &&
+                tensorChannelRange() &&
+                tensorChannelFull()
+              ) {
+                <div class="tensor-line-frame">
+                  <div class="tensor-line-canvas" [style.height]="chartViewportHeight()">
+                    <kv-channel-chart
+                      (backgroundClick)="inspectStage.emit($event)"
+                      [visibleRuntimes]="tensorVisibleRuntimes()"
+                      [rows]="tensorEvidence('key')?.evidence?.channels ?? []"
+                      [otherRows]="tensorEvidence('value')?.evidence?.channels ?? []"
+                      [messages]="[tensorPlotMessage('key'), tensorPlotMessage('value')]"
+                      [range]="tensorChannelRange()!"
+                      [full]="tensorChannelFull()!"
+                      [reduction]="tensorChannelReduction()"
+                      [capacity]="tensorChannelCapacity()"
+                      [selected]="tensorChannels()['key']"
+                      [otherSelected]="tensorChannels()['value']"
+                      [channelSelection]="tensorChannelSelection()"
+                      (channelSelectionChange)="tensorChannelSelection.set($event)"
+                      (zoom)="tensorChannelZoom.set($event)"
+                      (capacityChange)="tensorChannelCapacity.set($event)"
+                      (select)="selectTensorChannel('key', $event)"
+                      (otherSelect)="selectTensorChannel('value', $event)"
+                    />
+                  </div>
+                </div>
+              }
+              @if (tensorPlot() === 'scatter' && tensorReady() && tensorHead() !== null) {
+                <div class="tensor-line-frame">
+                  <div class="tensor-line-canvas" [style.height]="chartViewportHeight()">
+                    <kv-scatter-chart
+                      (backgroundClick)="inspectStage.emit($event)"
+                      [rows]="tensorEvidence('key')?.evidence?.channels ?? []"
+                      [otherRows]="tensorEvidence('value')?.evidence?.channels ?? []"
+                      [messages]="[tensorPlotMessage('key'), tensorPlotMessage('value')]"
+                      [range]="tensorValueRange()"
+                      [selected]="tensorChannels()['key']"
+                      (select)="selectTensorChannel('key', $event)"
+                      (zoom)="tensorValueZoom.set($event)"
+                    />
+                  </div>
+                </div>
+              }
+              @for (group of tensorGroups(); track group.kind) {
+                @if (
+                  !tensorReady() ||
+                  tensorHead() === null ||
+                  group.request.loading() ||
+                  group.request.error() ||
+                  tensorEvidence(group.kind)?.error
+                ) {
+                  <section
+                    class="tensor-plot-group"
+                    [attr.data-tensor-kind]="group.kind"
+                    [attr.aria-label]="group.label + ' head dimensions'"
+                  >
+                    <h3>{{ group.label }}</h3>
+                    @if (!tensorReady()) {
+                      <p class="detail-note">Select a Position and Layer to inspect tensor data.</p>
+                    } @else if (group.request.loading()) {
+                      <p class="detail-note" role="status">Loading {{ group.label }}…</p>
+                    } @else if (group.request.error()) {
+                      <p class="detail-note" role="alert">
+                        {{ group.request.error() }}
+                        <button class="outlined" (click)="tensorRetry.update(incrementTensorRetry)">
+                          Retry
+                        </button>
+                      </p>
+                    } @else if (tensorHead() === null) {
+                      <p class="detail-note">Select a Head to inspect its Head dimensions.</p>
+                    } @else if (tensorEvidence(group.kind)) {
+                      @let row = tensorEvidence(group.kind)!;
+                      <kv-head-details
+                        [plotOnly]="true"
+                        [hidePlot]="true"
+                        [channel]="tensorChannels()[group.kind]"
+                        [selectedBin]="
+                          tensorPlot() === 'index' &&
+                          tensorChannelSelection() &&
+                          (tensorChannelSelection()!.plane === null ||
+                            tensorChannelSelection()!.plane === (group.kind === 'key' ? 0 : 1))
+                            ? tensorChannelSelection()
+                            : null
+                        "
+                        (channelChange)="selectTensorChannel(group.kind, $event)"
+                        [channelRange]="tensorChannelRange()"
+                        [channelFull]="tensorChannelFull()"
+                        [channelReduction]="tensorChannelReduction()"
+                        [channelCapacity]="tensorChannelCapacity()"
+                        (channelZoom)="tensorChannelZoom.set($event)"
+                        (channelCapacityChange)="tensorChannelCapacity.set($event)"
+                        [view]="tensorPlot()"
+                        [evidence]="row.evidence"
+                        [error]="row.error"
+                        (retry)="tensorRetry.update(incrementTensorRetry)"
+                      />
+                    } @else {
+                      <p class="detail-note">This Head was not captured.</p>
+                    }
+                  </section>
+                }
+              }
+            </div>
+          } @else if (!fullRange()) {
             <div class="state-message compact">
               <mat-icon>grid_off</mat-icon>
               <h2>Position comparison unavailable</h2>
@@ -214,42 +781,50 @@
             </div>
           } @else {
             <div class="plot-scroll">
-              @if (view() === 'trends') {
-                <div class="trend-heading">
-                  <label
-                    >Layer
-                    <select
-                      aria-label="Trend layer"
-                      [value]="selectedLayer()?.layer"
-                      (change)="chooseLayer(+$any($event.target).value)"
-                    >
-                      @for (id of layerIds(); track id) {
-                        <option [value]="id" [selected]="id === selectedLayer()?.layer">
-                          Layer {{ id }}
-                        </option>
-                      }
-                    </select></label
-                  ><span>{{ metricLabel() }} · {{ headLabel() }}</span>
-                </div>
-              }
-              <div class="range-canvas" [attr.aria-busy]="chartLoading()">
+              <div
+                class="range-canvas"
+                [style.height]="expanded() || embedded() ? chartViewportHeight() : null"
+                [style.flex]="embedded() ? 'none' : null"
+                [attr.aria-busy]="chartLoading()"
+              >
                 <kv-range-chart
+                  [positionAlignment]="positionAlignment()"
+                  (backgroundClick)="inspectStage.emit($event)"
+                  (positionHover)="positionHover.emit($event)"
+                  [head]="head()"
+                  [positionReduction]="positionReduction()"
                   [view]="view()"
                   [visibleRange]="visibleRange()"
-                  [layers]="layerIds()"
+                  [fullRange]="fullRange()"
+                  [overview]="overviewData.range.data()"
+                  [otherOverview]="otherOverviewData.range.data()"
+                  [kind]="kind()"
+                  [scaleMaximum]="scaleMax()"
+                  [scaleMode]="colorScale()"
+                  [layers]="visibleMetricLayers()"
                   [bins]="chartBins()"
                   [rows]="chartRows()"
+                  [otherRows]="bothTensors() ? (otherChartRows()?.rows ?? []) : null"
                   [metric]="metric()"
-                  [selected]="inspectedRange()"
+                  [selected]="chartSelection() === undefined ? inspectedRange() : chartSelection()!"
+                  [selectedKind]="selectedCurve()"
                   [trendLayer]="selectedLayer()?.layer ?? 0"
+                  [highlightedLayer]="highlightedLayer()"
+                  [series]="view() === 'trends' ? chartSeries() : null"
                   [color]="chartColor"
                   [format]="chartFormat"
                   [filtered]="!!formula()"
                   [disabled]="chartLoading() || !!chartError()"
                   (select)="selectRange($event)"
+                  (seriesSelect)="selectedCurve.set($event)"
                   (zoom)="zoomTo($event)"
                   (capacity)="setCapacity($event)"
                 />
+                @if (!chartLoading() && !chartError() && !visibleMetricLayers().length) {
+                  <span class="chart-status" role="status"
+                    >No layers selected. Select layers in Display.</span
+                  >
+                }
                 @if (chartLoading()) {
                   <span class="chart-status" role="status">Loading range…</span>
                 } @else if (chartError()) {
@@ -262,14 +837,17 @@
                 }
               </div>
             </div>
-            <ng-container [ngTemplateOutlet]="chartFooter" />
           }
         </section>
       </div>
     }
   </main>
   @if (showResults() && !loading() && !error() && context()) {
-    <section class="results" id="kv-find-results" aria-label="Find results">
+    <section
+      class="results"
+      [id]="panelId() ? panelId() + '-results' : 'kv-find-results'"
+      aria-label="Find results"
+    >
       <header>
         <strong
           >Results <span>{{ resultTotal() }}</span></strong
@@ -305,7 +883,7 @@
           <thead>
             <tr>
               <th>Layer</th>
-              <th>Position</th>
+              <th>{{ positionAlignment() ? 'Aligned position' : 'Global position' }}</th>
               <th>K/V · Heads</th>
               <th>{{ metricLabel() }}</th>
             </tr>
@@ -327,7 +905,11 @@
               >
                 <th>L{{ result.layer }}</th>
                 <td>{{ result.position }}</td>
-                <td>{{ result.kind === 'key' ? 'K' : 'V' }} · H{{ result.heads.join(', H') }}</td>
+                <td>
+                  {{ result.kind === 'key' ? 'Key cache' : 'Value cache' }} · H{{
+                    result.heads.join(', H')
+                  }}
+                </td>
                 <td>{{ format(result.metrics[metric()]) }}</td>
               </tr>
             }
@@ -355,75 +937,138 @@
       </footer>
     </section>
   }
-  <button
-    mat-icon-button
-    class="panel-toggle"
-    [style.right.px]="showDetails() ? actualPanelWidth() : 0"
-    [attr.aria-label]="showDetails() ? 'Hide details panel' : 'Show details panel'"
-    [matTooltip]="showDetails() ? 'Hide details panel' : 'Show details panel'"
-    [attr.aria-expanded]="showDetails()"
-    (click)="setDetails(!showDetails())"
+  @if (!embedded()) {
+    <button
+      mat-icon-button
+      class="panel-toggle"
+      [style.right.px]="showDetails() ? actualPanelWidth() : 0"
+      [attr.aria-label]="showDetails() ? 'Hide details panel' : 'Show details panel'"
+      [matTooltip]="showDetails() ? 'Hide details panel' : 'Show details panel'"
+      [attr.aria-expanded]="showDetails()"
+      (click)="setDetails(!showDetails())"
+    >
+      <mat-icon>{{ showDetails() ? 'chevron_right' : 'chevron_left' }}</mat-icon>
+    </button>
+    @if (showDetails()) {
+      <aside class="details-panel" #detailsElement aria-label="KV comparison details">
+        <div
+          class="resize-handle"
+          resizeHandle
+          aria-label="Resize details panel"
+          title="Drag to resize · double-click to reset"
+          [size]="actualPanelWidth()"
+          [min]="panelMinWidth()"
+          [max]="panelMaxWidth()"
+          [reverse]="true"
+          [resetSize]="350"
+          (sizeChange)="panelWidth.set($event)"
+          (resizingChange)="resizing.set($event)"
+        ></div>
+        <ng-container [ngTemplateOutlet]="sharedDetails" />
+      </aside>
+    }
+  }
+</section>
+
+<ng-template #chartFooter>
+  <div
+    class="heatmap-color-legend"
+    aria-label="Metric color scale"
+    [title]="
+      'Positions: ' +
+      positionReduction() +
+      ' over finite per-position metric values, after Heads aggregation. Scale: ' +
+      scale().join(', ')
+    "
   >
-    <mat-icon>{{ showDetails() ? 'chevron_right' : 'chevron_left' }}</mat-icon>
-  </button>
-  @if (showDetails()) {
-    <aside class="details-panel" #detailsElement aria-label="KV comparison details">
-      <div
-        class="resize-handle"
-        resizeHandle
-        aria-label="Resize details panel"
-        title="Drag to resize · double-click to reset"
-        [size]="actualPanelWidth()"
-        [min]="panelMinWidth()"
-        [max]="panelMaxWidth()"
-        [reverse]="true"
-        [resetSize]="350"
-        (sizeChange)="panelWidth.set($event)"
-        (resizingChange)="resizing.set($event)"
-      ></div>
-      <div class="details-content">
-        <explorer-info-section
-          [label]="column() ? 'Column Info' : isRange() ? 'Range Info' : 'Cache Info'"
-          [expanded]="infoExpanded()"
-          (expandedChange)="infoExpanded.set($event)"
-          ><div class="info-content">
-            <table [attr.aria-label]="column() ? 'Selected KV column' : 'Selected KV cache'">
-              <tbody>
+    <span class="color-endpoint" [title]="scale()[0] ?? '—'">{{ scale()[0] ?? '—' }}</span>
+    <span
+      class="color-ramp"
+      [class.continuous]="colorScale() === 'auto' || metric() === 'cosine_similarity'"
+      aria-hidden="true"
+    >
+      @if (colorScale() === 'thresholds' && metric() !== 'cosine_similarity') {
+        @for (i of [0, 1, 2, 3, 4]; track i) {
+          <i [style.background]="paletteColor(i * 25)"></i>
+        }
+      }
+    </span>
+    <span class="color-endpoint">{{
+      colorScale() === 'thresholds' && metric() !== 'cosine_similarity'
+        ? '≥' + scale()[scale().length - 2]
+        : (scale()[scale().length - 1] ?? '—')
+    }}</span>
+  </div>
+</ng-template>
+
+<ng-template #sharedDetails
+  ><div class="kv-shared-details">
+    <explorer-info-section [label]="embedded() ? 'Tensor Info' : 'Metric Info'" [expanded]="true"
+      ><p>Turn {{ selectedTurn() }} / {{ context()?.phase }} / KV · {{ metricLabel() }}</p>
+      @if (context()?.runtime === 'UI test fixture') {
+        <p>Source: Test data</p>
+      }
+      @if (selectedCurve()) {
+        <p>
+          Selected tensor: {{ selectedCurve() === 'key' ? 'Key cache' : 'Value cache' }} · Layer
+          {{ layer() }}
+        </p>
+      }
+    </explorer-info-section>
+    <div class="details-content">
+      <explorer-info-section
+        [label]="column() ? 'Column Info' : isRange() ? 'Range Info' : 'Cache Info'"
+        [expanded]="infoExpanded()"
+        (expandedChange)="infoExpanded.set($event)"
+        ><div class="info-content">
+          <table [attr.aria-label]="column() ? 'Selected KV column' : 'Selected KV cache'">
+            <tbody>
+              <tr>
+                <th>Snapshot</th>
+                <td><explorer-info-value label="Snapshot" [value]="snapshotLabel()" /></td>
+              </tr>
+              @for (snapshot of snapshotRows(); track snapshot.side) {
                 <tr>
-                  <th>Snapshot</th>
-                  <td><explorer-info-value label="Snapshot" [value]="snapshotLabel()" /></td>
+                  <th>{{ snapshot.label }}</th>
+                  <td>
+                    <explorer-info-value
+                      [label]="snapshot.label + ' snapshot'"
+                      [value]="snapshot.value"
+                    />
+                  </td>
                 </tr>
-                @for (snapshot of snapshotRows(); track snapshot.side) {
-                  <tr>
-                    <th>{{ snapshot.label }}</th>
-                    <td>
-                      <explorer-info-value
-                        [label]="snapshot.label + ' snapshot'"
-                        [value]="snapshot.value"
-                      />
-                    </td>
-                  </tr>
-                }
+              }
+              <tr>
+                <th>{{ positionAlignment() ? 'Aligned position' : 'Global position' }}</th>
+                <td>{{ selectionLabel() }}</td>
+              </tr>
+              @if (positionAlignment() && !isRange()) {
                 <tr>
-                  <th>Position</th>
-                  <td>{{ selectionLabel() }}</td>
+                  <th>Ref position</th>
+                  <td>{{ selectedPositions()[0] ?? '—' }}</td>
                 </tr>
-                @if (isRange()) {
-                  <tr>
-                    <th>Positions</th>
-                    <td>{{ inspectedRange()!.end - inspectedRange()!.start }}</td>
-                  </tr>
-                }
-                @if (!column()) {
-                  <tr>
-                    <th>Layer</th>
-                    <td>{{ selectedLayer()?.layer ?? 'Not captured' }}</td>
-                  </tr>
-                }
-              </tbody>
-            </table>
-          </div></explorer-info-section
-        >
+                <tr>
+                  <th>Target position</th>
+                  <td>{{ selectedPositions()[1] ?? '—' }}</td>
+                </tr>
+              }
+              @if (isRange()) {
+                <tr>
+                  <th>Positions</th>
+                  <td>{{ inspectedRange()!.end - inspectedRange()!.start }}</td>
+                </tr>
+              }
+              @if (!column()) {
+                <tr>
+                  <th>Layer</th>
+                  <td>{{ selectedLayer()?.layer ?? 'Not captured' }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div></explorer-info-section
+      >
+      @if (!embedded()) {
         <explorer-info-section
           label="Actions"
           [expanded]="actionsExpanded()"
@@ -447,92 +1092,59 @@
             }
           </div></explorer-info-section
         >
-        @if (isRange()) {
-          <p class="detail-note range-basis">Worst per-token K/V metrics across this range.</p>
-        }
-        @for (tensor of tokenTensors(); track tensor.kind) {
-          <explorer-info-section
-            [label]="tensor.label"
-            [expanded]="tensorExpanded()[tensor.kind]"
-            (expandedChange)="setTensorExpanded(tensor.kind, $event)"
-          >
-            @if (loading() || selectionLoading()) {
-              <p class="detail-note" role="status">Loading selected KV…</p>
-            } @else if (selectionError()) {
-              <p class="detail-note" role="alert">
-                {{ selectionError() }}
-                <button class="outlined" (click)="selectionRetry.set(selectionRetry() + 1)">
-                  Retry
-                </button>
-              </p>
-            } @else if (isRange()) {
-              @for (group of rangeTensors(); track group.kind) {
-                @if (group.kind === tensor.kind) {
-                  @if (column()) {
-                    <div
-                      class="column-metrics-scroll"
-                      role="region"
-                      [attr.aria-label]="tensor.label + ' layer range metrics'"
-                      tabindex="0"
+      }
+      @if (isRange()) {
+        <p class="detail-note range-basis">Worst per-token K/V metrics across this range.</p>
+      }
+      @for (tensor of tokenTensors(); track tensor.kind) {
+        <explorer-info-section
+          [label]="tensor.label"
+          [expanded]="tensorExpanded()[tensor.kind]"
+          (expandedChange)="setTensorExpanded(tensor.kind, $event)"
+        >
+          @if (loading() || selectionLoading()) {
+            <p class="detail-note" role="status">Loading selected KV…</p>
+          } @else if (selectionError()) {
+            <p class="detail-note" role="alert">
+              {{ selectionError() }}
+              <button class="outlined" (click)="selectionRetry.set(selectionRetry() + 1)">
+                Retry
+              </button>
+            </p>
+          } @else if (isRange()) {
+            @for (group of rangeTensors(); track group.kind) {
+              @if (group.kind === tensor.kind) {
+                @if (column()) {
+                  <div
+                    class="column-metrics-scroll"
+                    role="region"
+                    [attr.aria-label]="tensor.label + ' layer range metrics'"
+                    tabindex="0"
+                  >
+                    <table
+                      class="column-metrics range-column-metrics"
+                      [attr.aria-label]="tensor.label + ' column range comparison'"
                     >
-                      <table
-                        class="column-metrics range-column-metrics"
-                        [attr.aria-label]="tensor.label + ' column range comparison'"
-                      >
-                        <thead>
-                          <tr>
-                            <th scope="col">Layer</th>
-                            @for (metric of detailMetrics; track metric.key) {
-                              <th scope="col">{{ metric.label }}</th>
-                            }
-                          </tr>
-                        </thead>
-                        <tbody>
-                          @for (row of group.rows; track row.layer) {
-                            <tr>
-                              <th scope="row">{{ row.layer }}</th>
-                              @for (metric of detailMetrics; track metric.key) {
-                                <td [title]="rangeMetricTitle(row, metric.key)">
-                                  <span>{{
-                                    formatDetailMetric(metric.key, row.metrics[metric.key].value)
-                                  }}</span>
-                                  @if (row.metrics[metric.key].position !== null) {
-                                    <small>Position {{ row.metrics[metric.key].position }}</small>
-                                  }
-                                  @if (
-                                    row.metrics[metric.key].valid_count <
-                                    inspectedRange()!.end - inspectedRange()!.start
-                                  ) {
-                                    <small>{{ row.metrics[metric.key].valid_count }} valid</small>
-                                  }
-                                </td>
-                              }
-                            </tr>
-                          }
-                        </tbody>
-                      </table>
-                    </div>
-                  } @else {
-                    @for (row of group.rows; track row.layer) {
-                      <table
-                        class="range-metrics"
-                        [attr.aria-label]="tensor.label + ' range numerical comparison'"
-                      >
-                        <thead>
-                          <tr>
-                            <th>Metric</th>
-                            <th>Worst</th>
-                            <th>Position</th>
-                          </tr>
-                        </thead>
-                        <tbody>
+                      <thead>
+                        <tr>
+                          <th scope="col">Layer</th>
                           @for (metric of detailMetrics; track metric.key) {
-                            <tr>
-                              <th scope="row">
-                                <span [title]="metric.description">{{ metric.label }}</span>
-                              </th>
+                            <th scope="col">{{ metric.label }}</th>
+                          }
+                        </tr>
+                      </thead>
+                      <tbody>
+                        @for (row of group.rows; track row.layer) {
+                          <tr>
+                            <th scope="row">{{ row.layer }}</th>
+                            @for (metric of detailMetrics; track metric.key) {
                               <td [title]="rangeMetricTitle(row, metric.key)">
-                                {{ formatDetailMetric(metric.key, row.metrics[metric.key].value) }}
+                                <span>{{
+                                  formatDetailMetric(metric.key, row.metrics[metric.key].value)
+                                }}</span>
+                                @if (row.metrics[metric.key].position !== null) {
+                                  <small>Position {{ row.metrics[metric.key].position }}</small>
+                                }
                                 @if (
                                   row.metrics[metric.key].valid_count <
                                   inspectedRange()!.end - inspectedRange()!.start
@@ -540,386 +1152,241 @@
                                   <small>{{ row.metrics[metric.key].valid_count }} valid</small>
                                 }
                               </td>
-                              <td>{{ row.metrics[metric.key].position ?? '—' }}</td>
-                            </tr>
-                          }
-                        </tbody>
-                      </table>
-                      @if (row.reason) {
-                        <p class="detail-note">{{ row.reason }}</p>
-                      }
+                            }
+                          </tr>
+                        }
+                      </tbody>
+                    </table>
+                  </div>
+                } @else {
+                  @for (row of group.rows; track row.layer) {
+                    <table
+                      class="range-metrics"
+                      [attr.aria-label]="tensor.label + ' range numerical comparison'"
+                    >
+                      <thead>
+                        <tr>
+                          <th>Metric</th>
+                          <th>Worst</th>
+                          <th>
+                            {{ positionAlignment() ? 'Aligned position' : 'Global position' }}
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        @for (metric of detailMetrics; track metric.key) {
+                          <tr>
+                            <th scope="row">
+                              <span [title]="metric.description">{{ metric.label }}</span>
+                            </th>
+                            <td [title]="rangeMetricTitle(row, metric.key)">
+                              {{ formatDetailMetric(metric.key, row.metrics[metric.key].value) }}
+                              @if (
+                                row.metrics[metric.key].valid_count <
+                                inspectedRange()!.end - inspectedRange()!.start
+                              ) {
+                                <small>{{ row.metrics[metric.key].valid_count }} valid</small>
+                              }
+                            </td>
+                            <td>{{ row.metrics[metric.key].position ?? '—' }}</td>
+                          </tr>
+                        }
+                      </tbody>
+                    </table>
+                    @if (row.reason) {
+                      <p class="detail-note">{{ row.reason }}</p>
                     }
                   }
                 }
               }
-            } @else if (column()) {
-              <div
-                class="column-metrics-scroll"
-                role="region"
-                [attr.aria-label]="tensor.label + ' layer metrics'"
-                tabindex="0"
+            }
+          } @else if (column()) {
+            <div
+              class="column-metrics-scroll"
+              role="region"
+              [attr.aria-label]="tensor.label + ' layer metrics'"
+              tabindex="0"
+            >
+              <table
+                class="column-metrics"
+                [attr.aria-label]="tensor.label + ' column numerical comparison'"
               >
-                <table
-                  class="column-metrics"
-                  [attr.aria-label]="tensor.label + ' column numerical comparison'"
-                >
-                  <thead>
-                    <tr>
-                      <th scope="col">Layer</th>
-                      @for (metric of detailMetrics; track metric.key) {
-                        <th scope="col">
-                          <span [title]="metric.description">{{ metric.label }}</span>
-                        </th>
-                      }
-                    </tr>
-                  </thead>
-                  <tbody>
-                    @for (row of columnRows(tensor.kind); track row.layer) {
-                      <tr>
-                        <th scope="row">{{ row.layer }}</th>
-                        @for (metric of detailMetrics; track metric.key) {
-                          <td
-                            [title]="
-                              (
-                                row.comparison?.metric_status?.[metric.key] ?? row.status
-                              ).replaceAll('_', ' ')
-                            "
-                          >
-                            {{
-                              formatDetailMetric(metric.key, row.comparison?.metrics?.[metric.key])
-                            }}
-                          </td>
-                        }
-                      </tr>
-                    }
-                  </tbody>
-                </table>
-              </div>
-            } @else {
-              <table class="token-structure" [attr.aria-label]="tensor.label + ' token structure'">
                 <thead>
                   <tr>
-                    <th></th>
-                    <th>Reference</th>
-                    <th>Target</th>
+                    <th scope="col">Layer</th>
+                    @for (metric of detailMetrics; track metric.key) {
+                      <th scope="col">
+                        <span [title]="metric.description">{{ metric.label }}</span>
+                      </th>
+                    }
                   </tr>
                 </thead>
                 <tbody>
-                  <tr>
-                    <th>
-                      <span
-                        class="structure-shape-label"
-                        matTooltip="Shape of this token's KV tensor: KV heads × channels."
-                        tabindex="0"
-                        >Shape <mat-icon>info_outline</mat-icon></span
-                      >
-                    </th>
-                    @for (side of sides; track side) {
-                      <td>
-                        <explorer-info-value
-                          [label]="tensor.label + ' ' + side + ' token shape (KV heads × channels)'"
-                          [value]="structureShape(tensor.sources[side])"
-                        />
-                      </td>
-                    }
-                  </tr>
-                  <tr>
-                    <th>Dtype</th>
-                    @for (side of sides; track side) {
-                      <td>
-                        <explorer-info-value
-                          [label]="tensor.label + ' ' + side + ' dtype'"
-                          [value]="structureDtype(tensor.sources[side])"
-                        />
-                      </td>
-                    }
-                  </tr>
-                  @if (
-                    !structureAvailable(tensor.sources.ref) ||
-                    !structureAvailable(tensor.sources.target)
-                  ) {
+                  @for (row of columnRows(tensor.kind); track row.layer) {
                     <tr>
-                      <th>Status</th>
-                      @for (side of sides; track side) {
-                        <td>
-                          <explorer-info-value
-                            [label]="tensor.label + ' ' + side + ' availability'"
-                            [value]="structureStatus(tensor.sources[side])"
-                          />
+                      <th scope="row">{{ row.layer }}</th>
+                      @for (metric of detailMetrics; track metric.key) {
+                        <td
+                          [title]="
+                            (row.comparison?.metric_status?.[metric.key] ?? row.status).replaceAll(
+                              '_',
+                              ' '
+                            )
+                          "
+                        >
+                          {{
+                            formatDetailMetric(metric.key, row.comparison?.metrics?.[metric.key])
+                          }}
                         </td>
                       }
                     </tr>
                   }
                 </tbody>
               </table>
-              <kv-metric-values
-                class="token-metrics"
-                [metrics]="tensor.comparison?.metrics ?? null"
-                [metricStatus]="tensor.comparison?.metric_status ?? null"
-                [label]="tensor.label + ' overall numerical comparison'"
-              />
-              @if (tensor.reason) {
-                <p class="detail-note">{{ tensor.reason }}</p>
-              }
-              <div class="head-list" [attr.aria-label]="tensor.label + ' heads'">
-                @for (id of visibleHeads(tensor.kind); track id) {
-                  <button
-                    class="head-row"
-                    [attr.aria-label]="
-                      (headOpen(tensor.kind, id) ? 'Collapse ' : 'Expand ') +
-                      tensor.label +
-                      ' Head ' +
-                      id
-                    "
-                    [attr.aria-expanded]="headOpen(tensor.kind, id)"
-                    [attr.aria-controls]="'kv-' + tensor.kind + '-head-' + id"
-                    (click)="toggleHead(tensor.kind, id)"
-                  >
-                    <mat-icon>{{
-                      headOpen(tensor.kind, id) ? 'expand_more' : 'chevron_right'
-                    }}</mat-icon
-                    ><span>Head {{ id }}</span>
-                  </button>
-                  @if (headOpen(tensor.kind, id)) {
-                    <div
-                      class="head-detail"
-                      [id]="'kv-' + tensor.kind + '-head-' + id"
-                      role="region"
-                      [attr.aria-label]="tensor.label + ' Head ' + id + ' details'"
+            </div>
+          } @else {
+            <table class="token-structure" [attr.aria-label]="tensor.label + ' token structure'">
+              <thead>
+                <tr>
+                  <th></th>
+                  <th>Reference</th>
+                  <th>Target</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <th>
+                    <span
+                      class="structure-shape-label"
+                      matTooltip="Shape of this token's KV tensor: KV heads × head dimension."
+                      tabindex="0"
+                      >Shape <mat-icon>info_outline</mat-icon></span
                     >
-                      <kv-head-inspector
-                        [selection]="headSelection(tensor.kind, id)"
-                        [active]="tensorExpanded()[tensor.kind]"
-                        [view]="headView(tensor.kind, id).view"
-                        (viewChange)="setHeadView(tensor.kind, id, {view: $event})"
-                        [numericalExpanded]="headView(tensor.kind, id).numericalExpanded"
-                        (numericalExpandedChange)="
-                          setHeadView(tensor.kind, id, {numericalExpanded: $event})
+                  </th>
+                  @for (side of sides; track side) {
+                    <td>
+                      <explorer-info-value
+                        [label]="
+                          tensor.label + ' ' + side + ' token shape (KV heads × head dimension)'
                         "
-                        [channelsExpanded]="headView(tensor.kind, id).channelsExpanded"
-                        (channelsExpandedChange)="
-                          setHeadView(tensor.kind, id, {channelsExpanded: $event})
-                        "
+                        [value]="structureShape(tensor.sources[side])"
                       />
-                    </div>
+                    </td>
                   }
+                </tr>
+                <tr>
+                  <th>Dtype</th>
+                  @for (side of sides; track side) {
+                    <td>
+                      <explorer-info-value
+                        [label]="tensor.label + ' ' + side + ' dtype'"
+                        [value]="structureDtype(tensor.sources[side])"
+                      />
+                    </td>
+                  }
+                </tr>
+                @if (
+                  !structureAvailable(tensor.sources.ref) ||
+                  !structureAvailable(tensor.sources.target)
+                ) {
+                  <tr>
+                    <th>Status</th>
+                    @for (side of sides; track side) {
+                      <td>
+                        <explorer-info-value
+                          [label]="tensor.label + ' ' + side + ' availability'"
+                          [value]="structureStatus(tensor.sources[side])"
+                        />
+                      </td>
+                    }
+                  </tr>
                 }
-              </div>
-              @if (headPages(tensor.kind) > 1) {
-                <nav class="head-pages" [attr.aria-label]="tensor.label + ' head pages'">
-                  <button
-                    class="icon-button"
-                    [attr.aria-label]="'Previous ' + tensor.label + ' heads'"
-                    [disabled]="headPage(tensor.kind) === 0"
-                    (click)="moveHeadPage(tensor.kind, -1)"
-                  >
-                    <mat-icon>chevron_left</mat-icon></button
-                  ><span>{{ headPage(tensor.kind) + 1 }} / {{ headPages(tensor.kind) }}</span
-                  ><button
-                    class="icon-button"
-                    [attr.aria-label]="'Next ' + tensor.label + ' heads'"
-                    [disabled]="headPage(tensor.kind) >= headPages(tensor.kind) - 1"
-                    (click)="moveHeadPage(tensor.kind, 1)"
-                  >
-                    <mat-icon>chevron_right</mat-icon>
-                  </button>
-                </nav>
-              }
+              </tbody>
+            </table>
+            <kv-metric-values
+              class="token-metrics"
+              [metrics]="tensor.comparison?.metrics ?? null"
+              [metricStatus]="tensor.comparison?.metric_status ?? null"
+              [label]="tensor.label + ' overall numerical comparison'"
+            />
+            @if (tensor.reason) {
+              <p class="detail-note">{{ tensor.reason }}</p>
             }
-          </explorer-info-section>
-        }
-      </div>
-    </aside>
-  }
-</section>
-
-<ng-template #chartFooter>
-  <footer class="graph-footer" [class.matrix-footer]="view() === 'heatmap'">
-    <div
-      class="scale"
-      aria-label="Metric color scale"
-      title="Colors stay fixed while zooming. A range cell shows its maximum; this does not mean every position has that value."
-    >
-      <span
-        >{{ metricLabel() }}{{ metric() === 'relative_l2' ? ' (%)' : '' }} ·
-        {{ colorScale() === 'auto' ? 'snapshot range' : 'fixed thresholds' }}</span
-      >
-      <div class="bands" [class.continuous]="colorScale() === 'auto'">
-        @if (colorScale() === 'thresholds') {
-          @for (i of [0, 1, 2, 3, 4]; track i) {
-            <i [style.background]="paletteColor(i * 25)"></i>
+            <div class="head-list" [attr.aria-label]="tensor.label + ' heads'">
+              @for (id of visibleHeads(tensor.kind); track id) {
+                <button
+                  class="head-row"
+                  [attr.aria-label]="
+                    (headOpen(tensor.kind, id) ? 'Collapse ' : 'Expand ') +
+                    tensor.label +
+                    ' Head ' +
+                    id
+                  "
+                  [attr.aria-expanded]="headOpen(tensor.kind, id)"
+                  [attr.aria-controls]="'kv-' + tensor.kind + '-head-' + id"
+                  (click)="toggleHead(tensor.kind, id)"
+                >
+                  <mat-icon>{{
+                    headOpen(tensor.kind, id) ? 'expand_more' : 'chevron_right'
+                  }}</mat-icon
+                  ><span>Head {{ id }}</span>
+                </button>
+                @if (headOpen(tensor.kind, id)) {
+                  <div
+                    class="head-detail"
+                    [id]="'kv-' + tensor.kind + '-head-' + id"
+                    role="region"
+                    [attr.aria-label]="tensor.label + ' Head ' + id + ' details'"
+                  >
+                    <kv-head-inspector
+                      [selection]="headSelection(tensor.kind, id)"
+                      [active]="tensorExpanded()[tensor.kind]"
+                      [view]="headView(tensor.kind, id).view"
+                      (viewChange)="setHeadView(tensor.kind, id, {view: $event})"
+                      [numericalExpanded]="headView(tensor.kind, id).numericalExpanded"
+                      (numericalExpandedChange)="
+                        setHeadView(tensor.kind, id, {numericalExpanded: $event})
+                      "
+                      [channelsExpanded]="headView(tensor.kind, id).channelsExpanded"
+                      (channelsExpandedChange)="
+                        setHeadView(tensor.kind, id, {channelsExpanded: $event})
+                      "
+                    />
+                  </div>
+                }
+              }
+            </div>
+            <nav class="head-pages" [attr.aria-label]="tensor.label + ' head pages'">
+              <button
+                class="icon-button"
+                [attr.aria-label]="'Previous ' + tensor.label + ' heads'"
+                [disabled]="headPage(tensor.kind) === 0"
+                (click)="moveHeadPage(tensor.kind, -1)"
+              >
+                <mat-icon>chevron_left</mat-icon></button
+              ><span>{{ headPage(tensor.kind) + 1 }} / {{ headPages(tensor.kind) }}</span
+              ><button
+                class="icon-button"
+                [attr.aria-label]="'Next ' + tensor.label + ' heads'"
+                [disabled]="headPage(tensor.kind) >= headPages(tensor.kind) - 1"
+                (click)="moveHeadPage(tensor.kind, 1)"
+              >
+                <mat-icon>chevron_right</mat-icon>
+              </button>
+            </nav>
           }
-        }
-      </div>
-      <div class="scale-labels">
-        @for (value of scale(); track $index) {
-          <span>{{ value }}</span>
-        }
-      </div>
-      <small><i class="missing-swatch"></i> Not captured / undefined</small>
-    </div>
-  </footer>
-</ng-template>
-
-<ng-template
-  overlayDialog
-  [origin]="contextOrigin"
-  [open]="popup() === 'context'"
-  (closed)="closePopup()"
->
-  <section class="kv-popup" overlayPanel aria-label="KV observation">
-    <header>
-      <strong>OBSERVATION</strong
-      ><button
-        mat-icon-button
-        class="popup-close"
-        aria-label="Close observation"
-        (click)="closePopup()"
-      >
-        <mat-icon>close</mat-icon>
-      </button>
-    </header>
-    <label
-      >Turn
-      <select
-        aria-label="KV turn"
-        cdkFocusInitial
-        [value]="selectedTurn()"
-        (change)="chooseTurn(+$any($event.target).value)"
-      >
-        @for (turn of state.session()?.turns ?? []; track turn.n) {
-          <option [value]="turn.n" [selected]="turn.n === selectedTurn()">Turn {{ turn.n }}</option>
-        }
-      </select></label
-    >
-    <div class="context-list">
-      @for (c of analysis()?.contexts ?? []; track c.id) {
-        <button [attr.aria-pressed]="context()?.id === c.id" (click)="chooseContext(c)">
-          <span>{{ c.label }}</span
-          ><small
-            >{{ c.layers.length }} tensors ·
-            {{ c.source === 'explicit' ? 'Explicit comparison' : c.runtime }}</small
-          >
-        </button>
-      }
-      @if (loading()) {
-        <p role="status">Loading observations…</p>
+        </explorer-info-section>
       }
     </div>
-  </section>
-</ng-template>
-<ng-template
-  overlayDialog
-  [origin]="displayOrigin"
-  [open]="popup() === 'display'"
-  (closed)="closePopup()"
+  </div></ng-template
 >
-  <section class="kv-popup" overlayPanel aria-label="Display">
-    <header>
-      <strong>DISPLAY</strong
-      ><button
-        mat-icon-button
-        class="popup-close"
-        aria-label="Close Display"
-        (click)="closePopup()"
-      >
-        <mat-icon>close</mat-icon>
-      </button>
-    </header>
-    <form (ngSubmit)="applyDisplay()">
-      <label
-        >Metric
-        <select name="metric" aria-label="Display metric" [(ngModel)]="draftMetric" cdkFocusInitial>
-          @for (m of metrics; track m.id) {
-            <option [value]="m.id">{{ m.label }}</option>
-          }
-        </select></label
-      ><label
-        >Tensor
-        <select name="kind" aria-label="Display tensor" [(ngModel)]="draftKind">
-          <option value="key">Key</option>
-          <option value="value">Value</option>
-        </select></label
-      ><label
-        >Head
-        <select name="head" aria-label="Display head" [(ngModel)]="draftHead">
-          <option value="max">Max over heads</option>
-          <option value="mean">Mean over heads</option>
-          @for (h of heads(); track h) {
-            <option [value]="'' + h">Head {{ h }}</option>
-          }
-        </select></label
-      ><label
-        >Color scale
-        <select name="scale" aria-label="Color scale" [(ngModel)]="draftScale">
-          <option value="auto">Snapshot range</option>
-          <option value="thresholds">Fixed thresholds</option>
-        </select></label
-      >
-      <p>
-        Snapshot range keeps colors fixed while zooming. Find conditions remain unchanged. Undefined
-        heads are excluded from aggregation.
-      </p>
-      <footer><button mat-flat-button color="primary" type="submit">Apply</button></footer>
-    </form>
-  </section>
-</ng-template>
-<ng-template
-  overlayDialog
-  [origin]="findOrigin"
-  [open]="popup() === 'find'"
-  (closed)="closePopup()"
->
-  <section class="kv-popup find-popup" overlayPanel aria-label="Find">
-    <header>
-      <strong>FIND</strong
-      ><button mat-icon-button class="popup-close" aria-label="Close Find" (click)="closePopup()">
-        <mat-icon>close</mat-icon>
-      </button>
-    </header>
-    <form (ngSubmit)="applyFind()">
-      <label for="kv-formula">Formula</label
-      ><input
-        id="kv-formula"
-        name="formula"
-        aria-label="Find formula"
-        [(ngModel)]="draftFormula"
-        maxlength="1000"
-        autocomplete="off"
-        spellcheck="false"
-        cdkFocusInitial
-        (input)="queryError.set('')"
-      />
-      <p>
-        Find heads across this observation. Results group matches by Layer × Position × Tensor,
-        independently of Display.
-      </p>
-      @if (queryError()) {
-        <p role="alert">{{ queryError() }}</p>
-      }
-      <details>
-        <summary>Formula reference</summary>
-        <p><code>relative_l2</code> · <code>max_abs</code> · <code>cosine_distance</code></p>
-        <p>Compare &gt; &gt;= &lt; &lt;= == != · Combine AND OR NOT · Group with parentheses.</p>
-        <p>
-          Relative L2 uses ratios: 0.1 = 10%. Missing values remain unknown, including under NOT.
-        </p>
-      </details>
-      <div class="examples">
-        <button class="outlined" type="button" (click)="draftFormula = 'relative_l2 > 10%'">
-          Relative L2 &gt; 10%</button
-        ><button
-          class="outlined"
-          type="button"
-          (click)="draftFormula = 'relative_l2 > 10% AND cosine_distance > 0.01'"
-        >
-          L2 + cosine distance
-        </button>
-      </div>
-      <footer>
-        <button mat-button type="button" (click)="clearFind()">Clear</button
-        ><button mat-flat-button color="primary" type="submit">Apply</button>
-      </footer>
-    </form>
-  </section>
+
+<ng-template #chartLegend>
+  <div class="chart-legend">
+    @if (view() === 'trends') {
+      <span>Layers {{ selectedTrendLayers().length }}/{{ layerIds().length }}</span>
+    } @else {
+      <ng-container [ngTemplateOutlet]="chartFooter" />
+    }
+  </div>
 </ng-template>

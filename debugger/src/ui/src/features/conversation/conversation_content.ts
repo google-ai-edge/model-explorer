@@ -16,15 +16,13 @@
  * ==============================================================================
  */
 
-import type {
-  CapturedConversation,
-  CapturedToken,
-} from '../../data/contracts/capture';
+import type {CapturedConversation, CapturedToken} from '../../data/contracts/capture';
 import {alignTokens, TokenPair} from './token_alignment';
 
 export type TokenPhase = 'thinking' | 'response';
 export type TokenSelection = {kind: 'token'; turn: number; index: number};
 export type StageSelection = {
+  range?: {start: number; end: number};
   kind: 'stage';
   turn: number;
   stage: 'prefill' | 'decode';
@@ -32,77 +30,47 @@ export type StageSelection = {
 };
 /** An admitted Prefill token, addressed by its aligned pair index. */
 export type InputSelection = {kind: 'input'; turn: number; index: number};
-export type ConversationSelection =
-  | TokenSelection
-  | StageSelection
-  | InputSelection;
+export type ConversationSelection = TokenSelection | StageSelection | InputSelection;
 export interface CapturedInputSegment {
   kind: 'template' | 'message' | 'serialized';
   text: string;
   role?: string;
 }
-const inputSegments = new WeakMap<
-  CapturedConversation,
-  CapturedInputSegment[]
->();
+const inputSegments = new WeakMap<CapturedConversation, CapturedInputSegment[]>();
 /** Only split a recorded serialization when every recorded message can be located. */
 export function capturedInputSegments(
   capture: CapturedConversation | undefined,
 ): CapturedInputSegment[] {
-  if (!capture) {
-    return [];
-  }
+  if (!capture) return [];
   const known = inputSegments.get(capture);
-  if (known) {
-    return known;
-  }
-  const serialized = capture.serialized_input;
-  const messages = capture.messages ?? [];
+  if (known) return known;
+  const serialized = capture.serialized_input,
+    messages = capture.messages ?? [];
   let segments: CapturedInputSegment[] = [];
   if (serialized === undefined) {
-    if (capture.turn === 1) {
-      for (const message of messages.filter((m) => m.role === 'system')) {
-        segments.push({
-          kind: 'message',
-          role: message.role,
-          text: message.content,
-        });
-      }
-    }
-    if (capture.input !== undefined) {
+    if (capture.turn === 1)
+      for (const message of messages.filter((m) => m.role === 'system'))
+        segments.push({kind: 'message', role: message.role, text: message.content});
+    if (capture.input !== undefined)
       segments.push({kind: 'message', role: 'user', text: capture.input});
-    }
   } else {
-    let cursor = 0;
-    let matched = 0;
+    let cursor = 0,
+      matched = 0;
     for (const message of messages) {
-      if (!message.content) {
-        continue;
-      }
+      if (!message.content) continue;
       const start = serialized.indexOf(message.content, cursor);
       if (start < 0) {
         matched = -1;
         break;
       }
-      if (start > cursor) {
-        segments.push({
-          kind: 'template',
-          text: serialized.slice(cursor, start),
-        });
-      }
-      segments.push({
-        kind: 'message',
-        role: message.role,
-        text: message.content,
-      });
+      if (start > cursor) segments.push({kind: 'template', text: serialized.slice(cursor, start)});
+      segments.push({kind: 'message', role: message.role, text: message.content});
       cursor = start + message.content.length;
       matched++;
     }
-    if (matched <= 0) {
-      segments = [{kind: 'serialized', text: serialized}];
-    } else if (cursor < serialized.length) {
+    if (matched <= 0) segments = [{kind: 'serialized', text: serialized}];
+    else if (cursor < serialized.length)
       segments.push({kind: 'template', text: serialized.slice(cursor)});
-    }
   }
   inputSegments.set(capture, segments);
   return segments;
@@ -116,10 +84,7 @@ export interface CapturedInputRow {
   /** Template tokens after the text, including a trailing generation prompt such as `<|turn>model`. */
   trailing: CapturedToken[];
 }
-const inputRows = new WeakMap<
-  CapturedConversation,
-  CapturedInputRow[] | null
->();
+const inputRows = new WeakMap<CapturedConversation, CapturedInputRow[] | null>();
 /** Message rows over any items that carry a token: admitted tokens, or aligned pairs. */
 export interface InputRowsOf<T> {
   role: 'system' | 'user' | 'model' | 'unknown';
@@ -129,13 +94,7 @@ export interface InputRowsOf<T> {
 }
 /** Rows of aligned Prefill pairs; a side without a token at a position is a gap. */
 export type CapturedInputPairRow = InputRowsOf<TokenPair>;
-const pairAnchor = (pair: TokenPair): CapturedToken => {
-  const token = pair.ref ?? pair.target;
-  if (!token) {
-    throw new Error('Aligned token pair is empty');
-  }
-  return token;
-};
+const pairAnchor = (pair: TokenPair) => (pair.ref ?? pair.target)!;
 const ROLES = new Set(['system', 'user', 'model']);
 /** A turn opener is `<|turn>user` as one token or `<|turn>` followed by the role token. */
 function turnOpener(
@@ -143,25 +102,17 @@ function turnOpener(
   index: number,
 ): {role: CapturedInputRow['role']; length: number} | null {
   const token = tokens[index];
-  if (token.kind === 'text') {
-    return null;
-  }
+  if (token.kind === 'text') return null;
   const text = token.text ?? '';
   const single = /^<\|turn>(system|user|model)$/.exec(text);
-  if (single) {
-    return {role: single[1] as CapturedInputRow['role'], length: 1};
-  }
+  if (single) return {role: single[1] as CapturedInputRow['role'], length: 1};
   const next = tokens[index + 1];
   const role = next?.kind !== 'text' ? (next?.text ?? '').trim() : '';
-  if (text === '<|turn>' && ROLES.has(role)) {
+  if (text === '<|turn>' && ROLES.has(role))
     return {role: role as CapturedInputRow['role'], length: 2};
-  }
   return null;
 }
-function groupInputRows<T>(
-  items: T[],
-  tokenOf: (item: T) => CapturedToken,
-): InputRowsOf<T>[] {
+function groupInputRows<T>(items: T[], tokenOf: (item: T) => CapturedToken): InputRowsOf<T>[] {
   const tokens = items.map(tokenOf);
   const rows: InputRowsOf<T>[] = [];
   let current: InputRowsOf<T> | null = null;
@@ -188,33 +139,15 @@ function groupInputRows<T>(
     if (token.kind === 'text') {
       if (current.trailing.length) {
         // Text after a closing marker starts a new unlabeled message rather than merging.
-        current = {
-          role: 'unknown',
-          leading: [],
-          text: [items[index]],
-          trailing: [],
-        };
+        current = {role: 'unknown', leading: [], text: [items[index]], trailing: []};
         rows.push(current);
-      } else {
-        current.text.push(items[index]);
-      }
-    } else {
-      (current.text.length ? current.trailing : current.leading).push(
-        items[index],
-      );
-    }
+      } else current.text.push(items[index]);
+    } else (current.text.length ? current.trailing : current.leading).push(items[index]);
   }
-  if (preamble.length) {
-    rows.push({role: 'unknown', leading: preamble, text: [], trailing: []});
-  }
+  if (preamble.length) rows.push({role: 'unknown', leading: preamble, text: [], trailing: []});
   // The generation prompt (`<|turn>model` and its newline) closes the previous message.
   const last = rows[rows.length - 1];
-  if (
-    rows.length > 1 &&
-    last.role === 'model' &&
-    !last.text.length &&
-    !last.trailing.length
-  ) {
+  if (rows.length > 1 && last.role === 'model' && !last.text.length && !last.trailing.length) {
     rows.pop();
     rows[rows.length - 1].trailing.push(...last.leading);
   }
@@ -222,21 +155,15 @@ function groupInputRows<T>(
 }
 const kindedTokens = (capture: CapturedConversation | undefined) => {
   const tokens = capture?.input_tokens;
-  return tokens?.length && tokens.every((token) => token.kind !== undefined)
-    ? tokens
-    : null;
+  return tokens?.length && tokens.every((token) => token.kind !== undefined) ? tokens : null;
 };
 /** Group admitted input tokens into message rows; null unless every token carries its kind. */
 export function capturedInputRows(
   capture: CapturedConversation | undefined,
 ): CapturedInputRow[] | null {
-  if (!capture) {
-    return null;
-  }
+  if (!capture) return null;
   const known = inputRows.get(capture);
-  if (known !== undefined) {
-    return known;
-  }
+  if (known !== undefined) return known;
   const tokens = kindedTokens(capture);
   const rows = tokens ? groupInputRows(tokens, (token) => token) : null;
   inputRows.set(capture, rows);
@@ -252,28 +179,14 @@ export function capturedInputPairRows(
   ref: CapturedConversation | undefined,
   target: CapturedConversation | undefined,
 ): CapturedInputPairRow[] | null {
-  if (!ref || !target) {
-    return null;
-  }
+  if (!ref || !target) return null;
   const known = inputPairRows.get(ref)?.get(target);
-  if (known) {
-    return known;
-  }
-  const refTokens = kindedTokens(ref);
-  const targetTokens = kindedTokens(target);
-  if (!refTokens || !targetTokens) {
-    return null;
-  }
-  const rows = groupInputRows(
-    alignTokens(refTokens, targetTokens, 'content'),
-    pairAnchor,
-  );
-  let byTarget = inputPairRows.get(ref);
-  if (!byTarget) {
-    byTarget = new WeakMap();
-    inputPairRows.set(ref, byTarget);
-  }
-  byTarget.set(target, rows);
+  if (known) return known;
+  const refTokens = kindedTokens(ref),
+    targetTokens = kindedTokens(target);
+  if (!refTokens || !targetTokens) return null;
+  const rows = groupInputRows(alignTokens(refTokens, targetTokens, 'content'), pairAnchor);
+  (inputPairRows.get(ref) ?? inputPairRows.set(ref, new WeakMap()).get(ref)!).set(target, rows);
   return rows;
 }
 export type HistoryStatus = 'same' | 'differs' | 'unknown';
@@ -288,28 +201,18 @@ export function historyStatus(
   turn: number,
 ): HistoryStatus | null {
   const earlier = (conversation ?? []).filter((c) => c.turn < turn);
-  if (!earlier.length) {
-    return null;
-  }
+  if (!earlier.length) return null;
   const turns = [...new Set(earlier.map((c) => c.turn))].sort((a, b) => a - b);
   let status: HistoryStatus = 'same';
   for (const n of turns) {
-    const ref = earlier.find((c) => c.turn === n && c.run === 'ref');
-    const target = earlier.find((c) => c.turn === n && c.run === 'target');
-    if (!ref || !target) {
-      return 'unknown';
-    }
-    const refTokens = consumed(ref);
-    const targetTokens = consumed(target);
-    if (!refTokens || !targetTokens) {
-      return 'unknown';
-    }
-    if (
-      ref.input !== target.input ||
-      JSON.stringify(refTokens) !== JSON.stringify(targetTokens)
-    ) {
+    const ref = earlier.find((c) => c.turn === n && c.run === 'ref'),
+      target = earlier.find((c) => c.turn === n && c.run === 'target');
+    if (!ref || !target) return 'unknown';
+    const refTokens = consumed(ref),
+      targetTokens = consumed(target);
+    if (!refTokens || !targetTokens) return 'unknown';
+    if (ref.input !== target.input || JSON.stringify(refTokens) !== JSON.stringify(targetTokens))
       status = 'differs';
-    }
   }
   return status;
 }
@@ -317,9 +220,7 @@ export const tokenPhase = (token: CapturedToken | undefined): TokenPhase =>
   token?.phase ?? 'response';
 /** A missing token spelling is not a captured EOS/template string. */
 export function capturedTokenLabel(token: CapturedToken | undefined): string {
-  return (
-    token?.text ?? (token?.id != null ? `Token #${token.id}` : 'Not captured')
-  );
+  return token?.text ?? (token?.id != null ? `Token #${token.id}` : 'Not captured');
 }
 
 const phases = new WeakMap<CapturedConversation, Set<TokenPhase>>();
@@ -327,9 +228,7 @@ export function hasPhaseTokens(
   capture: CapturedConversation | undefined,
   phase: TokenPhase,
 ): boolean {
-  if (!capture) {
-    return false;
-  }
+  if (!capture) return false;
   let available = phases.get(capture);
   if (!available) {
     available = new Set(capture.tokens?.map(tokenPhase));
@@ -351,17 +250,12 @@ export function splitPhasePairs(pairs: TokenPair[]) {
   return result;
 }
 
-const contents = new WeakMap<
-  CapturedConversation,
-  {thinking: string; response: string}
->();
+const contents = new WeakMap<CapturedConversation, {thinking: string; response: string}>();
 export function capturedPhaseText(
   capture: CapturedConversation | undefined,
   phase: TokenPhase,
 ): string {
-  if (!capture) {
-    return '';
-  }
+  if (!capture) return '';
   let text = contents.get(capture);
   if (!text) {
     text = {
@@ -387,9 +281,7 @@ export function capturedPhaseText(
 
 /** Content semantics come from capture metadata, never marker-looking text. */
 export function tokenContent(token: CapturedToken | undefined): string {
-  if (!token) {
-    return 'Not captured';
-  }
+  if (!token) return 'Not captured';
   return token.kind === 'template'
     ? 'Chat template'
     : token.kind === 'special'
@@ -407,12 +299,9 @@ export function capturedTokenContent(
   if (
     token?.kind === 'special' &&
     token.id != null &&
-    capture?.input_tokens?.some(
-      (input) => input.id === token.id && input.kind === 'template',
-    )
-  ) {
+    capture?.input_tokens?.some((input) => input.id === token.id && input.kind === 'template')
+  )
     return 'Chat template';
-  }
   return tokenContent(token);
 }
 export const isTemplateToken = (token: CapturedToken | undefined) =>
@@ -425,14 +314,9 @@ const HTML_ESCAPES: Record<string, string> = {
   '"': '&quot;',
   "'": '&#39;',
 };
-export const escapeHtml = (text: string) =>
-  text.replace(/[&<>"']/g, (c) => HTML_ESCAPES[c] ?? c);
+export const escapeHtml = (text: string) => text.replace(/[&<>"']/g, (c) => HTML_ESCAPES[c]!);
 
-const WHITESPACE_GLYPHS: Record<string, string> = {
-  '\n': '↵',
-  '\r': '␍',
-  '\t': '⇥',
-};
+const WHITESPACE_GLYPHS: Record<string, string> = {'\n': '↵', '\r': '␍', '\t': '⇥'};
 /** Characters that draw nothing: whitespace, zero-width and format characters, controls. */
 const INVISIBLE =
   /^[\s\u0000-\u001f\u007f-\u009f\u00ad\u200b-\u200f\u2028-\u202f\u2060-\u2064\ufeff]$/u;
@@ -442,7 +326,7 @@ export function isInvisibleOnly(text: string): boolean {
   return text.length > 0 && Array.from(text).every(isInvisibleChar);
 }
 const codePoint = (ch: string) =>
-  'U+' + (ch.codePointAt(0) ?? 0).toString(16).toUpperCase().padStart(4, '0');
+  'U+' + ch.codePointAt(0)!.toString(16).toUpperCase().padStart(4, '0');
 const INVISIBLE_NAMES: Record<string, string> = {
   ' ': 'space',
   '\n': 'line feed',
@@ -451,22 +335,15 @@ const INVISIBLE_NAMES: Record<string, string> = {
 };
 /** How an invisible-only token is named in labels, e.g. "line feed × 2"; other text is returned as is. */
 export function spokenTokenText(text: string): string {
-  if (!isInvisibleOnly(text)) {
-    return text;
-  }
+  if (!isInvisibleOnly(text)) return text;
   const runs: {name: string; count: number}[] = [];
   for (const ch of text) {
     const name = INVISIBLE_NAMES[ch] ?? codePoint(ch);
     const last = runs[runs.length - 1];
-    if (last?.name === name) {
-      last.count++;
-    } else {
-      runs.push({name, count: 1});
-    }
+    if (last?.name === name) last.count++;
+    else runs.push({name, count: 1});
   }
-  return runs
-    .map((run) => (run.count > 1 ? `${run.name} × ${run.count}` : run.name))
-    .join(', ');
+  return runs.map((run) => (run.count > 1 ? `${run.name} × ${run.count}` : run.name)).join(', ');
 }
 /**
  * Debug token markup. Tokens keep their real characters and every invisible one is drawn in
@@ -480,30 +357,22 @@ export function spokenTokenText(text: string): string {
 export function tokenMarkup(text: string, keepBreaks = true): string {
   let out = '';
   for (const ch of text) {
-    if (ch === ' ') {
-      out += '<span class="invisible-char space-char marked-space"> </span>';
-    } else if (!isInvisibleChar(ch)) {
-      out += escapeHtml(ch);
-    } else if (ch === '\n' || ch === '\r') {
+    if (ch === ' ') out += '<span class="invisible-char space-char marked-space"> </span>';
+    else if (!isInvisibleChar(ch)) out += escapeHtml(ch);
+    else if (ch === '\n' || ch === '\r')
       out += `<span class="invisible-char line-break-char"><span class="whitespace-glyph" aria-hidden="true">${WHITESPACE_GLYPHS[ch]}</span></span>${keepBreaks ? ch : ''}`;
-    } else if (ch === '\t') {
+    else if (ch === '\t')
       out += `<span class="invisible-char"><span class="whitespace-glyph" aria-hidden="true">⇥</span>\t</span>`;
-    } else {
+    else
       out += `<span class="invisible-char code-char"><span class="whitespace-code" aria-hidden="true">${codePoint(ch)}</span>${escapeHtml(ch)}</span>`;
-    }
   }
   return out;
 }
 
 /** Line breaks that follow an aligned row: as many as the side with more of them, so that both
  *  runtimes break at the same row and stay on shared lines. `\r\n` counts once. */
-export function pairLineBreaks(pair: {
-  ref?: CapturedToken;
-  target?: CapturedToken;
-}): number {
+export function pairLineBreaks(pair: {ref?: CapturedToken; target?: CapturedToken}): number {
   const count = (token: CapturedToken | undefined) =>
-    token?.text
-      ? (token.text.replace(/\r\n/g, '\n').match(/[\n\r]/g) ?? []).length
-      : 0;
+    token?.text ? (token.text.replace(/\r\n/g, '\n').match(/[\n\r]/g) ?? []).length : 0;
   return Math.max(count(pair.ref), count(pair.target));
 }

@@ -17,11 +17,7 @@
  */
 
 import {Injectable} from '@angular/core';
-import {
-  graphViewKey,
-  parseGraphView,
-  type GraphViewState,
-} from './graph_view_state';
+import {graphViewKey, parseGraphView, type GraphViewState} from './graph_view_state';
 
 @Injectable({providedIn: 'root'})
 export class GraphViewStore {
@@ -35,7 +31,6 @@ export class GraphViewStore {
     const key = graphViewKey(capture, batch);
     this.views.delete(key);
     this.views.set(key, view);
-    if (this.views.size > 64)
-      this.views.delete(this.views.keys().next().value!);
+    if (this.views.size > 64) this.views.delete(this.views.keys().next().value!);
   }
 }

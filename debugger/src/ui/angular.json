@@ -2,7 +2,7 @@
   "$schema": "./node_modules/@angular/cli/lib/config/schema.json",
   "version": 1,
   "projects": {
-    "model_explorer_debugger": {
+    "model_debugger": {
       "projectType": "application",
       "root": "",
       "sourceRoot": "src",
@@ -10,7 +10,7 @@
         "build": {
           "builder": "@angular-devkit/build-angular:application",
           "options": {
-            "outputPath": "dist/model_explorer_debugger",
+            "outputPath": "dist/model_debugger",
             "index": "src/index.html",
             "browser": "src/main.ts",
             "polyfills": ["zone.js"],
@@ -21,12 +21,12 @@
               {
                 "glob": "**/*",
                 "input": "public",
-                "ignore": ["**/README.md", "**/.gitignore", "**/VIEWPORT-BRIDGE.md"]
+                "ignore": ["**/README.md", "**/.gitignore", "**/VIEWPORT_BRIDGE.md"]
               },
               {
                 "glob": "plotly.min.js",
                 "input": "node_modules/plotly.js-dist-min",
-                "output": "vendor"
+                "output": "assets"
               }
             ],
             "styles": ["src/theme/styles.scss"]
@@ -37,8 +37,8 @@
               "budgets": [
                 {
                   "type": "initial",
-                  "maximumWarning": "850kB",
-                  "maximumError": "1MB"
+                  "maximumWarning": "1.8MB",
+                  "maximumError": "2MB"
                 }
               ]
             },
@@ -53,7 +53,7 @@
           "builder": "@angular-devkit/build-angular:dev-server",
           "configurations": {
             "development": {
-              "buildTarget": "model_explorer_debugger:build:development"
+              "buildTarget": "model_debugger:build:development"
             }
           },
           "defaultConfiguration": "development",

@@ -32,42 +32,45 @@
       }}
     </p>
   }
-  <explorer-info-section
-    label="Numerical Diff"
-    [expanded]="numericalExpanded()"
-    (expandedChange)="numericalExpanded.set($event)"
-  >
-    <mat-icon
-      section-action
-      class="metric-info"
-      tabindex="0"
-      title="Comparison across channels in this head. Signed Δ = Target − Ref."
-      aria-label="Comparison across channels in this head. Signed delta equals Target minus Ref."
-      >info_outline</mat-icon
+  @if (!plotOnly()) {
+    <explorer-info-section
+      label="Numerical Diff"
+      [expanded]="numericalExpanded()"
+      (expandedChange)="numericalExpanded.set($event)"
     >
-    <kv-metric-values
-      [metrics]="data.metrics"
-      [metricStatus]="data.metric_status"
-      label="Selected head numerical comparison"
-    />
-  </explorer-info-section>
+      <mat-icon
+        section-action
+        class="metric-info"
+        tabindex="0"
+        title="Comparison across head dimensions in this head. Signed Δ = Target − Ref."
+        aria-label="Comparison across head dimensions in this head. Signed delta equals Target minus Ref."
+        >info_outline</mat-icon
+      >
+      <kv-metric-values
+        [metrics]="data.metrics"
+        [metricStatus]="data.metric_status"
+        label="Selected head numerical comparison"
+      />
+    </explorer-info-section>
+  }
   <explorer-info-section
-    label="Channels"
+    [class.plot-only]="plotOnly()"
+    label="Head dimensions"
     [expanded]="channelsExpanded()"
     (expandedChange)="channelsExpanded.set($event)"
   >
     <div
       section-action
       class="view-switch"
-      [hidden]="!channels().length"
+      [hidden]="plotOnly() || !channels().length"
       role="group"
-      aria-label="Channel chart view"
+      aria-label="Head dimension chart view"
     >
       <button
         type="button"
         [attr.aria-pressed]="view() === 'index'"
-        aria-label="By channel"
-        title="By channel"
+        aria-label="By head dimension"
+        title="By head dimension"
         (click)="view.set('index')"
       >
         <mat-icon>show_chart</mat-icon></button
@@ -82,14 +85,28 @@
       </button>
     </div>
     @if (channels().length) {
-      <div class="channel-plot" #plotContainer>
-        @if (view() === 'index' && hasValues()) {
+      <div class="channel-plot" #plotContainer [hidden]="hidePlot()">
+        @if (hidePlot()) {
+        } @else if (plotOnly() && view() === 'index' && channelRange() && channelFull()) {
+          <kv-channel-chart
+            [rows]="channels()"
+            [range]="channelRange()!"
+            [full]="channelFull()!"
+            [reduction]="channelReduction()"
+            [capacity]="channelCapacity()"
+            [selected]="selected()?.channel ?? null"
+            (zoom)="channelZoom.emit($event)"
+            (select)="selectChannel($event)"
+            (capacityChange)="channelCapacityChange.emit($event)"
+            (keydown)="chartKey($event)"
+          />
+        } @else if (view() === 'index' && hasValues()) {
           <svg
             class="channel-chart"
             [attr.viewBox]="plotViewBox()"
             role="group"
             tabindex="0"
-            aria-label="Channel values. Left and right arrows select channels. Home and End select the first and last channel."
+            aria-label="Head dimension values. Left and right arrows select head dimensions. Home and End select the first and last head dimension."
             (keydown)="chartKey($event)"
           >
             <line class="ref-line legend-line" x1="12" x2="28" y1="12" y2="12" />
@@ -136,7 +153,7 @@
               [attr.y]="plotHeight - 3"
               text-anchor="middle"
             >
-              Channel index
+              Head dimension index
             </text>
             @for (path of paths(); track path.side) {
               <path [attr.class]="path.side + '-line value-line'" [attr.d]="path.d" />
@@ -187,7 +204,7 @@
             [attr.viewBox]="plotViewBox()"
             role="group"
             tabindex="0"
-            aria-label="Reference versus Target channel values. Diagonal means equal values. Arrow keys select channels."
+            aria-label="Reference versus Target head dimension values. Diagonal means equal values. Arrow keys select head dimensions."
             (keydown)="chartKey($event)"
           >
             <text class="legend-label" x="12" y="16">
@@ -269,114 +286,149 @@
           <p class="chart-unavailable">
             {{
               view() === 'scatter'
-                ? 'No aligned, finite Ref–Target pairs are available in this channel range.'
-                : 'No finite channel values are available in this range.'
+                ? 'No aligned, finite Ref–Target pairs are available in this head dimension range.'
+                : 'No finite head dimension values are available in this range.'
             }}
           </p>
         }
       </div>
-      @if (hasPages()) {
-        <nav class="channel-pages" aria-label="Channel chart range">
+      @if (!plotOnly()) {
+        <nav class="channel-pages" aria-label="Head dimension chart range">
           <button
             type="button"
             [disabled]="windowStart() === 0"
-            aria-label="Previous channel range"
+            aria-label="Previous head dimension range"
             (click)="movePage(-1)"
           >
             <mat-icon>chevron_left</mat-icon></button
           ><span
-            >Channels {{ plotChannels().at(0)?.channel }}–{{ plotChannels().at(-1)?.channel }} ·
-            {{ channels().length }} total</span
+            >Head dimensions {{ plotChannels().at(0)?.channel }}–{{
+              plotChannels().at(-1)?.channel
+            }}
+            · {{ channels().length }} total</span
           ><button
             type="button"
             [disabled]="!canNextPage()"
-            aria-label="Next channel range"
+            aria-label="Next head dimension range"
             (click)="movePage(1)"
           >
             <mat-icon>chevron_right</mat-icon>
           </button>
         </nav>
       }
-      <div class="channel-navigation">
-        <label
-          >Channel
-          <button
-            class="icon-button"
-            type="button"
-            aria-label="Previous channel"
-            [disabled]="selectedIndex() === 0"
-            (click)="moveChannel(-1)"
-          >
-            <mat-icon>chevron_left</mat-icon></button
-          ><input
-            aria-label="Channel index"
-            type="number"
-            step="1"
-            [min]="firstChannel()"
-            [max]="lastChannel()"
-            [value]="selected()?.channel"
-            (change)="commitChannel($event)"
-            (keydown)="channelInputKey($event)"
-          /><span>/ {{ lastChannel() }}</span
-          ><button
-            class="icon-button"
-            type="button"
-            aria-label="Next channel"
-            [disabled]="selectedIndex() === channels().length - 1"
-            (click)="moveChannel(1)"
-          >
-            <mat-icon>chevron_right</mat-icon>
-          </button></label
-        ><span class="divider"></span
-        ><button
-          class="icon-button"
-          type="button"
-          aria-label="Locate largest absolute delta channel"
-          title="Locate largest |Δ| channel"
-          [disabled]="largest() === null"
-          (click)="selectChannel(largest()!)"
-        >
-          <mat-icon>my_location</mat-icon>
-        </button>
-      </div>
-      <table class="channel-values" aria-label="Selected channel values">
-        <tbody>
-          @for (row of scalarRows(); track row.label) {
-            <tr>
-              <th scope="row">{{ row.label }}</th>
-              <td class="property-value" [class.unavailable]="!finite(row.value)">
+      @if (!plotOnly()) {
+        @if (aggregateSelection(); as bin) {
+          <div class="channel-navigation">
+            Head dimensions {{ bin.start }}–{{ bin.end - 1 }} ·
+            {{
+              channelReduction() === 'min'
+                ? 'Minimum'
+                : channelReduction() === 'max'
+                  ? 'Maximum'
+                  : 'Mean'
+            }}
+          </div>
+        } @else {
+          <div class="channel-navigation">
+            <label
+              >Head dimension
+              <button
+                class="icon-button"
+                type="button"
+                aria-label="Previous head dimension"
+                [disabled]="selectedIndex() === 0"
+                (click)="moveChannel(-1)"
+              >
+                <mat-icon>chevron_left</mat-icon></button
+              ><input
+                aria-label="Head dimension index"
+                type="number"
+                step="1"
+                [min]="firstChannel()"
+                [max]="lastChannel()"
+                [value]="selected()?.channel"
+                (change)="commitChannel($event)"
+                (keydown)="channelInputKey($event)"
+              /><span>/ {{ lastChannel() }}</span
+              ><button
+                class="icon-button"
+                type="button"
+                aria-label="Next head dimension"
+                [disabled]="selectedIndex() === channels().length - 1"
+                (click)="moveChannel(1)"
+              >
+                <mat-icon>chevron_right</mat-icon>
+              </button></label
+            ><span class="divider"></span
+            ><button
+              class="icon-button"
+              type="button"
+              aria-label="Locate largest absolute delta head dimension"
+              title="Locate largest |Δ| head dimension"
+              [disabled]="largest() === null"
+              (click)="selectChannel(largest()!)"
+            >
+              <mat-icon>my_location</mat-icon>
+            </button>
+          </div>
+        }
+        @if (selectionOutsideRange()) {
+          <p class="detail-note">Selected Head dimension is outside the displayed range.</p>
+        }
+        @if (plotOnly()) {
+          <div class="channel-readout" aria-label="Selected head dimension values">
+            @for (row of scalarRows(); track row.label) {
+              <span
+                ><span class="readout-label">{{ row.label }}</span>
                 <explorer-info-value
-                  [label]="'Channel ' + selected()?.channel + ' ' + row.label"
+                  [inline]="true"
+                  [label]="selectionLabel() + ' ' + row.label"
                   [value]="valueText(row.value, row.signed)"
                 />
-              </td>
-              <td class="property-action">
-                <button
-                  type="button"
-                  class="copy-value"
-                  [attr.aria-label]="'Copy ' + row.label"
-                  [title]="'Copy ' + row.label"
-                  [disabled]="row.value === null"
-                  (click)="copyValue(row.label, row.value, row.signed)"
-                >
-                  <mat-icon>content_copy</mat-icon>
-                </button>
-              </td>
-            </tr>
-          }
-        </tbody>
-      </table>
-      @if (selected()?.status !== 'ok') {
-        <p class="evidence-note">
-          {{ selected()?.status?.replaceAll('_', ' ') }} · Unavailable values are omitted from the
-          chart.
-        </p>
+              </span>
+            }
+          </div>
+        } @else {
+          <table class="channel-values" aria-label="Selected head dimension values">
+            <tbody>
+              @for (row of scalarRows(); track row.label) {
+                <tr>
+                  <th scope="row">{{ row.label }}</th>
+                  <td class="property-value" [class.unavailable]="!finite(row.value)">
+                    <explorer-info-value
+                      [label]="selectionLabel() + ' ' + row.label"
+                      [value]="valueText(row.value, row.signed)"
+                    />
+                  </td>
+                  <td class="property-action">
+                    <button
+                      type="button"
+                      class="copy-value"
+                      [attr.aria-label]="'Copy ' + row.label"
+                      [title]="'Copy ' + row.label"
+                      [disabled]="row.value === null"
+                      (click)="copyValue(row.label, row.value, row.signed)"
+                    >
+                      <mat-icon>content_copy</mat-icon>
+                    </button>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        }
+        @if (selected()?.status !== 'ok') {
+          <p class="evidence-note">
+            {{ selected()?.status?.replaceAll('_', ' ') }} · Unavailable values are omitted from the
+            chart.
+          </p>
+        }
+        <p class="copy-status" role="status">{{ copyStatus() }}</p>
       }
-      <p class="copy-status" role="status">{{ copyStatus() }}</p>
     } @else if (data.status !== 'batch_selection_required') {
-      <p class="evidence-note">Channel values are unavailable for this head.</p>
+      <p class="evidence-note">Head dimension values are unavailable for this head.</p>
     }
   </explorer-info-section>
 } @else {
-  <p class="evidence-message">Choose a head to inspect its captured channel values.</p>
+  <p class="evidence-message">Choose a head to inspect its captured head dimension values.</p>
 }

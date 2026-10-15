@@ -27,23 +27,16 @@ import {
 } from '@angular/core';
 import {MatButtonModule} from '@angular/material/button';
 import {ReportStateService} from '../../data/report_state_service';
-import {ConversationPanel} from '../../features/conversation/conversation_panel/conversation_panel';
+import {WorkspaceStateService} from '../workspace_state_service';
 import {GraphWorkspace} from '../../features/graph/graph_workspace/graph_workspace';
 import {KvPanel} from '../../features/kv/kv_panel/kv_panel';
+import {ConversationPanel} from '../../features/conversation/conversation_panel/conversation_panel';
 import {HomePage} from '../../features/sessions/home_page/home_page';
 import {AppToolbar} from '../app_toolbar/app_toolbar';
-import {WorkspaceStateService} from '../workspace_state_service';
 @Component({
   selector: 'report-app',
   standalone: true,
-  imports: [
-    MatButtonModule,
-    HomePage,
-    AppToolbar,
-    GraphWorkspace,
-    KvPanel,
-    ConversationPanel,
-  ],
+  imports: [MatButtonModule, HomePage, AppToolbar, GraphWorkspace, KvPanel, ConversationPanel],
   templateUrl: './report.ng.html',
   styleUrl: './report.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

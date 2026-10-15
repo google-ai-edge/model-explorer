@@ -48,18 +48,14 @@ export class KvFindController {
   draftFormula = '';
   private requestedResult = -1;
   readonly results = computed(() => this.host.data()?.results ?? []);
-  readonly resultPages = computed(() =>
-    Math.max(1, Math.ceil(this.resultTotal() / KV_FIND_PAGE)),
-  );
+  readonly resultPages = computed(() => Math.max(1, Math.ceil(this.resultTotal() / KV_FIND_PAGE)));
   constructor(private readonly host: KvFindHost) {}
 
   /** A page of results arrived for `page`; keep the page in range and honour a pending jump. */
   receive(data: KvFindResponse, page: number) {
     this.resultTotal.set(data.total);
     if (page > 0 && data.offset >= data.total) {
-      this.resultPage.set(
-        Math.max(0, Math.ceil(data.total / KV_FIND_PAGE) - 1),
-      );
+      this.resultPage.set(Math.max(0, Math.ceil(data.total / KV_FIND_PAGE) - 1));
       return;
     }
     const index = this.requestedResult - data.offset;

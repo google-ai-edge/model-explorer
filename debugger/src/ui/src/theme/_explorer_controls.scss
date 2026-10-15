@@ -98,13 +98,20 @@
   box-shadow: var(--debug-dock-shadow);
 }
 
+// Shared density for inline analysis selectors, numeric ranges and find fields.
+@mixin inline-control-density {
+  box-sizing: border-box;
+  height: 24px;
+  min-height: 24px;
+  padding: 2px 4px;
+  border-radius: 3px;
+  font: 400 12px/16px var(--me-font-family);
+}
+
 @mixin find-trigger {
-  height: 28px;
-  padding: 0 6px;
+  @include inline-control-density;
   min-width: 0;
   border: 1px solid var(--me-outline-variant-color);
-  border-radius: 4px;
-  font: 400 12px/20px var(--me-font-family);
   letter-spacing: normal;
   color: var(--me-on-surface-color);
 }
@@ -130,6 +137,50 @@
   background: var(--me-runtime-field-color);
 }
 
+// Shared trigger for single-choice and multi-choice configuration pickers.
+// Model Explorer graph_selector: 24px border-box, 12px text and compact insets.
+// Keep selector density independent of the larger configuration text fields.
+@mixin configuration-picker-trigger {
+  :host > button.mat-mdc-button-base.mat-mdc-button {
+    @include configuration-input;
+    @include inline-control-density;
+    min-width: 0;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    text-align: left;
+    letter-spacing: normal;
+    color: var(--me-on-surface-color);
+    &:disabled {
+      opacity: 0.5;
+    }
+  }
+  :host > button ::ng-deep .mat-mdc-button-touch-target {
+    height: 100%;
+  }
+  :host > button ::ng-deep .mdc-button__label {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  :host > button .value {
+    display: block;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  :host > button mat-icon {
+    flex: none;
+    margin: 0 0 0 4px;
+    font-size: 16px;
+    line-height: 16px;
+    width: 16px;
+    height: 16px;
+  }
+}
+
 // Model Explorer adapter_selector_panel surface and spacing.
 @mixin configuration-popup {
   box-sizing: border-box;
@@ -137,4 +188,52 @@
   background: var(--me-surface-container-low-color);
   color: var(--me-on-surface-color);
   box-shadow: var(--me-bubble-shadow);
+}
+
+// Shared Model Explorer dialog shell, matching Advanced settings.
+@mixin settings-dialog-shell {
+  display: block;
+  font: 13px/24px var(--me-font-family);
+  color: var(--me-on-surface-color);
+  --mat-dialog-subhead-color: var(--mat-button-text-label-text-color);
+  header {
+    padding: 33px 24px 9px;
+    margin-bottom: 1px;
+    border-bottom: 1px solid var(--me-outline-variant-color);
+    background: var(--me-surface-container-high-color);
+  }
+  h2[mat-dialog-title] {
+    padding: 0;
+    margin: 0;
+    font: 500 24px/32px var(--me-font-family);
+    letter-spacing: 0.25px;
+    color: var(--mat-dialog-subhead-color);
+  }
+  h2[mat-dialog-title]::before {
+    display: none;
+  }
+  p {
+    margin: 6px 0 0;
+    font: 500 12px/32px var(--me-font-family);
+    letter-spacing: 0.25px;
+    color: var(--me-on-surface-variant-color);
+  }
+  mat-dialog-content {
+    padding: 20px 24px 34px !important;
+    box-sizing: border-box;
+    background: var(--me-surface-container-low-color);
+    color: inherit;
+  }
+  mat-dialog-actions {
+    min-height: 53px;
+    padding: 8px;
+    border-top: 1px solid var(--me-outline-variant-color);
+    background: var(--me-surface-container-high-color);
+  }
+  button[mat-button] {
+    font: 500 14px/20px var(--me-font-family);
+    letter-spacing: normal;
+    color: var(--me-on-surface-color);
+  }
+  @include text-actions;
 }

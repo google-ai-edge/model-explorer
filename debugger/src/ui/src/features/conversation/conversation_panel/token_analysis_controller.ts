@@ -53,11 +53,7 @@ export class TokenAnalysisController {
   private readonly cache = new Map<string, TokenAnalysisPair>();
   constructor(private readonly api: TokenAnalysisApi) {}
 
-  load(
-    captureId: string | null,
-    requests: AnalysisRequest[],
-    signal: AbortSignal,
-  ) {
+  load(captureId: string | null, requests: AnalysisRequest[], signal: AbortSignal) {
     if (captureId !== this.captureId) {
       this.captureId = captureId;
       this.cache.clear();
@@ -67,14 +63,10 @@ export class TokenAnalysisController {
     const batches: AnalysisRequest[] = [];
     for (const request of requests) {
       const missing = request.pairs.filter(
-        (pair) =>
-          !this.cache.has(analysisKey(request.turn, pair.ref, pair.target)),
+        (pair) => !this.cache.has(analysisKey(request.turn, pair.ref, pair.target)),
       );
       for (let offset = 0; offset < missing.length; offset += ANALYSIS_BATCH)
-        batches.push({
-          turn: request.turn,
-          pairs: missing.slice(offset, offset + ANALYSIS_BATCH),
-        });
+        batches.push({turn: request.turn, pairs: missing.slice(offset, offset + ANALYSIS_BATCH)});
     }
     if (!captureId || !batches.length) {
       this.loading.set(false);
@@ -84,30 +76,16 @@ export class TokenAnalysisController {
     const worker = async () => {
       while (batches.length && !signal.aborted) {
         const batch = batches.shift()!;
-        const data = await this.api.tokenAnalysis(
-          captureId,
-          batch.turn,
-          batch.pairs,
-          signal,
-        );
+        const data = await this.api.tokenAnalysis(captureId, batch.turn, batch.pairs, signal);
         if (signal.aborted) return;
         for (const pair of data.pairs)
-          this.cache.set(
-            analysisKey(data.turn, pair.ref_step, pair.target_step),
-            pair,
-          );
+          this.cache.set(analysisKey(data.turn, pair.ref_step, pair.target_step), pair);
         this.results.set(new Map(this.cache));
       }
     };
-    void Promise.all(
-      Array.from(
-        {length: Math.min(ANALYSIS_CONCURRENCY, batches.length)},
-        worker,
-      ),
-    )
+    void Promise.all(Array.from({length: Math.min(ANALYSIS_CONCURRENCY, batches.length)}, worker))
       .catch(() => {
-        if (!signal.aborted)
-          this.error.set('Token metrics could not be loaded.');
+        if (!signal.aborted) this.error.set('Token metrics could not be loaded.');
       })
       .finally(() => {
         if (!signal.aborted) this.loading.set(false);

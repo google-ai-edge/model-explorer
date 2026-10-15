@@ -22,22 +22,19 @@ import {AboutDialog} from './about_dialog';
 
 describe('AboutDialog', () => {
   it('lists every bundled resource with a reachable notice link', () => {
-    TestBed.configureTestingModule({
-      providers: [{provide: MatDialogRef, useValue: {close() {}}}],
-    });
+    TestBed.configureTestingModule({providers: [{provide: MatDialogRef, useValue: {close() {}}}]});
     const fixture = TestBed.createComponent(AboutDialog);
     fixture.detectChanges();
     const element: HTMLElement = fixture.nativeElement;
-    const links = Array.from(
-      element.querySelectorAll<HTMLAnchorElement>('a'),
-    ).map((a) => a.getAttribute('href'));
+    const links = Array.from(element.querySelectorAll<HTMLAnchorElement>('a')).map((a) =>
+      a.getAttribute('href'),
+    );
     for (const expected of [
-      'licenses/model-explorer.txt',
-      'graph-execution/upstream/model-explorer/PROVENANCE.json',
-      'fonts/LICENSE-material-icons.txt',
+      'licenses/model_explorer.txt',
+      'graph_execution/upstream/model_explorer/PROVENANCE.json',
+      'fonts/license_material_icons.txt',
       '3rdpartylicenses.txt',
-    ]) {
+    ])
       expect(links).toContain(expected);
-    }
   });
 });

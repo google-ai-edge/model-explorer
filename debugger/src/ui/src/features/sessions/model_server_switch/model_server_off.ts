@@ -18,7 +18,7 @@
 
 import {Component, inject} from '@angular/core';
 import {MatButtonModule} from '@angular/material/button';
-import {MAT_DIALOG_DATA, MatDialogModule} from '@angular/material/dialog';
+import {MatDialogModule, MAT_DIALOG_DATA} from '@angular/material/dialog';
 import type {SessionSummary} from '../../../data/contracts/session_summary';
 
 /** Turning a Model Server off ends its chat: the runtime cannot resume that context later. */

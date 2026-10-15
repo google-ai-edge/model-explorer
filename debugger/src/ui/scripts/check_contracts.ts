@@ -16,6 +16,7 @@
  * ==============================================================================
  */
 
+import preview from '../src/fixtures/report_preview.json';
 import type {
   CapturedBatch,
   CapturedPhase,
@@ -23,7 +24,6 @@ import type {
   Session,
 } from '../src/data/contracts/capture';
 import type {TensorRecord} from '../src/data/contracts/types';
-import preview from '../src/fixtures/report-preview.json';
 
 // The fixture conforms to the production contract. It never defines the contract.
 preview satisfies Session;

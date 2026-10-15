@@ -33,20 +33,9 @@ const {graphViewKey, parseGraphView, resolveGraphView} = await import(
 );
 const snapshot = () => ({
   version: 1,
-  query: {
-    text: 'residual',
-    anchor: '',
-    metric: 'CosSim',
-    operator: 'lt',
-    threshold: '0',
-    withMetrics: false,
-  },
   metric: 'CosSim',
   details: true,
-  results: false,
-  trends: true,
   detailsWidth: 350,
-  trendHeight: 140,
   context: {layer: 0, semantic: 'anchor:output'},
   execution: true,
   viewport: {layer: 0, zoom: 1.2, left: 40, top: 150},
@@ -59,16 +48,29 @@ const model = {
   ],
 };
 
-test('Graph return snapshots preserve query, panel and canvas state with independent copies', () => {
+test('Graph return snapshots preserve Details, selection and canvas state with independent copies', () => {
   const original = snapshot();
   const restored = resolveGraphView(original, model, 0, ['CosSim']);
   assert.deepEqual(restored, original);
-  original.query.text = 'edited';
+  original.context.semantic = 'edited';
   original.viewport.top = 900;
-  assert.equal(restored.query.text, 'residual');
+  assert.equal(restored.context.semantic, 'anchor:output');
   assert.equal(restored.viewport.top, 150);
   assert.notEqual(graphViewKey('capture:1', 2), graphViewKey('capture', 12));
   assert.notEqual(graphViewKey('capture', 1), graphViewKey('capture', 2));
+});
+
+test('legacy toolbar, Results and chart settings are stripped without losing graph reading state', () => {
+  const current = snapshot();
+  const legacy = {
+    ...current,
+    query: {text: 'saved filter'},
+    results: true,
+    trends: true,
+    trendHeight: 140,
+  };
+  assert.deepEqual(parseGraphView(legacy), current);
+  assert.deepEqual(resolveGraphView(legacy, model, 0, ['CosSim']), current);
 });
 
 test('returning to another layer discards old selection and viewport without changing current context', () => {
@@ -76,24 +78,23 @@ test('returning to another layer discards old selection and viewport without cha
   assert.equal(restored.context, null);
   assert.equal(restored.viewport, null);
   assert.equal(restored.execution, false);
-  assert.equal(restored.query.text, 'residual');
+  assert.equal(restored.metric, 'CosSim');
 });
 
 test('changed graph metadata rejects stale semantic selection and unsupported metrics', () => {
   const source = snapshot();
   source.context.semantic = 'anchor:missing';
   source.metric = 'obsolete';
-  source.query.metric = 'obsolete';
   const restored = resolveGraphView(source, model, 0, ['RMSE']);
   assert.equal(restored.context, null);
   assert.equal(restored.execution, false);
   assert.equal(restored.metric, 'RMSE');
-  assert.equal(restored.query.metric, 'RMSE');
 });
 
 test('unknown versions and invalid viewport values are rejected; panel sizes are bounded', () => {
   assert.equal(parseGraphView({...snapshot(), version: 99}), null);
-  assert.equal(parseGraphView({...snapshot(), query: {text: 'partial'}}), null);
+  assert.equal(parseGraphView({...snapshot(), details: 'invalid'}), null);
+  assert.equal(parseGraphView({...snapshot(), detailsWidth: NaN}), null);
   assert.equal(
     parseGraphView({...snapshot(), viewport: {...snapshot().viewport, zoom: NaN}}),
     null,

@@ -19,10 +19,7 @@
 /** Scrollbar geometry and interaction adapted from candidates updateConversationScrollbar.
  * Keeps the reading grid full-width without removing pointer/keyboard scrolling.
  */
-export function createConversationScrollbar(
-  root: HTMLElement,
-  isEnabled: () => boolean,
-) {
+export function createConversationScrollbar(root: HTMLElement, isEnabled: () => boolean) {
   const bar = document.createElement('div');
   bar.className = 'conversationScrollbar';
   bar.tabIndex = 0;
@@ -43,16 +40,11 @@ export function createConversationScrollbar(
     const wr = root.getBoundingClientRect(),
       sr = sc.getBoundingClientRect(),
       dock = root.querySelector('.composer')!.getBoundingClientRect();
-    const head =
-      sc.querySelector('.column-headings')?.getBoundingClientRect().height ??
-      60;
+    const head = sc.querySelector('.column-headings')?.getBoundingClientRect().height ?? 60;
     const top = sr.top + head,
       height = Math.max(40, Math.min(sr.bottom, dock.top - 12) - top - 8),
       max = Math.max(0, sc.scrollHeight - sc.clientHeight),
-      thumb = Math.min(
-        height,
-        Math.max(30, (height * sc.clientHeight) / sc.scrollHeight),
-      );
+      thumb = Math.min(height, Math.max(30, (height * sc.clientHeight) / sc.scrollHeight));
     bar.style.left = sr.right - wr.left - 12 + 'px';
     bar.style.top = top - wr.top + 4 + 'px';
     bar.style.height = height + 'px';
@@ -108,11 +100,7 @@ export function createConversationScrollbar(
         sc.scrollTop =
           Math.max(
             0,
-            Math.min(
-              1,
-              (event.clientY - rect.top - offset) /
-                Math.max(1, rect.height - thumb),
-            ),
+            Math.min(1, (event.clientY - rect.top - offset) / Math.max(1, rect.height - thumb)),
           ) *
           (sc.scrollHeight - sc.clientHeight);
       update();
@@ -131,10 +119,7 @@ export function createConversationScrollbar(
       if (next !== sc) {
         sc = next;
         if (sc) {
-          sc.addEventListener('scroll', active, {
-            passive: true,
-            signal: abort.signal,
-          });
+          sc.addEventListener('scroll', active, {passive: true, signal: abort.signal});
           sc.addEventListener(
             'pointermove',
             (e) => {
