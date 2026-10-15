@@ -26,9 +26,9 @@ import {
   output,
   signal,
 } from '@angular/core';
-import {ExplicitPair, ResourcePreview} from '../../../data/contracts/telemetry';
 import {ReportApiService} from '../../../data/report_api_service';
 import {ReportStateService} from '../../../data/report_state_service';
+import {ExplicitPair, ResourcePreview} from '../../../data/contracts/telemetry';
 import {batchForwardId} from '../batch_forward';
 
 /** Evidence-backed pairs retain their own declared observation coordinates. */
@@ -55,9 +55,7 @@ export class ExplicitPairs {
   readonly previewError = signal('');
   private readonly revision = signal(0);
   readonly pairs = computed(() => {
-    const batch = this.state
-      .session()
-      ?.batches.find((b) => b.batch === this.state.batchId());
+    const batch = this.state.session()?.batches.find((b) => b.batch === this.state.batchId());
     if (!batch) return [];
     return this.records()
       .filter(
@@ -72,34 +70,24 @@ export class ExplicitPairs {
               (batch.forward_ids
                 ? batchForwardId(batch, id) != null &&
                   run.observation.forward_id === batchForwardId(batch, id)
-                : batch.forward_id == null ||
-                  run.observation.forward_id === batch.forward_id),
+                : batch.forward_id == null || run.observation.forward_id === batch.forward_id),
           ),
       )
       .sort((a, b) =>
         this.scope() === 'kv'
           ? (a.owner_layer ?? 0) - (b.owner_layer ?? 0) ||
             (a.kind === 'key' ? 0 : 1) - (b.kind === 'key' ? 0 : 1)
-          : (a.compared_position_range?.[0] ?? 0) -
-            (b.compared_position_range?.[0] ?? 0),
+          : (a.compared_position_range?.[0] ?? 0) - (b.compared_position_range?.[0] ?? 0),
       );
   });
   readonly selected = computed<ExplicitPair | undefined>(
-    () =>
-      this.pairs().find((pair) => pair.pair_id === this.selectedId()) ??
-      this.pairs()[0],
+    () => this.pairs().find((pair) => pair.pair_id === this.selectedId()) ?? this.pairs()[0],
   );
   readonly shown = computed(() =>
-    this.scope() === 'kv'
-      ? this.selected()
-        ? [this.selected()!]
-        : []
-      : this.pairs(),
+    this.scope() === 'kv' ? (this.selected() ? [this.selected()!] : []) : this.pairs(),
   );
   readonly nextAvailable = computed(() =>
-    this.previews().some(
-      (p) => p != null && p.offset + p.values.length < p.total,
-    ),
+    this.previews().some((p) => p != null && p.offset + p.values.length < p.total),
   );
   constructor() {
     effect((onCleanup) => {
@@ -141,29 +129,18 @@ export class ExplicitPairs {
       if (this.scope() !== 'kv' || !pair) return;
       Promise.allSettled(
         ['ref', 'target'].map((role) =>
-          this.api.pairTensor(
-            captureId,
-            pair.pair_id,
-            role,
-            mode,
-            offset,
-            controller.signal,
-          ),
+          this.api.pairTensor(captureId, pair.pair_id, role, mode, offset, controller.signal),
         ),
       ).then((results) => {
         if (controller.signal.aborted) return;
         this.previews.set(
-          results.map((result) =>
-            result.status === 'fulfilled' ? result.value : null,
-          ),
+          results.map((result) => (result.status === 'fulfilled' ? result.value : null)),
         );
         this.previewError.set(
           results
             .flatMap((result, index) =>
               result.status === 'rejected'
-                ? [
-                    `${index === 0 ? 'Reference' : 'Target'}: ${result.reason.message}`,
-                  ]
+                ? [`${index === 0 ? 'Reference' : 'Target'}: ${result.reason.message}`]
                 : [],
             )
             .join(' · '),
@@ -191,10 +168,7 @@ export class ExplicitPairs {
   }
   view(value: ExplicitPair['runs'][string]) {
     return value.view
-      .map(
-        (axis) =>
-          `${axis.start}:${axis.stop}${axis.step === 1 ? '' : ':' + axis.step}`,
-      )
+      .map((axis) => `${axis.start}:${axis.stop}${axis.step === 1 ? '' : ':' + axis.step}`)
       .join(', ');
   }
   profile(value: unknown) {

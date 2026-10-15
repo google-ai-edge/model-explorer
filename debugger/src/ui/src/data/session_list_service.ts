@@ -17,12 +17,8 @@
  */
 
 import {computed, DestroyRef, inject, Injectable, signal} from '@angular/core';
-import {
-  SessionConfig,
-  SessionListing,
-  SessionSummary,
-} from './contracts/session_summary';
 import {ReportApiService} from './report_api_service';
+import {SessionListing, SessionConfig, SessionSummary} from './contracts/session_summary';
 import {sessionExecutionPhase, sessionIsActive} from './session_status';
 
 /** Home-page metadata is independent of tensor/graph loading. */
@@ -37,9 +33,7 @@ export class SessionListService {
   readonly error = signal('');
   readonly refreshError = signal('');
   readonly allItems = computed(() => this.listing()?.sessions ?? []);
-  readonly items = computed(() =>
-    this.allItems().filter((s) => !s.parent_session_id),
-  );
+  readonly items = computed(() => this.allItems().filter((s) => !s.parent_session_id));
   constructor() {
     void this.load();
     // UI refresh only; Runner heartbeats belong to the Server.
@@ -56,8 +50,7 @@ export class SessionListService {
     });
   }
   async load(quiet = false) {
-    if (this.mutations || (quiet && (this.loading() || this.refreshing)))
-      return;
+    if (this.mutations || (quiet && (this.loading() || this.refreshing))) return;
     this.refreshing = true;
     const request = ++this.loadRequest;
     this.loading.set(!quiet);
@@ -85,20 +78,10 @@ export class SessionListService {
   executionPhase = sessionExecutionPhase;
   active = sessionIsActive;
   async manage(
-    operation:
-      | 'create'
-      | 'update'
-      | 'duplicate'
-      | 'chat'
-      | 'chat-config'
-      | 'delete'
-      | 'restore',
+    operation: 'create' | 'update' | 'duplicate' | 'chat' | 'chat-config' | 'delete' | 'restore',
     payload: Partial<SessionConfig> & {id?: string},
   ) {
-    return this.change(
-      () => this.api.manageSession(operation, payload),
-      operation === 'delete',
-    );
+    return this.change(() => this.api.manageSession(operation, payload), operation === 'delete');
   }
   async rename(id: string, name: string) {
     return this.change(() => this.api.renameSession(id, name));
@@ -118,9 +101,7 @@ export class SessionListService {
               sessions: remove
                 ? value.sessions.filter((s) => s.id !== updated.id)
                 : value.sessions.some((s) => s.id === updated.id)
-                  ? value.sessions.map((s) =>
-                      s.id === updated.id ? updated : s,
-                    )
+                  ? value.sessions.map((s) => (s.id === updated.id ? updated : s))
                   : [...value.sessions, updated],
             }
           : value,

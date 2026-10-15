@@ -16,7 +16,4 @@
  * ==============================================================================
  */
 
-export function mountEmptyChatDemo(
-  root: HTMLElement,
-  demo: HTMLElement,
-): () => void;
+export function mountEmptyChatDemo(root: HTMLElement, demo: HTMLElement): () => void;

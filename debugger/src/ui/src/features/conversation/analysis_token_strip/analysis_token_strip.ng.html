@@ -1,0 +1,80 @@
+<!--
+ Copyright 2026 The AI Edge Model Explorer Authors.
+
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+ ==============================================================================
+-->
+<button
+  class="page-control"
+  type="button"
+  aria-label="Previous token page"
+  matTooltip="Previous token page"
+  [disabled]="page() === 0"
+  (click)="move(-1)"
+>
+  <mat-icon>chevron_left</mat-icon>
+</button>
+<div class="runtime-labels" aria-hidden="true">
+  <span class="reference">Ref</span><span class="target">Target</span>
+</div>
+<div #viewport class="viewport" [attr.aria-label]="pageLabel()">
+  @for (column of visible(); track column.start) {
+    <button
+      type="button"
+      class="token-column"
+      [style.width.px]="column.width"
+      [class.selected]="isSelected(column)"
+      [disabled]="disabled()"
+      [attr.aria-pressed]="isSelected(column)"
+      [attr.aria-label]="'Select positions ' + label(column)"
+      (click)="selectRange.emit({start: column.start, end: column.end})"
+    >
+      @for (side of ['ref', 'target']; track side) {
+        <span
+          class="token-row"
+          [class.target]="side === 'target'"
+          [class.mismatch]="column.mismatchCount > 0"
+        >
+          @if (column.before) {
+            <span class="ellipsis" aria-hidden="true">…</span>
+          }
+          @for (token of column.tokens; track token.position) {
+            @let value = side === 'ref' ? token.pair.ref : token.pair.target;
+            <span
+              class="token"
+              [class.gap]="!value"
+              [innerHTML]="markup(value ? tokenLabel(value) : '∅')"
+            ></span>
+          } @empty {
+            <span class="token gap">∅</span>
+          }
+          @if (column.after) {
+            <span class="ellipsis" aria-hidden="true">…</span>
+          }
+        </span>
+      }
+    </button>
+  } @empty {
+    <span class="empty">No captured tokens in this range</span>
+  }
+</div>
+<button
+  class="page-control"
+  type="button"
+  aria-label="Next token page"
+  matTooltip="Next token page"
+  [disabled]="page() >= pages().length - 1"
+  (click)="move(1)"
+>
+  <mat-icon>chevron_right</mat-icon>
+</button>

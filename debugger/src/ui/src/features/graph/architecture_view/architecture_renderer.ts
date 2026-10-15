@@ -17,19 +17,10 @@
  */
 
 import dagre from '@dagrejs/dagre';
-import type {
-  Anchor,
-  ComparisonRow,
-  Semantic,
-} from '../../../data/contracts/types';
+import type {Anchor, ComparisonRow, Semantic} from '../../../data/contracts/types';
 import {formatMetric} from '../../../shared/format/format';
 
-export type ArchitectureAction =
-  | 'focus'
-  | 'fit'
-  | 'readable'
-  | 'zoomIn'
-  | 'zoomOut';
+export type ArchitectureAction = 'focus' | 'fit' | 'readable' | 'zoomIn' | 'zoomOut';
 export interface ArchitectureSelection {
   kind: 'architecture' | 'tensor';
   id: string;
@@ -86,15 +77,13 @@ function svgElement<K extends keyof SVGElementTagNameMap>(
   text?: string,
 ): SVGElementTagNameMap[K] {
   const node = document.createElementNS(NS, tag);
-  for (const [key, value] of Object.entries(attributes))
-    node.setAttribute(key, String(value));
+  for (const [key, value] of Object.entries(attributes)) node.setAttribute(key, String(value));
   if (text !== undefined) node.textContent = text;
   return node;
 }
 function binding(of: string): {node: string; port: string} {
   const split = of.lastIndexOf(':');
-  if (split < 1 || split === of.length - 1)
-    throw new Error(`Invalid anchor binding: ${of}`);
+  if (split < 1 || split === of.length - 1) throw new Error(`Invalid anchor binding: ${of}`);
   return {node: of.slice(0, split), port: of.slice(split + 1)};
 }
 const portKey = (node: string, port: string) => JSON.stringify([node, port]);
@@ -121,8 +110,7 @@ export function buildArchitectureTopology(
       (anchor) => binding(anchor.of).node === input.id && anchor.edge !== 'in',
     );
     // A layer-input anchor and its input port represent the same value.
-    if (anchors.length === 1)
-      inputAliases.set(input.id, 'anchor:' + anchors[0].id);
+    if (anchors.length === 1) inputAliases.set(input.id, 'anchor:' + anchors[0].id);
     else
       nodes.push({
         id: input.id,
@@ -136,10 +124,7 @@ export function buildArchitectureTopology(
   for (const node of definition.nodes) {
     const declaredOps = (node as typeof node & {ops?: unknown[]}).ops;
     const compound =
-      Math.max(
-        declaredOps?.length ?? 0,
-        Object.keys(info.attrs?.[node.id]?.ops ?? {}).length,
-      ) > 1;
+      Math.max(declaredOps?.length ?? 0, Object.keys(info.attrs?.[node.id]?.ops ?? {}).length) > 1;
     nodes.push({
       id: node.id,
       kind: 'architecture',
@@ -154,8 +139,7 @@ export function buildArchitectureTopology(
   for (const anchor of definition.anchors) {
     const source = binding(anchor.of),
       id = 'anchor:' + anchor.id;
-    if (!known.has(source.node))
-      throw new Error(`Unresolved anchor: ${anchor.of}`);
+    if (!known.has(source.node)) throw new Error(`Unresolved anchor: ${anchor.of}`);
     nodes.push({
       id,
       kind: 'tensor',
@@ -170,33 +154,21 @@ export function buildArchitectureTopology(
     if (inputAliases.get(source.node) !== id)
       edges.push({
         id: 'anchor:' + anchor.id,
-        source:
-          anchor.edge === 'in'
-            ? id
-            : (inputAliases.get(source.node) ?? source.node),
-        target:
-          anchor.edge === 'in'
-            ? (inputAliases.get(source.node) ?? source.node)
-            : id,
+        source: anchor.edge === 'in' ? id : (inputAliases.get(source.node) ?? source.node),
+        target: anchor.edge === 'in' ? (inputAliases.get(source.node) ?? source.node) : id,
       });
   }
   for (const node of definition.nodes) {
     for (const [index, edge] of (node.incomingEdges ?? []).entries()) {
       if (!known.has(edge.sourceNodeId))
         throw new Error(`Unresolved edge: ${edge.sourceNodeId} → ${node.id}`);
-      const sources = anchoredOutputs.get(
-        portKey(edge.sourceNodeId, edge.sourceNodeOutputId),
-      ) ?? [inputAliases.get(edge.sourceNodeId) ?? edge.sourceNodeId];
-      const targets = anchoredInputs.get(
-        portKey(node.id, edge.targetNodeInputId),
-      ) ?? [node.id];
+      const sources = anchoredOutputs.get(portKey(edge.sourceNodeId, edge.sourceNodeOutputId)) ?? [
+        inputAliases.get(edge.sourceNodeId) ?? edge.sourceNodeId,
+      ];
+      const targets = anchoredInputs.get(portKey(node.id, edge.targetNodeInputId)) ?? [node.id];
       for (const source of sources)
         for (const target of targets)
-          edges.push({
-            id: `${node.id}:${index}:${source}:${target}`,
-            source,
-            target,
-          });
+          edges.push({id: `${node.id}:${index}:${source}:${target}`, source, target});
     }
   }
   if (new Set(nodes.map((node) => node.id)).size !== nodes.length)
@@ -204,10 +176,7 @@ export function buildArchitectureTopology(
   return nodes.length ? {nodes, edges} : null;
 }
 
-export function architectureMetric(
-  row: ComparisonRow | undefined,
-  metric: string,
-): number | null {
+export function architectureMetric(row: ComparisonRow | undefined, metric: string): number | null {
   const reading = row?.metrics[metric];
   return reading?.status === 'ok' &&
     typeof reading.value === 'number' &&
@@ -216,19 +185,10 @@ export function architectureMetric(
     : null;
 }
 function magnitude(value: number | null, metric: string): number | null {
-  return value === null
-    ? null
-    : metric === 'CosSim'
-      ? Math.max(0, 1 - value)
-      : Math.abs(value);
+  return value === null ? null : metric === 'CosSim' ? Math.max(0, 1 - value) : Math.abs(value);
 }
 const format = (value: number | null) =>
-  formatMetric(value, {
-    placeholder: '—',
-    exponentDigits: 3,
-    small: 0.0001,
-    large: 1000,
-  });
+  formatMetric(value, {placeholder: '—', exponentDigits: 3, small: 0.0001, large: 1000});
 
 export class ArchitectureRenderer {
   private options?: ArchitectureOptions;
@@ -258,9 +218,7 @@ export class ArchitectureRenderer {
   ) {
     const activate = (event: Event) => {
       const target = event.target instanceof Element ? event.target : null;
-      const execute = target?.closest<SVGGElement>(
-        '[data-architecture-execute]',
-      );
+      const execute = target?.closest<SVGGElement>('[data-architecture-execute]');
       if (execute && host.contains(execute)) {
         this.actions.execute(execute.dataset['architectureExecute']!);
         return;
@@ -277,9 +235,7 @@ export class ArchitectureRenderer {
         if (
           (event.key === 'Enter' || event.key === ' ') &&
           event.target instanceof Element &&
-          event.target.closest(
-            '[data-architecture-id],[data-architecture-execute]',
-          )
+          event.target.closest('[data-architecture-id],[data-architecture-execute]')
         ) {
           event.preventDefault();
           activate(event);
@@ -302,11 +258,7 @@ export class ArchitectureRenderer {
       const key = JSON.stringify([options.layer, topology]);
       if (key !== this.key) {
         this.saveViewport();
-        const position = this.viewByLayer.get(options.layer) ?? {
-          zoom: 1,
-          left: 0,
-          top: 0,
-        };
+        const position = this.viewByLayer.get(options.layer) ?? {zoom: 1, left: 0, top: 0};
         this.currentLayer = options.layer;
         this.zoom = position.zoom;
         if (topology) {
@@ -314,16 +266,13 @@ export class ArchitectureRenderer {
           this.applyDimensions();
           this.viewport!.scrollLeft = position.left;
           this.viewport!.scrollTop = position.top;
-        } else
-          this.empty('No architecture definition captured for this layer.');
+        } else this.empty('No architecture definition captured for this layer.');
         this.key = key;
       }
       if (topology) this.update();
     } catch (error) {
       this.empty(
-        error instanceof Error
-          ? error.message
-          : 'Architecture could not be displayed.',
+        error instanceof Error ? error.message : 'Architecture could not be displayed.',
         true,
       );
       this.key = '';
@@ -374,8 +323,7 @@ export class ArchitectureRenderer {
     const selection = this.options?.selection;
     let id = focusId ?? selection?.id;
     if (!id) return null;
-    if (!focusId && selection?.kind === 'tensor' && !id.startsWith('anchor:'))
-      id = 'anchor:' + id;
+    if (!focusId && selection?.kind === 'tensor' && !id.startsWith('anchor:')) id = 'anchor:' + id;
     if (this.elements.has(id)) return id;
     return this.elements.has('anchor:' + id) ? 'anchor:' + id : null;
   }
@@ -401,8 +349,7 @@ export class ArchitectureRenderer {
     const viewport = this.viewport,
       bounds = viewport.getBoundingClientRect(),
       before = this.svg.getBoundingClientRect();
-    const x =
-      (bounds.left + viewport.clientWidth / 2 - before.left) / this.zoom;
+    const x = (bounds.left + viewport.clientWidth / 2 - before.left) / this.zoom;
     const y = (bounds.top + viewport.clientHeight / 2 - before.top) / this.zoom;
     this.zoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, value));
     this.applyDimensions();
@@ -414,10 +361,8 @@ export class ArchitectureRenderer {
     const viewport = this.viewport,
       bounds = viewport.getBoundingClientRect(),
       svg = this.svg.getBoundingClientRect();
-    viewport.scrollLeft +=
-      svg.left + x * this.zoom - bounds.left - viewport.clientWidth / 2;
-    viewport.scrollTop +=
-      svg.top + y * this.zoom - bounds.top - viewport.clientHeight / 2;
+    viewport.scrollLeft += svg.left + x * this.zoom - bounds.left - viewport.clientWidth / 2;
+    viewport.scrollTop += svg.top + y * this.zoom - bounds.top - viewport.clientHeight / 2;
     this.saveViewport();
   }
   private updateControls(): void {
@@ -470,20 +415,12 @@ export class ArchitectureRenderer {
 
   private draw(topology: ArchitectureTopology): void {
     const graph = new dagre.graphlib.Graph({multigraph: true});
-    graph.setGraph({
-      rankdir: 'TB',
-      nodesep: 30,
-      ranksep: 18,
-      marginx: 24,
-      marginy: 20,
-    });
+    graph.setGraph({rankdir: 'TB', nodesep: 30, ranksep: 18, marginx: 24, marginy: 20});
     graph.setDefaultEdgeLabel(() => ({}));
     for (const node of topology.nodes)
       graph.setNode(node.id, {width: node.width, height: node.height});
-    for (const edge of topology.edges)
-      graph.setEdge(edge.source, edge.target, {}, edge.id);
-    if (!dagre.graphlib.alg.isAcyclic(graph))
-      throw new Error('Semantic graph contains a cycle.');
+    for (const edge of topology.edges) graph.setEdge(edge.source, edge.target, {}, edge.id);
+    if (!dagre.graphlib.alg.isAcyclic(graph)) throw new Error('Semantic graph contains a cycle.');
     dagre.layout(graph);
     this.width = graph.graph().width ?? 0;
     this.height = graph.graph().height ?? 0;
@@ -509,9 +446,7 @@ export class ArchitectureRenderer {
       marker.append(
         svgElement('path', {
           d: 'M0,0 L8,4 L0,8',
-          class: suffix
-            ? 'architectureRelationArrowHead'
-            : 'architectureArrowHead',
+          class: suffix ? 'architectureRelationArrowHead' : 'architectureArrowHead',
         }),
       );
       defs.append(marker);
@@ -562,12 +497,7 @@ export class ArchitectureRenderer {
         group.append(
           svgElement(
             'text',
-            {
-              class: 'architectureTensorName',
-              x: node.width / 2,
-              y: 17,
-              'text-anchor': 'middle',
-            },
+            {class: 'architectureTensorName', x: node.width / 2, y: 17, 'text-anchor': 'middle'},
             this.label(node.name, 36),
           ),
         );
@@ -596,12 +526,7 @@ export class ArchitectureRenderer {
           group.append(
             svgElement(
               'text',
-              {
-                class: 'architectureNodeAction',
-                x: node.width / 2,
-                y: 39,
-                'text-anchor': 'middle',
-              },
+              {class: 'architectureNodeAction', x: node.width / 2, y: 39, 'text-anchor': 'middle'},
               'View execution ↗',
             ),
           );
@@ -676,26 +601,15 @@ export class ArchitectureRenderer {
   private bindViewport(viewport: HTMLDivElement): void {
     this.viewportListeners = new AbortController();
     const signal = this.viewportListeners.signal;
-    let drag: {
-      id: number;
-      x: number;
-      y: number;
-      left: number;
-      top: number;
-    } | null = null;
-    viewport.addEventListener('scroll', () => this.saveViewport(), {
-      passive: true,
-      signal,
-    });
+    let drag: {id: number; x: number; y: number; left: number; top: number} | null = null;
+    viewport.addEventListener('scroll', () => this.saveViewport(), {passive: true, signal});
     viewport.addEventListener(
       'pointerdown',
       (event) => {
         if (
           event.button !== 0 ||
           (event.target instanceof Element &&
-            event.target.closest(
-              '[data-architecture-id],[data-architecture-execute]',
-            ))
+            event.target.closest('[data-architecture-id],[data-architecture-execute]'))
         )
           return;
         drag = {
@@ -768,16 +682,12 @@ export class ArchitectureRenderer {
       );
     }
     const rows = new Map(
-      options.rows
-        .filter((row) => row.layer === options.layer)
-        .map((row) => [row.anchor, row]),
+      options.rows.filter((row) => row.layer === options.layer).map((row) => [row.anchor, row]),
     );
     const maximum = Math.max(
       0,
       ...options.rows.map(
-        (row) =>
-          magnitude(architectureMetric(row, options.metric), options.metric) ??
-          0,
+        (row) => magnitude(architectureMetric(row, options.metric), options.metric) ?? 0,
       ),
     );
     for (const {node, group} of this.elements.values()) {
@@ -793,10 +703,7 @@ export class ArchitectureRenderer {
       if (node.anchor) {
         const row = rows.get(node.anchor.id),
           value = architectureMetric(row, options.metric),
-          metricStatus =
-            row?.metrics[options.metric]?.status ??
-            row?.status ??
-            'Not captured';
+          metricStatus = row?.metrics[options.metric]?.status ?? row?.status ?? 'Not captured';
         const text = `${options.metric} ${format(value)}`,
           severity = magnitude(value, options.metric),
           fraction = severity === null || !maximum ? 0 : severity / maximum;
@@ -820,8 +727,7 @@ export class ArchitectureRenderer {
           'aria-label',
           `Inspect ${description}${relation ? ', ' + relation : ''}`,
         );
-        group.querySelector('title')!.textContent =
-          description + (relation ? '\n' + relation : '');
+        group.querySelector('title')!.textContent = description + (relation ? '\n' + relation : '');
       }
     }
     this.updateControls();

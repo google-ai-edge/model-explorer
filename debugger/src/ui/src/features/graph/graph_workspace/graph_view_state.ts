@@ -18,20 +18,15 @@
 
 import type {Semantic} from '../../../data/contracts/types';
 import type {ArchitectureViewport} from '../architecture_view/architecture_renderer';
-import {emptyGraphQuery, type GraphQuery} from './graph_query';
 
 export type GraphViewport = ArchitectureViewport;
 
 /** Reading state only. Captured data, comparison results and mapping drafts are never cached here. */
 export interface GraphViewState {
   version: 1;
-  query: GraphQuery;
   metric: string;
   details: boolean;
-  results: boolean;
-  trends: boolean;
   detailsWidth: number;
-  trendHeight: number;
   context: {layer: number; semantic: string} | null;
   execution: boolean;
   viewport: GraphViewport | null;
@@ -41,24 +36,15 @@ export function graphViewKey(capture: string, batch: number): string {
   return JSON.stringify([capture, batch]);
 }
 
+/** Legacy v1 toolbar, results and chart fields are omitted from normalized snapshots. */
 export function parseGraphView(value: unknown): GraphViewState | null {
   if (!value || typeof value !== 'object') return null;
   const data = value as GraphViewState;
-  const query = data.query;
   if (
     data.version !== 1 ||
-    !query ||
-    !['text', 'anchor', 'metric', 'threshold'].every(
-      (key) => typeof query[key as keyof GraphQuery] === 'string',
-    ) ||
-    !['lt', 'gt'].includes(query.operator) ||
-    typeof query.withMetrics !== 'boolean' ||
     typeof data.metric !== 'string' ||
-    ![data.details, data.results, data.trends, data.execution].every(
-      (v) => typeof v === 'boolean',
-    ) ||
-    !Number.isFinite(data.detailsWidth) ||
-    !Number.isFinite(data.trendHeight)
+    ![data.details, data.execution].every((v) => typeof v === 'boolean') ||
+    !Number.isFinite(data.detailsWidth)
   )
     return null;
   if (
@@ -82,13 +68,9 @@ export function parseGraphView(value: unknown): GraphViewState | null {
     return null;
   return {
     version: 1,
-    query: {...emptyGraphQuery(), ...query},
     metric: data.metric,
     details: data.details,
-    results: data.results,
-    trends: data.trends,
     detailsWidth: Math.max(300, Math.min(560, data.detailsWidth)),
-    trendHeight: Math.max(80, Math.min(320, data.trendHeight)),
     context: data.context ? {...data.context} : null,
     execution: data.execution,
     viewport: viewport ? {...viewport} : null,
@@ -105,10 +87,8 @@ export function resolveGraphView(
   const view = parseGraphView(value);
   if (!view) return null;
   if (!metrics.includes(view.metric)) view.metric = metrics[0] ?? 'CosSim';
-  if (!metrics.includes(view.query.metric)) view.query.metric = view.metric;
   if (view.context) {
-    const definition =
-      model.semantic_graph[model.layers[view.context.layer]?.def];
+    const definition = model.semantic_graph[model.layers[view.context.layer]?.def];
     const id = view.context.semantic;
     if (
       view.context.layer !== layer ||

@@ -116,15 +116,14 @@ select {
   }
 }
 
-.topbar .chat-select {
-  height: 32px;
+.topbar .chat-select.mat-mdc-button-base.mat-mdc-button {
+  @include controls.inline-control-density;
   width: 180px;
   max-width: 180px;
   min-width: 180px;
   flex: none;
   border: 1px solid var(--me-surface-variant-color);
   border-radius: 3px;
-  font: 13px/20px var(--me-font-family);
   letter-spacing: normal;
   color: var(--me-on-surface-color);
   overflow: hidden;
@@ -241,26 +240,28 @@ select {
   }
 }
 
-.view-select.mat-mdc-button-base.mat-mdc-button {
-  height: 32px;
+.graph-navigation {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: none;
+}
+.back-to-analysis.mat-mdc-button-base.mat-mdc-button {
+  @include controls.inline-control-density;
   min-width: 0;
-  padding: 0 4px 0 0;
-  font: 500 20px/30px var(--me-font-family);
+  padding: 0 8px;
+  font: 400 13px/20px var(--me-font-family);
   letter-spacing: normal;
-  color: var(--button-focus);
+  color: var(--me-on-surface-color);
   flex: none;
 }
-.view-triangle {
-  font: 400 10px/10px var(--me-font-family);
-  margin-left: 8px;
-  vertical-align: middle;
+.graph-title {
+  font: 500 16px/20px var(--me-font-family);
+  white-space: nowrap;
 }
-.title-divider {
-  flex: none;
-  margin: 0 -4px;
-  font: 400 20px/30px var(--me-font-family);
-  color: var(--me-on-surface-variant-color);
-  opacity: 0.5;
+.back-to-analysis ::ng-deep .mat-mdc-button-touch-target,
+.chat-select ::ng-deep .mat-mdc-button-touch-target {
+  height: 100%;
 }
 @media (max-width: 800px) {
   .topbar.debug .brand {

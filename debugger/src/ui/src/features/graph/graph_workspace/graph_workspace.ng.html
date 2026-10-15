@@ -18,292 +18,14 @@
   class="graph-shell"
   [class.details-open]="detailsOpen()"
   [style.--details-width.px]="detailsWidth()"
-  [style.--dock-height.px]="dockHeight()"
 >
   <main class="analysis-main" aria-label="Graph analysis">
-    <div class="dock-area">
-      <div class="debug-dock" role="toolbar" aria-label="Graph analysis controls">
-        <button
-          class="outlined observation"
-          aria-label="Choose graph observation"
-          [disabled]="inspection.mapping()"
-          [attr.aria-expanded]="panel() === 'observation'"
-          (click)="openPanel('observation', $event)"
-        >
-          Turn {{ state.batch().turn }} · {{ state.batch().phase | titlecase }}
-          <mat-icon>expand_more</mat-icon>
-        </button>
-        <button
-          class="icon-button"
-          aria-label="Display settings"
-          title="Display"
-          [attr.aria-expanded]="panel() === 'display'"
-          (click)="openPanel('display', $event)"
-        >
-          <mat-icon>visibility</mat-icon>
-        </button>
-        <button
-          class="outlined"
-          aria-label="Find tensor pairs"
-          [attr.aria-expanded]="panel() === 'find'"
-          (click)="openPanel('find', $event)"
-        >
-          <mat-icon>filter_alt</mat-icon>Find
-          @if (filterCount()) {
-            <span class="count">{{ filterCount() }}</span>
-          }
-        </button>
-        <button
-          class="outlined"
-          aria-label="Show tensor pairs"
-          [attr.aria-expanded]="resultsOpen()"
-          (click)="toggleResults()"
-        >
-          <mat-icon>table_rows</mat-icon><span class="pairs-label">Tensor pairs</span>
-        </button>
-        @if (filterCount()) {
-          <find-navigator
-            class="match-nav"
-            label="Find result navigation"
-            firstLabel="First matching pair"
-            previousLabel="Previous matching pair"
-            nextLabel="Next matching pair"
-            [index]="resultIndex()"
-            [total]="results().length"
-            [busy]="inspection.mapping()"
-            (first)="locate(0)"
-            (previous)="locate(-1)"
-            (next)="locate(1)"
-          >
-            <button class="icon-button" aria-label="Clear all filters" (click)="clearFilters()">
-              <mat-icon>close</mat-icon>
-            </button>
-          </find-navigator>
-        }
-        <button
-          class="icon-button"
-          aria-label="Bookmarks"
-          [attr.aria-expanded]="panel() === 'bookmarks'"
-          (click)="openPanel('bookmarks', $event)"
-        >
-          <mat-icon>bookmark_border</mat-icon>
-        </button>
-      </div>
-      @if (panel()) {
-        <section
-          class="popup"
-          [attr.aria-label]="
-            panel() === 'display'
-              ? 'Display'
-              : panel() === 'find'
-                ? 'Find tensor pairs'
-                : panel() === 'observation'
-                  ? 'Graph observation'
-                  : 'Bookmarks'
-          "
-        >
-          <header>
-            <h2>
-              {{
-                panel() === 'display'
-                  ? 'Display'
-                  : panel() === 'find'
-                    ? 'Find tensor pairs'
-                    : panel() === 'observation'
-                      ? 'Observation'
-                      : 'Bookmarks'
-              }}
-            </h2>
-            <button class="icon-button" aria-label="Close settings" (click)="closePanel()">
-              <mat-icon>close</mat-icon>
-            </button>
-          </header>
-          @if (panel() === 'display') {
-            <label
-              >Metric<select [(ngModel)]="draftDisplay.metric">
-                @for (metric of state.metrics; track metric) {
-                  <option [value]="metric">{{ metric }}</option>
-                }
-              </select></label
-            >
-            <label class="check"
-              ><input type="checkbox" [(ngModel)]="draftDisplay.trends" />Layer output trends</label
-            >
-            <label class="check"
-              ><input type="checkbox" [(ngModel)]="draftDisplay.details" />Details panel</label
-            >
-          } @else if (panel() === 'find') {
-            <label
-              >Tensor or anchor<input
-                aria-label="Tensor or anchor name"
-                [(ngModel)]="draftQuery.text"
-                placeholder="Name or tensor ID"
-            /></label>
-            <label
-              >Anchor<select [(ngModel)]="draftQuery.anchor">
-                <option value="">All anchors</option>
-                @for (anchor of state.definition().anchors; track anchor.id) {
-                  <option [value]="anchor.id">{{ anchor.label || anchor.semantic }}</option>
-                }
-              </select></label
-            >
-            <label
-              >Metric<select [(ngModel)]="draftQuery.metric">
-                @for (metric of state.metrics; track metric) {
-                  <option [value]="metric">{{ metric }}</option>
-                }
-              </select></label
-            >
-            <div class="condition">
-              <select aria-label="Metric comparison" [(ngModel)]="draftQuery.operator">
-                <option value="lt">Less than</option>
-                <option value="gt">Greater than</option></select
-              ><input
-                aria-label="Metric threshold"
-                [(ngModel)]="draftQuery.threshold"
-                inputmode="decimal"
-                placeholder="Optional threshold"
-              />
-            </div>
-            <label class="check"
-              ><input type="checkbox" [(ngModel)]="draftQuery.withMetrics" />With captured
-              metrics</label
-            >
-            @if (invalidQuery()) {
-              <p role="alert">Enter a valid number for the metric threshold.</p>
-            }
-          } @else if (panel() === 'observation') {
-            <label
-              >Captured observation<select
-                aria-label="Captured observation"
-                [(ngModel)]="draftBatch"
-              >
-                @for (batch of state.preview.batches; track batch.batch) {
-                  <option [ngValue]="batch.batch">
-                    Turn {{ batch.turn }} · {{ batch.phase }} · {{ batch.index + 1 }} · Batch
-                    {{ batch.batch }}
-                  </option>
-                }
-              </select></label
-            >
-            <p class="muted">Only captured observations are available.</p>
-          } @else {
-            <button class="outlined" (click)="addBookmark()">
-              <mat-icon>bookmark_add</mat-icon>Bookmark current selection
-            </button>
-            @for (bookmark of currentBookmarks(); track $index) {
-              <div class="bookmark-row">
-                <button [disabled]="inspection.mapping()" (click)="restoreBookmark(bookmark)">
-                  Layer {{ bookmark.layer }} · Batch {{ bookmark.batch
-                  }}<small
-                    >{{ bookmark.semantic || 'Architecture' }} · {{ bookmark.metric }}</small
-                  ></button
-                ><button
-                  class="icon-button"
-                  aria-label="Remove bookmark"
-                  (click)="removeBookmark(bookmark)"
-                >
-                  <mat-icon>close</mat-icon>
-                </button>
-              </div>
-            }
-            @if (!currentBookmarks().length) {
-              <p class="muted">No bookmarks for this capture.</p>
-            }
-          }
-          @if (panel() !== 'bookmarks') {
-            <footer>
-              <button (click)="closePanel()">Cancel</button
-              ><button
-                class="primary"
-                [disabled]="panel() === 'find' && invalidQuery()"
-                (click)="applyPanel()"
-              >
-                Apply
-              </button>
-            </footer>
-          }
-        </section>
-      }
-    </div>
-    <div class="trends-heading">
-      <span>Layer outputs</span
-      ><button
-        class="icon-button"
-        [attr.aria-label]="trendsOpen() ? 'Collapse Trends' : 'Expand Trends'"
-        [attr.aria-expanded]="trendsOpen()"
-        (click)="trendsOpen.set(!trendsOpen())"
-        title="Toggle layer output trends"
-      >
-        <mat-icon>{{ trendsOpen() ? 'expand_less' : 'expand_more' }}</mat-icon>
-      </button>
-    </div>
-    @if (trendsOpen()) {
-      <section class="trends" aria-label="Layer output trends" [style.height.px]="trendHeight()">
-        <div
-          #plot
-          class="plot"
-          role="group"
-          tabindex="0"
-          [attr.aria-label]="
-            'Layer output overview, ' +
-            state.metric() +
-            '. Layer ' +
-            state.layer() +
-            ' selected. Use arrow keys to select a layer.'
-          "
-          (keydown.arrowright)="$event.preventDefault(); selectLayer(state.layer() + 1)"
-          (keydown.arrowleft)="$event.preventDefault(); selectLayer(state.layer() - 1)"
-        ></div>
-        @if (state.comparing()) {
-          <p class="plot-status" role="status">Loading tensor comparisons…</p>
-        }
-        @if (plotError()) {
-          <p class="plot-status" role="alert">{{ plotError() }}</p>
-        }
-        @if (!state.comparing() && !hasOutputMetrics()) {
-          <p class="plot-status">No captured output metrics for this observation.</p>
-        }
-      </section>
-      <div
-        class="trends-resize"
-        resizeHandle
-        aria-label="Resize Trends"
-        orientation="horizontal"
-        [size]="trendHeight()"
-        [min]="80"
-        [max]="maximumTrendHeight()"
-        [step]="10"
-        (sizeChange)="trendHeight.set($event)"
-      ></div>
-    }
-    @if (state.comparisonError()) {
-      <p class="inline-error" role="alert">
-        {{ state.comparisonError() }}
-        <button (click)="state.refreshMetrics()">Retry comparisons</button>
-      </p>
-    }
     <div class="visual-workspace">
       <section
         class="architecture-surface"
         aria-label="Architecture"
         [hidden]="executionOpen() && !floating()"
       >
-        <header class="graph-header">
-          <label
-            >Layer
-            <select
-              aria-label="Select layer"
-              [disabled]="inspection.mapping()"
-              [ngModel]="state.layer()"
-              (ngModelChange)="selectLayer($event)"
-            >
-              @for (layer of state.preview.layers; track layer.index) {
-                <option [ngValue]="layer.index">{{ layer.index }} · {{ layer.label }}</option>
-              }
-            </select></label
-          ><span class="filler"></span><span class="muted">{{ state.metric() }}</span>
-        </header>
         <graph-architecture-view
           [model]="state.semantic()!"
           [layer]="state.layer()"
@@ -441,47 +163,12 @@
           }
           <footer class="graph-status">
             <span>{{ inspection.details()?.tensors?.length ?? 0 }} captured tensors</span
-            ><span>{{ state.metric() }} · Gray: no metric</span>
+            ><span>{{ state.metricLabel(state.metric()) }} · Gray: no metric</span>
           </footer>
         </section>
       }
     </div>
   </main>
-  @if (resultsOpen()) {
-    <aside class="results-rail" aria-label="Tensor pairs">
-      <header>
-        <h2>{{ filterCount() ? 'Find results' : 'Tensor pairs' }}</h2>
-        <button
-          class="icon-button"
-          aria-label="Close tensor pairs"
-          (click)="resultsOpen.set(false)"
-        >
-          <mat-icon>close</mat-icon>
-        </button>
-      </header>
-      <p class="muted">{{ results().length }} pairs · {{ state.metric() }}</p>
-      <div class="results-list">
-        @for (row of results(); track row.layer + ':' + row.anchor) {
-          <button
-            class="result-row"
-            [disabled]="inspection.mapping()"
-            [attr.aria-current]="selectedRow() === row"
-            (click)="selectRow(row)"
-          >
-            <span
-              ><strong>{{ rowName(row) }}</strong
-              ><small>Layer {{ row.layer }} · {{ row.status }}</small></span
-            ><span class="metric-value">{{
-              state.format(row.metrics[state.metric()]?.value)
-            }}</span>
-          </button>
-        }
-        @if (!results().length) {
-          <p class="muted">No tensor pairs match.</p>
-        }
-      </div>
-    </aside>
-  }
   @if (detailsOpen()) {
     <aside class="details-rail" aria-label="Selected object details">
       <div
@@ -495,6 +182,32 @@
         [step]="10"
         (sizeChange)="detailsWidth.set($event)"
       ></div>
+      <header class="details-header">
+        <h2>Details</h2>
+        <label class="layer-picker">
+          <span>Layer</span>
+          <select
+            aria-label="Select layer"
+            [disabled]="inspection.mapping()"
+            [ngModel]="state.layer()"
+            (ngModelChange)="selectLayer($event)"
+          >
+            @for (layer of state.preview.layers; track layer.index) {
+              <option [ngValue]="layer.index">{{ layer.index }} · {{ layer.label }}</option>
+            }
+          </select>
+        </label>
+        <p class="muted">Metric: {{ state.metricLabel(state.metric()) }}</p>
+      </header>
+      @if (navigationMessage()) {
+        <p class="navigation-message" role="status">{{ navigationMessage() }}</p>
+      }
+      @if (state.comparisonError()) {
+        <p class="inline-error" role="alert">
+          {{ state.comparisonError() }}
+          <button (click)="state.refreshMetrics()">Retry comparisons</button>
+        </p>
+      }
       <graph-details />
     </aside>
   }
@@ -506,29 +219,4 @@
   >
     <mat-icon>{{ detailsOpen() ? 'chevron_right' : 'chevron_left' }}</mat-icon>
   </button>
-  <footer class="workspace-status">
-    <span
-      >Turn {{ state.batch().turn }} · {{ state.batch().phase }} · Batch {{ state.batchId() }}</span
-    ><button (click)="showExplicit()">Explicit tensor pairs</button>
-  </footer>
 </div>
-<dialog
-  #explicitDialog
-  class="explicit-dialog"
-  (click)="$event.target === explicitDialog && explicitDialog.close()"
-  (close)="explicitOpen.set(false)"
->
-  <header>
-    <h2>Explicit tensor pairs</h2>
-    <button
-      class="icon-button"
-      aria-label="Close explicit tensor pairs"
-      (click)="explicitDialog.close()"
-    >
-      <mat-icon>close</mat-icon>
-    </button>
-  </header>
-  @if (explicitOpen()) {
-    <explicit-pairs />
-  }
-</dialog>

@@ -43,8 +43,9 @@
 </header>
 @if (data.native) {
   <p class="context">
-    Native Runner: text {{ backendOptions('backend').join('/') }}, context
-    {{ contextOptions().join(' or ') }} and default CPU threads.
+    Session settings apply when the engine is created; changing one closes the Session and
+    initializes again. Native Runner: text {{ backendOptions('backend').join('/') }}, context
+    {{ contextOptions().join(' or ') }}. Settings this Runner build does not apply are disabled.
   </p>
 } @else if (pytorch) {
   <p class="context">PyTorch eager: local model, text backend and model dtype.</p>
@@ -153,23 +154,23 @@
             >Activation dtype<button
               type="button"
               class="help"
-              matTooltip="Default preserves runtime behavior. FP32 requests force_f32 for activations; it does not change stored weights. Backend support requires server validation."
+              matTooltip="Activation data type for the engine (set_activation_data_type). Default preserves runtime behavior; it does not change stored weights."
               aria-label="Activation dtype help"
             >
               <mat-icon>help_outline</mat-icon>
             </button></span
           ><config-picker
             label="Activation dtype"
-            [value]="draft.forceF32 ? 'FP32' : 'Default'"
-            [options]="['Default', 'FP32']"
-            [disabled]="!supported('forceF32')"
-            (valueChange)="draft.forceF32 = $event === 'FP32'"
+            [value]="draft.activationDataType || 'Default'"
+            [options]="activationOptions"
+            [disabled]="!supported('activationDataType')"
+            (valueChange)="draft.activationDataType = $event === 'Default' ? '' : $event"
           /><button
             type="button"
             class="reset"
             matTooltip="Restore this setting to the runtime default"
-            [disabled]="!supported('forceF32')"
-            (click)="reset('forceF32')"
+            [disabled]="!supported('activationDataType')"
+            (click)="reset('activationDataType')"
           >
             Reset to default
           </button></label
@@ -214,11 +215,14 @@
             }
           } @else {
             <input
-              [disabled]="!supported(f.key)"
-              data-batch-sizes
+              type="number"
+              [disabled]="!editable(f.key)"
               [attr.aria-label]="f.label"
               [name]="f.key"
               [(ngModel)]="draft[f.key]"
+              min="1"
+              max="65536"
+              step="1"
               placeholder="Default"
             />
           }
@@ -226,12 +230,62 @@
             type="button"
             class="reset"
             matTooltip="Restore this setting to the runtime default"
-            [disabled]="!supported(f.key)"
+            [disabled]="!editable(f.key)"
             (click)="reset(f.key)"
           >
             Reset to default
           </button></label
         >
+      </section>
+    }
+    @if (!pytorch) {
+      <section aria-label="Advanced engine settings">
+        <h3>Advanced engine settings</h3>
+        @for (field of advanced; track field.key) {
+          <label
+            ><span class="caption"
+              >{{ field.label
+              }}<button
+                type="button"
+                class="help"
+                [matTooltip]="field.help"
+                [attr.aria-label]="field.label + ' help'"
+              >
+                <mat-icon>help_outline</mat-icon>
+              </button></span
+            >
+            @if (field.kind === 'switch') {
+              <config-picker
+                [label]="field.label"
+                [value]="switchLabel(field.key)"
+                [options]="switchLabels"
+                [disabled]="!editable(field.key)"
+                (valueChange)="setSwitch(field.key, $event)"
+              />
+            } @else {
+              <input
+                type="number"
+                [disabled]="!editable(field.key)"
+                [attr.aria-label]="field.label"
+                [name]="field.key"
+                [(ngModel)]="draft[field.key]"
+                [min]="field.key === 'gpuDecodeStepsPerSync' ? 1 : 0"
+                [max]="field.key === 'gpuDecodeStepsPerSync' ? 1024 : 1024"
+                step="1"
+                placeholder="Default"
+              />
+            }
+            <button
+              type="button"
+              class="reset"
+              matTooltip="Restore this setting to the runtime default"
+              [disabled]="!editable(field.key)"
+              (click)="reset(field.key)"
+            >
+              Reset to default
+            </button></label
+          >
+        }
       </section>
     }
   </div>

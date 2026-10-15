@@ -29,7 +29,12 @@ export interface RuntimeCapability {
   available: boolean;
   reason: string;
   backends: string[];
+  /** Session-level option keys the runtime can take (the contract's vocabulary). */
   supported_options?: string[];
+  /** Chat-level option keys the runtime can take. */
+  chat_options?: string[];
+  /** samplerType values of the contract; a connected Runner narrows them to what its build implements. */
+  sampler_types?: string[];
   precisions?: string[];
   contextLengths?: number[];
   /** Largest maxOutputTokens the runtime's Runner accepts (native Runners: 32). */
@@ -113,6 +118,10 @@ export interface RunnerDevice {
       runtime: string;
       backends: string[];
       contextLengths?: number[];
+      /** CaptureJob.engine / .conversation members this build applies; absent on older builds. */
+      engineOptions?: string[];
+      conversationOptions?: string[];
+      samplerTypes?: string[];
     };
     environment?: {
       chip?: string;

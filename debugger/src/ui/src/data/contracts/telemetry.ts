@@ -122,13 +122,7 @@ export interface ExplicitPair {
       runtime: string;
       observation?: ExplicitObservation;
       model: Record<string, unknown>;
-      original_tensor: {
-        shape: number[];
-        dtype: string;
-        path: string;
-        key: string;
-        sha256: string;
-      };
+      original_tensor: {shape: number[]; dtype: string; path: string; key: string; sha256: string};
       layout: string[];
       view: {start: number; stop: number; step: number}[];
       axis_order?: number[];

@@ -1,0 +1,74 @@
+# The Runner: the facade over the layers, the same for every launch form
+# (cli/, app/).
+
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
+load("@rules_cc//cc:cc_test.bzl", "cc_test")
+load("@rules_swift//swift:swift_interop_hint.bzl", "swift_interop_hint")
+
+cc_library(
+    name = "runner_lib",
+    srcs = ["runner.cc"],
+    hdrs = ["runner.h"],
+    visibility = ["//model_debugger/runner/cli:__pkg__"],
+    deps = [
+        "//model_debugger/runner/llm/litert_lm",
+        "//model_debugger/runner/service:runner_service",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status:statusor",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/time",
+        "@grpc//:grpc++",
+    ],
+)
+
+# The facade for the Apps: C, so that neither Swift nor the Android JNI layer
+# needs C++ interop. Swift sees it as the module ModelDebuggerRunnerC.
+cc_library(
+    name = "runner_c",
+    srcs = ["runner_c.cc"],
+    hdrs = ["runner_c.h"],
+    aspect_hints = [":runner_c_swift_interop"],
+    visibility = [
+        "//model_debugger/runner/app/android:__pkg__",
+        "//model_debugger/runner/app/apple:__pkg__",
+    ],
+    deps = [
+        ":runner_lib",
+        "//model_debugger/runner/util:json",
+        "@com_google_absl//absl/status:statusor",
+        "@protocol//model_debugger/v1:runner_cc_proto",
+    ],
+)
+
+swift_interop_hint(
+    name = "runner_c_swift_interop",
+    module_name = "ModelDebuggerRunnerC",
+)
+
+# Starting, asking and stopping need no model: the tests run everywhere.
+cc_test(
+    name = "runner_test",
+    srcs = ["runner_test.cc"],
+    deps = [
+        ":runner_lib",
+        "//model_debugger/runner/testing:test_utils",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status:statusor",
+        "@com_google_googletest//:gtest_main",
+        "@grpc//:grpc++",
+        "@protocol//model_debugger/v1:runner_cc_grpc",
+        "@protocol//model_debugger/v1:runner_cc_proto",
+    ],
+)
+
+cc_test(
+    name = "runner_c_test",
+    srcs = ["runner_c_test.cc"],
+    deps = [
+        ":runner_c",
+        "//model_debugger/runner/testing:test_utils",
+        "//model_debugger/runner/util:json",
+        "@com_google_absl//absl/status:statusor",
+        "@com_google_googletest//:gtest_main",
+    ],
+)

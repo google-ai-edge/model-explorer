@@ -26,6 +26,8 @@ import {SessionListService} from '../../../data/session_list_service';
 import {
   MODEL_SERVER_LABELS,
   sessionExecutionPhase,
+  sessionNotRestartableReason,
+  sessionRestartable,
 } from '../../../data/session_status';
 
 /** One Session's Model Server: its state (Failure, Starting, On, Off) and the switch that turns
@@ -43,9 +45,7 @@ export class ModelServerSwitch {
   private readonly runtime = inject(RuntimeService);
   private readonly sessions = inject(SessionListService);
   private readonly dialogs = inject(MatDialog);
-  readonly state = computed(() =>
-    this.runtime.modelServerState(this.session()),
-  );
+  readonly state = computed(() => this.runtime.modelServerState(this.session()));
   readonly label = computed(() => MODEL_SERVER_LABELS[this.state()]);
   /** A request is in flight, or the Server is releasing the devices. */
   readonly busy = computed(
@@ -53,12 +53,17 @@ export class ModelServerSwitch {
       !!this.runtime.lifecyclePending()[this.session().id] ||
       sessionExecutionPhase(this.session()) === 'ending',
   );
+  /** Off for good: the Session ran and ended, or was imported. Only a duplicate can run. */
+  readonly final = computed(
+    () =>
+      this.state() !== 'on' && this.state() !== 'starting' && !sessionRestartable(this.session()),
+  );
   readonly unavailable = computed(
     () =>
-      this.state() !== 'on' &&
-      this.state() !== 'starting' &&
-      (!!this.sessions.refreshError() ||
-        !this.sessions.listing()?.generation_available),
+      this.final() ||
+      (this.state() !== 'on' &&
+        this.state() !== 'starting' &&
+        (!!this.sessions.refreshError() || !this.sessions.listing()?.generation_available)),
   );
   readonly action = computed(() =>
     this.state() === 'on'
@@ -78,11 +83,11 @@ export class ModelServerSwitch {
   readonly hint = computed(() =>
     sessionExecutionPhase(this.session()) === 'ending'
       ? 'Releasing both devices'
-      : this.unavailable()
-        ? 'Starting a Model Server is unavailable on this Server'
-        : [this.error(), this.action() + ' the Model Server']
-            .filter(Boolean)
-            .join(' · '),
+      : this.final()
+        ? sessionNotRestartableReason(this.session())
+        : this.unavailable()
+          ? 'Starting a Model Server is unavailable on this Server'
+          : [this.error(), this.action() + ' the Model Server'].filter(Boolean).join(' · '),
   );
   async toggle() {
     if (this.busy() || this.unavailable()) return;

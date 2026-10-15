@@ -36,6 +36,11 @@ h2 {
   font: 500 20px/28px var(--me-font-family);
   margin: 0;
 }
+header .context {
+  margin: 4px 0 0;
+  font: 400 12px/18px var(--me-font-family);
+  color: var(--me-on-surface-variant-color);
+}
 .body {
   padding: 12px 20px;
   overflow: auto;

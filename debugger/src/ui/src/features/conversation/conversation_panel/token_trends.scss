@@ -135,3 +135,15 @@ p button {
   --trend-ref: light-dark(#188038, #81c995);
   --trend-target: light-dark(#d93025, #f28b82);
 }
+
+:host(.embedded) {
+  margin: 0;
+}
+:host(.embedded) .turnTrendPanel {
+  border: 0;
+  padding: 0;
+  background: transparent;
+}
+:host(.embedded) .trendGraphTools > span:first-child {
+  display: none;
+}

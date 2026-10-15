@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The App icon's foreground: the logo inside the safe zone of an adaptive
+     icon's 108dp canvas, which the launcher masks to its own shape. -->
+<inset xmlns:android="http://schemas.android.com/apk/res/android"
+    android:drawable="@drawable/logo"
+    android:inset="22%" />

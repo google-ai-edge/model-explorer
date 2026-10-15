@@ -16,25 +16,12 @@
  * ==============================================================================
  */
 
-import {
-  computed,
-  DestroyRef,
-  effect,
-  inject,
-  Injectable,
-  signal,
-  untracked,
-} from '@angular/core';
-import {formatSignificant} from '../shared/format/format';
+import {computed, DestroyRef, effect, inject, Injectable, signal, untracked} from '@angular/core';
 import {ThemeService} from '../theme/theme_service';
-import type {CapturedLayer, Session} from './contracts/capture';
-import type {
-  Comparison,
-  Definition,
-  Overview,
-  Semantic,
-} from './contracts/types';
 import {ReportApiService} from './report_api_service';
+import type {CapturedLayer, Session} from './contracts/capture';
+import type {Semantic, Comparison, Overview, Definition} from './contracts/types';
+import {formatSignificant} from '../shared/format/format';
 
 const EMPTY_SESSION: Session = {
   model: '',
@@ -45,12 +32,7 @@ const EMPTY_SESSION: Session = {
   layers: [],
   anchors: [],
 };
-const EMPTY_DEFINITION: Definition = {
-  kind: '',
-  inputs: [],
-  nodes: [],
-  anchors: [],
-};
+const EMPTY_DEFINITION: Definition = {kind: '', inputs: [], nodes: [], anchors: []};
 
 /** Session evidence loads independently; Graph owns its own request lifetime and projection. */
 @Injectable({providedIn: 'root'})
@@ -91,17 +73,14 @@ export class ReportStateService {
   readonly layer = signal(0);
   readonly batchId = signal(0);
   readonly metric = signal('CosSim');
+  metricLabel(metric: string): string {
+    return metric === 'CosSim' ? 'Cosine similarity' : metric;
+  }
   readonly dark = this.theme.dark;
-  readonly metrics = [
-    'CosSim',
-    'Max abs error',
-    'Mean abs error',
-    'RMSE',
-    'Relative L2',
-  ];
+  readonly metrics = ['CosSim', 'Max abs error', 'Mean abs error', 'RMSE', 'Relative L2'];
   private readonly graphSession = computed(() => {
-    const session = this.session(),
-      layers = this.graphLayers();
+    const session = this.session();
+    const layers = this.graphLayers();
     return session && layers ? {...session, layers} : session;
   });
   /** Legacy Graph consumers get enriched layers without modifying the raw Session response. */
@@ -109,12 +88,24 @@ export class ReportStateService {
     return this.graphSession() ?? EMPTY_SESSION;
   }
   readonly batch = computed(
-    () => this.preview.batches.find((b) => b.batch === this.batchId())!,
+    () =>
+      this.preview.batches.find((b) => b.batch === this.batchId()) ??
+      this.preview.batches[0] ?? {
+        batch: 0,
+        phase: 'prefill' as const,
+        step: 0,
+        tokens: 0,
+        worst_layer: 0,
+        worst_cosine_similarity: 1,
+        worst_max_abs_error: 0,
+      },
   );
   readonly definition = computed(() => {
-    const semantic = this.semantic(),
-      layer = semantic?.layers[this.layer()];
-    return layer ? semantic!.semantic_graph[layer.def] : EMPTY_DEFINITION;
+    const semantic = this.semantic();
+    const layer = semantic?.layers[this.layer()];
+    return semantic && layer
+      ? (semantic.semantic_graph[layer.def] ?? EMPTY_DEFINITION)
+      : EMPTY_DEFINITION;
   });
   readonly rows = computed(
     () => this.comparison()?.rows.filter((r) => r.layer === this.layer()) ?? [],
@@ -126,16 +117,18 @@ export class ReportStateService {
         !this.graphActive() ||
         !this.session()?.batches.length ||
         !this.semantic()?.layers.length
-      )
+      ) {
         return;
-      const captureId = this.captureId(),
-        batch = this.batchId(),
-        revision = this.revision();
+      }
+      const captureId = this.captureId();
+      const batch = this.batchId();
+      const revision = this.revision();
       if (
         untracked(() => this.comparison()?.batch === batch) &&
         this.comparisonRevision === revision
-      )
+      ) {
         return;
+      }
       const request = this.comparisonRequest.start();
       this.comparing.set(true);
       this.comparison.set(null);
@@ -154,10 +147,14 @@ export class ReportStateService {
           }
         })
         .catch((error) => {
-          if (current()) this.comparisonError.set(String(error));
+          if (current()) {
+            this.comparisonError.set(String(error));
+          }
         })
         .finally(() => {
-          if (current()) this.comparing.set(false);
+          if (current()) {
+            this.comparing.set(false);
+          }
           request.finish();
         });
       onCleanup(request.cancel);
@@ -186,10 +183,15 @@ export class ReportStateService {
 
   /** ReportPage sets this from navigation; leaving Graph cancels pending work immediately. */
   setGraphActive(active: boolean) {
-    if (active === this.graphActive()) return;
+    if (active === this.graphActive()) {
+      return;
+    }
     this.graphActive.set(active);
-    if (active) void this.loadGraph();
-    else this.cancelGraphRequests();
+    if (active) {
+      void this.loadGraph();
+    } else {
+      this.cancelGraphRequests();
+    }
   }
 
   private cancelGraphRequests() {
@@ -213,8 +215,8 @@ export class ReportStateService {
   }
 
   async load() {
-    const captureId = this.captureId(),
-      request = this.sessionRequest.start();
+    const captureId = this.captureId();
+    const request = this.sessionRequest.start();
     this.resetGraph();
     this.session.set(null);
     this.error.set('');
@@ -222,44 +224,50 @@ export class ReportStateService {
     const current = () => request.current() && captureId === this.captureId();
     try {
       const session = await this.api.session(captureId, request.signal);
-      if (!current()) return;
+      if (!current()) {
+        return;
+      }
       const selectionValid =
         this.selectionCaptureId === captureId &&
         session.batches.some((batch) => batch.batch === this.batchId());
-      if (!selectionValid) this.batchId.set(session.batches[0]?.batch ?? 0);
+      if (!selectionValid) {
+        this.batchId.set(session.batches[0]?.batch ?? 0);
+      }
       this.selectionCaptureId = captureId;
       // Publish the raw response before any Graph dependency is requested.
       this.session.set(session);
       this.loading.set(false);
-      if (this.graphActive()) void this.loadGraph();
+      if (this.graphActive()) {
+        void this.loadGraph();
+      }
     } catch (error) {
-      if (current()) this.error.set(String(error));
+      if (current()) {
+        this.error.set(String(error));
+      }
     } finally {
-      if (current()) this.loading.set(false);
+      if (current()) {
+        this.loading.set(false);
+      }
       request.finish();
     }
   }
 
   private async loadGraph() {
-    const captureId = this.captureId(),
-      session = this.session();
-    if (
-      !this.graphActive() ||
-      !captureId ||
-      !session?.batches.length ||
-      this.loading()
-    )
-      return;
-    if (this.semantic()) {
-      if (
-        this.semantic()!.layers.length &&
-        !this.overview() &&
-        !this.overviewRequest.pending
-      )
-        this.refreshOverview();
+    const captureId = this.captureId();
+    const session = this.session();
+    if (!this.graphActive() || !captureId || !session?.batches.length || this.loading()) {
       return;
     }
-    if (this.semanticRequest.pending) return;
+    const existingSemantic = this.semantic();
+    if (existingSemantic) {
+      if (existingSemantic.layers.length && !this.overview() && !this.overviewRequest.pending) {
+        this.refreshOverview();
+      }
+      return;
+    }
+    if (this.semanticRequest.pending) {
+      return;
+    }
     const request = this.semanticRequest.start();
     this.graphLoading.set(true);
     this.graphError.set('');
@@ -270,14 +278,16 @@ export class ReportStateService {
       session === this.session();
     try {
       const semantic = await this.api.semantic(captureId, request.signal);
-      if (!current()) return;
+      if (!current()) {
+        return;
+      }
       const layers = semantic.layers.map((layer, index): CapturedLayer => {
         const definition = semantic.semantic_graph[layer.def];
-        if (!definition)
+        if (!definition) {
           throw new Error('Semantic definition unavailable for layer ' + index);
+        }
         const attrs = layer.attrs['attn']?.ops ?? {};
-        const span =
-          (attrs['attend'] as {span?: {kind: string}})?.span?.kind ?? 'decoder';
+        const span = (attrs['attend'] as {span?: {kind: string}})?.span?.kind ?? 'decoder';
         const shared = (attrs['k_proj'] as {skip?: boolean})?.skip;
         const dimension = definition.inputs[0]?.shape.at(-1);
         const hidden =
@@ -295,35 +305,47 @@ export class ReportStateService {
       this.graphLayers.set(layers);
       this.layer.set(Math.max(0, Math.min(this.layer(), layers.length - 1)));
       this.semantic.set(semantic);
-      if (layers.length) this.refreshOverview();
+      if (layers.length) {
+        this.refreshOverview();
+      }
     } catch (error) {
-      if (current()) this.graphError.set(String(error));
+      if (current()) {
+        this.graphError.set(String(error));
+      }
     } finally {
-      if (current()) this.graphLoading.set(false);
+      if (current()) {
+        this.graphLoading.set(false);
+      }
       request.finish();
     }
   }
 
   retryGraph() {
     this.resetGraph();
-    if (this.graphActive()) void this.loadGraph();
+    if (this.graphActive()) {
+      void this.loadGraph();
+    }
   }
 
   private refreshOverview() {
     const captureId = this.captureId();
-    if (!this.graphActive() || !captureId || !this.semantic()?.layers.length)
+    if (!this.graphActive() || !captureId || !this.semantic()?.layers.length) {
       return;
+    }
     const request = this.overviewRequest.start();
     this.overviewError.set('');
-    const current = () =>
-      request.current() && this.graphActive() && captureId === this.captureId();
+    const current = () => request.current() && this.graphActive() && captureId === this.captureId();
     this.api
       .overview(captureId, request.signal)
       .then((result) => {
-        if (current()) this.overview.set(result);
+        if (current()) {
+          this.overview.set(result);
+        }
       })
       .catch((error) => {
-        if (current()) this.overviewError.set(String(error));
+        if (current()) {
+          this.overviewError.set(String(error));
+        }
       })
       .finally(request.finish);
   }
@@ -340,33 +362,33 @@ export class ReportStateService {
     this.refreshOverview();
   }
   summary(layer: number) {
-    return this.comparison()?.layers.find((l) => l.layer === layer)?.metrics[
-      this.metric()
-    ];
+    return this.comparison()?.layers.find((l) => l.layer === layer)?.metrics[this.metric()];
   }
   format(value: number | null | undefined) {
     return formatSignificant(value, 5);
   }
   selectLayer(value: number) {
-    this.layer.set(
-      Math.max(0, Math.min(this.preview.layers.length - 1, value)),
-    );
+    this.layer.set(Math.max(0, Math.min(this.preview.layers.length - 1, value)));
   }
   selectBatch(value: number) {
-    if (this.preview.batches.some((b) => b.batch === value))
+    if (this.preview.batches.some((b) => b.batch === value)) {
       this.batchId.set(value);
+    }
   }
   selectTurn(value: number) {
     const candidates = this.preview.batches.filter((b) => b.turn === value);
-    const next =
-      candidates.find((b) => b.phase === this.batch()?.phase) || candidates[0];
-    if (next) this.batchId.set(next.batch);
+    const next = candidates.find((b) => b.phase === this.batch()?.phase) || candidates[0];
+    if (next) {
+      this.batchId.set(next.batch);
+    }
   }
   selectPhase(value: string) {
     const next = this.preview.batches.find(
       (b) => b.turn === this.batch()?.turn && b.phase === value,
     );
-    if (next) this.batchId.set(next.batch);
+    if (next) {
+      this.batchId.set(next.batch);
+    }
   }
 }
 
@@ -385,12 +407,13 @@ class RequestLifetime {
     const controller = new AbortController();
     this.controller = controller;
     const finish = () => {
-      if (this.controller === controller) this.controller = undefined;
+      if (this.controller === controller) {
+        this.controller = undefined;
+      }
     };
     return {
       signal: controller.signal,
-      current: () =>
-        this.controller === controller && !controller.signal.aborted,
+      current: () => this.controller === controller && !controller.signal.aborted,
       finish,
       cancel: () => {
         controller.abort();

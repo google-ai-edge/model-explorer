@@ -39,7 +39,7 @@
   --outline-s: light-dark(#bdc1c6, #5f6368);
   --on1: light-dark(#202124, #e8eaed);
   --on2: light-dark(#5f6368, #9aa0a6);
-  --on3: #80868b;
+  --on3: light-dark(#80868b, #a7adb4);
   --pri: light-dark(#1a73e8, #8ab4f8);
   --pri-c: light-dark(#e8f0fe, #1f3047);
   --pri-on: light-dark(#174ea6, #d2e3fc);
@@ -106,4 +106,68 @@
   --a-line: light-dark(#b8bec6, #5f6368);
   --a-band: var(--surface);
   --a-sel: var(--pri);
+}
+
+// Opt-in palette review. No stored preference and no change to data colors.
+:root:is(
+  [data-debug-palette='slate'],
+  [data-debug-palette='teal'],
+  [data-debug-palette='violet'],
+  [data-debug-palette='orange'],
+  [data-debug-palette='vscode'],
+  [data-debug-palette='jetbrains'],
+  [data-debug-palette='android-studio']
+) {
+  --button-debug: var(--debug-accent-solid);
+  --button-focus: var(--debug-status-ink);
+  --debug-toolbar-divider: var(--debug-target-border);
+  --debug-dock-divider: var(--debug-target-border);
+  --debug-dock-border: var(--debug-target-border);
+  --debug-dock-bg: var(--debug-target-surface);
+}
+:root[data-debug-palette='slate'] {
+  --debug-accent-solid: light-dark(#526b8a, #3d587b);
+  --debug-status-ink: light-dark(#526b8a, #a9bedb);
+  --debug-target-surface: light-dark(#f5f7fa, #242a33);
+  --debug-target-border: light-dark(#cbd5e1, #46556b);
+}
+:root[data-debug-palette='teal'] {
+  --debug-accent-solid: light-dark(#276d70, #265d62);
+  --debug-status-ink: light-dark(#276d70, #93c8c9);
+  --debug-target-surface: light-dark(#f2f8f7, #222e30);
+  --debug-target-border: light-dark(#c4dcd8, #405b5c);
+}
+:root[data-debug-palette='violet'] {
+  --debug-accent-solid: light-dark(#6b5b8e, #554771);
+  --debug-status-ink: light-dark(#6b5b8e, #c1b3df);
+  --debug-target-surface: light-dark(#f7f5fa, #2b2732);
+  --debug-target-border: light-dark(#d8d0e3, #574c68);
+}
+:root[data-debug-palette='orange'] {
+  --debug-accent-solid: light-dark(#a64b17, #85441f);
+  --debug-status-ink: light-dark(#a64b17, #edb18b);
+  --debug-target-surface: light-dark(#fafafa, #292a2d);
+  --debug-target-border: light-dark(#dadce0, #45474b);
+  --debug-dock-border: light-dark(#c86b34, #b7754e);
+}
+
+:root[data-debug-palette='vscode'] {
+  --debug-accent-solid: light-dark(#a7470c, #b95718);
+  --debug-dock-bg: light-dark(#fafafa, #35373c);
+  --debug-status-ink: light-dark(#a7470c, #efa879);
+  --debug-target-surface: light-dark(#fafafa, #252526);
+  --debug-target-border: light-dark(#d8d8d8, #454545);
+}
+:root[data-debug-palette='jetbrains'] {
+  --debug-accent-solid: light-dark(#3574f0, #315fbd);
+  --debug-status-ink: light-dark(#276b3b, #83c68d);
+  --debug-target-surface: light-dark(#f7f8fa, #2b2d30);
+  --debug-target-border: light-dark(#d3d5db, #43454a);
+}
+
+:root[data-debug-palette='android-studio'] {
+  --debug-accent-solid: light-dark(#1a73e8, #8ab4f8);
+  --debug-status-ink: light-dark(#287846, #81c995);
+  --debug-target-surface: light-dark(#f8f9fa, #2b2d30);
+  --debug-target-border: light-dark(#dadce0, #43454a);
 }

@@ -16,31 +16,27 @@
  * ==============================================================================
  */
 
-import {strict as assert} from 'node:assert';
 import {readdirSync, readFileSync} from 'node:fs';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
+import {strict as assert} from 'node:assert';
 
-// data/ and shared/ are leaves: features/ and app/ may import them, never the
-// reverse.
+// data/ and shared/ are leaves: features/ and app/ may import them, never the reverse.
 const root = fileURLToPath(new URL('../src/', import.meta.url));
 const leaves = ['data', 'shared'];
-const forbidden =
-    ['features', 'app'].map((name) => path.join(root, name) + path.sep);
+const forbidden = ['features', 'app'].map((name) => path.join(root, name) + path.sep);
 function files(directory) {
   return readdirSync(directory, {withFileTypes: true}).flatMap((entry) => {
     const file = path.join(directory, entry.name);
     if (entry.isDirectory()) return files(file);
-    return /\.ts$/.test(entry.name) && !/\.test\./.test(entry.name) ? [file] :
-                                                                      [];
+    return /\.ts$/.test(entry.name) && !/\.test\./.test(entry.name) ? [file] : [];
   });
 }
 const violations = [];
 for (const leaf of leaves)
   for (const file of files(path.join(root, leaf))) {
     const source = readFileSync(file, 'utf8');
-    for (const match of source.matchAll(
-             /from\s+'([^']+)'|import\(\s*'([^']+)'\s*\)/g)) {
+    for (const match of source.matchAll(/from\s+'([^']+)'|import\(\s*'([^']+)'\s*\)/g)) {
       const specifier = match[1] ?? match[2];
       if (!specifier.startsWith('.')) continue;
       const target = path.resolve(path.dirname(file), specifier);
@@ -49,5 +45,26 @@ for (const leaf of leaves)
     }
   }
 assert.deepEqual(violations, [], 'leaf layers import feature or app code');
-console.log(`PASS: src/${
-    leaves.join(' and src/')} import nothing from src/features or src/app`);
+console.log(`PASS: src/${leaves.join(' and src/')} import nothing from src/features or src/app`);
+
+const uiRoot = fileURLToPath(new URL('..', import.meta.url));
+const hyphenatedPaths = [];
+function checkNoHyphens(directory) {
+  for (const entry of readdirSync(directory, {withFileTypes: true})) {
+    if (entry.name === 'node_modules' || entry.name === 'dist' || entry.name === '.angular') {
+      continue;
+    }
+    const full = path.join(directory, entry.name);
+    if (entry.name.includes('-')) {
+      hyphenatedPaths.push(path.relative(uiRoot, full));
+    }
+    if (entry.isDirectory()) {
+      checkNoHyphens(full);
+    }
+  }
+}
+for (const dir of ['src', 'public', 'scripts', 'e2e']) {
+  checkNoHyphens(path.join(uiRoot, dir));
+}
+assert.deepEqual(hyphenatedPaths, [], 'UI directories and filenames must not contain hyphens');
+console.log('PASS: all UI directories and filenames under src/, public/, scripts/ and e2e/ are hyphen-free');

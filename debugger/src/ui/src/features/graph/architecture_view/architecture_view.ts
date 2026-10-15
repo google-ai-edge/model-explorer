@@ -36,10 +36,7 @@ import {
   type ArchitectureViewport,
 } from './architecture_renderer';
 
-export type {
-  ArchitectureAction,
-  ArchitectureSelection,
-} from './architecture_renderer';
+export type {ArchitectureAction, ArchitectureSelection} from './architecture_renderer';
 
 /** The accepted vertical architecture canvas, backed by the selected report. */
 @Component({

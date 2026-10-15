@@ -16,18 +16,15 @@
  * ==============================================================================
  */
 
-import {A11yModule} from '@angular/cdk/a11y';
-import {OverlayModule} from '@angular/cdk/overlay';
+import {TOKEN_FIELD_HELP, TOKEN_QUERY_EXAMPLES} from '../token_metric_metadata';
 import {Component, input, output, signal} from '@angular/core';
+import {OverlayModule} from '@angular/cdk/overlay';
+import {A11yModule} from '@angular/cdk/a11y';
 import {FormsModule} from '@angular/forms';
 import {MatButtonModule} from '@angular/material/button';
 import {MatIconModule} from '@angular/material/icon';
-import {
-  OverlayDialog,
-  OverlayPanel,
-} from '../../../shared/overlay_dialog/overlay_dialog';
-import {TOKEN_FIELD_HELP, TOKEN_QUERY_EXAMPLES} from '../token_metric_metadata';
 import {compileQuery, queryFields} from '../token_query';
+import {OverlayDialog, OverlayPanel} from '../../../shared/overlay_dialog/overlay_dialog';
 @Component({
   selector: 'token-query-control',
   imports: [

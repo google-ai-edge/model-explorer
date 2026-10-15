@@ -25,7 +25,6 @@
 @use './toolbar_interactions';
 @use './conversation_actions';
 @use './material';
-@use './view_animations';
 @use './conversation_virtualization';
 @use './invisible_characters';
 
@@ -62,4 +61,63 @@ input:focus-visible {
 }
 button:disabled {
   cursor: default;
+}
+
+// Palette-review treatments; these never imply an active runtime session.
+:root[data-debug-palette='vscode'] .debug-composer .composer-bottom {
+  --on1: #fff;
+  --on2: #fff;
+  --me-on-surface-color: #fff;
+  --me-on-surface-variant-color: #fff;
+  --debug-dock-divider: #ffffff40;
+  background: var(--debug-accent-solid);
+  color: #fff;
+  .debug-toggle {
+    --mat-slide-toggle-selected-track-color: #ffffff60;
+    --mat-slide-toggle-selected-hover-track-color: #ffffff70;
+    --mat-slide-toggle-selected-focus-track-color: #ffffff70;
+    --mat-slide-toggle-selected-pressed-track-color: #ffffff80;
+    --mat-slide-toggle-selected-handle-color: #fff;
+    --mat-slide-toggle-selected-hover-handle-color: #fff;
+    --mat-slide-toggle-selected-focus-handle-color: #fff;
+    --mat-slide-toggle-selected-pressed-handle-color: #fff;
+  }
+  border-radius: 0 0 12px 12px;
+  &::before {
+    display: none;
+  }
+  .legend-ref,
+  .legend-target {
+    color: light-dark(#1f1f1f, #fff);
+  }
+}
+:root[data-debug-palette='jetbrains'] {
+  .composer.debug-composer {
+    border-top: 2px solid var(--button-debug);
+  }
+  .mode-switch button[data-mode='debug'][aria-pressed='true'] {
+    background: light-dark(#e7efff, #253555);
+    border-color: transparent;
+    color: var(--on1);
+    box-shadow: inset 0 -2px var(--button-debug);
+    :is(mat-icon, .button-icon, .material-symbols-outlined, .material-icons) {
+      color: var(--debug-status-ink);
+    }
+  }
+}
+
+// Android Studio-inspired: neutral chrome, blue selection and a green debug glyph.
+:root[data-debug-palette='android-studio'] {
+  .mode-switch button[data-mode='debug'][aria-pressed='true'] {
+    background: light-dark(#d3e3fd, #1f3760);
+    border-color: transparent;
+    color: light-dark(#174ea6, #d2e3fc);
+    box-shadow: none;
+    :is(mat-icon, .button-icon, .material-symbols-outlined, .material-icons) {
+      color: var(--debug-status-ink);
+    }
+  }
+  .topbar.debug .view-select {
+    color: var(--on1);
+  }
 }

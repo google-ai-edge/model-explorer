@@ -1,0 +1,5 @@
+# The Google C++ Style Guide, as clang-format knows it.
+BasedOnStyle: Google
+# A file's related header comes first, also for a platform's implementation of
+# it (host_info_apple.cc implements host_info.h), not only for its test.
+IncludeIsMainRegex: '([-_](test|unittest|apple|android|linux))?$'

@@ -16,15 +16,8 @@
  * ==============================================================================
  */
 
+import {computed, DestroyRef, effect, inject, Injectable, signal} from '@angular/core';
 import {DOCUMENT} from '@angular/common';
-import {
-  computed,
-  DestroyRef,
-  effect,
-  inject,
-  Injectable,
-  signal,
-} from '@angular/core';
 import {PreferencesService} from '../app/preferences_service';
 export type ThemePreference = 'system' | 'light' | 'dark';
 
@@ -34,32 +27,43 @@ export class ThemeService {
   private readonly preferences = inject(PreferencesService);
   private readonly document = inject(DOCUMENT);
   private readonly media = window.matchMedia('(prefers-color-scheme: dark)');
+  readonly paletteReview = new URLSearchParams(window.location.search).has('debugPalette');
+  readonly debugPalettes = [
+    {id: 'original', label: 'Original amber'},
+    {id: 'slate', label: 'Blue gray'},
+    {id: 'teal', label: 'Teal'},
+    {id: 'violet', label: 'Muted violet'},
+    {id: 'orange', label: 'Orange accent'},
+    {id: 'vscode', label: 'VS Code inspired'},
+    {id: 'jetbrains', label: 'JetBrains inspired'},
+    {id: 'android-studio', label: 'Android Studio inspired'},
+  ] as const;
+  readonly debugPalette = signal(this.initialDebugPalette());
+  private initialDebugPalette() {
+    const id = new URLSearchParams(window.location.search).get('debugPalette');
+    return this.debugPalettes.find((p) => p.id === id)?.id ?? 'original';
+  }
+  setDebugPalette(id: string) {
+    const choice = this.debugPalettes.find((p) => p.id === id);
+    if (choice) this.debugPalette.set(choice.id);
+  }
   readonly systemDark = signal(this.media.matches);
   readonly preference = signal<ThemePreference>(this.initialPreference());
   readonly dark = computed(() =>
-    this.preference() === 'system'
-      ? this.systemDark()
-      : this.preference() === 'dark',
+    this.preference() === 'system' ? this.systemDark() : this.preference() === 'dark',
   );
   readonly icon = computed(() =>
-    this.preference() === 'system'
-      ? 'brightness_auto'
-      : this.dark()
-        ? 'dark_mode'
-        : 'light_mode',
+    this.preference() === 'system' ? 'brightness_auto' : this.dark() ? 'dark_mode' : 'light_mode',
   );
   constructor() {
-    const update = (event: MediaQueryListEvent) =>
-      this.systemDark.set(event.matches);
-    this.media.addEventListener('change', update);
-    inject(DestroyRef).onDestroy(() =>
-      this.media.removeEventListener('change', update),
-    );
     effect(() =>
-      this.document.documentElement.setAttribute(
-        'data-theme',
-        this.dark() ? 'dark' : 'light',
-      ),
+      this.document.documentElement.setAttribute('data-debug-palette', this.debugPalette()),
+    );
+    const update = (event: MediaQueryListEvent) => this.systemDark.set(event.matches);
+    this.media.addEventListener('change', update);
+    inject(DestroyRef).onDestroy(() => this.media.removeEventListener('change', update));
+    effect(() =>
+      this.document.documentElement.setAttribute('data-theme', this.dark() ? 'dark' : 'light'),
     );
   }
   private initialPreference(): ThemePreference {

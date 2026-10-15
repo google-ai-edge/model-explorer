@@ -16,12 +16,12 @@
  * ==============================================================================
  */
 
+import {Directive, inject, input, output, OnInit} from '@angular/core';
+import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
+import {CdkConnectedOverlay} from '@angular/cdk/overlay';
 import {CdkTrapFocus} from '@angular/cdk/a11y';
 import {hasModifierKey} from '@angular/cdk/keycodes';
-import {CdkConnectedOverlay} from '@angular/cdk/overlay';
-import {Directive, inject, input, OnInit, output} from '@angular/core';
-import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
-import {OverlayPlacement, overlayPositions} from './overlay_positions';
+import {overlayPositions, OverlayPlacement} from './overlay_positions';
 
 /**
  * An anchored pop-up dialog on the CDK connected overlay with the application's
@@ -63,20 +63,14 @@ export class OverlayDialog implements OnInit {
     overlay.backdropClass = 'cdk-overlay-transparent-backdrop';
     overlay.push = true;
     overlay.positions = overlayPositions('below-start', 8);
-    overlay.backdropClick
-      .pipe(takeUntilDestroyed())
-      .subscribe(() => this.closed.emit());
+    overlay.backdropClick.pipe(takeUntilDestroyed()).subscribe(() => this.closed.emit());
     // The CDK detaches on Escape itself; the host's open state has to follow.
     overlay.overlayKeydown.pipe(takeUntilDestroyed()).subscribe((event) => {
       if (event.key === 'Escape' && !hasModifierKey(event)) this.closed.emit();
     });
   }
   ngOnInit() {
-    this.overlay.positions = overlayPositions(
-      this.placement(),
-      this.gap(),
-      this.inset(),
-    );
+    this.overlay.positions = overlayPositions(this.placement(), this.gap(), this.inset());
     this.overlay.viewportMargin = this.viewportMargin();
   }
 }

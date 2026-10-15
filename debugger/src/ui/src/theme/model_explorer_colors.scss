@@ -28,13 +28,16 @@
   --me-surface-container-lowest-color: light-dark(#fff, #0e0e0e);
   --me-on-surface-color: light-dark(#1f1f1f, #e3e3e3);
   --me-on-surface-variant-color: light-dark(#444746, #c4c7c5);
-  --me-on-surface-low-color: light-dark(#999, #888);
+  --me-on-surface-low-color: light-dark(#999, #a7adb4);
   --me-surface-color: light-dark(#fff, #131314);
   --me-runtime-field-color: light-dark(#fff, #1f1f1f);
   --me-surface-variant-color: light-dark(#e1e3e1, #444746);
   --me-primary-container-color: light-dark(#d3e3fd, #0842a0);
   --me-on-primary-container-color: light-dark(#0842a0, #d3e3fd);
   --me-secondary-container-color: light-dark(#c2e7ff, #004a77);
+  // Model Explorer WebGL node selection (#C2E7FF fill, #1A73E8 border).
+  --me-node-selected-bg-color: var(--me-secondary-container-color);
+  --me-node-selected-border-color: light-dark(#1a73e8, #a8c7fa);
   --me-on-secondary-container-color: light-dark(#004a77, #c2e7ff);
   --me-outline-color: light-dark(#747775, #8e918f);
   --me-outline-variant-color: light-dark(#c4c7c5, #444746);
@@ -46,10 +49,7 @@
   --me-warning-text-color: light-dark(#e37400, #fcc934);
   --me-error-container-color: light-dark(#fce8e6, #523a3b);
   --me-error-text-color: light-dark(#d93025, #ee675c);
-  --me-bubble-shadow: light-dark(
-    0 1px 2px 0 rgba(60, 64, 67, 0.3),
-    0 1px 3px 1px rgba(60, 64, 67, 0.15),
-    0 1px 2px 0 rgba(0, 0, 0, 0.3),
-    0 1px 3px 1px rgba(0, 0, 0, 0.15)
-  );
+  --me-bubble-shadow:
+    0 1px 2px 0 light-dark(rgba(60, 64, 67, 0.3), rgba(0, 0, 0, 0.3)),
+    0 1px 3px 1px light-dark(rgba(60, 64, 67, 0.15), rgba(0, 0, 0, 0.15));
 }

@@ -25,13 +25,9 @@
   min-width: 0;
   font: 13px/20px var(--me-font-family);
   color: var(--me-on-surface-color);
+}
+* {
   box-sizing: border-box;
-
-  *,
-  *::before,
-  *::after {
-    box-sizing: inherit;
-  }
 }
 .editor {
   border: 1px solid var(--me-surface-variant-color);

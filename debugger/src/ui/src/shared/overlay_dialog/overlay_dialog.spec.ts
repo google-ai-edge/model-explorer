@@ -16,9 +16,9 @@
  * ==============================================================================
  */
 
-import {OverlayModule} from '@angular/cdk/overlay';
 import {Component, signal} from '@angular/core';
 import {TestBed} from '@angular/core/testing';
+import {OverlayModule} from '@angular/cdk/overlay';
 import {OverlayDialog, OverlayPanel} from './overlay_dialog';
 
 @Component({
@@ -40,11 +40,7 @@ class Host {
 }
 
 describe('OverlayDialog', () => {
-  afterEach(() =>
-    document
-      .querySelectorAll('.cdk-overlay-container')
-      .forEach((el) => el.remove()),
-  );
+  afterEach(() => document.querySelectorAll('.cdk-overlay-container').forEach((el) => el.remove()));
 
   function render() {
     const fixture = TestBed.createComponent(Host);
@@ -52,9 +48,7 @@ describe('OverlayDialog', () => {
     return {fixture, host: fixture.componentInstance};
   }
   const dialog = () =>
-    document.querySelector<HTMLElement>(
-      '[role="dialog"][aria-label="Sample dialog"]',
-    );
+    document.querySelector<HTMLElement>('[role="dialog"][aria-label="Sample dialog"]');
 
   it('opens an ARIA dialog with a focus trap when the host signal turns on', async () => {
     const view = render();
@@ -65,10 +59,7 @@ describe('OverlayDialog', () => {
     expect(dialog()).not.toBeNull();
     expect(document.querySelector('.cdk-overlay-backdrop')).not.toBeNull();
     // The CDK wraps the trapped element with two sibling anchors inside the overlay pane.
-    expect(
-      document.querySelectorAll('.cdk-overlay-pane .cdk-focus-trap-anchor')
-        .length,
-    ).toBe(2);
+    expect(document.querySelectorAll('.cdk-overlay-pane .cdk-focus-trap-anchor').length).toBe(2);
   });
 
   it('reports Escape and backdrop clicks as user closes but not programmatic closes', async () => {

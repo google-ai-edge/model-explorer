@@ -1,0 +1,16 @@
+{
+  "package": "ai-edge-model-explorer-visualizer",
+  "version": "0.1.2",
+  "url": "https://registry.npmjs.org/ai-edge-model-explorer-visualizer/-/ai-edge-model-explorer-visualizer-0.1.2.tgz",
+  "sha1": "03787282b2751df9f751ec78e9751ee8729e28ad",
+  "served_browser_bundle": "pair_renderer.js",
+  "sha256": {
+    "pair_renderer.js": "006fbabcb8536f4b6c58596cbc6ff40018c0f68000788a1f8c72492d37cc5e04"
+  },
+  "sha256_verified_date": "2026-10-14",
+  "local_changes": [
+    "Derived from public/graph_execution/upstream/model_explorer/dist/main_browser.js (ai-edge-model-explorer-visualizer@0.1.2, Apache-2.0, including bundled Three.js MIT and Angular MIT runtime).",
+    "Adds Mapping pair-inspection preview bridge methods on the custom element: readPairGeometry, readMetricView, configureMetricView, setLayerStackExpanded, and setPanePalette."
+  ],
+  "license": "Apache-2.0 (see public/licenses/model_explorer.txt and public/graph_execution/upstream/model_explorer/LICENSE)"
+}

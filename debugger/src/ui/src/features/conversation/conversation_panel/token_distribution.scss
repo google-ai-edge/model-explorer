@@ -1,0 +1,151 @@
+/**
+ * @license
+ * Copyright 2026 The AI Edge Model Explorer Authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ==============================================================================
+ */
+
+@use '../../../theme/explorer_info' as info;
+@include info.metadata;
+@include info.section-dividers;
+@include info.statistic-table;
+:host {
+  display: block;
+  min-width: 0;
+  font: 12px / normal var(--me-font-family);
+  --info-property-gap: 0px;
+  --info-table-action-size: 14px;
+  --info-table-action-gap: 1px;
+  --explorer-help-icon-size: 12px;
+  --explorer-help-gap: 1px;
+}
+.summary-table th:first-child {
+  width: 44%;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.summary-table td {
+  padding-left: 4px;
+  font-variant-numeric: tabular-nums;
+}
+.summary-table td,
+.summary-table thead th:not(:first-child) {
+  text-align: right;
+}
+.analysis-items {
+  margin: 0 16px 0 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.analysis-item {
+  min-width: 0;
+}
+.item-heading {
+  display: flex;
+  gap: 2px;
+  min-height: 24px;
+  align-items: flex-start;
+}
+.item-index {
+  flex: 0 0 16px;
+  color: var(--me-on-surface-variant-color);
+  line-height: 24px;
+}
+.item-name {
+  color: var(--me-primary-color);
+  line-height: 24px;
+}
+.candidate-pagination {
+  margin-left: auto;
+  align-self: center;
+}
+.analysis-item > .summary-table,
+.analysis-item > .candidate-table,
+.analysis-item > .info-note {
+  margin: 2px 0 0 18px;
+  width: calc(100% - 18px);
+  max-width: calc(100% - 18px);
+}
+.candidate-table col.identity {
+  width: var(--candidate-id-width, 64px);
+}
+.candidate-table th:not(:first-child),
+.candidate-table td:not(:first-child) {
+  text-align: right;
+}
+.column-sort {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  width: 100%;
+  gap: 1px;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+th:first-child .column-sort {
+  justify-content: flex-start;
+}
+.column-sort:disabled {
+  cursor: default;
+  opacity: 0.4;
+}
+.column-sort:focus-visible {
+  outline: 1px solid var(--me-primary-color);
+}
+.column-sort mat-icon,
+.selected-marker,
+.candidate-key mat-icon {
+  flex: none;
+  height: 12px;
+  width: 12px;
+  font-size: 12px;
+  line-height: 12px;
+}
+.column-sort .sort-label {
+  min-width: 0;
+}
+.candidate-value {
+  display: grid;
+  grid-template-columns: 12px minmax(0, 1fr);
+  align-items: start;
+  gap: 1px;
+  min-width: 0;
+}
+.candidate-value.selected {
+  background: var(--me-primary-container-color);
+  border-radius: 2px;
+}
+.selected-marker-slot {
+  display: flex;
+  width: 12px;
+  min-height: 16px;
+}
+.selected-marker {
+  margin-top: 2px;
+  color: var(--me-primary-color);
+}
+explorer-info-value {
+  min-width: 0;
+  flex: 1;
+}
+.candidate-key {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}

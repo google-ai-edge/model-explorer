@@ -19,8 +19,7 @@
 import {signal} from '@angular/core';
 
 export const BOOKMARK_STORAGE_VERSION = 1;
-export const BOOKMARK_SAVE_ERROR =
-  'Bookmarks could not be saved in this browser.';
+export const BOOKMARK_SAVE_ERROR = 'Bookmarks could not be saved in this browser.';
 
 /** How one feature validates and identifies its bookmark entries. */
 export interface BookmarkCodec<T> {
@@ -34,10 +33,7 @@ export interface BookmarkStorage {
   setItem(key: string, value: string): void;
 }
 
-export function dedupeBookmarks<T>(
-  items: readonly T[],
-  codec: BookmarkCodec<T>,
-): T[] {
+export function dedupeBookmarks<T>(items: readonly T[], codec: BookmarkCodec<T>): T[] {
   const seen = new Set<string>();
   return items.filter((item) => {
     const id = codec.identity(item);
@@ -47,10 +43,7 @@ export function dedupeBookmarks<T>(
   });
 }
 /** Reads the versioned envelope `{version, items}` or the legacy bare array. */
-export function decodeBookmarks<T>(
-  raw: string | null,
-  codec: BookmarkCodec<T>,
-): T[] {
+export function decodeBookmarks<T>(raw: string | null, codec: BookmarkCodec<T>): T[] {
   let data: unknown;
   try {
     data = JSON.parse(raw ?? '[]');
@@ -59,15 +52,11 @@ export function decodeBookmarks<T>(
   }
   const entries: unknown[] = Array.isArray(data)
     ? data
-    : data &&
-        typeof data === 'object' &&
-        Array.isArray((data as {items?: unknown}).items)
+    : data && typeof data === 'object' && Array.isArray((data as {items?: unknown}).items)
       ? (data as {items: unknown[]}).items
       : [];
   return dedupeBookmarks(
-    entries
-      .map((entry) => codec.parse(entry))
-      .filter((item): item is T => item !== null),
+    entries.map((entry) => codec.parse(entry)).filter((item): item is T => item !== null),
     codec,
   );
 }

@@ -16,16 +16,7 @@
  * ==============================================================================
  */
 
-import {
-  Component,
-  computed,
-  inject,
-  input,
-  OnDestroy,
-  OnInit,
-  output,
-  signal,
-} from '@angular/core';
+import {Component, computed, inject, input, output, signal, OnInit, OnDestroy} from '@angular/core';
 import {FormsModule} from '@angular/forms';
 import {MatButtonModule} from '@angular/material/button';
 import {MatIconModule} from '@angular/material/icon';
@@ -59,18 +50,12 @@ export class TapPicker implements OnInit, OnDestroy {
     (this.scan().points ?? []).filter((p) => this.selected().includes(p.id)),
   );
   readonly matches = computed(() => {
-    const words = this.query()
-      .toLowerCase()
-      .trim()
-      .split(/\s+/)
-      .filter(Boolean);
+    const words = this.query().toLowerCase().trim().split(/\s+/).filter(Boolean);
     return (this.scan().points ?? []).filter(
       (p) =>
         (!this.signature() || p.signature === this.signature()) &&
         words.every((w) =>
-          `${p.tensor_name} ${p.operator} ${p.op} ${p.signature}`
-            .toLowerCase()
-            .includes(w),
+          `${p.tensor_name} ${p.operator} ${p.op} ${p.signature}`.toLowerCase().includes(w),
         ),
     );
   });
@@ -87,10 +72,7 @@ export class TapPicker implements OnInit, OnDestroy {
     this.scan.set({status: 'scanning'});
     this.readiness.emit(false);
     try {
-      let result = await this.api.post<TapScan>(
-        `artifacts/${this.artifact()}/scan`,
-        {},
-      );
+      let result = await this.api.post<TapScan>(`artifacts/${this.artifact()}/scan`, {});
       while (result.status === 'scanning') {
         await new Promise((resolve) => setTimeout(resolve, 750));
         if (this.destroyed) return;
@@ -107,18 +89,13 @@ export class TapPicker implements OnInit, OnDestroy {
       )
         this.selectionChange.emit(result.recommended);
     } catch (error) {
-      if (!this.destroyed)
-        this.scan.set({status: 'failed', error: (error as Error).message});
+      if (!this.destroyed) this.scan.set({status: 'failed', error: (error as Error).message});
     }
   }
   labelFor(point: TapPoint) {
-    const layer = point.tensor_name
-      .match(/(?:^|\/)layer_\d+(?=\/)/)?.[0]
-      .replaceAll('/', '');
+    const layer = point.tensor_name.match(/(?:^|\/)layer_\d+(?=\/)/)?.[0].replaceAll('/', '');
     const leaf = point.tensor_name.split('/').slice(-2).join('/');
-    return [layer, leaf || `Tensor ${point.tensor}`]
-      .filter(Boolean)
-      .join(' / ');
+    return [layer, leaf || `Tensor ${point.tensor}`].filter(Boolean).join(' / ');
   }
   toggle(point: TapPoint) {
     if (this.disabled() || !point.selectable) return;

@@ -1,0 +1,136 @@
+# LiteRT-LM as an llm::Runtime, and how its library is obtained
+# (litert_lm_library.bzl). The only package that sees its C API.
+
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
+load("@rules_cc//cc:cc_test.bzl", "cc_test")
+
+# The LiteRT-LM repository of each platform (MODULE.bazel). A platform not
+# named here has no LiteRT-LM and does not build.
+_REPOSITORIES = {
+    ":android_arm64": "@litert_lm_android_arm64",
+    ":ios_device": "@litert_lm_ios_arm64",
+    ":ios_simulator": "@litert_lm_ios_sim_arm64",
+    ":macos": "@litert_lm_macos_arm64",
+}
+
+config_setting(
+    name = "android_arm64",
+    constraint_values = [
+        "@platforms//cpu:arm64",
+        "@platforms//os:android",
+    ],
+)
+
+config_setting(
+    name = "ios_device",
+    constraint_values = [
+        "@build_bazel_apple_support//constraints:device",
+        "@platforms//os:ios",
+    ],
+    # The iOS App signs a device build and bundles its GPU plugins.
+    visibility = ["//model_debugger/runner/app/apple:__pkg__"],
+)
+
+config_setting(
+    name = "ios_simulator",
+    constraint_values = [
+        "@build_bazel_apple_support//constraints:simulator",
+        "@platforms//os:ios",
+    ],
+    # The iOS App bundles its GPU plugins.
+    visibility = ["//model_debugger/runner/app/apple:__pkg__"],
+)
+
+config_setting(
+    name = "macos",
+    constraint_values = ["@platforms//os:macos"],
+)
+
+cc_library(
+    name = "litert_lm",
+    srcs = ["litert_lm_runtime.cc"],
+    hdrs = ["litert_lm_runtime.h"],
+    implementation_deps = select({
+        setting: [repository + "//:litert_lm"]
+        for setting, repository in _REPOSITORIES.items()
+    }),
+    visibility = [
+        "//model_debugger/runner:__pkg__",
+        "//model_debugger/runner/llm:__pkg__",
+        "//model_debugger/runner/service:__pkg__",
+    ],
+    deps = [
+        ":gpu_plugins",
+        ":ml_drift_kv_cache",
+        "//model_debugger/runner/llm:runtime",
+        "//model_debugger/runner/util:json",
+        "@com_google_absl//absl/base:core_headers",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status:statusor",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/synchronization",
+        "@protobuf",
+        "@protocol//model_debugger/v1:runner_cc_proto",
+    ] + select({
+        setting: [
+            repository + "//:c_api",
+            repository + "//:version",
+        ]
+        for setting, repository in _REPOSITORIES.items()
+    }),
+)
+
+cc_library(
+    name = "gpu_plugins",
+    srcs = ["gpu_plugins.cc"],
+    hdrs = ["gpu_plugins.h"],
+    deps = [
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/strings",
+    ] + select({
+        setting: [repository + "//:plugins"]
+        for setting, repository in _REPOSITORIES.items()
+    }),
+)
+
+cc_library(
+    name = "ml_drift_kv_cache",
+    srcs = ["ml_drift_kv_cache.cc"],
+    hdrs = ["ml_drift_kv_cache.h"],
+    deps = [
+        "//model_debugger/runner/util:json",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status:statusor",
+        "@com_google_absl//absl/strings",
+    ],
+)
+
+cc_test(
+    name = "ml_drift_kv_cache_test",
+    srcs = ["ml_drift_kv_cache_test.cc"],
+    deps = [
+        ":ml_drift_kv_cache",
+        "//model_debugger/runner/util:json",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status:statusor",
+        "@com_google_googletest//:gtest_main",
+    ],
+)
+
+cc_test(
+    name = "litert_lm_runtime_test",
+    srcs = ["litert_lm_runtime_test.cc"],
+    deps = [
+        ":litert_lm",
+        "@com_google_absl//absl/status",
+        "@com_google_googletest//:gtest_main",
+        "@protobuf",
+        "@protocol//model_debugger/v1:runner_cc_proto",
+    ],
+)
+
+# What litert_lm_library instantiates the @litert_lm repositories from.
+exports_files([
+    "litert_lm.BUILD",
+    "litert_lm_ios.BUILD",
+])

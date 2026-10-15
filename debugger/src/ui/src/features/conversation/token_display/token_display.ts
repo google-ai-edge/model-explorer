@@ -16,34 +16,18 @@
  * ==============================================================================
  */
 
+import {TokenAnalysisPair} from '../../../data/contracts/token_analysis';
+import {TokenColor, colorLabel, heatLevel, heatPalette, metricText} from '../token_analysis';
+import {TOKEN_METRICS} from '../token_metric_metadata';
+import {MatTooltipModule} from '@angular/material/tooltip';
+import {Component, computed, input, output, signal} from '@angular/core';
 import {OverlayModule} from '@angular/cdk/overlay';
-import {
-  ChangeDetectionStrategy,
-  Component,
-  computed,
-  input,
-  output,
-  signal,
-} from '@angular/core';
-import {FormsModule} from '@angular/forms';
 import {MatButtonModule} from '@angular/material/button';
 import {MatIconModule} from '@angular/material/icon';
-import {MatTooltipModule} from '@angular/material/tooltip';
-import {TokenAnalysisPair} from '../../../data/contracts/token_analysis';
+import {FormsModule} from '@angular/forms';
 import {ConfigPicker} from '../../../shared/config_picker/config_picker';
-import {
-  OverlayDialog,
-  OverlayPanel,
-} from '../../../shared/overlay_dialog/overlay_dialog';
+import {OverlayDialog, OverlayPanel} from '../../../shared/overlay_dialog/overlay_dialog';
 import {tokenMarkup} from '../conversation_content';
-import {
-  TokenColor,
-  colorLabel,
-  heatLevel,
-  heatPalette,
-  metricText,
-} from '../token_analysis';
-import {TOKEN_METRICS} from '../token_metric_metadata';
 export interface TokenDisplayPreview {
   ref: string;
   target: string;
@@ -56,7 +40,6 @@ export interface TokenDisplaySettings {
 }
 @Component({
   selector: 'token-display',
-  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     OverlayDialog,
     OverlayPanel,
@@ -100,19 +83,19 @@ export interface TokenDisplaySettings {
               @for (side of ['Ref', 'Target']; track side) {
                 <div [class.target]="side === 'Target'">
                   <span class="side-label">{{ side }}</span>
-                  <div class="preview-tokens" [class.boundaries]="draft().boundaries">
+                  <div class="preview-tokens" [class.boundaries]="draft.boundaries">
                     <span
-                      [class.mismatch]="draft().color === 'token_match' && sample.match === false"
+                      [class.mismatch]="draft.color === 'token_match' && sample.match === false"
                       [class.numeric-token]="
-                        side === 'Target' && heatLevel(draft().color, sample.analysis) !== null
+                        side === 'Target' && heatLevel(draft.color, sample.analysis) !== null
                       "
                       [class.numeric-missing]="
                         side === 'Target' &&
                         numeric() &&
-                        heatLevel(draft().color, sample.analysis) === null
+                        heatLevel(draft.color, sample.analysis) === null
                       "
-                      [attr.data-palette]="heatPalette(draft().color)"
-                      [style.--heat-level]="heatLevel(draft().color, sample.analysis)"
+                      [attr.data-palette]="heatPalette(draft.color)"
+                      [style.--heat-level]="heatLevel(draft.color, sample.analysis)"
                       [innerHTML]="previewHtml(side === 'Ref' ? sample.ref : sample.target)"
                     ></span>
                   </div>
@@ -141,32 +124,27 @@ export interface TokenDisplaySettings {
             plural="color metrics"
             [compact]="true"
             [popupWidth]="360"
-            [value]="colorLabel(draft().color)"
+            [value]="colorLabel(draft.color)"
             [options]="colorOptions"
             [unavailable]="unavailableMetrics()"
             [descriptions]="metricDescriptions()"
             (valueChange)="setColor($event)"
           /><button
             mat-button
-            [disabled]="draft().color === 'token_match'"
+            [disabled]="draft.color === 'token_match'"
             aria-label="Reset Color by to default"
-            (click)="resetColor()"
+            (click)="draft.color = 'token_match'"
           >
             Reset to default
           </button>
         </div>
         <div class="setting">
-          <label
-            ><input
-              type="checkbox"
-              [ngModel]="draft().boundaries"
-              (ngModelChange)="setBoundaries($event)"
-            />Token outlines</label
+          <label><input type="checkbox" [(ngModel)]="draft.boundaries" />Token outlines</label
           ><button
             mat-button
-            [disabled]="!draft().boundaries"
+            [disabled]="draft.boundaries"
             aria-label="Reset Token outlines to default"
-            (click)="setBoundaries(false)"
+            (click)="draft.boundaries = true"
           >
             Reset to default
           </button>
@@ -191,10 +169,7 @@ export class TokenDisplay {
   readonly settings = input.required<TokenDisplaySettings>();
   readonly settingsChange = output<TokenDisplaySettings>();
   readonly open = signal(false);
-  readonly draft = signal<TokenDisplaySettings>({
-    color: 'token_match',
-    boundaries: false,
-  });
+  draft: TokenDisplaySettings = {color: 'token_match', boundaries: true};
   readonly colorLabel = colorLabel;
   readonly heatLevel = heatLevel;
   readonly heatPalette = heatPalette;
@@ -202,48 +177,30 @@ export class TokenDisplay {
   readonly unavailableMetrics = computed(() =>
     TOKEN_METRICS.filter((m) => !this.available()[m.key]).map((m) => m.label),
   );
-  readonly colorOptions = [
-    'Token · Match',
-    'None',
-    ...TOKEN_METRICS.map((m) => m.label),
-  ];
+  readonly colorOptions = ['Token · Match', '-', ...TOKEN_METRICS.map((m) => m.label)];
   readonly metricDescriptions = computed(() =>
     Object.fromEntries(
       TOKEN_METRICS.map((m) => [
         m.label,
-        this.available()[m.key]
-          ? m.description + ' ' + m.unit
-          : 'Not captured for these tokens',
+        this.available()[m.key] ? m.description + ' ' + m.unit : 'Not captured for these tokens',
       ]),
     ),
   );
   setColor(label: string) {
-    const color =
-      label === 'None'
-        ? 'none'
-        : (TOKEN_METRICS.find((m) => m.label === label)?.key ?? 'token_match');
-    this.draft.update((current) => ({...current, color}));
-  }
-  resetColor() {
-    this.draft.update((current) => ({...current, color: 'token_match'}));
-  }
-  setBoundaries(boundaries: boolean) {
-    this.draft.update((current) => ({...current, boundaries}));
+    this.draft.color =
+      label === '-' ? 'none' : (TOKEN_METRICS.find((m) => m.label === label)?.key ?? 'token_match');
   }
   numeric() {
-    const color = this.draft().color;
-    return color !== 'none' && color !== 'token_match';
+    return this.draft.color !== 'none' && this.draft.color !== 'token_match';
   }
   previewMetric() {
-    const color = this.draft().color;
+    const color = this.draft.color;
     return color === 'none' || color === 'token_match'
       ? ''
-      : colorLabel(color) +
-          ': ' +
-          metricText(this.preview()?.analysis?.metrics[color], color);
+      : colorLabel(color) + ': ' + metricText(this.preview()?.analysis?.metrics[color], color);
   }
   show() {
-    this.draft.set({...this.settings()});
+    this.draft = {...this.settings()};
     this.open.set(true);
   }
   close() {
@@ -251,10 +208,9 @@ export class TokenDisplay {
   }
   dirty() {
     const s = this.settings();
-    const d = this.draft();
-    return s.color !== d.color || s.boundaries !== d.boundaries;
+    return s.color !== this.draft.color || s.boundaries !== this.draft.boundaries;
   }
   apply() {
-    this.settingsChange.emit({...this.draft()});
+    this.settingsChange.emit({...this.draft});
   }
 }

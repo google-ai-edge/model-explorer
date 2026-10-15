@@ -90,6 +90,17 @@ dd {
 dd {
   font-weight: 500;
 }
+dd.different,
+header button.different {
+  font-weight: 700;
+  color: var(--me-primary-color);
+}
+.difference-note {
+  margin: 0;
+  padding: 8px 16px 0;
+  font: 11px/16px var(--me-font-family);
+  color: var(--me-on-surface-variant-color);
+}
 .parameter-row + .parameter-row {
   margin-top: 8px;
 }

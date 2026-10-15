@@ -16,22 +16,13 @@
  * ==============================================================================
  */
 
-import type {
-  SessionExecutionPhase,
-  SessionSummary,
-} from './contracts/session_summary';
+import type {SessionExecutionPhase, SessionSummary} from './contracts/session_summary';
 
 /** The execution lifetime and captured-data status are separate server fields. */
-export function sessionExecutionPhase(
-  session: SessionSummary,
-): SessionExecutionPhase {
+export function sessionExecutionPhase(session: SessionSummary): SessionExecutionPhase {
   return (
     session.execution?.phase ??
-    (session.initialized
-      ? 'active'
-      : session.status === 'initializing'
-        ? 'starting'
-        : 'inactive')
+    (session.initialized ? 'active' : session.status === 'initializing' ? 'starting' : 'inactive')
   );
 }
 
@@ -61,17 +52,10 @@ export const MODEL_SERVER_LABELS: Record<ModelServerState, string> = {
 };
 /** Preparing the capture model is part of starting. An ending Session still holds its devices,
  * so it stays on until they are released. A request the Server refused reads as a failure. */
-export function modelServerState(
-  session: SessionSummary,
-  requestError = '',
-): ModelServerState {
+export function modelServerState(session: SessionSummary, requestError = ''): ModelServerState {
   const phase = sessionExecutionPhase(session);
   if (phase === 'active' || phase === 'ending') return 'on';
-  if (
-    phase === 'starting' ||
-    session.status === 'preparing' ||
-    session.status === 'initializing'
-  )
+  if (phase === 'starting' || session.status === 'preparing' || session.status === 'initializing')
     return 'starting';
   return phase === 'interrupted' ||
     phase === 'unavailable' ||
@@ -79,6 +63,18 @@ export function modelServerState(
     requestError
     ? 'failure'
     : 'off';
+}
+/** Whether this Session may start a Model Server at all. A Session that ran and ended, or one
+ * imported from Runner CLI bundles, never starts again; duplicating it makes a fresh Session. */
+export function sessionRestartable(session: SessionSummary): boolean {
+  return !session.execution_ended && session.origin !== 'imported';
+}
+export function sessionNotRestartableReason(session: SessionSummary): string {
+  return session.origin === 'imported'
+    ? 'Imported Session; it never starts a Model Server'
+    : session.execution_ended
+      ? 'This Session has ended; duplicate it to run again'
+      : '';
 }
 /** A Session can be entered when there is something to do in it: a Model Server that is on,
  * or captured data to read. */
@@ -88,17 +84,13 @@ export function sessionEnterable(session: SessionSummary): boolean {
 
 export function sessionIsActive(session: SessionSummary): boolean {
   // 'unavailable' still owns an execution slot; it must be closed before starting again.
-  return ['starting', 'active', 'ending', 'unavailable'].includes(
-    sessionExecutionPhase(session),
-  );
+  return ['starting', 'active', 'ending', 'unavailable'].includes(sessionExecutionPhase(session));
 }
 
 export function sessionConfigurationLocked(session: SessionSummary): boolean {
   return (
     sessionIsActive(session) ||
-    ['preparing', 'initializing', 'running', 'finalizing'].includes(
-      session.status,
-    )
+    ['preparing', 'initializing', 'running', 'finalizing'].includes(session.status)
   );
 }
 

@@ -40,20 +40,19 @@ export const TOKEN_METRICS: readonly TokenMetricDefinition[] = [
     key: 'js',
     label: 'Logits · Jensen–Shannon divergence',
     unit: 'bits (0–1)',
-    description:
-      'Symmetric difference between Reference and Target distributions.',
+    description: 'Symmetric difference between Reference and Target distributions.',
     reading: '0 = identical, 1 = disjoint',
   },
   {
     key: 'relative_l2',
-    label: 'Activation · Relative L2',
+    label: 'Layer Activation · Relative L2',
     unit: 'percent; 1 = 1%',
     description: 'L2 error relative to the Reference tensor norm.',
     reading: '0% = identical tensors',
   },
   {
     key: 'cosine_distance',
-    label: 'Activation · Cosine similarity',
+    label: 'Layer Activation · Cosine similarity',
     unit: 'unitless (1 = identical)',
     description:
       'Cosine similarity between the paired tensors (shown as one minus the recorded distance).',
@@ -62,14 +61,14 @@ export const TOKEN_METRICS: readonly TokenMetricDefinition[] = [
   },
   {
     key: 'norm_ratio',
-    label: 'Activation · Norm ratio',
+    label: 'Layer Activation · Norm ratio',
     unit: '1 = equal norms',
     description: 'Target tensor norm divided by the Reference tensor norm.',
     reading: '1 = equal norms',
   },
   {
     key: 'max_abs_error',
-    label: 'Activation · Max absolute error',
+    label: 'Layer Activation · Max absolute error',
     unit: 'tensor units',
     description: 'Largest absolute element difference in the paired tensors.',
     reading: '0 = identical tensors',
@@ -77,13 +76,9 @@ export const TOKEN_METRICS: readonly TokenMetricDefinition[] = [
 ];
 export const TOKEN_FIELD_HELP: Record<string, string> = {
   token_match: 'Token · Match — true: match; false: mismatch',
-  ...Object.fromEntries(
-    TOKEN_METRICS.map((m) => [m.key, m.label + ' — ' + m.unit]),
-  ),
-  cosine_distance:
-    'Activation · Cosine distance — unitless (0 = identical); 1 − cosine_similarity',
-  cosine_similarity:
-    'Activation · Cosine similarity — unitless (1 = identical)',
+  ...Object.fromEntries(TOKEN_METRICS.map((m) => [m.key, m.label + ' — ' + m.unit])),
+  cosine_distance: 'Layer Activation · Cosine distance — unitless (0 = identical); 1 − cosine_similarity',
+  cosine_similarity: 'Layer Activation · Cosine similarity — unitless (1 = identical)',
 };
 export const TOKEN_QUERY_EXAMPLES = [
   {formula: 'NOT token_match', description: 'Find mismatched tokens.'},

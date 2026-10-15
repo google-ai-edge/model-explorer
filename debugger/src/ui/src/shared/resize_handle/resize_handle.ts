@@ -16,20 +16,8 @@
  * ==============================================================================
  */
 
-import {
-  DestroyRef,
-  Directive,
-  ElementRef,
-  inject,
-  input,
-  output,
-} from '@angular/core';
-import {
-  clampSize,
-  draggedSize,
-  steppedSize,
-  type ResizeOrientation,
-} from './resize_math';
+import {DestroyRef, Directive, ElementRef, inject, input, output} from '@angular/core';
+import {clampSize, draggedSize, steppedSize, type ResizeOrientation} from './resize_math';
 
 /**
  * Draggable panel edge: pointer capture, keyboard steps (arrows, Shift for fine steps,
@@ -88,13 +76,7 @@ export class ResizeHandle {
       if (next.pointerId !== pointerId) return;
       const position = horizontal ? next.clientY : next.clientX;
       this.sizeChange.emit(
-        draggedSize(
-          startSize,
-          startPosition,
-          position,
-          this.bounds(),
-          this.reverse(),
-        ),
+        draggedSize(startSize, startPosition, position, this.bounds(), this.reverse()),
       );
     };
     const finish = (next: PointerEvent) => {
@@ -105,8 +87,7 @@ export class ResizeHandle {
       target.removeEventListener('pointerup', finish);
       target.removeEventListener('pointercancel', finish);
       target.removeEventListener('lostpointercapture', finish);
-      if (target.hasPointerCapture(pointerId))
-        target.releasePointerCapture(pointerId);
+      if (target.hasPointerCapture(pointerId)) target.releasePointerCapture(pointerId);
       this.cleanup = null;
       this.resizingChange.emit(false);
     };

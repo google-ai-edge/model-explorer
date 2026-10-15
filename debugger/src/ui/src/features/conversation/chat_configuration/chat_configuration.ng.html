@@ -18,6 +18,10 @@
   <h2 id="chat-configuration-title" tabindex="-1">
     {{ create ? 'New chat' : 'Chat configuration' }}
   </h2>
+  <p class="context">
+    Chat settings apply when the Conversation is created; changing one starts a new Chat. Settings a
+    Runner build does not apply are unavailable.
+  </p>
 </header>
 <div class="body" [attr.aria-busy]="saving()">
   @for (group of groups; track group.name) {
@@ -59,16 +63,25 @@
           @for (side of sides; track side) {
             <div class="edit-value">
               @if (!supported(side, key)) {
-                <span class="unavailable">Unavailable for PyTorch</span>
+                <span class="unavailable">Unavailable for this runtime</span>
               } @else {
-                @if (key === 'thinking') {
+                @if (isSwitch(key)) {
                   <config-picker
                     [disabled]="saving()"
                     [label]="side + ' ' + labels[key]"
-                    plural="thinking modes"
-                    [value]="thinkingLabel(side)"
-                    [options]="thinkingOptions"
-                    (valueChange)="setThinking(side, $event)"
+                    plural="settings"
+                    [value]="switchLabel(side, key)"
+                    [options]="switchOptions"
+                    (valueChange)="setSwitch(side, key, $event)"
+                  />
+                } @else if (key === 'samplerType') {
+                  <config-picker
+                    [disabled]="saving()"
+                    [label]="side + ' ' + labels[key]"
+                    plural="sampler types"
+                    [value]="samplerLabel(side)"
+                    [options]="samplerOptions(side)"
+                    (valueChange)="setSampler(side, $event)"
                   />
                 } @else if (key === 'systemPrompt') {
                   <textarea

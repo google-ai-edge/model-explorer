@@ -16,14 +16,7 @@
  * ==============================================================================
  */
 
-import {
-  afterNextRender,
-  Component,
-  ElementRef,
-  inject,
-  NgZone,
-  OnDestroy,
-} from '@angular/core';
+import {Component, ElementRef, inject, afterNextRender, OnDestroy, NgZone} from '@angular/core';
 import {mountEmptyChatDemo} from '../empty_chat_demo';
 @Component({
   selector: 'empty-chat-demo',

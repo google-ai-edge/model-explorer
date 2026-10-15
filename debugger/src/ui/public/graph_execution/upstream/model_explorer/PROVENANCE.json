@@ -1,0 +1,49 @@
+{
+  "package": "ai-edge-model-explorer-visualizer",
+  "version": "0.1.2",
+  "url": "https://registry.npmjs.org/ai-edge-model-explorer-visualizer/-/ai-edge-model-explorer-visualizer-0.1.2.tgz",
+  "sha1": "03787282b2751df9f751ec78e9751ee8729e28ad",
+  "local_changes": [
+    "dist/main_browser.js: replace one Google Material Icons stylesheet URL with local model_explorer_fonts.css",
+    "dist/main_browser.js: add a local per-component renderer registry and forward experimental readPaneViewport, setPaneViewport, fitPaneGraph, focusNodeViewport methods through the custom element; see ../../VIEWPORT_BRIDGE.md",
+    "README.md: prepend local experiment provenance and extension notes; retain upstream package README below",
+    "dist/main_browser.js: add local setPaneSelection(nodeId, paneIndex) bridge for selection and clearing without viewport navigation; empty nodeId clears one pane",
+    "dist/main_browser.js: add local setPaneBackground(background, paneIndex) bridge to repaint a pane surface without changing topology, viewport or selection",
+    "local_changes.patch: the unified diff of every dist/main_browser.js change above against the 0.1.2 tarball; scripts/replay_model_explorer_patch.mjs reproduces the served bundle from it"
+  ],
+  "served_browser_bundle": "dist/main_browser.js",
+  "sha256": {
+    "dist/main_browser.js": "0ec4c0fa130c8fcaea2b1d3da6033c902ae668e3b417bed6ff19d75f0c73e2c0",
+    "dist/worker.js": "f857968b63b0a40fb48ed2d63d50e86a73be943c558f4098fd44855735efd738",
+    "local_changes.patch": "eebe06edf99c68620b28cd6be1a9b4059eb838bbdcd4201f83545b36b66acecd"
+  },
+  "sha256_verified_date": "2026-09-15",
+  "local_viewport_extension": {
+    "api_status": "Local experimental extension; not an upstream 0.1.2 public API",
+    "documentation": "../../VIEWPORT_BRIDGE.md",
+    "methods": [
+      "readPaneViewport",
+      "setPaneViewport",
+      "fitPaneGraph",
+      "focusNodeViewport",
+      "setPaneSelection",
+      "setPaneBackground"
+    ],
+    "uses": "Existing renderer camera, d3 zoom transform, graph-fit operations, and pane selection state, and scene background color",
+    "upgrade_requirement": "Reapply and verify against the exact replacement bundle; private implementation names are not stable contracts"
+  },
+  "host_integration": {
+    "documentation": "../../README.md",
+    "data_adapter": "../../execution_data.js",
+    "controller": "../../execution_view.js",
+    "metric_updates": "Only the selected real pair receives metric values; stable topology is retained for color and selection updates.",
+    "controls": "Shared host search, tooltips, readable/fit controls, and external inspector; version-pinned presentation hides standalone pane swap/close controls"
+  },
+  "copied_from": "docs/prototypes/graph-diff/vendor/model_explorer (style-r6); current browser bundle additionally includes the documented local pane background bridge; worker/static assets unchanged",
+  "patch": {
+    "file": "local_changes.patch",
+    "applies_to": "package/dist/main_browser.js from the tarball above (sha1 recorded in `sha1`)",
+    "replay": "node scripts/replay_model_explorer_patch.mjs",
+    "verified_by": "scripts/check_graph_execution_provenance.mjs (hashes always; replay when the tarball is cached)"
+  }
+}

@@ -63,7 +63,7 @@
       var(--heat-low)
     );
     color: var(--me-on-surface-color);
-    box-shadow: none;
+    box-shadow: var(--token-interaction-overlay, none);
   }
   button.numeric-missing.numeric-missing,
   span.numeric-missing.numeric-missing {
@@ -73,7 +73,7 @@
       var(--heat-hatch) 4px 5px
     );
     color: var(--me-on-surface-color);
-    box-shadow: none;
+    box-shadow: var(--token-interaction-overlay, none);
   }
   .heat-scale {
     display: inline-block;
@@ -95,29 +95,59 @@
 }
 
 @mixin token-outline {
-  border: 1px solid light-dark(#9aaabd, #65758b);
+  border: var(--token-border-width, 1px) solid
+    var(
+      --token-border-color,
+      var(--token-detail-color, light-dark(#9aaabd, #65758b))
+    );
   padding: 0 2px;
-  margin: 1px;
-  border-radius: 2px;
-  box-shadow: none;
+  margin: var(--token-margin, 1px);
+  border-radius: var(--token-radius, 2px);
+  box-shadow: var(--token-interaction-overlay, none);
 }
 
-// Candidate selection is side-specific and must win over the hover outline.
-@mixin token-selection {
-  outline: 2px solid var(--pri, var(--me-primary-color));
-  outline-offset: -1px;
-  border-radius: 2px;
+// Direct token clicks and Stage/analysis ranges share one selection appearance.
+// The overlay preserves data fills and hatching underneath.
+@mixin token-selection($width: 2px) {
+  position: relative;
+  z-index: 3;
+  --token-interaction-overlay: inset 0 0 0 100vmax
+    light-dark(
+      color-mix(in srgb, var(--me-node-selected-border-color) 16%, transparent),
+      color-mix(in srgb, var(--me-node-selected-border-color) 24%, transparent)
+    );
+  box-shadow: var(--token-interaction-overlay);
+  outline: $width solid var(--me-node-selected-border-color);
+  outline-offset: -$width;
+  border-radius: var(--token-radius, 2px);
+  &:is(:hover, .linked-token-hover, .pair-hover, .hover-origin, .step-partner) {
+    --token-interaction-overlay: inset 0 0 0 100vmax
+      light-dark(
+        color-mix(
+          in srgb,
+          var(--me-node-selected-border-color) 22%,
+          transparent
+        ),
+        color-mix(
+          in srgb,
+          var(--me-node-selected-border-color) 30%,
+          transparent
+        )
+      );
+  }
 }
 
-// Pointer feedback: the hovered token and its aligned partner on the other runtime
-// share one dashed frame; the stronger tint marks the pointer side.
-@mixin token-pair-hover($tint: 8%) {
+@mixin token-focus-ring {
+  outline: 2px dashed var(--pri, var(--me-primary-color));
+  outline-offset: -2px;
+}
+
+// A light blue overlay preserves data colors; selection uses a stronger tint.
+@mixin token-pair-hover {
   position: relative;
   z-index: 2;
-  outline: 1px dashed var(--pri, var(--me-primary-color));
-  outline-offset: -1px;
-  background-image: linear-gradient(
-    color-mix(in srgb, var(--pri, var(--me-primary-color)) $tint, transparent),
-    color-mix(in srgb, var(--pri, var(--me-primary-color)) $tint, transparent)
-  );
+  --token-interaction-overlay: inset 0 0 0 100vmax
+    color-mix(in srgb, var(--me-node-selected-border-color) 10%, transparent);
+  box-shadow: var(--token-interaction-overlay);
+  @include token-focus-ring;
 }

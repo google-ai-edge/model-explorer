@@ -16,34 +16,19 @@
  * ==============================================================================
  */
 
-import {A11yModule} from '@angular/cdk/a11y';
+import {Component, inject, signal} from '@angular/core';
 import {OverlayModule} from '@angular/cdk/overlay';
-import {
-  ChangeDetectionStrategy,
-  Component,
-  ElementRef,
-  inject,
-  signal,
-  viewChild,
-  viewChildren,
-} from '@angular/core';
+import {A11yModule} from '@angular/cdk/a11y';
 import {MatButtonModule} from '@angular/material/button';
 import {MatIconModule} from '@angular/material/icon';
 import {MatTooltipModule} from '@angular/material/tooltip';
-import {
-  ConversationBookmark,
-  WorkspaceStateService,
-} from '../../../app/workspace_state_service';
-import {
-  OverlayDialog,
-  OverlayPanel,
-} from '../../../shared/overlay_dialog/overlay_dialog';
+import {ConversationBookmark, WorkspaceStateService} from '../../../app/workspace_state_service';
 import {CONVERSATION_BOOKMARK_CODEC} from '../conversation_bookmarks';
+import {OverlayDialog, OverlayPanel} from '../../../shared/overlay_dialog/overlay_dialog';
 /** Demo bookmark rows on the existing CDK overlay and Material controls. */
 @Component({
   selector: 'conversation-bookmarks',
   standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     OverlayDialog,
     OverlayPanel,
@@ -83,7 +68,6 @@ import {CONVERSATION_BOOKMARK_CODEC} from '../conversation_bookmarks';
         @for (bookmark of workspace.bookmarks(); track keyFor(bookmark)) {
           <div class="bookmark-row" [attr.data-bookmark-key]="keyFor(bookmark)">
             <button
-              #bookmarkLocation
               mat-button
               class="bookmark-location"
               [attr.aria-label]="'Open bookmark ' + label(bookmark)"
@@ -123,7 +107,7 @@ import {CONVERSATION_BOOKMARK_CODEC} from '../conversation_bookmarks';
             </button>
           </div>
         } @empty {
-          <div #bookmarkEmpty class="bookmark-empty" tabindex="0" cdkFocusInitial>
+          <div class="bookmark-empty" tabindex="0" cdkFocusInitial>
             <strong>No bookmarks yet</strong
             ><span>Select a stage or token, then add a bookmark.</span>
           </div>
@@ -137,10 +121,6 @@ export class ConversationBookmarks {
   readonly workspace = inject(WorkspaceStateService);
   readonly open = signal(false);
   readonly notice = signal('');
-  private readonly locationButtons =
-    viewChildren<ElementRef<HTMLButtonElement>>('bookmarkLocation');
-  private readonly emptyNotice =
-    viewChild<ElementRef<HTMLElement>>('bookmarkEmpty');
   keyFor(b: ConversationBookmark) {
     return CONVERSATION_BOOKMARK_CODEC.identity(b);
   }
@@ -151,60 +131,50 @@ export class ConversationBookmarks {
     this.open.set(false);
     this.workspace.openBookmark(b);
   }
-  move(index: number, delta: number, _event: Event) {
-    const list = [...this.workspace.bookmarks()];
-    const next = index + delta;
-    if (next < 0 || next >= list.length) {
-      return;
-    }
+  move(index: number, delta: number, event: Event) {
+    const list = [...this.workspace.bookmarks()],
+      next = index + delta;
+    if (next < 0 || next >= list.length) return;
     const [item] = list.splice(index, 1);
     list.splice(next, 0, item);
     this.workspace.setBookmarks(list);
     this.notice.set('Bookmark moved to position ' + (next + 1));
-    requestAnimationFrame(() => {
-      this.locationButtons()[next]?.nativeElement.focus();
-    });
+    const button = event.currentTarget as HTMLElement;
+    requestAnimationFrame(() =>
+      button
+        .closest('.bookmark-row')
+        ?.querySelector<HTMLButtonElement>('.bookmark-location')
+        ?.focus(),
+    );
   }
-  remove(index: number, _event: Event) {
-    const list = [...this.workspace.bookmarks()];
+  remove(index: number, event: Event) {
+    const panel = (event.currentTarget as HTMLElement).closest('.bookmark-panel'),
+      list = [...this.workspace.bookmarks()];
     list.splice(index, 1);
     this.workspace.setBookmarks(list);
     this.notice.set('Bookmark deleted');
     requestAnimationFrame(() => {
-      const rows = this.locationButtons().map((item) => item.nativeElement);
-      if (rows.length) {
-        rows[Math.min(index, rows.length - 1)].focus();
-      } else {
-        this.emptyNotice()?.nativeElement.focus();
-      }
+      const rows = panel?.querySelectorAll<HTMLButtonElement>('.bookmark-location');
+      if (rows?.length) rows[Math.min(index, rows.length - 1)].focus();
+      else (panel?.querySelector('.bookmark-empty') as HTMLElement)?.focus();
     });
   }
   key(event: KeyboardEvent) {
-    if (!['ArrowUp', 'ArrowDown', 'Home', 'End'].includes(event.key)) {
-      return;
-    }
-    const rows = this.locationButtons().map((item) => item.nativeElement);
-    if (!rows.length) {
-      return;
-    }
+    if (!['ArrowUp', 'ArrowDown', 'Home', 'End'].includes(event.key)) return;
+    const panel = (event.target as HTMLElement).closest('.bookmark-panel'),
+      rows = Array.from(panel?.querySelectorAll<HTMLButtonElement>('.bookmark-location') ?? []);
+    if (!rows.length) return;
     event.preventDefault();
-    const target = event.target as HTMLElement;
-    const activeIndex = rows.findIndex(
-      (btn) => btn === target || btn.closest('.bookmark-row')?.contains(target),
-    );
-    const at = activeIndex >= 0 ? activeIndex : 0;
+    const active = (event.target as HTMLElement)
+        .closest('.bookmark-row')
+        ?.querySelector<HTMLButtonElement>('.bookmark-location'),
+      at = active ? rows.indexOf(active) : 0;
     rows[
       event.key === 'Home'
         ? 0
         : event.key === 'End'
           ? rows.length - 1
-          : Math.max(
-              0,
-              Math.min(
-                rows.length - 1,
-                at + (event.key === 'ArrowUp' ? -1 : 1),
-              ),
-            )
+          : Math.max(0, Math.min(rows.length - 1, at + (event.key === 'ArrowUp' ? -1 : 1)))
     ].focus();
   }
 }

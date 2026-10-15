@@ -16,6 +16,9 @@
  * ==============================================================================
  */
 
+@use '../../../shared/styles/display_settings' as display;
+@use '../../../shared/styles/analysis_toolbar' as toolbar;
+@use '../../../shared/styles/analysis_view_switch' as view-switch;
 @use '../../../shared/styles/data_table' as data-table;
 @use '../../../theme/token_diff' as token-diff;
 @use '../../../theme/explorer_controls' as controls;
@@ -24,6 +27,7 @@
 
 /* Local analytical surfaces reuse the Model Explorer control and text tokens. */
 :host,
+.kv-shared-details,
 .kv-popup {
   @include token-diff.activation-colors;
   --kv-text: var(--me-on-surface-color);
@@ -219,19 +223,7 @@ p {
   margin: 0 4px;
   flex: none;
 }
-.view-switch {
-  display: flex;
-  gap: 0;
-  flex: none;
-  padding: 2px;
-  border-radius: 6px;
-  background: var(--button-group);
-}
-.view-switch button {
-  border-radius: 4px;
-  padding: 2px 8px;
-  height: 28px;
-}
+@include view-switch.styles;
 .display-summary {
   max-width: 160px;
   min-width: 0;
@@ -366,63 +358,6 @@ p {
 .trend-heading select {
   min-height: 28px;
   font-size: 11px;
-}
-.graph-footer {
-  display: flex;
-  align-items: flex-start;
-  justify-content: flex-start;
-  flex: none;
-  gap: 12px;
-  width: 100%;
-  margin: 0;
-  padding: 8px 28px 12px 16px;
-  color: var(--kv-muted);
-  font-size: 11px;
-}
-.graph-footer.matrix-footer {
-  flex-direction: row;
-  flex-wrap: wrap;
-  padding-left: 76px;
-}
-.matrix-footer .scale {
-  width: 200px;
-  max-width: 100%;
-}
-.scale {
-  width: 245px;
-  max-width: 45%;
-  flex: none;
-  font-size: 10px;
-  line-height: 16px;
-}
-.bands {
-  display: flex;
-  gap: 2px;
-  height: 6px;
-  margin-top: 3px;
-}
-.bands.continuous {
-  background: linear-gradient(to right, var(--heat-low), var(--heat-high));
-}
-.bands i {
-  flex: 1;
-}
-.scale-labels {
-  display: flex;
-  justify-content: space-between;
-  font: 10px/18px var(--mono);
-}
-.scale small {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 10px;
-}
-.missing-swatch {
-  display: inline-block;
-  width: 10px;
-  height: 6px;
-  background: var(--kv-missing);
 }
 .state-message {
   display: flex;
@@ -602,8 +537,11 @@ p {
   min-width: 0;
   min-height: 0;
   overflow: hidden;
-  @include info.metadata;
   @include info.panel-chrome;
+}
+// The template is also projected into the conversation inspector, outside .details-panel.
+.kv-shared-details {
+  @include info.metadata;
   @include info.section-dividers;
 }
 .details-content {
@@ -666,12 +604,12 @@ p {
 .info-content {
   min-width: 0;
 }
-.details-panel tr {
+.kv-shared-details tr {
   height: auto;
   min-height: 0;
   cursor: default;
 }
-.details-panel tbody tr:hover td {
+.kv-shared-details tbody tr:hover td {
   background: transparent;
 }
 .detail-note {
@@ -725,31 +663,31 @@ p {
 .column-metrics-scroll:focus-visible {
   outline-offset: -1px;
 }
-.details-panel .column-metrics {
+.kv-shared-details .column-metrics {
   width: 100%;
   max-width: none;
   min-width: 300px;
   margin: 0;
   table-layout: auto;
 }
-.details-panel .column-metrics th:first-child {
+.kv-shared-details .column-metrics th:first-child {
   width: 38px;
   padding-right: 8px;
 }
-.details-panel .column-metrics td,
-.details-panel .column-metrics th:not(:first-child) {
+.kv-shared-details .column-metrics td,
+.kv-shared-details .column-metrics th:not(:first-child) {
   padding: 3px 4px;
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
-.details-panel .column-metrics tbody tr:hover {
+.kv-shared-details .column-metrics tbody tr:hover {
   background: var(--me-surface-container-low-color);
 }
 // The panel's shared key column, so values line up with Cache Info and the metric rows.
-.details-panel .token-structure th:first-child {
+.kv-shared-details .token-structure th:first-child {
   width: 104px;
 }
-.details-panel .token-structure tr > :nth-child(2) {
+.kv-shared-details .token-structure tr > :nth-child(2) {
   padding-right: 8px;
 }
 .structure-shape-label {
@@ -966,14 +904,6 @@ p {
   .find-tools > .first-result {
     display: none;
   }
-  .graph-footer {
-    gap: 10px;
-    padding: 7px 16px 14px;
-  }
-  .scale {
-    width: 205px;
-    max-width: 43%;
-  }
 }
 @container kv-analysis (max-width: 700px) {
   .view-switch span {
@@ -1039,14 +969,6 @@ p {
     flex-wrap: wrap;
     gap: 4px 10px;
     padding-left: 4px;
-  }
-  .graph-footer {
-    flex-direction: column;
-    padding: 6px 14px 14px;
-  }
-  .scale {
-    width: 240px;
-    max-width: 100%;
   }
   .context-button {
     font-size: 11px;
@@ -1114,17 +1036,17 @@ kv-range-chart {
 .range-basis {
   margin-bottom: 10px;
 }
-.details-panel .range-metrics {
+.kv-shared-details .range-metrics {
   width: calc(100% - 24px);
   margin: 0 12px;
   table-layout: auto;
 }
-.details-panel .range-metrics td,
-.details-panel .range-metrics th:not(:first-child) {
+.kv-shared-details .range-metrics td,
+.kv-shared-details .range-metrics th:not(:first-child) {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
-.details-panel .range-metrics th:first-child {
+.kv-shared-details .range-metrics th:first-child {
   width: auto;
 }
 .range-metrics small,
@@ -1136,6 +1058,446 @@ kv-range-chart {
   line-height: 16px;
   white-space: nowrap;
 }
-.details-panel .range-column-metrics {
+.kv-shared-details .range-column-metrics {
   min-width: 420px;
+}
+
+.kv-workspace.embedded {
+  height: 440px;
+  min-height: 0;
+  width: 100%;
+}
+.embedded .bookmark-current {
+  display: none;
+}
+.kv-shared-details {
+  min-width: 0;
+}
+
+.chart-legend {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  flex-wrap: wrap;
+  padding: 2px 8px;
+  border-bottom: 1px solid var(--kv-line);
+}
+.chart-legend i {
+  width: 12px;
+  height: 3px;
+  display: inline-block;
+}
+.chart-legend label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.layer-picker {
+  padding: 12px;
+  width: 260px;
+  background: var(--kv-panel);
+  border: 1px solid var(--kv-line);
+  border-radius: 4px;
+  box-shadow: 0 4px 12px #0002;
+}
+.layer-options {
+  max-height: 260px;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+}
+.layer-options label {
+  padding: 3px;
+}
+
+.embedded .toolbar {
+  border: 0;
+  border-bottom: 1px solid var(--kv-line);
+  border-radius: 0;
+  box-shadow: none;
+  margin: 0;
+  width: 100%;
+  max-width: 100%;
+  min-height: 36px;
+  height: auto;
+  max-height: none;
+  padding: 4px 8px;
+  flex-wrap: wrap;
+  background: var(--kv-panel);
+}
+.embedded .state-message {
+  min-height: 180px;
+}
+
+.find-controls[hidden] {
+  display: none;
+}
+
+.embedded .analysis {
+  background: transparent;
+}
+.embedded .toolbar {
+  gap: 8px;
+  flex-wrap: nowrap;
+  padding: 0;
+  margin: 0 0 8px;
+  border: 0;
+  gap: 8px;
+  background: transparent;
+  min-height: 30px;
+}
+.embedded .toolbar [hidden] {
+  display: none;
+}
+.embedded .context-button .turn-label,
+.embedded .context-divider {
+  display: none;
+}
+.embedded .context-button {
+  padding: 0 4px;
+  min-width: 0;
+  flex-shrink: 0;
+}
+.embedded .context-button .moment-label {
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.embedded .toolbar > select {
+  max-width: 115px;
+}
+.embedded .toolbar select {
+  font: inherit;
+  color: var(--kv-text);
+  background: transparent;
+  border: 1px solid var(--kv-line);
+  border-radius: 3px;
+  padding: 3px;
+}
+.embedded .head-aggregation {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+.embedded .chart-legend {
+  margin-left: auto;
+  padding: 0;
+  border: 0;
+  flex-wrap: nowrap;
+  min-height: 30px;
+}
+.embedded .chart-legend button {
+  white-space: nowrap;
+}
+
+// Keep the analysis toolbar above both the plot and its optional results rail.
+.kv-workspace.embedded {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-rows: auto minmax(0, 1fr);
+  background: transparent;
+}
+.embedded .analysis {
+  display: contents;
+}
+.embedded .toolbar {
+  grid-column: 1 / -1;
+  grid-row: 1;
+}
+.embedded .analysis-body,
+.embedded .state-message {
+  grid-column: 1;
+  grid-row: 2;
+}
+.embedded .results {
+  grid-column: 2;
+  grid-row: 2;
+  position: static;
+}
+.embedded .chart-legend > span {
+  white-space: nowrap;
+}
+.embedded .condition-preview {
+  max-width: 70px;
+}
+.embedded .canvas {
+  background: transparent;
+}
+.embedded .context-button {
+  max-width: 120px;
+}
+.embedded .toolbar select {
+  flex-shrink: 0;
+}
+.embedded .view-switch {
+  flex-shrink: 0;
+}
+.embedded .view-switch mat-icon {
+  display: block;
+  width: 16px;
+  height: 16px;
+  font-size: 16px;
+  line-height: 16px;
+}
+.embedded .tool-divider {
+  margin: 0;
+}
+.embedded .notice-banner {
+  grid-column: 1 / -1;
+}
+.embedded .results {
+  max-width: none;
+}
+
+// A single reading order: metric, low endpoint, ramp, high endpoint.
+// Fixed tracks keep labels, endpoints and the ramp stable across metrics.
+.heatmap-color-legend {
+  display: grid;
+  grid-template-columns: 24px 80px 24px;
+  width: 136px;
+  min-width: 136px;
+  max-width: 136px;
+  flex: 0 0 136px;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+  font-size: 11px;
+  color: var(--kv-muted);
+  .color-metric,
+  .color-endpoint {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .color-metric {
+    text-align: right;
+  }
+  .color-endpoint {
+    font: 10px/16px var(--mono);
+    text-align: center;
+  }
+  .color-ramp {
+    display: flex;
+    width: 80px;
+    height: 6px;
+    gap: 1px;
+    &.continuous {
+      background: linear-gradient(to right, var(--heat-low), var(--heat-high));
+    }
+    i {
+      flex: 1;
+    }
+  }
+}
+
+.embedded .toolbar {
+  @include toolbar.layout;
+  & {
+    @include toolbar.fixed-actions;
+  }
+}
+
+// Keep the expand action anchored while metric labels and legends change width.
+.embedded .toolbar {
+  position: relative;
+  padding-right: 8px;
+}
+
+// A single toolbar row; narrow panels scroll controls instead of wrapping them.
+.embedded .toolbar {
+  gap: 8px;
+  flex-wrap: nowrap;
+  overflow: visible;
+}
+.toolbar-scroll {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  flex: 1;
+  overflow-x: auto;
+}
+.toolbar-scroll analysis-heatmap-controls {
+  flex: none;
+  flex-wrap: nowrap;
+}
+:host ::ng-deep .toolbar-scroll analysis-heatmap-controls .range-group {
+  flex-wrap: nowrap;
+}
+.toolbar-scroll .chart-legend {
+  flex: none;
+}
+.toolbar-view {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+  font: 12px/20px var(--me-font-family);
+  color: var(--me-on-surface-color);
+}
+.toolbar-section-divider,
+.toolbar-range.tensor-range::before,
+.toolbar-actions::before {
+  content: '';
+  height: 24px;
+  flex: 0 0 1px;
+  background: var(--me-outline-hairline-color);
+}
+.kv-view-picker {
+  flex: 0 0 160px;
+  width: 160px;
+}
+.tensor-control,
+.tensor-position-control {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex: none;
+  white-space: nowrap;
+  font-size: 12px;
+}
+.tensor-position-control input {
+  width: 66px;
+  min-width: 0;
+  font: inherit;
+  padding: 3px 4px;
+  border: 1px solid var(--me-outline-hairline-color);
+  border-radius: 3px;
+  background: var(--me-surface-color);
+  color: var(--me-on-surface-color);
+}
+.tensor-position-control .icon-button {
+  padding: 0;
+  width: 20px;
+  height: 24px;
+  min-width: 20px;
+}
+.tensor-plots {
+  width: 100%;
+  min-width: 0;
+}
+.tensor-plot-group {
+  min-width: 0;
+  padding: 8px 0;
+}
+.tensor-plot-group + .tensor-plot-group {
+  border-top: 1px solid var(--me-outline-hairline-color);
+}
+.tensor-plot-group h3 {
+  margin: 0 12px 8px;
+  font: 500 12px/20px var(--me-font-family);
+  color: var(--me-on-surface-color);
+}
+
+.toolbar-scroll analysis-position-range {
+  flex: none;
+  white-space: nowrap;
+}
+
+.tensor-line-frame {
+  padding: 6px 12px 0;
+}
+.tensor-line-canvas {
+  position: relative;
+  min-height: 260px;
+}
+
+// Legend and fullscreen stay outside the scrolling analysis controls.
+.toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: none;
+}
+.toolbar-legend {
+  width: 144px;
+  flex: 0 0 144px;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+}
+.toolbar-legend .chart-legend {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-height: 32px;
+}
+.tensor-axis-legend {
+  white-space: nowrap;
+  color: var(--kv-muted);
+  font: 11px/20px var(--me-font-family);
+}
+.view-display-button.mat-mdc-icon-button {
+  --mdc-icon-button-state-layer-size: 32px;
+  --mdc-icon-button-icon-size: 20px;
+  width: 32px;
+  height: 32px;
+  padding: 6px;
+  mat-icon {
+    width: 20px;
+    height: 20px;
+    font-size: 20px;
+  }
+}
+.toolbar-range {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: none;
+  white-space: nowrap;
+}
+
+.chart-display {
+  @include display.styles;
+  .series-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .series-count {
+    color: var(--me-on-surface-variant-color);
+  }
+  .series-search {
+    @include controls.configuration-input;
+    width: 100%;
+    margin-bottom: 4px;
+  }
+  .series-options {
+    max-height: min(240px, max(64px, calc(70vh - 300px)));
+    overflow-y: auto;
+  }
+  .series-options label {
+    min-height: 32px;
+    padding: 0 6px;
+    cursor: pointer;
+  }
+  .series-options label:hover,
+  .series-options label:focus-within {
+    background: var(--me-surface-container-highest-color);
+  }
+  .series-options input {
+    width: 13px;
+    height: 13px;
+    margin: 0 2px 0 0;
+    accent-color: var(--me-primary-color);
+  }
+  .series-options i {
+    width: 20px;
+    border-top: 2px solid;
+    flex: none;
+  }
+  .series-options i.dashed {
+    border-top-style: dashed;
+  }
+  .series-actions {
+    display: flex;
+    gap: 16px;
+  }
+  .series-empty {
+    color: var(--me-on-surface-variant-color);
+    margin: 4px 6px;
+  }
 }

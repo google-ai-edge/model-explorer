@@ -16,13 +16,11 @@
  * ==============================================================================
  */
 
-export type KvMetric = 'relative_l2' | 'max_abs' | 'cosine_distance';
-export type KvMetrics = Record<KvMetric, number | null>;
-export type KvTokenMetric =
-  | 'cosine_similarity'
-  | 'relative_l2'
-  | 'rmse'
-  | 'max_abs';
+export type KvMetric = 'relative_l2' | 'max_abs' | 'cosine_distance' | 'cosine_similarity';
+export type KvMetrics = Record<Exclude<KvMetric, 'cosine_similarity'>, number | null> & {
+  cosine_similarity?: number | null;
+};
+export type KvTokenMetric = 'cosine_similarity' | 'relative_l2' | 'rmse' | 'max_abs';
 export interface KvTokenMetrics {
   position: number;
   status: string;
@@ -76,10 +74,7 @@ export interface KvAnalysisLayer {
   summary_metrics?: Record<string, {value: number | null; status: string}>;
   comparison_basis?: string;
   canonical_layout?: string[];
-  token_structure?: {
-    ref: KvTokenStructure | null;
-    target: KvTokenStructure | null;
-  };
+  token_structure?: {ref: KvTokenStructure | null; target: KvTokenStructure | null};
   token_metrics?: KvTokenMetrics[];
 }
 export interface KvAnalysisContext {
@@ -94,10 +89,7 @@ export interface KvAnalysisContext {
   runtime: string | null;
   layers: KvAnalysisLayer[];
   aggregation?: string;
-  observations?: Record<
-    string,
-    {phase: string; step?: number; forward_id?: number}
-  >;
+  observations?: Record<string, {phase: string; step?: number; forward_id?: number}>;
   snapshots?: {ref: KvSnapshotIdentity[]; target: KvSnapshotIdentity[]};
   processed_token_count?: number;
   /** Present when the logical context was derived from a runtime dump (see the data contract). */
@@ -109,12 +101,19 @@ export interface KvAnalysis {
   notice?: string;
 }
 
-/** Logical position intervals always use an exclusive end. */
+/** Conversation-global captured positions (across turns, including Prefill).
+ * Intervals use an exclusive end. Never add turn lengths to cumulative KV coordinates. */
+/** Columns from the conversation's Context alignment; null is a one-sided gap. */
+export interface KvPositionAlignment {
+  start: number;
+  pairs: [number | null, number | null][];
+}
 export interface KvRangeBin {
   start: number;
   end: number;
 }
 export interface KvRangeMetricSummary {
+  mean?: number | null;
   min: number | null;
   max: number | null;
   min_position: number | null;
@@ -122,7 +121,9 @@ export interface KvRangeMetricSummary {
   valid_count: number;
 }
 export interface KvRangeCell extends KvRangeBin {
-  metrics: Record<KvMetric, KvRangeMetricSummary>;
+  metrics: Record<Exclude<KvMetric, 'cosine_similarity'>, KvRangeMetricSummary> & {
+    cosine_similarity?: KvRangeMetricSummary;
+  };
   match_count?: number;
 }
 export interface KvRangeRow {
@@ -133,6 +134,7 @@ export interface KvRangeRow {
   bins: KvRangeCell[];
 }
 export interface KvRangeResponse extends KvRangeBin {
+  heads?: number[] | null;
   context_id: string;
   bins: KvRangeBin[];
   rows: KvRangeRow[];

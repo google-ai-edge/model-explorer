@@ -1,0 +1,174 @@
+# Copyright 2026 The AI Edge Model Explorer Authors.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# The Runner's own dependencies, from the Bazel Central Registry. The runtime
+# it links has its own copies of Abseil and protobuf inside its library and
+# exports its C API alone, so these versions are the Runner's to choose.
+module(name = "model_debugger_runner")
+
+bazel_dep(name = "abseil-cpp", version = "20260526.0", repo_name = "com_google_absl")
+
+# From 20260526 Abseil declares no compatibility level and the registry's other
+# modules still ask for the old one; one version is what we want anyway.
+single_version_override(
+    module_name = "abseil-cpp",
+    version = "20260526.0",
+)
+
+bazel_dep(name = "googletest", version = "1.18.0.bcr.1", repo_name = "com_google_googletest")
+bazel_dep(name = "nlohmann_json", version = "3.12.0")
+bazel_dep(name = "apple_support", version = "2.9.1", repo_name = "build_bazel_apple_support")
+bazel_dep(name = "platforms", version = "1.0.0")
+bazel_dep(name = "rules_cc", version = "0.2.22")
+
+# The App: Swift, bundled for macOS and for iOS (app/).
+bazel_dep(name = "rules_apple", version = "5.3.0")
+bazel_dep(name = "rules_swift", version = "4.2.1")
+
+# Android: the NDK that ANDROID_NDK_HOME names, used only by
+# --config=android_app (.bazelrc), so that other builds need none.
+bazel_dep(name = "rules_android_ndk", version = "0.1.5")
+
+android_ndk = use_extension("@rules_android_ndk//:extension.bzl", "android_ndk_repository_extension")
+use_repo(android_ndk, "androidndk")
+
+# The Android App: Kotlin and Compose, built by rules_android's android_binary
+# with the SDK that ANDROID_HOME names (platform 35, build-tools 35.0.0).
+bazel_dep(name = "rules_android", version = "0.8.0")
+bazel_dep(name = "rules_kotlin", version = "2.4.20")
+bazel_dep(name = "rules_jvm_external", version = "7.2")
+
+remote_android_extensions = use_extension(
+    "@rules_android//bzlmod_extensions:android_extensions.bzl",
+    "remote_android_tools_extensions",
+)
+use_repo(remote_android_extensions, "android_tools")
+
+android_sdk = use_extension(
+    "@rules_android//rules/android_sdk_repository:rule.bzl",
+    "android_sdk_repository_extension",
+)
+android_sdk.configure(
+    api_level = 35,
+    build_tools_version = "35.0.0",
+)
+use_repo(android_sdk, "androidsdk")
+
+register_toolchains("@androidsdk//:sdk-toolchain", "@androidsdk//:all")
+
+# Go, for rules_android's own tools: the SDK it asks for (1.22.4) is older than
+# the protobuf module they fetch requires; the root module's SDK comes first.
+bazel_dep(name = "rules_go", version = "0.59.0")
+
+go_sdk = use_extension("@rules_go//go:extensions.bzl", "go_sdk")
+go_sdk.download(version = "1.25.3")
+
+# The App's Java and Kotlin libraries: a Compose set that compiles against
+# platform 35, and the Compose compiler plugin of rules_kotlin's kotlinc.
+maven = use_extension("@rules_jvm_external//:extensions.bzl", "maven")
+maven.install(
+    name = "maven_android",
+    aar_import_bzl_label = "@rules_android//rules:rules.bzl",
+    # AndroidX POMs ask for exact versions of their siblings ([2.6.1]); Gradle
+    # takes the newest of them, and so does Coursier, relaxed.
+    additional_coursier_options = ["--reconciliation=*:*:relaxed"],
+    artifacts = [
+        "androidx.activity:activity-compose:1.10.1",
+        "androidx.compose.foundation:foundation",
+        "androidx.compose.material3:material3",
+        "androidx.compose.material:material-icons-extended",
+        "androidx.compose.runtime:runtime",
+        "androidx.compose.ui:ui",
+        "org.jetbrains.kotlin:kotlin-compose-compiler-plugin-embeddable:2.4.20",
+        "org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2",
+    ],
+    # One Compose release: the bill of materials sets every Compose version.
+    boms = ["androidx.compose:compose-bom:2026.03.01"],
+    # Every artifact and its checksum, pinned: bazel run @maven_android//:pin
+    lock_file = "//model_debugger/runner/app/android:maven_install.json",
+    repositories = [
+        # maven.google.com redirects here, and redirects lose the files.
+        "https://dl.google.com/android/maven2",
+        "https://repo1.maven.org/maven2",
+    ],
+    use_starlark_android_rules = True,
+)
+use_repo(maven, "maven_android")
+
+# The Kotlin formatter, in Google style (ci/check_runner.sh): ktfmt, run by
+# //model_debugger/runner/app/android:ktfmt on Bazel's own Java.
+bazel_dep(name = "rules_java", version = "9.3.0")
+
+# The Starlark formatter and linter (ci/check_runner.sh): buildifier, prebuilt.
+bazel_dep(name = "buildifier_prebuilt", version = "10.1.0", dev_dependency = True)
+
+http_jar = use_repo_rule("@bazel_tools//tools/build_defs/repo:http.bzl", "http_jar")
+
+http_jar(
+    name = "ktfmt",
+    sha256 = "5b3d5286fd2defcc7dc8e28c21ddf156cc6b2d8682bdcd929ce4333e7a6201f2",
+    url = "https://repo1.maven.org/maven2/com/facebook/ktfmt/0.64/ktfmt-0.64-with-dependencies.jar",
+)
+
+# The protocol: gRPC and protobuf for the service the Runner serves, and the
+# proto itself from ../protocol, the repository's protocol directory.
+bazel_dep(name = "grpc", version = "1.84.0")
+
+# SHA-256 of model and capture files, on every platform; gRPC brings it.
+bazel_dep(name = "boringssl", version = "0.20241024.0")
+bazel_dep(name = "protobuf", version = "35.1")
+
+local_repository = use_repo_rule(
+    "@bazel_tools//tools/build_defs/repo:local.bzl",
+    "local_repository",
+)
+
+local_repository(
+    name = "protocol",
+    path = "../protocol",
+)
+
+# LiteRT-LM: its C API library built from one commit of its source by its own
+# Bazel, with the debugger on, and the GPU plugins it ships; one repository per
+# platform. See model_debugger/runner/llm/litert_lm/litert_lm_library.bzl.
+litert_lm_library = use_repo_rule(
+    "//model_debugger/runner/llm/litert_lm:litert_lm_library.bzl",
+    "litert_lm_library",
+)
+
+LITERT_LM_COMMIT = "a0f1e97361155c8bb9cd3d6aa045c04320d4334b"
+
+litert_lm_library(
+    name = "litert_lm_macos_arm64",
+    commit = LITERT_LM_COMMIT,
+    platform = "macos_arm64",
+)
+
+litert_lm_library(
+    name = "litert_lm_ios_sim_arm64",
+    commit = LITERT_LM_COMMIT,
+    platform = "ios_sim_arm64",
+)
+
+litert_lm_library(
+    name = "litert_lm_ios_arm64",
+    commit = LITERT_LM_COMMIT,
+    platform = "ios_arm64",
+)
+
+litert_lm_library(
+    name = "litert_lm_android_arm64",
+    commit = LITERT_LM_COMMIT,
+    platform = "android_arm64",
+)

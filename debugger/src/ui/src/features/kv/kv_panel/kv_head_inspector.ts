@@ -27,10 +27,10 @@ import {
   signal,
   untracked,
 } from '@angular/core';
-import type {KvHeadEvidence} from '../../../data/contracts/kv';
 import {ReportApiService} from '../../../data/report_api_service';
 import {ReportStateService} from '../../../data/report_state_service';
 import {KvHeadDetails} from './kv_head_details';
+import type {KvHeadEvidence} from '../../../data/contracts/kv';
 
 export interface KvHeadSelection {
   turn: number;
@@ -39,6 +39,7 @@ export interface KvHeadSelection {
   kind: string;
   position: number;
   head: number;
+  alignment?: import('../../../data/contracts/kv').KvPositionAlignment | null;
 }
 
 /** One head owns its request; the enclosing inspector owns its persistent UI state. */
@@ -82,6 +83,7 @@ export class KvHeadInspector {
         selection.kind,
         selection.position,
         selection.head,
+        selection.alignment,
       ],
     ]);
   });
@@ -111,6 +113,7 @@ export class KvHeadInspector {
           selection.head,
           null,
           controller.signal,
+          selection.alignment,
         ),
       )
         .then((value) => {
@@ -124,16 +127,13 @@ export class KvHeadInspector {
             returned.position !== selection.position ||
             returned.head !== selection.head
           ) {
-            this.error.set(
-              'Head values do not match this selection. Please retry.',
-            );
+            this.error.set('Head values do not match this selection. Please retry.');
             return;
           }
           this.evidence.set(value);
         })
         .catch(() => {
-          if (!controller.signal.aborted)
-            this.error.set('Unable to load this head. Please retry.');
+          if (!controller.signal.aborted) this.error.set('Unable to load this head. Please retry.');
         })
         .finally(() => {
           if (!controller.signal.aborted) this.loading.set(false);

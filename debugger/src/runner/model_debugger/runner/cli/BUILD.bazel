@@ -1,0 +1,15 @@
+# The Runner as a command: for a machine without a window, and for CI.
+
+load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
+
+cc_binary(
+    name = "runner",
+    srcs = ["runner_main.cc"],
+    deps = [
+        "//model_debugger/runner:runner_lib",
+        "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/flags:parse",
+        "@com_google_absl//absl/flags:usage",
+        "@com_google_absl//absl/status:statusor",
+    ],
+)

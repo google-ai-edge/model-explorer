@@ -21,7 +21,10 @@
     [attr.data-state]="state()"
     [disabled]="busy() || unavailable()"
     [attr.aria-busy]="busy()"
-    [attr.aria-label]="'Model Server ' + label() + ' · ' + action() + ' · ' + session().name"
+    [attr.data-final]="final()"
+    [attr.aria-label]="
+      'Model Server ' + label() + ' · ' + (final() ? hint() : action()) + ' · ' + session().name
+    "
     (click)="toggle()"
   >
     <span class="dot" aria-hidden="true"></span>

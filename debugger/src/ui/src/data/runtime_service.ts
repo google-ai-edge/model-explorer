@@ -16,37 +16,22 @@
  * ==============================================================================
  */
 
-import {
-  computed,
-  effect,
-  inject,
-  Injectable,
-  signal,
-  untracked,
-} from '@angular/core';
-import type {
-  RunnerBuildCatalog,
-  RunnerDevice,
-  RuntimeCapabilities,
-  RuntimeCapability,
-  RuntimeJob,
-  RuntimeJobEvent,
-} from './contracts/runtime';
-import {isTerminal} from './contracts/runtime';
-import type {SessionSummary} from './contracts/session_summary';
+import {computed, effect, inject, Injectable, signal, untracked} from '@angular/core';
 import {ReportApiService} from './report_api_service';
 import {ReportStateService} from './report_state_service';
 import {SessionListService} from './session_list_service';
-import {
-  modelServerState,
-  sessionExecutionPhase,
-  sessionIsActive,
-} from './session_status';
-export type LifecycleOperation =
-  | 'prepare'
-  | 'initialize'
-  | 'generate'
-  | 'close';
+import {isTerminal} from './contracts/runtime';
+import {modelServerState, sessionExecutionPhase, sessionIsActive} from './session_status';
+import type {SessionSummary} from './contracts/session_summary';
+import type {
+  RuntimeCapability,
+  RuntimeCapabilities,
+  RuntimeJob,
+  RuntimeJobEvent,
+  RunnerDevice,
+  RunnerBuildCatalog,
+} from './contracts/runtime';
+export type LifecycleOperation = 'prepare' | 'initialize' | 'generate' | 'close';
 @Injectable({providedIn: 'root'})
 export class RuntimeService {
   readonly api = inject(ReportApiService);
@@ -59,7 +44,9 @@ export class RuntimeService {
   readonly buildCatalogs = signal<Record<string, RunnerBuildCatalog>>({});
   readonly buildLoading = signal<Record<string, boolean>>({});
   async loadBuilds(id: string) {
-    if (this.buildLoading()[id]) return;
+    if (this.buildLoading()[id]) {
+      return;
+    }
     this.buildLoading.update((value) => ({...value, [id]: true}));
     try {
       const result = await this.api.deviceBuilds(id);
@@ -99,31 +86,30 @@ export class RuntimeService {
     const epoch = ++this.deviceEpoch;
     try {
       const data = await this.api.devices();
-      if (epoch !== this.deviceEpoch) return;
+      if (epoch !== this.deviceEpoch) {
+        return;
+      }
       this.devices.set(data.devices);
       this.deviceError.set(data.notice ?? '');
-      await Promise.allSettled(
-        this.devices().map((device) => this.inspectDevice(device.id)),
-      );
+      await Promise.allSettled(this.devices().map((device) => this.inspectDevice(device.id)));
     } catch (error) {
-      if (epoch !== this.deviceEpoch) return;
+      if (epoch !== this.deviceEpoch) {
+        return;
+      }
       this.devices.set([]);
-      this.deviceError.set(
-        error instanceof Error ? error.message : String(error),
-      );
+      this.deviceError.set(error instanceof Error ? error.message : String(error));
     }
   }
   async inspectDevice(id: string) {
-    id =
-      this.devices().find((d) => d.runnerId === id)?.id ??
-      (id === 'Server host' ? 'local' : id);
+    id = this.devices().find((d) => d.runnerId === id)?.id ?? (id === 'Server host' ? 'local' : id);
     if (
       !this.devices().some((d) => d.id === id) ||
       this.devices().find((d) => d.id === id)?.status === 'checking'
-    )
+    ) {
       return;
-    const epoch = this.deviceEpoch,
-      ticket = ++this.inspectionSequence;
+    }
+    const epoch = this.deviceEpoch;
+    const ticket = ++this.inspectionSequence;
     this.deviceRequests.set(id, ticket);
     this.devices.update((devices) =>
       devices.map((d) =>
@@ -141,28 +127,25 @@ export class RuntimeService {
     );
     try {
       const result = await this.api.inspectDevice(id);
-      if (epoch !== this.deviceEpoch || this.deviceRequests.get(id) !== ticket)
+      if (epoch !== this.deviceEpoch || this.deviceRequests.get(id) !== ticket) {
         return;
-      this.devices.update((devices) =>
-        devices.map((d) => (d.id === id ? {...d, ...result} : d)),
-      );
+      }
+      this.devices.update((devices) => devices.map((d) => (d.id === id ? {...d, ...result} : d)));
     } catch {
-      if (epoch !== this.deviceEpoch || this.deviceRequests.get(id) !== ticket)
+      if (epoch !== this.deviceEpoch || this.deviceRequests.get(id) !== ticket) {
         return;
+      }
       this.devices.update((devices) =>
         devices.map((d) =>
           d.id === id
-            ? {
-                ...d,
-                status: 'unknown',
-                reason: 'Check failed; Runner availability is unknown.',
-              }
+            ? {...d, status: 'unknown', reason: 'Check failed; Runner availability is unknown.'}
             : d,
         ),
       );
     } finally {
-      if (this.deviceRequests.get(id) === ticket)
+      if (this.deviceRequests.get(id) === ticket) {
         this.deviceRequests.delete(id);
+      }
     }
   }
   readonly error = signal('');
@@ -175,16 +158,13 @@ export class RuntimeService {
   readonly ownerSession = computed(() => {
     const selected = this.selected();
     return selected?.parent_session_id
-      ? this.sessions
-          .allItems()
-          .find((s) => s.id === selected.parent_session_id)
+      ? this.sessions.allItems().find((s) => s.id === selected.parent_session_id)
       : selected;
   });
   readonly execution = computed(() => this.ownerSession()?.execution);
   readonly active = computed(() => this.execution()?.phase === 'active');
   readonly generating = computed(
-    () =>
-      this.job()?.operation === 'generate' && !isTerminal(this.job()!.status),
+    () => this.job()?.operation === 'generate' && !isTerminal(this.job()!.status),
   );
   readonly busy = computed(
     () =>
@@ -229,9 +209,7 @@ export class RuntimeService {
     );
   }
   async attach(id: string | null) {
-    this.attachedId.set(
-      this.sessions.allItems().some((record) => record.id === id) ? id : null,
-    );
+    this.attachedId.set(this.sessions.allItems().some((record) => record.id === id) ? id : null);
     const epoch = ++this.epoch;
     this.reconnectAttempts = 0;
     this.stopWatching();
@@ -242,15 +220,19 @@ export class RuntimeService {
     if (jobId) {
       try {
         const job = await this.api.job(jobId);
-        if (epoch !== this.epoch) return;
-        this.job.set({
-          ...job,
-          prompt: this.submittedPrompts.get(job.id) ?? job.prompt,
-        });
-        if (!isTerminal(job.status)) this.watch(job, epoch);
-        else await this.sessions.load();
+        if (epoch !== this.epoch) {
+          return;
+        }
+        this.job.set({...job, prompt: this.submittedPrompts.get(job.id) ?? job.prompt});
+        if (!isTerminal(job.status)) {
+          this.watch(job, epoch);
+        } else {
+          await this.sessions.load();
+        }
       } catch (error) {
-        if (epoch === this.epoch) this.error.set(String(error));
+        if (epoch === this.epoch) {
+          this.error.set(String(error));
+        }
       }
     }
   }
@@ -261,7 +243,7 @@ export class RuntimeService {
   lifecycle(
     id: string,
     operation: LifecycleOperation,
-    options: {prompt?: string; maxTokens?: number} = {},
+    options: {prompt?: string} = {},
   ) {
     const path = `sessions/${encodeURIComponent(id)}/${operation === 'generate' ? 'turns' : operation}`;
     const body =
@@ -269,22 +251,14 @@ export class RuntimeService {
         ? {}
         : {
             request_id: crypto.randomUUID(),
-            ...(operation === 'generate'
-              ? {
-                  prompt: options.prompt ?? '',
-                  max_output_tokens: options.maxTokens ?? 32,
-                }
-              : {}),
+            ...(operation === 'generate' ? {prompt: options.prompt ?? ''} : {}),
           };
     return this.api.post<RuntimeJob>(path, body);
   }
   /** Per-Session lifecycle requests from the home page; the row shows its own pending/error state. */
   readonly lifecyclePending = signal<Record<string, boolean>>({});
   readonly lifecycleErrors = signal<Record<string, string>>({});
-  private async requestLifecycle(
-    session: SessionSummary,
-    operation: LifecycleOperation,
-  ) {
+  private async requestLifecycle(session: SessionSummary, operation: LifecycleOperation) {
     this.lifecyclePending.update((value) => ({...value, [session.id]: true}));
     this.lifecycleErrors.update((value) => ({...value, [session.id]: ''}));
     try {
@@ -295,38 +269,40 @@ export class RuntimeService {
         ...value,
         [session.id]: error instanceof Error ? error.message : String(error),
       }));
-      if (operation !== 'prepare') await this.sessions.load(true);
+      if (operation !== 'prepare') {
+        await this.sessions.load(true);
+      }
     } finally {
-      this.lifecyclePending.update((value) => ({
-        ...value,
-        [session.id]: false,
-      }));
+      this.lifecyclePending.update((value) => ({...value, [session.id]: false}));
     }
   }
   async prepare(session: SessionSummary) {
-    if (this.lifecyclePending()[session.id] || sessionIsActive(session)) return;
+    if (this.lifecyclePending()[session.id] || sessionIsActive(session)) {
+      return;
+    }
     await this.requestLifecycle(session, 'prepare');
   }
   /** Sessions to start once prepared: whether the list has shown them preparing, and since when. */
-  private readonly wantOn = new Map<
-    string,
-    {seenPreparing: boolean; since: number}
-  >();
+  private readonly wantOn = new Map<string, {seenPreparing: boolean; since: number}>();
   private startPrepared(items: readonly SessionSummary[]) {
     for (const [id, wait] of this.wantOn) {
       const session = items.find((item) => item.id === id);
-      if (!session) this.wantOn.delete(id);
-      else if (this.lifecyclePending()[id]) continue;
-      else if (session.status === 'preparing') wait.seenPreparing = true;
-      else if (!session.tap_profile || session.tap_prepared) {
+      if (!session) {
         this.wantOn.delete(id);
-        if (!sessionIsActive(session))
+      } else if (this.lifecyclePending()[id]) {
+        continue;
+      } else if (session.status === 'preparing') {
+        wait.seenPreparing = true;
+      } else if (!session.tap_profile || session.tap_prepared) {
+        this.wantOn.delete(id);
+        if (!sessionIsActive(session)) {
           void this.requestLifecycle(session, 'initialize');
-      }
-      // Preparation ended without a prepared model, or the list never showed it: give up. The
-      // Server's failed status then reads as a failure and the switch retries from the start.
-      else if (wait.seenPreparing || Date.now() - wait.since > 30_000)
+        }
+      } else if (wait.seenPreparing || Date.now() - wait.since > 30_000) {
+        // Preparation ended without a prepared model, or the list never showed it: give up. The
+        // Server's failed status then reads as a failure and the switch retries from the start.
         this.wantOn.delete(id);
+      }
     }
   }
   /** Start this Session's Model Server after its capture preparation, which is already requested. */
@@ -338,21 +314,23 @@ export class RuntimeService {
    *  due, or turn off one that is starting, on or holding a failed slot. */
   async toggleModelServer(session: SessionSummary) {
     const phase = sessionExecutionPhase(session);
-    if (this.lifecyclePending()[session.id] || phase === 'ending') return;
+    if (this.lifecyclePending()[session.id] || phase === 'ending') {
+      return;
+    }
     if (['starting', 'active', 'unavailable'].includes(phase)) {
       this.wantOn.delete(session.id);
       await this.requestLifecycle(session, 'close');
-    } else if (
-      this.wantOn.delete(session.id) ||
-      session.status === 'preparing'
-    ) {
+    } else if (this.wantOn.delete(session.id) || session.status === 'preparing') {
       // Cancelled while preparing: the preparation finishes, the Model Server stays off.
       return;
     } else if (session.tap_profile && !session.tap_prepared) {
       await this.requestLifecycle(session, 'prepare');
-      if (!this.lifecycleErrors()[session.id])
+      if (!this.lifecycleErrors()[session.id]) {
         this.startWhenPrepared(session.id);
-    } else await this.requestLifecycle(session, 'initialize');
+      }
+    } else {
+      await this.requestLifecycle(session, 'initialize');
+    }
   }
   /** Whether a start is queued behind this Session's capture preparation. */
   startQueued(id: string) {
@@ -364,44 +342,56 @@ export class RuntimeService {
   /** Start an idle Session, or end one that is starting, active or unavailable. */
   async toggleLifecycle(session: SessionSummary) {
     const phase = sessionExecutionPhase(session);
-    if (this.lifecyclePending()[session.id] || phase === 'ending') return;
+    if (this.lifecyclePending()[session.id] || phase === 'ending') {
+      return;
+    }
     const ending = ['starting', 'active', 'unavailable'].includes(phase);
     await this.requestLifecycle(session, ending ? 'close' : 'initialize');
   }
-  async start(
-    operation: 'prepare' | 'initialize' | 'generate',
-    prompt = '',
-    maxTokens = 32,
-  ) {
+  async start(operation: 'prepare' | 'initialize' | 'generate', prompt = '') {
     const id = this.captureRecordId();
-    if (!id || this.busy()) return false;
+    if (!id || this.busy()) {
+      return false;
+    }
     const epoch = this.epoch;
     this.error.set('');
     this.submitting.set(true);
     try {
-      const job = await this.lifecycle(id, operation, {prompt, maxTokens});
-      if (operation === 'generate') this.submittedPrompts.set(job.id, prompt);
+      const job = await this.lifecycle(id, operation, {prompt});
+      if (operation === 'generate') {
+        this.submittedPrompts.set(job.id, prompt);
+      }
       if (epoch !== this.epoch) {
         await this.sessions.load();
         return false;
       }
       this.job.set({...job, ...(operation === 'generate' ? {prompt} : {})});
       await this.sessions.load();
-      if (epoch !== this.epoch) return false;
-      if (isTerminal(job.status)) await this.finish(job.id, epoch);
-      else this.watch(job, epoch);
+      if (epoch !== this.epoch) {
+        return false;
+      }
+      if (isTerminal(job.status)) {
+        await this.finish(job.id, epoch);
+      } else {
+        this.watch(job, epoch);
+      }
       return job.status !== 'failed' && job.status !== 'cancelled';
     } catch (error) {
-      if (epoch === this.epoch)
+      if (epoch === this.epoch) {
         this.error.set(error instanceof Error ? error.message : String(error));
+      }
       return false;
     } finally {
-      if (epoch === this.epoch) this.submitting.set(false);
+      if (epoch === this.epoch) {
+        this.submitting.set(false);
+      }
     }
   }
   async stop() {
     const job = this.job();
-    if (!job || !this.generating()) return;
+    if (!job || !this.generating()) {
+      return;
+    }
     try {
       await this.api.post(`jobs/${job.id}/cancel`, {});
     } catch (error) {
@@ -422,9 +412,7 @@ export class RuntimeService {
   private watch(job: RuntimeJob, epoch: number) {
     this.stopWatching();
     let sequence = job.sequence;
-    const source = new EventSource(
-      `/api/jobs/${job.id}/events?after=${sequence}`,
-    );
+    const source = new EventSource(`/api/jobs/${job.id}/events?after=${sequence}`);
     this.source = source;
     const current = () => epoch === this.epoch && source === this.source;
     const connected = () => {
@@ -433,7 +421,9 @@ export class RuntimeService {
       this.error.set('');
     };
     source.onmessage = (event) => {
-      if (!current()) return;
+      if (!current()) {
+        return;
+      }
       let data: RuntimeJobEvent;
       try {
         data = JSON.parse(event.data) as RuntimeJobEvent;
@@ -442,24 +432,23 @@ export class RuntimeService {
         return;
       }
       connected();
-      if (data.sequence <= sequence) return;
+      if (data.sequence <= sequence) {
+        return;
+      }
       sequence = data.sequence;
       this.job.update((value) =>
         value
           ? {
               ...value,
               sequence,
-              ...(data.type === 'status'
-                ? {status: data.status, error: data.error ?? ''}
-                : {}),
+              ...(data.type === 'status' ? {status: data.status, error: data.error ?? ''} : {}),
               ...(data.type === 'progress' ? {progress: data.message} : {}),
               ...(data.type === 'delta'
                 ? {
                     output: {
                       ...value.output,
                       [data.runId ?? '']:
-                        (value.output[data.runId ?? ''] ?? '') +
-                        (data.text ?? ''),
+                        (value.output[data.runId ?? ''] ?? '') + (data.text ?? ''),
                     },
                   }
                 : {}),
@@ -472,38 +461,48 @@ export class RuntimeService {
       }
     };
     source.onopen = () => {
-      if (current()) connected();
+      if (current()) {
+        connected();
+      }
     };
     source.onerror = () => {
-      if (!current()) return;
+      if (!current()) {
+        return;
+      }
       // A stream the browser closed for good (HTTP 4xx) never reconnects by itself.
       if (source.readyState === EventSource.CLOSED) {
         void this.recover(job, epoch, source);
         return;
       }
       const interrupted = () =>
-        this.error.set(
-          'Connection interrupted. Reconnecting to the local task…',
-        );
+        this.error.set('Connection interrupted. Reconnecting to the local task…');
       // The server rotates healthy streams every 25 seconds; allow EventSource to reconnect.
-      if (this.reconnectTimer === null)
+      if (this.reconnectTimer === null) {
         this.reconnectTimer = setTimeout(() => {
-          if (!current()) return;
+          if (!current()) {
+            return;
+          }
           this.reconnectTimer = null;
-          if (source.readyState !== EventSource.OPEN) interrupted();
+          if (source.readyState !== EventSource.OPEN) {
+            interrupted();
+          }
         }, 5000);
+      }
       void this.api
         .job(job.id)
         .then((jobState) => {
-          if (!current()) return;
+          if (!current()) {
+            return;
+          }
           if (isTerminal(jobState.status)) {
             this.stopWatching();
             void this.finish(job.id, epoch);
           }
         })
         .catch(() => {
-          if (current() && source.readyState !== EventSource.OPEN)
+          if (current() && source.readyState !== EventSource.OPEN) {
             interrupted();
+          }
         });
     };
   }
@@ -517,24 +516,28 @@ export class RuntimeService {
     try {
       state = await this.api.job(job.id);
     } catch (error) {
-      if (!this.watching(epoch, source)) return;
+      if (!this.watching(epoch, source)) {
+        return;
+      }
       const status = (error as {status?: unknown}).status;
       if (status === 400 || status === 404) {
         this.stopWatching();
         this.job.set(null);
-        this.error.set(
-          'The task no longer exists on the server. Reload the Session.',
-        );
+        this.error.set('The task no longer exists on the server. Reload the Session.');
         return;
       }
       this.error.set('Connection interrupted. Retrying the local task…');
       this.reconnectTimer = setTimeout(() => {
         this.reconnectTimer = null;
-        if (this.watching(epoch, source)) void this.recover(job, epoch, source);
+        if (this.watching(epoch, source)) {
+          void this.recover(job, epoch, source);
+        }
       }, 2000);
       return;
     }
-    if (!this.watching(epoch, source)) return;
+    if (!this.watching(epoch, source)) {
+      return;
+    }
     this.job.update((value) =>
       value && value.id === state.id
         ? {
@@ -558,48 +561,58 @@ export class RuntimeService {
       this.reconnectTimer = setTimeout(
         () => {
           this.reconnectTimer = null;
-          if (this.watching(epoch, source))
-            this.watch(
-              {...job, sequence: this.job()?.sequence ?? job.sequence},
-              epoch,
-            );
+          if (this.watching(epoch, source)) {
+            this.watch({...job, sequence: this.job()?.sequence ?? job.sequence}, epoch);
+          }
         },
         Math.min(16000, 1000 * 2 ** (attempt - 1)),
       );
     } else {
-      this.error.set(
-        'Live updates are unavailable; checking the task every few seconds.',
-      );
+      this.error.set('Live updates are unavailable; checking the task every few seconds.');
       this.reconnectTimer = setTimeout(() => {
         this.reconnectTimer = null;
-        if (this.watching(epoch, source)) void this.recover(job, epoch, source);
+        if (this.watching(epoch, source)) {
+          void this.recover(job, epoch, source);
+        }
       }, 2000);
     }
   }
   private async finish(id: string, epoch: number) {
     try {
       const current = await this.api.job(id);
-      if (epoch !== this.epoch) return;
+      if (epoch !== this.epoch) {
+        return;
+      }
       this.job.set({
         ...current,
         ...(this.job()?.id === current.id ? {prompt: this.job()?.prompt} : {}),
       });
       this.submittedPrompts.delete(id);
       await this.sessions.load();
-      if (epoch !== this.epoch) return;
+      if (epoch !== this.epoch) {
+        return;
+      }
       if (
         current.status === 'completed' &&
         current.operation === 'generate' &&
         this.report.captureId() === current.session_id
-      )
+      ) {
         await this.report.load();
-      if (epoch !== this.epoch) return;
-      if (current.status === 'completed' && current.operation === 'prepare')
+      }
+      if (epoch !== this.epoch) {
+        return;
+      }
+      if (current.status === 'completed' && current.operation === 'prepare') {
         await this.refreshCapabilities();
-      if (epoch !== this.epoch) return;
+      }
+      if (epoch !== this.epoch) {
+        return;
+      }
       this.error.set(current.error ?? '');
     } catch (error) {
-      if (epoch === this.epoch) this.error.set(String(error));
+      if (epoch === this.epoch) {
+        this.error.set(String(error));
+      }
     }
   }
 }

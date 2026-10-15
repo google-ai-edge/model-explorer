@@ -17,27 +17,26 @@
  */
 
 import {strict as assert} from 'node:assert';
-
-import {angularContext, bundleSources, deferred, flush, recordHistory,} from './lib/angular_harness.mjs';
+import {
+  angularContext,
+  bundleSources,
+  deferred,
+  flush,
+  recordHistory,
+} from './angular_harness.mjs';
 
 // Run the real service with only browser time and transport replaced.
 const {
-  module: {
-    RuntimeService,
-    ReportApiService,
-    ReportStateService,
-    SessionListService
+  module: {RuntimeService, ReportApiService, ReportStateService, SessionListService},
+} = await bundleSources(
+  {
+    RuntimeService: 'src/data/runtime_service',
+    ReportApiService: 'src/data/report_api_service',
+    ReportStateService: 'src/data/report_state_service',
+    SessionListService: 'src/data/session_list_service',
   },
-} =
-    await bundleSources(
-        {
-          RuntimeService: 'src/data/runtime_service',
-          ReportApiService: 'src/data/report_api_service',
-          ReportStateService: 'src/data/report_state_service',
-          SessionListService: 'src/data/session_list_service',
-        },
-        'runtime-reconnect-',
-    );
+  'runtime-reconnect-',
+);
 const realGlobals = {
   setTimeout: globalThis.setTimeout,
   clearTimeout: globalThis.clearTimeout,
@@ -46,8 +45,10 @@ const realGlobals = {
 process.once('exit', () => Object.assign(globalThis, realGlobals));
 const warning = 'Connection interrupted. Reconnecting to the local task…';
 async function fixture() {
-  let now = 0, nextId = 0;
-  const timers = new Map(), sources = [];
+  let now = 0,
+    nextId = 0;
+  const timers = new Map(),
+    sources = [];
   const clock = {
     setTimeout(callback, delay) {
       const id = ++nextId;
@@ -61,8 +62,8 @@ async function fixture() {
       const end = now + ms;
       while (true) {
         const due = [...timers]
-                        .filter(([, timer]) => timer.at <= end)
-                        .sort((a, b) => a[1].at - b[1].at)[0];
+          .filter(([, timer]) => timer.at <= end)
+          .sort((a, b) => a[1].at - b[1].at)[0];
         if (!due) break;
         now = due[1].at;
         timers.delete(due[0]);
@@ -163,8 +164,7 @@ async function fixture() {
     assert.equal(timers.size, 0);
   }
   assert.equal(service.error.history.includes(warning), false);
-  console.log(
-      'PASS: three normal 25-second rotations reconnect without flashing an error');
+  console.log('PASS: three normal 25-second rotations reconnect without flashing an error');
 }
 {
   const {service, source, clock, timers} = await fixture();
@@ -177,15 +177,13 @@ async function fixture() {
   clock.tick(1999);
   assert.equal(service.error(), '');
   clock.tick(1);
-  assert.equal(
-      service.error(), warning,
-      'repeated errors must not postpone the initial deadline');
+  assert.equal(service.error(), warning, 'repeated errors must not postpone the initial deadline');
   source.message({sequence: 2, type: 'progress', message: 'Still running'});
   assert.equal(service.error(), '');
   assert.equal(timers.size, 0);
   assert.equal(service.job().progress, 'Still running');
   console.log(
-      'PASS: persistent SSE loss stays visible despite healthy REST; a valid update clears it',
+    'PASS: persistent SSE loss stays visible despite healthy REST; a valid update clears it',
   );
 }
 {
@@ -207,7 +205,7 @@ async function fixture() {
   await flush();
   assert.equal(service.error(), '');
   console.log(
-      'PASS: failed REST fallback is visible; a stale failure after reconnect cannot restore the warning',
+    'PASS: failed REST fallback is visible; a stale failure after reconnect cannot restore the warning',
   );
 }
 {
@@ -231,7 +229,7 @@ async function fixture() {
   assert.equal(loads(), 0);
   assert.equal(timers.size, 0);
   console.log(
-      'PASS: attach closes the old source and isolates old timers, callbacks and HTTP results by epoch',
+    'PASS: attach closes the old source and isolates old timers, callbacks and HTTP results by epoch',
   );
 }
 {
@@ -248,8 +246,7 @@ async function fixture() {
   clock.tick(10000);
   assert.equal(service.error(), 'Current task error');
   assert.equal(timers.size, 0);
-  console.log(
-      'PASS: source identity also isolates a replacement watcher in the same epoch');
+  console.log('PASS: source identity also isolates a replacement watcher in the same epoch');
 }
 for (const via of ['message', 'fallback']) {
   const {service, source, api, job, clock, timers, loads} = await fixture();
@@ -273,15 +270,15 @@ for (const via of ['message', 'fallback']) {
   assert.equal(service.error(), '');
 }
 console.log(
-    'PASS: terminal SSE and fallback status both finish the job and cancel pending warnings',
+  'PASS: terminal SSE and fallback status both finish the job and cancel pending warnings',
 );
 
 {
   const {service, api, job, sessions} = await fixture();
   const calls = [];
-  sessions.allItems = () =>
-      [{id: 'parent', execution: {phase: 'active'}},
-       {id: 'child', parent_session_id: 'parent'},
+  sessions.allItems = () => [
+    {id: 'parent', execution: {phase: 'active'}},
+    {id: 'child', parent_session_id: 'parent'},
   ];
   await service.attach('child');
   assert.equal(service.captureRecordId(), 'child');
@@ -289,16 +286,11 @@ console.log(
   assert.equal(service.ownerSession().id, 'parent');
   api.post = async (path, payload) => {
     calls.push({path, payload});
-    return {
-      ...job,
-      id: 'child-job',
-      session_id: 'child',
-      operation: 'generate',
-      status: 'running'
-    };
+    return {...job, id: 'child-job', session_id: 'child', operation: 'generate', status: 'running'};
   };
   await service.start('generate', 'child prompt');
   assert.equal(calls[0].path, 'sessions/child/turns');
+  assert.deepEqual(Object.keys(calls[0].payload).sort(), ['prompt', 'request_id']);
   await service.stop();
   assert.equal(calls[1].path, 'jobs/child-job/cancel');
   await service.toggleLifecycle(service.ownerSession());
@@ -308,7 +300,7 @@ console.log(
   assert.equal(await service.start('generate', 'missing'), false);
   assert.equal(calls.length, 3);
   console.log(
-      'PASS: child Chat generation/cancel keeps its record; ending the owner Session closes it; detached runtime cannot start',
+    'PASS: child Chat generation/cancel keeps its record; ending the owner Session closes it; detached runtime cannot start',
   );
 }
 {
@@ -318,8 +310,7 @@ console.log(
   source.message({sequence: 2, type: 'delta', runId: 'ref', text: 'A'});
   source.message({sequence: 1, type: 'delta', runId: 'ref', text: 'old'});
   assert.equal(service.job().output.ref, 'A');
-  console.log(
-      'PASS: duplicate and older SSE deltas do not append output twice');
+  console.log('PASS: duplicate and older SSE deltas do not append output twice');
 }
 
 {
@@ -341,7 +332,7 @@ console.log(
   await flush();
   assert.equal(service.error(), 'Current capture error');
   console.log(
-      'PASS: a completed old generation cannot overwrite current runtime state after its report reload resolves',
+    'PASS: a completed old generation cannot overwrite current runtime state after its report reload resolves',
   );
 }
 
@@ -350,8 +341,7 @@ console.log(
   source.open();
   source.closed();
   await flush();
-  assert.equal(
-      sources.length, 1, 'the replacement waits for the backoff timer');
+  assert.equal(sources.length, 1, 'the replacement waits for the backoff timer');
   assert.match(service.error(), /Reconnecting/);
   clock.tick(1000);
   assert.equal(sources.length, 2, 'a permanently closed stream is re-created');
@@ -369,7 +359,7 @@ console.log(
   assert.equal(service.job().status, 'completed');
   assert.equal(service.error(), '');
   console.log(
-      'PASS: a closed EventSource is re-created with backoff and a terminal REST state finishes the job',
+    'PASS: a closed EventSource is re-created with backoff and a terminal REST state finishes the job',
   );
 }
 {
@@ -388,7 +378,7 @@ console.log(
   await flush();
   assert.equal(sources.length, 1);
   console.log(
-      'PASS: a stream closed because the task is unknown clears the job instead of retrying forever',
+    'PASS: a stream closed because the task is unknown clears the job instead of retrying forever',
   );
 }
 {
@@ -419,6 +409,5 @@ console.log(
   clock.tick(2000);
   await flush();
   assert.equal(service.job().status, 'completed');
-  console.log(
-      'PASS: after five failed re-creations the service polls the job until it ends');
+  console.log('PASS: after five failed re-creations the service polls the job until it ends');
 }

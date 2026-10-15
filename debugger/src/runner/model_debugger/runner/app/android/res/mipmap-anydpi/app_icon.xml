@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The App's icon: the logo on white, as on macOS and iOS; the launcher gives
+     it its shape. The monochrome layer is what a themed icon tints. -->
+<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+  <background android:drawable="@android:color/white" />
+  <foreground android:drawable="@drawable/app_icon_foreground" />
+  <monochrome android:drawable="@drawable/app_icon_foreground" />
+</adaptive-icon>

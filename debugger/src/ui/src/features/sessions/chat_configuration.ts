@@ -16,14 +16,19 @@
  * ==============================================================================
  */
 
-/** Shared generation groups used by the editor and captured configuration overview. */
+/**
+ * Chat-level (conversation) options shared by the editor and the captured configuration overview.
+ * They map onto CaptureJob.conversation plus maxOutputTokens and apply when the Conversation is
+ * created (src/contracts/SPEC.md); changing one starts a new Chat.
+ */
 export const GENERATION_GROUPS = [
-  {name: 'System prompt', keys: ['systemPrompt']},
-  {name: 'Sampling', keys: ['temperature', 'topK', 'topP', 'seed']},
+  {name: 'Prompt', keys: ['systemPrompt', 'applyPromptTemplate']},
+  {name: 'Sampling', keys: ['samplerType', 'temperature', 'topK', 'topP', 'seed']},
   {name: 'Thinking', keys: ['thinking', 'thinkingBudget']},
-  {name: 'Output', keys: ['maxOutputTokens']},
+  {name: 'Output', keys: ['maxOutputTokens', 'speculativeDecoding']},
 ];
 export const GENERATION_LABELS: Record<string, string> = {
+  samplerType: 'Sampler',
   temperature: 'Temperature',
   topK: 'Top K',
   topP: 'Top P',
@@ -32,17 +37,32 @@ export const GENERATION_LABELS: Record<string, string> = {
   thinkingBudget: 'Thinking budget',
   maxOutputTokens: 'Max output tokens',
   systemPrompt: 'System prompt',
+  applyPromptTemplate: 'Prompt template',
+  speculativeDecoding: 'Speculative decoding',
 };
+/** Members saved as 'on' / 'off', or omitted for the model default. */
+export const GENERATION_SWITCHES = ['thinking', 'applyPromptTemplate', 'speculativeDecoding'];
+/** samplerType values of the contract; a connected Runner narrows them (capability sampler_types). */
+export const SAMPLER_TYPES = ['greedy', 'topK', 'topP'];
+/** Members a PyTorch run does not take (pytorch_worker._settings). */
+export const PYTORCH_UNSUPPORTED = [
+  'thinking',
+  'thinkingBudget',
+  'samplerType',
+  'applyPromptTemplate',
+  'speculativeDecoding',
+];
 
 /** Same bounds as server generation_config.py; no speculative model capabilities. */
-export const GENERATION_RANGES: Record<
-  string,
-  {min: number; max: number; step: number | string}
-> = {
-  temperature: {min: 0, max: 100, step: 'any'},
-  topK: {min: 1, max: 2147483647, step: 1},
-  topP: {min: 0, max: 1, step: 'any'},
-  seed: {min: 0, max: 4294967295, step: 1},
-  thinkingBudget: {min: -1, max: 2147483647, step: 1},
-  maxOutputTokens: {min: 1, max: 256, step: 1},
-};
+export const GENERATION_RANGES: Record<string, {min: number; max: number; step: number | string}> =
+  {
+    temperature: {min: 0, max: 100, step: 'any'},
+    topK: {min: 1, max: 2147483647, step: 1},
+    topP: {min: 0, max: 1, step: 'any'},
+    seed: {min: 0, max: 4294967295, step: 1},
+    thinkingBudget: {min: -1, max: 2147483647, step: 1},
+    maxOutputTokens: {min: 1, max: 256, step: 1},
+  };
+export function switchLabel(value: unknown) {
+  return value === 'on' ? 'Enabled' : value === 'off' ? 'Disabled' : 'Model default';
+}

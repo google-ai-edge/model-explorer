@@ -17,23 +17,16 @@
  */
 
 import type {CapturedConversation} from '../../data/contracts/capture';
-import {
-  capturedTokenLabel,
-  escapeHtml,
-  tokenMarkup,
-} from './conversation_content';
+import {alignTokens, AlignmentMode, TokenPair} from './token_alignment';
 import {FlowRow, FlowTurn} from './flow_virtualization';
-import {AlignmentMode, alignTokens, TokenPair} from './token_alignment';
+import {capturedTokenLabel, escapeHtml, tokenMarkup} from './conversation_content';
 
 /** Display chunks preserve the text; they are not claimed to be model tokens. */
 export function textChunks(text: string): string[] {
   return text.match(/\r\n|\r|\n|[^\S\r\n]+|[^\s]{1,8}/gu) ?? [];
 }
 const inputChunks = new WeakMap<CapturedConversation, Map<string, string[]>>();
-function capturedInputChunks(
-  capture: CapturedConversation | undefined,
-  text: string,
-): string[] {
+function capturedInputChunks(capture: CapturedConversation | undefined, text: string): string[] {
   if (!capture) return [];
   let versions = inputChunks.get(capture);
   if (!versions) {
@@ -56,10 +49,7 @@ export function streamingConversation(
   input: string,
   output: Record<string, string>,
 ): VirtualConversation {
-  const steps = {
-    ref: textChunks(output['ref'] ?? ''),
-    target: textChunks(output['target'] ?? ''),
-  };
+  const steps = {ref: textChunks(output['ref'] ?? ''), target: textChunks(output['target'] ?? '')};
   const inputTokens = textChunks(input);
   const rows = Array.from(
     {length: Math.max(steps.ref.length, steps.target.length)},
@@ -103,8 +93,7 @@ function buildVirtualConversation(
   );
   const inputs = {
     ref: (debug ? ref?.serialized_input : undefined) ?? ref?.input ?? '',
-    target:
-      (debug ? target?.serialized_input : undefined) ?? target?.input ?? '',
+    target: (debug ? target?.serialized_input : undefined) ?? target?.input ?? '',
   };
   const longInput = Math.max(inputs.ref.length, inputs.target.length) > 16000;
   const inputTokens = {
@@ -112,9 +101,7 @@ function buildVirtualConversation(
     target: longInput ? capturedInputChunks(target, inputs.target) : [],
   };
   // Small turns retain their existing Angular templates and alignment path.
-  if (
-    Math.max(captured.ref?.length ?? 0, captured.target?.length ?? 0) <= 2048
-  ) {
+  if (Math.max(captured.ref?.length ?? 0, captured.target?.length ?? 0) <= 2048) {
     return {
       steps: {ref: [], target: []},
       inputTokens,
@@ -150,18 +137,12 @@ function buildVirtualConversation(
     ref: pair.ref ? (indices.ref.get(pair.ref) ?? null) : null,
     target: pair.target ? (indices.target.get(pair.target) ?? null) : null,
   }));
-  const bySide = {
-    ref: new Map<number, FlowRow>(),
-    target: new Map<number, FlowRow>(),
-  };
+  const bySide = {ref: new Map<number, FlowRow>(), target: new Map<number, FlowRow>()};
   for (const row of rows)
     for (const side of ['ref', 'target'] as const)
       if (row[side] != null) bySide[side].set(row[side]!, row);
   return {
-    steps: {
-      ref: tokens.ref.map(capturedTokenLabel),
-      target: tokens.target.map(capturedTokenLabel),
-    },
+    steps: {ref: tokens.ref.map(capturedTokenLabel), target: tokens.target.map(capturedTokenLabel)},
     inputTokens,
     alignments: {steps: rows, content: rows},
     rows,
@@ -185,8 +166,7 @@ export function virtualConversation(
   mode: AlignmentMode,
   debug: boolean,
 ): VirtualConversation {
-  if (!ref || !target)
-    return buildVirtualConversation(ref, target, mode, debug);
+  if (!ref || !target) return buildVirtualConversation(ref, target, mode, debug);
   let targets = models.get(ref);
   if (!targets) {
     targets = new WeakMap();
@@ -212,11 +192,7 @@ export function virtualConversation(
   return variants.get(key)!;
 }
 
-export function renderInputToken(
-  word: string,
-  index: number,
-  side: string,
-): string {
+export function renderInputToken(word: string, index: number, side: string): string {
   return `<span class="readingToken" data-input-position="${index}" data-side="${side}">${escapeVirtualText(word)}</span>`;
 }
 
@@ -240,11 +216,7 @@ export interface OutputTokenStyle {
 }
 export function outputTokenClasses(style: OutputTokenStyle): string {
   return [
-    style.numeric
-      ? style.numeric === 'missing'
-        ? 'numeric-missing'
-        : 'numeric-token'
-      : '',
+    style.numeric ? (style.numeric === 'missing' ? 'numeric-missing' : 'numeric-token') : '',
     style.first ? 'first-divergence' : '',
     style.template ? 'template-token' : '',
     style.mismatch ? 'mismatch chat-mismatch' : '',

@@ -16,27 +16,17 @@
  * ==============================================================================
  */
 
+import {Component, computed, inject, input, signal} from '@angular/core';
 import {A11yModule} from '@angular/cdk/a11y';
 import {OverlayModule} from '@angular/cdk/overlay';
-import {Component, computed, inject, input, signal} from '@angular/core';
 import {MatButtonModule} from '@angular/material/button';
 import {MatIconModule} from '@angular/material/icon';
-import {SessionSummary} from '../../../data/contracts/session_summary';
 import {RuntimeService} from '../../../data/runtime_service';
-import {
-  OverlayDialog,
-  OverlayPanel,
-} from '../../../shared/overlay_dialog/overlay_dialog';
+import {SessionSummary} from '../../../data/contracts/session_summary';
+import {OverlayDialog, OverlayPanel} from '../../../shared/overlay_dialog/overlay_dialog';
 @Component({
   selector: 'runner-status',
-  imports: [
-    OverlayDialog,
-    OverlayPanel,
-    A11yModule,
-    OverlayModule,
-    MatButtonModule,
-    MatIconModule,
-  ],
+  imports: [OverlayDialog, OverlayPanel, A11yModule, OverlayModule, MatButtonModule, MatIconModule],
   templateUrl: './runner_status.ng.html',
   styleUrl: './runner_status.scss',
 })
@@ -44,9 +34,7 @@ export class RunnerStatus {
   readonly runtime = inject(RuntimeService);
   readonly run = input.required<SessionSummary['runs'][number]>();
   readonly open = signal(false);
-  readonly side = computed(() =>
-    this.run().id === 'ref' ? 'Reference' : 'Target',
-  );
+  readonly side = computed(() => (this.run().id === 'ref' ? 'Reference' : 'Target'));
   readonly runner = computed(() =>
     this.runtime.execution()?.runners.find((r) => r.role === this.run().id),
   );
@@ -55,12 +43,7 @@ export class RunnerStatus {
     if (this.uncertain()) return 'Unknown';
     const execution = this.runtime.execution();
     // Idle sides use the Model Server words of the switch; a live side shows what it is doing.
-    if (
-      !execution ||
-      execution.phase === 'inactive' ||
-      execution.phase === 'ended'
-    )
-      return 'Off';
+    if (!execution || execution.phase === 'inactive' || execution.phase === 'ended') return 'Off';
     if (execution.phase === 'interrupted') return 'Failure';
     if (execution.phase === 'ending') return 'Ending';
     const phase = this.runner()?.phase;
@@ -87,8 +70,7 @@ export class RunnerStatus {
           failed: 'Failure',
           unknown: 'Unknown',
         } as Record<string, string>
-      )[phase ?? ''] ??
-      (execution.phase === 'starting' ? 'Starting' : 'Unknown')
+      )[phase ?? ''] ?? (execution.phase === 'starting' ? 'Starting' : 'Unknown')
     );
   });
   readonly connection = computed(() =>

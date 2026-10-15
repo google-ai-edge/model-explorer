@@ -1,0 +1,79 @@
+# service/ is the layer above llm: the protocol's Runner service on an
+# llm::Runtime, and what it needs to answer GetInfo.
+
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
+load("@rules_cc//cc:cc_test.bzl", "cc_test")
+load("//model_debugger/runner/testing:model_test.bzl", "model_test")
+
+# Where a Runner keeps its files on this platform.
+cc_library(
+    name = "cache_directory",
+    srcs = ["cache_directory.cc"],
+    hdrs = ["cache_directory.h"],
+    visibility = ["//model_debugger/runner/testing:__pkg__"],
+)
+
+cc_test(
+    name = "cache_directory_test",
+    srcs = ["cache_directory_test.cc"],
+    deps = [
+        ":cache_directory",
+        "@com_google_googletest//:gtest_main",
+    ],
+)
+
+cc_library(
+    name = "host_info",
+    # One source per platform family; a platform without one does not build.
+    srcs = select({
+        "@platforms//os:android": ["host_info_android.cc"],
+        "@platforms//os:ios": ["host_info_apple.cc"],
+        "@platforms//os:macos": ["host_info_apple.cc"],
+    }),
+    hdrs = ["host_info.h"],
+    deps = [
+        "@protocol//model_debugger/v1:runner_cc_proto",
+    ],
+)
+
+cc_library(
+    name = "runner_service",
+    srcs = ["runner_service.cc"],
+    hdrs = ["runner_service.h"],
+    visibility = ["//model_debugger/runner:__pkg__"],
+    deps = [
+        ":cache_directory",
+        ":host_info",
+        "//model_debugger/runner/llm:runtime",
+        "@boringssl//:crypto",
+        "@com_google_absl//absl/base:core_headers",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status:statusor",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/synchronization",
+        "@com_google_absl//absl/time",
+        "@grpc//:grpc++",
+        "@protocol//model_debugger/v1:runner_cc_grpc",
+        "@protocol//model_debugger/v1:runner_cc_proto",
+    ],
+)
+
+# The service end to end, on LiteRT-LM: skipped unless RUNNER_MODEL names a
+# model.
+model_test(
+    name = "runner_service_test",
+    srcs = ["runner_service_test.cc"],
+    deps = [
+        ":runner_service",
+        "//model_debugger/runner/llm/litert_lm",
+        "//model_debugger/runner/testing:test_utils",
+        "@boringssl//:crypto",
+        "@com_google_absl//absl/status:statusor",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/time",
+        "@com_google_googletest//:gtest_main",
+        "@grpc//:grpc++",
+        "@protocol//model_debugger/v1:runner_cc_grpc",
+        "@protocol//model_debugger/v1:runner_cc_proto",
+    ],
+)

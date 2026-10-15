@@ -1,0 +1,244 @@
+/**
+ * @license
+ * Copyright 2026 The AI Edge Model Explorer Authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ==============================================================================
+ */
+
+.appbar,.model-tree-title,#workspace>.details,.info-show,.info-hide{display:none!important}
+.app{height:100vh}.workspace{height:100%;min-height:0}.model-tree{display:block!important;position:relative!important;inset:auto!important;flex:0 0 220px;width:220px;box-shadow:none!important}.model-tree{--tree-indent:10px}.model-tree button{font-size:12px;padding-left:calc(2px + var(--depth,0)*var(--tree-indent));gap:4px}.model-tree button.tree-group{padding-left:calc(2px + var(--depth,0)*var(--tree-indent));gap:4px}.model-tree .tree-entry{display:none}.model-tree .tree-label{font-size:12px}.tree-metric{min-width:38px}.canvas{min-width:0}.graph-controls{max-width:calc(100% - 20px)}.graph-search{min-width:70px}.graph-search input{width:100%;min-width:0}.legend tr:has(.tensor-key-empty),.legend tr:has(.tensor-key-set){display:none}
+@media(max-width:600px){.model-tree{flex-basis:166px;width:166px;--tree-indent:6px}.tree-metric{font-size:10px;min-width:30px;padding:0 2px}.graph-search{display:none}}
+
+/* The host analysis panel owns the canvas and navigation background. */
+html,body,.app,.workspace,.canvas,.viewport,.stage,.model-tree{background:transparent!important}
+.graph-controls{outline-color:transparent}
+
+/* Same interactive surfaces as the host tensor views; color separates navigation. */
+.canvas{background:var(--host-canvas,transparent)!important}
+.model-tree{background:var(--host-list,transparent)!important;border-right:0}
+
+/* Module navigation is already represented by the host module tree. */
+.canvas>.crumb{display:none!important}
+.canvas>.graph-controls{top:8px!important}
+.canvas>.control-popover{top:54px!important}
+
+.model-tree{scrollbar-width:none;scrollbar-gutter:auto;overscroll-behavior:contain}
+.model-tree::-webkit-scrollbar{display:none;width:0;height:0}
+.model-tree-scrollbar{position:absolute;width:12px;z-index:9;opacity:0;transition:opacity 160ms;pointer-events:auto;touch-action:none;outline:none}
+.model-tree-scrollbar[hidden]{display:none}
+.model-tree-scrollbar.visible,.model-tree-scrollbar:hover,.model-tree-scrollbar:focus-visible,.model-tree-scrollbar.dragging{opacity:1}
+.model-tree-scrollbar::before{content:'';position:absolute;left:4px;width:4px;top:var(--thumb-top,0px);height:var(--thumb-height,32px);border-radius:4px;background:var(--host-scroll-thumb,var(--rule))}
+.model-tree-scrollbar:focus-visible::before{outline:2px solid var(--accent);outline-offset:1px}
+@media(prefers-reduced-motion:reduce){.model-tree-scrollbar{transition:none}}
+
+/* Full-row metric tint remains visible in every navigable state. */
+.model-tree{flex-basis:256px;width:256px}
+.model-tree button{background-color:var(--row-metric-bg,transparent);color:var(--row-metric-fg,var(--text));position:relative;cursor:pointer}
+.model-tree button:hover:not(:disabled){background-color:var(--row-metric-bg,var(--tree-hover));background-image:linear-gradient(color-mix(in srgb,var(--text) 7%,transparent),color-mix(in srgb,var(--text) 7%,transparent))}
+.model-tree button.active,.model-tree button.active:hover{background-color:var(--row-metric-bg,transparent);background-image:none;box-shadow:inset 3px 0 var(--tree-selected-text)}
+.model-tree button.active .tree-label{color:inherit;font-weight:500}
+.model-tree button:disabled{color:var(--muted);opacity:.5;cursor:default;background-image:none}
+.model-tree button:disabled:hover{background-color:var(--row-metric-bg,transparent)}
+.model-tree .tree-metric{background:none;color:inherit;padding:0;font-size:12px;min-width:36px;font-variant-numeric:tabular-nums}
+.model-tree .tree-label{flex:1}
+.model-tree .tree-group .tree-label{flex:0 1 auto}
+@media(max-width:600px){.model-tree{flex-basis:220px;width:220px}}
+
+/* Leaf rows reserve the same disclosure slot as expandable groups. */
+.model-tree .model-tree-row::before{content:"";width:18px;flex:0 0 18px}
+
+/* Tensor labels and their full output routes share one mapping interaction. */
+#stage .module-arch [data-mapping-anchor]{cursor:pointer}
+.module-arch .mapping-edge-hit{fill:none;stroke:transparent;stroke-width:12;pointer-events:stroke}
+.module-arch .tensor .label-bg{fill:transparent;stroke:none;pointer-events:all}
+#stage .module-arch .tensor.mapping-hover .label-bg{fill:var(--scope-wash);stroke:none}
+#stage .module-arch .tensor.mapping-hover .label-hatch{display:none}
+#stage .module-arch .tensor.mapping-hover>text{fill:var(--scope)}
+#stage .module-arch .tensor.mapping-hover .tensor-leader{stroke:var(--scope)}
+#stage .module-arch .mapping-hover>.edge{stroke:var(--scope)}
+.canvas.pair-active>.graph-controls,.canvas.pair-active>.control-popover{display:none}
+
+#stage .module-arch .mapping-hover>.edge:not(.no-arrow){marker-end:url(#module-arrow-scope)}
+
+/* Arch tensor labels, icons, segments and scope entry share the same hover state. */
+#stage [data-mapping-anchor]{cursor:pointer}
+#stage .tensor.mapping-hover .label-bg{fill:var(--scope-wash);stroke:none}
+#stage .tensor.mapping-hover .label-hatch{display:none}
+#stage .tensor.mapping-hover .tensor-leader{stroke:var(--scope)}
+#stage .tensor.mapping-hover>text{fill:var(--scope)}
+#stage .tensor.mapping-hover .cube-body{fill:var(--scope);stroke:var(--scope)}
+#stage .tensor.mapping-hover .empty-frame{stroke:var(--scope)}
+#stage .tensor-flow.mapping-hover .edge{stroke:var(--scope);stroke-width:var(--edge-stroke)}
+#stage .tensor-flow.mapping-hover .edge:not(.no-arrow){marker-end:url(#scope-arrow)}
+#stage .fork-point.mapping-hover{fill:var(--scope)}
+#stage .subgraph-entry.mapping-hover rect{fill:var(--op-hover);fill-opacity:.07}
+
+/* Metric tags keep their own heatmap colors during tensor hover and block selection. */
+:root{--metric-empty-bg:color-mix(in srgb,var(--muted) 10%,var(--surface))}
+#stage .metric-tag>rect{fill:var(--metric-tag-bg);stroke:none}
+#stage .metric-tag>text,#stage .architecture .tensor .metric-tag>text{fill:var(--metric-tag-fg);font:400 11px var(--sans);font-variant-numeric:tabular-nums;pointer-events:none}
+#stage .metric-tag{pointer-events:all}
+
+#view-options, #view-options + .control-divider, #view-options-menu {display:none!important}
+
+/* Tensor inspection is separate from configuration. Scope outlines belong to the gear only. */
+#stage .tensor {cursor:pointer}
+#stage .tensor-outline {fill:none;stroke:none;pointer-events:none}
+#stage .tensor.mapping-hover .tensor-outline {stroke:var(--scope);stroke-width:1;stroke-dasharray:3 2}
+#stage .tensor.selected .tensor-outline {stroke:var(--accent);stroke-width:1;stroke-dasharray:none}
+#stage .tensor.selected.mapping-hover .tensor-outline {stroke:var(--scope);stroke-dasharray:3 2}
+
+/* Shared Arch: one heat-colored tensor tag, with a larger numeric label. */
+#stage .arch-metric>text,#stage .architecture .tensor .arch-metric>text {font:500 13px var(--sans);fill:var(--metric-tag-fg);font-variant-numeric:tabular-nums}
+#stage .tensor .tensor-metric .cube-body {fill:var(--metric-tag-fg);stroke:var(--metric-tag-fg)}
+#stage .tensor .tensor-metric .cube-seams {stroke:var(--metric-tag-bg)}
+#stage .tensor .tensor-metric .empty-frame {fill:none;stroke:var(--metric-tag-fg);stroke-dasharray:2 1}
+
+/* Native Model Explorer subgraph indicator colors, reused by configuration coverage. */
+:root,:root[data-theme] {--indicator-border:#135cbb;--indicator-bg:#d5e7ff;--scope:var(--indicator-border);--scope-wash:var(--indicator-bg);--edge:var(--group-border);--paired:var(--op-border)}
+#stage .config-entry rect,#stage .config-entry:hover rect,#stage .config-entry:focus-visible rect,#stage .config-entry.mapping-hover rect {fill:var(--indicator-bg);fill-opacity:1;stroke:var(--indicator-border);stroke-width:1}
+#stage .config-entry text {fill:var(--indicator-border)}
+#stage .tensor:not(.selected):not(.mapping-hover) .tensor-leader {stroke:var(--edge)}
+#stage .tensor-flow:not(.mapping-hover) .edge.tensor-selected {stroke:var(--accent)}
+#stage .summary-symbol {fill:none;stroke:var(--metric-tag-fg);stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+#stage .metric-tag>.metric-mask {fill:var(--indicator-bg);fill-opacity:0;stroke:none;pointer-events:none}
+#stage .mapping-hover>.metric-tag>.metric-mask {fill-opacity:.5}
+#stage .summary-tensor {cursor:pointer;outline:none}
+#stage .summary-tensor.mapping-hover .tensor-outline {stroke:var(--indicator-border);stroke-width:1;stroke-dasharray:3 2}
+#stage .summary-tensor[aria-pressed=true]:not(.mapping-hover) .tensor-outline {stroke:var(--accent);stroke-width:1}
+#stage .summary-tensor:focus-visible .tensor-outline {stroke:var(--indicator-border);stroke-width:1;stroke-dasharray:3 2}
+
+/* Native Model Explorer uses #aaa for neutral edges, lighter than Op borders. */
+#stage .tensor-flow:not(.mapping-hover) .edge.paired:not(.incoming):not(.outgoing):not(.tensor-selected){stroke:var(--edge)}
+.mapping-output-picker{display:flex;align-items:center;gap:6px;margin-left:auto;font-size:11px;color:var(--muted)}
+.mapping-output-picker select{font:inherit;color:var(--text);background:var(--surface);border:1px solid var(--rule);border-radius:3px;padding:3px 6px}
+
+/* Mapping replaces the complete module-tree + Arch workspace within the host panel. */
+#workspace.pair-mode>.model-tree,
+#workspace.pair-mode>.model-tree-scrollbar{display:none!important}
+#workspace.pair-mode>.canvas{flex:1 1 100%;width:100%;min-width:0}
+
+/* Read-only Mapping is the default; editing controls are confined to the advanced pane. */
+.pair-navigation{max-width:calc(100% - 24px);box-sizing:border-box;flex-wrap:wrap}
+.mapping-advanced-button{margin-left:auto;white-space:nowrap}
+#pair-view.advanced-mode{--advanced-width:min(330px,40%)}
+#pair-view.advanced-mode #pair-graphs{margin-right:var(--advanced-width)}
+#pair-view>.mapping-advanced-panel{display:block;position:absolute;right:0;top:64px;bottom:0;width:var(--advanced-width);box-sizing:border-box;overflow:auto;padding:12px;background:var(--surface);border-left:1px solid var(--rule);z-index:3}
+.mapping-advanced-panel .mapping-pairs{max-height:none}
+.mapping-advanced-panel .pair-values{min-width:0}
+.mapping-advanced-panel button,.mapping-advanced-panel select{max-width:100%;box-sizing:border-box}
+.mapping-advanced-panel .mapping-source{margin-bottom:10px}
+.mapping-advanced-panel .mapping-source select{width:100%;display:block}
+.mapping-advanced-panel code{overflow-wrap:anywhere;white-space:normal}
+
+/* Fixed Layer modules use the same neutral node surface and border as Ops. */
+#stage .semantic-node{fill:color-mix(in srgb,var(--surface),var(--text) var(--far-fill,0%));stroke:var(--op-border)}
+#stage .semantic-node.is-selected{fill:var(--accent-wash);stroke:var(--accent)}
+#stage .architecture .group-select .title{font-size:var(--node-font);font-weight:500}
+#stage .semantic-node:hover:not(.is-selected){stroke:var(--op-hover)}
+.canvas:has(.architecture:not(.module-arch)) .legend tr:has(.block-key){display:none}
+
+/* Arch nodes are passive context, not selection targets. */
+#stage [data-arch-node],#stage [data-arch-node] .group-bg{cursor:default}
+#stage .op[data-arch-node]:hover rect,
+#stage .op[data-arch-node]:hover circle,
+#stage .semantic-node[data-arch-node]:hover{stroke:var(--op-border)}
+#stage [data-arch-node]>.group-bg:hover{stroke:var(--group-border)}
+
+/* The same passive-node contract applies to every module Arch, including PLE. */
+#stage .module-arch [data-arch-node] {cursor:default}
+#stage .module-arch [data-arch-node] .group-bg,
+#stage .module-arch .module-arch-block[data-arch-node] rect {
+  stroke:var(--group-border);
+}
+
+/* Reset belongs to each graph canvas. */
+.arch-page:not(.pair-active)>.graph-controls{display:flex!important;width:32px;height:32px;padding:0;justify-content:center;top:12px!important;left:12px;background:var(--surface);border:1px solid var(--rule);border-radius:50%;box-shadow:0 1px 3px #00000014}
+.arch-page>.graph-controls>:not(#toolbar-fit),.arch-page>.control-popover{display:none!important}
+.arch-page>.graph-controls #toolbar-fit{width:30px;height:30px;border-radius:50%;color:var(--text)}
+.arch-page>.graph-controls #toolbar-fit:hover{background:var(--hover)}
+.arch-page>.graph-controls #toolbar-fit .material-icon{font-size:20px}
+.arch-legend{display:none}
+.arch-page>.legend>.legacy-legend{display:none}
+.arch-page>.legend>.arch-legend{display:table}
+:root {--arch-node-border:#adb3ba;--arch-node-label:#626970}
+:root[data-theme=dark] {--arch-node-border:#707780;--arch-node-label:#b9c0c8}
+#stage [data-arch-node] text {fill:var(--arch-node-label)}
+#stage [data-arch-node] .math-symbol {stroke:var(--arch-node-label)}
+#stage [data-arch-node] rect:not(.hit),
+#stage [data-arch-node] circle,
+#stage rect[data-arch-node],
+#stage .op[data-arch-node]:hover rect,
+#stage .op[data-arch-node]:hover circle,
+#stage .semantic-node[data-arch-node]:hover,
+#stage [data-arch-node]>.group-bg:hover,
+#stage .module-arch [data-arch-node] .group-bg,
+#stage .module-arch .module-arch-block[data-arch-node] rect {stroke:var(--arch-node-border)}
+.arch-legend {color:var(--arch-node-label)}
+.legend .arch-node-key {border:1px solid var(--arch-node-border);background:var(--surface)}
+.legend .arch-tensor-key,.legend .arch-summary-key,.legend .arch-config-key {display:flex;align-items:center;justify-content:center;color:var(--arch-node-label)}
+.arch-tensor-key svg {fill:currentColor}
+.arch-tensor-key .seams {fill:none;stroke:var(--surface);stroke-width:.8}
+.arch-summary-key svg {fill:none;stroke:currentColor;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round}
+.legend .arch-config-key .material-icon {font-size:12px;line-height:14px;width:14px;height:14px;text-align:center;color:var(--indicator-border);background:var(--indicator-bg);border:1px solid var(--indicator-border);border-radius:3px}
+
+#stage .edge.semantic-edge{stroke-dasharray:none}
+
+/* A shared topbar owns return/reset; Mapping only contains the paired graphs. */
+#pair-view>.mapping-advanced-panel{top:0;bottom:32px}
+#pair-view{top:0}
+
+/* Pane identity is expressed by surfaces, without divider lines. */
+:root {--mapping-reference-bg:#f4f6fa;--mapping-target-bg:#e9edf3}
+:root[data-theme=dark] {--mapping-reference-bg:#202124;--mapping-target-bg:#292c32}
+#pair-graphs>.mapping-pane {border:0}
+#pair-graphs>.mapping-pane:first-child {background:var(--mapping-reference-bg)}
+#pair-graphs>.mapping-pane:last-child {background:var(--mapping-target-bg)}
+#pair-graphs>.mapping-pane>header {border:0;background:transparent}
+#pair-view>.mapping-advanced-panel {border:0;background:var(--host-list,var(--panel))}
+
+#pair-graphs>.mapping-pane>header{display:none}
+
+/* Return stays within the Mapping canvas; the shared toolbar remains available. */
+#mapping-close{position:absolute;z-index:5;top:12px;right:12px;display:flex;align-items:center;justify-content:center;width:32px;height:32px;padding:0;border:1px solid var(--rule);border-radius:50%;background:var(--surface);color:var(--text);box-shadow:0 2px 6px #00000018;cursor:pointer}
+#mapping-close svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round}
+#mapping-close:hover{background:var(--hover)}
+#mapping-close:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+#stage .module-tensor-flow:not(.mapping-hover) .edge.tensor-selected{stroke:var(--accent)}
+#stage .module-tensor-flow:not(.mapping-hover) .edge:not(.tensor-selected){stroke:var(--edge)}
+#stage .module-arch [data-arch-node]:hover rect{stroke:var(--arch-node-border)}
+/* One shared legend floats over both runtime canvases. */
+#mapping-legend{position:absolute;z-index:4;left:50%;bottom:12px;transform:translateX(-50%);display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:10px 16px;width:max-content;max-width:calc(100% - 32px);padding:10px 14px;border:1px solid var(--rule);border-radius:6px;background:color-mix(in srgb,var(--surface) 94%,transparent);color:var(--muted);font:11px/18px var(--sans);box-shadow:0 1px 3px #0000000a}
+.mapping-legend-item{display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.mapping-legend-key{position:relative;display:inline-flex;align-items:center;justify-content:center;gap:3px;min-width:23px;height:19px;padding:1px 4px;border-radius:3px;background:var(--group);color:var(--op-border);font-style:normal}
+.mapping-legend-key svg{width:12px;height:12px;fill:none;stroke:currentColor;stroke-width:1;flex:none}
+.mapping-legend-key .cube-body{fill:currentColor}.mapping-legend-key .cube-seams{stroke:var(--surface)}
+.mapping-legend-key.unpaired{background:repeating-linear-gradient(135deg,transparent 0 4px,var(--hatch) 4px 5px)}
+.mapping-legend-key .empty-frame{stroke-dasharray:2 1.5}
+.mapping-legend-key b{font:500 10px/16px var(--sans)}
+.mapping-legend-key.metric{background:var(--key-bg);color:var(--key-fg)}
+.mapping-legend-key.selected{outline:1px solid var(--accent);background:var(--accent-wash);color:var(--accent)}
+.mapping-legend-key.candidate{outline:1px dashed var(--pair-candidate);background:var(--pair-candidate-bg);color:var(--pair-candidate);margin-right:3px}
+.mapping-legend-key .pair-key{position:absolute;right:-6px;top:-5px;background:var(--pair-candidate);color:var(--pair-candidate-ink);border-radius:3px;padding:1px;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+.mapping-legend-spinner{display:inline-block;width:10px;height:10px;border:1.5px solid currentColor;border-right-color:transparent;border-radius:50%;animation:mapping-legend-spin 900ms linear infinite}
+@keyframes mapping-legend-spin{to{transform:rotate(360deg)}}
+@media(prefers-reduced-motion:reduce){.mapping-legend-spinner{animation:none}}
+#pair-view>.mapping-advanced-panel{bottom:0}
+
+#mapping-legend{flex-direction:column;gap:8px;pointer-events:none}
+.mapping-legend-row{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:8px 16px}
+.mapping-legend-actions{gap:8px 20px;font-size:10px}
+.mapping-legend-actions>span{display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
+.mapping-legend-actions kbd{font:500 10px/18px var(--sans);color:var(--text)}

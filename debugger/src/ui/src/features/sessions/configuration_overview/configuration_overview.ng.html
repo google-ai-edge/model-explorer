@@ -28,8 +28,14 @@
   <mat-tab label="Chat"
     ><div class="context">{{ workspace.chatName() }}</div>
     <header>
-      <strong>Generation</strong><button mat-button (click)="showPrompt()">System prompt</button>
+      <strong>Generation</strong
+      ><button mat-button (click)="showPrompt()" [class.different]="differs('systemPrompt')">
+        System prompt
+      </button>
     </header>
+    @if (differenceNote) {
+      <p class="difference-note" role="note">{{ differenceNote }}</p>
+    }
     <div class="groups">
       @for (group of groups; track group.name) {
         <section [attr.aria-label]="group.name">
@@ -41,8 +47,8 @@
             @for (key of group.keys; track key) {
               <div class="parameter-row">
                 <dt>{{ labels[key] }}</dt>
-                <dd>{{ value('ref', key) }}</dd>
-                <dd>{{ value('target', key) }}</dd>
+                <dd [class.different]="differs(key)">{{ value('ref', key) }}</dd>
+                <dd [class.different]="differs(key)">{{ value('target', key) }}</dd>
               </div>
             }
           </dl>

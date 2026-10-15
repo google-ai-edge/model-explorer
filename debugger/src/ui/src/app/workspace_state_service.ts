@@ -16,35 +16,35 @@
  * ==============================================================================
  */
 
-import {
-  computed,
-  effect,
-  inject,
-  Injectable,
-  signal,
-  untracked,
-} from '@angular/core';
-import {ReportStateService} from '../data/report_state_service';
+import type {
+  TokenDiffViewState,
+  ConversationReadingPosition,
+} from '../features/conversation/conversation_view_state';
+import {Injectable, signal, inject, computed, effect, untracked} from '@angular/core';
+import {resolveWorkspaceContext} from './workspace_context';
 import {RuntimeService} from '../data/runtime_service';
 import {SessionListService} from '../data/session_list_service';
-import {
-  CONVERSATION_BOOKMARK_CODEC,
-  ConversationBookmark,
-} from '../features/conversation/conversation_bookmarks';
-import type {
-  ConversationReadingPosition,
-  TokenDiffViewState,
-} from '../features/conversation/conversation_view_state';
+import {ReportStateService} from '../data/report_state_service';
 import {
   emptyChats,
-  MAX_DRAFT_LENGTH,
   parseStoredChats,
   pruneStoredChats,
+  MAX_DRAFT_LENGTH,
 } from '../features/sessions/chat_storage';
+import {
+  ConversationBookmark,
+  CONVERSATION_BOOKMARK_CODEC,
+} from '../features/conversation/conversation_bookmarks';
 import {BookmarkStore} from '../shared/bookmark_store/bookmark_store';
-import {resolveWorkspaceContext} from './workspace_context';
 export type {ConversationBookmark} from '../features/conversation/conversation_bookmarks';
 export type DebugView = 'Token Diff' | 'Graph Diff' | 'KV Diff';
+export interface GraphNavigationTarget {
+  capture: string;
+  batch: number;
+  layer: number;
+  anchor?: string;
+  chooseObservation?: boolean;
+}
 /** Navigation is independent of the shared capture selection. */
 @Injectable({providedIn: 'root'})
 export class WorkspaceStateService {
@@ -54,8 +54,7 @@ export class WorkspaceStateService {
   readonly selectedId = signal<string | null>(null);
   readonly sessionName = computed(
     () =>
-      this.sessions.items().find((item) => item.id === this.selectedId())
-        ?.name ??
+      this.sessions.items().find((item) => item.id === this.selectedId())?.name ??
       this.sessions.items()[0]?.name ??
       'Saved session',
   );
@@ -70,11 +69,7 @@ export class WorkspaceStateService {
   private readonly activeChats = signal(this.restored.active);
   readonly activeChat = signal('capture');
   readonly context = computed(() =>
-    resolveWorkspaceContext(
-      this.selectedId(),
-      this.activeChat(),
-      this.sessions.allItems(),
-    ),
+    resolveWorkspaceContext(this.selectedId(), this.activeChat(), this.sessions.allItems()),
   );
   /** The one capture identity; ReportStateService and RuntimeService are attached from here only. */
   readonly captureRecordId = computed(() => this.context().captureRecordId);
@@ -102,32 +97,21 @@ export class WorkspaceStateService {
     ...(this.localChats()[this.selectedId() ?? ''] ?? []),
   ]);
   readonly chatName = computed(
-    () =>
-      this.chats().find((c) => c.id === this.activeChat())?.name ??
-      'Captured conversation',
+    () => this.chats().find((c) => c.id === this.activeChat())?.name ?? 'Captured conversation',
   );
   readonly chatDrafts = signal(this.restored.drafts);
-  private readonly draftKey = computed(
-    () => (this.selectedId() ?? '') + ':' + this.activeChat(),
-  );
+  private readonly draftKey = computed(() => (this.selectedId() ?? '') + ':' + this.activeChat());
   readonly chatDraft = computed(() => this.chatDrafts()[this.draftKey()] ?? '');
   setChatDraft(value: string) {
     if (this.selectedId()) {
-      this.chatDrafts.update((d) => ({
-        ...d,
-        [this.draftKey()]: value.slice(0, MAX_DRAFT_LENGTH),
-      }));
+      this.chatDrafts.update((d) => ({...d, [this.draftKey()]: value.slice(0, MAX_DRAFT_LENGTH)}));
     }
   }
   /** The server rejects a new Chat while another one is active or pending. */
-  readonly newChatBlocked = computed(
-    () => this.runtime.execution()?.newChatAllowed === false,
-  );
+  readonly newChatBlocked = computed(() => this.runtime.execution()?.newChatAllowed === false);
   readonly creatingChat = signal(false);
   readonly chatError = signal('');
-  readonly chatHasCapture = computed(
-    () => !!this.runtime.selected()?.has_capture,
-  );
+  readonly chatHasCapture = computed(() => !!this.runtime.selected()?.has_capture);
   async newChat() {
     const session = this.selectedId();
     if (!session || this.creatingChat()) {
@@ -141,17 +125,12 @@ export class WorkspaceStateService {
         id: session,
         name: 'New chat ' + this.chats().length,
       });
-      if (
-        navigation === this.navigationRevision &&
-        session === this.selectedId()
-      ) {
+      if (navigation === this.navigationRevision && session === this.selectedId()) {
         this.chooseChat(chat.id);
       }
     } catch (error) {
       if (navigation === this.navigationRevision) {
-        this.chatError.set(
-          error instanceof Error ? error.message : String(error),
-        );
+        this.chatError.set(error instanceof Error ? error.message : String(error));
       }
     } finally {
       this.creatingChat.set(false);
@@ -167,10 +146,7 @@ export class WorkspaceStateService {
     if (parent && legacy) {
       this.activeChat.set(id);
       try {
-        const created = await this.sessions.manage('chat', {
-          id: parent,
-          name: legacy.name,
-        });
+        const created = await this.sessions.manage('chat', {id: parent, name: legacy.name});
         this.chatDrafts.update((d) => ({
           ...d,
           [parent + ':' + created.id]: d[parent + ':' + id] ?? '',
@@ -179,18 +155,13 @@ export class WorkspaceStateService {
           ...c,
           [parent]: (c[parent] ?? []).filter((v) => v.id !== id),
         }));
-        if (
-          navigation !== this.navigationRevision ||
-          parent !== this.selectedId()
-        ) {
+        if (navigation !== this.navigationRevision || parent !== this.selectedId()) {
           return;
         }
         id = created.id;
       } catch (e) {
         if (navigation === this.navigationRevision) {
-          this.chatError.set(
-            'Could not connect this saved draft: ' + String(e),
-          );
+          this.chatError.set('Could not connect this saved draft: ' + String(e));
         }
         return;
       }
@@ -220,9 +191,7 @@ export class WorkspaceStateService {
       localStorage.setItem('debugger.chats.v1', JSON.stringify(data));
       this.storageError.set('');
     } catch {
-      this.storageError.set(
-        'Draft could not be saved in this browser. Keep this page open.',
-      );
+      this.storageError.set('Draft could not be saved in this browser. Keep this page open.');
     }
   }
   constructor() {
@@ -276,11 +245,7 @@ export class WorkspaceStateService {
       const known = listing.sessions.map((session) => session.id);
       untracked(() => {
         const pruned = pruneStoredChats(
-          {
-            chats: this.localChats(),
-            drafts: this.chatDrafts(),
-            active: this.activeChats(),
-          },
+          {chats: this.localChats(), drafts: this.chatDrafts(), active: this.activeChats()},
           known,
         );
         this.localChats.set(pruned.chats);
@@ -290,9 +255,7 @@ export class WorkspaceStateService {
     });
   }
   readonly bookmarkTarget = signal<ConversationBookmark | null>(null);
-  private readonly bookmarkStore = new BookmarkStore(
-    CONVERSATION_BOOKMARK_CODEC,
-  );
+  private readonly bookmarkStore = new BookmarkStore(CONVERSATION_BOOKMARK_CODEC);
   /** Bookmarks belong to one Session, or to one Chat within it. */
   private readonly bookmarkKey = computed(
     () =>
@@ -300,9 +263,7 @@ export class WorkspaceStateService {
       this.selectedId() +
       (this.activeChat() === 'capture' ? '' : ':' + this.activeChat()),
   );
-  readonly bookmarks = computed(() =>
-    this.bookmarkStore.read(this.bookmarkKey()),
-  );
+  readonly bookmarks = computed(() => this.bookmarkStore.read(this.bookmarkKey()));
   readonly bookmarkError = this.bookmarkStore.error;
   setBookmarks(items: ConversationBookmark[]) {
     this.bookmarkStore.set(this.bookmarkKey(), items);
@@ -317,6 +278,7 @@ export class WorkspaceStateService {
   readonly home = signal(true);
   readonly mode = signal<'Chat' | 'Debug'>('Chat');
   readonly view = signal<DebugView>('Token Diff');
+  readonly graphTarget = signal<GraphNavigationTarget | null>(null);
   open(id?: string) {
     this.navigationRevision++;
     this.activeChat.set('capture');
@@ -324,21 +286,35 @@ export class WorkspaceStateService {
     this.view.set('Token Diff');
     this.selectedId.set(id ?? this.sessions.items()[0]?.id ?? null);
     const active = this.activeChats()[this.selectedId() ?? ''] ?? 'capture';
-    this.activeChat.set(
-      this.chats().some((c) => c.id === active) ? active : 'capture',
-    );
+    this.activeChat.set(this.chats().some((c) => c.id === active) ? active : 'capture');
     this.home.set(false);
-    if (
-      this.localChats()[this.selectedId() ?? '']?.some(
-        (c) => c.id === this.activeChat(),
-      )
-    ) {
+    if (this.localChats()[this.selectedId() ?? '']?.some((c) => c.id === this.activeChat())) {
       void this.chooseChat(this.activeChat());
     }
   }
-  graph(turn: number, phase: string) {
+  graph(turn: number, phase: string, target?: {batch?: number; layer?: number; anchor?: string}) {
     this.report.selectTurn(turn);
     this.report.selectPhase(phase);
+    const batches = this.report.preview.batches.filter(
+      (batch) => batch.turn === turn && batch.phase === phase,
+    );
+    const exact = batches.find((batch) => batch.batch === target?.batch);
+    const batch = exact ?? batches[0];
+    if (batch) {
+      this.report.selectBatch(batch.batch);
+    }
+    const capture = this.report.captureId();
+    this.graphTarget.set(
+      capture && batch
+        ? {
+            capture,
+            batch: batch.batch,
+            layer: target?.layer ?? this.report.layer(),
+            anchor: target?.anchor,
+            chooseObservation: !exact,
+          }
+        : null,
+    );
     this.view.set('Graph Diff');
     this.mode.set('Debug');
     this.home.set(false);

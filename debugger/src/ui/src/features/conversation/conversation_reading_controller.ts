@@ -16,6 +16,7 @@
  * ==============================================================================
  */
 
+import type {FlowVirtualizer} from './flow_virtualization';
 import {
   captureReadingPosition,
   readingPositionKey,
@@ -25,7 +26,6 @@ import {
   type ConversationObservation,
   type ConversationReadingPosition,
 } from './conversation_view_state';
-import type {FlowVirtualizer} from './flow_virtualization';
 
 type ReadingSnapshot = ConversationReadingPosition & {mode: ConversationMode};
 interface ReadingOptions {
@@ -51,8 +51,7 @@ export class ConversationReadingController {
   constructor(private readonly options: ReadingOptions) {}
 
   capture(): ReadingSnapshot {
-    if (this.disposed && this.lastCapture)
-      return structuredClone(this.lastCapture);
+    if (this.disposed && this.lastCapture) return structuredClone(this.lastCapture);
     return {
       mode: this.activeMode ?? this.options.mode(),
       ...captureReadingPosition(
@@ -70,18 +69,11 @@ export class ConversationReadingController {
     if (this.disposed) return;
     const key = readingPositionKey(this.options.context, snapshot.mode);
     if (replace || !this.options.positions.has(key)) {
-      this.options.positions.set(
-        key,
-        captureReadingPosition(snapshot.scrollTop, snapshot.anchor),
-      );
+      this.options.positions.set(key, captureReadingPosition(snapshot.scrollTop, snapshot.anchor));
     }
     this.observation = observation;
     this.restore(
-      savedReadingPosition(
-        this.options.positions,
-        this.options.context,
-        this.options.mode(),
-      ),
+      savedReadingPosition(this.options.positions, this.options.context, this.options.mode()),
     );
   }
 
@@ -105,29 +97,19 @@ export class ConversationReadingController {
       reading = root.querySelector('.reading');
     if (!reading) return null;
     const viewport = reading.getBoundingClientRect();
-    const heading = reading
-      .querySelector('.column-headings')
-      ?.getBoundingClientRect();
-    const title =
-      this.options.mode() === 'Debug'
-        ? reading.querySelector('.nodeTitle')
-        : null;
+    const heading = reading.querySelector('.column-headings')?.getBoundingClientRect();
+    const title = this.options.mode() === 'Debug' ? reading.querySelector('.nodeTitle') : null;
     const titleHeight = title
       ? (heading?.height ?? 60) +
-        (parseFloat(
-          getComputedStyle(root).getPropertyValue('--node-pinned-height'),
-        ) || 40)
+        (parseFloat(getComputedStyle(root).getPropertyValue('--node-pinned-height')) || 40)
       : 0;
     const top = viewport.top + Math.max(heading?.height ?? 0, titleHeight) + 8;
     let bottom =
       Math.min(
         viewport.bottom,
-        root.querySelector('.composer')?.getBoundingClientRect().top ??
-          viewport.bottom,
+        root.querySelector('.composer')?.getBoundingClientRect().top ?? viewport.bottom,
       ) - 16;
-    const inspector = root
-      .querySelector('.token-inspector')
-      ?.getBoundingClientRect();
+    const inspector = root.querySelector('.token-inspector')?.getBoundingClientRect();
     if (
       inspector &&
       inspector.left < viewport.right &&
@@ -144,12 +126,7 @@ export class ConversationReadingController {
       observation = this.observation;
     this.pendingMode = mode;
     this.options.afterRender(() => {
-      if (
-        this.disposed ||
-        revision !== this.revision ||
-        mode !== this.options.mode()
-      )
-        return;
+      if (this.disposed || revision !== this.revision || mode !== this.options.mode()) return;
       this.activeMode = mode;
       this.pendingMode = null;
       const root = this.options.root(),
@@ -158,8 +135,7 @@ export class ConversationReadingController {
       const virtualizer = this.options.virtualizer();
       virtualizer?.mount();
       reading.scrollTop = position.scrollTop;
-      if (!observation && position.anchor)
-        virtualizer?.restore(position.anchor);
+      if (!observation && position.anchor) virtualizer?.restore(position.anchor);
       else virtualizer?.paint(true);
       if (observation) this.locateObservation(reading, observation);
       this.observation = null;
@@ -178,24 +154,16 @@ export class ConversationReadingController {
     });
   }
 
-  private locateObservation(
-    reading: Element,
-    observation: ConversationObservation,
-  ): void {
+  private locateObservation(reading: Element, observation: ConversationObservation): void {
     if (!Number.isInteger(observation.turn) || observation.turn < 1) return;
     const turn = observation.turn;
-    const phase = ['prefill', 'decode'].includes(observation.phase)
-      ? observation.phase
-      : null;
+    const phase = ['prefill', 'decode'].includes(observation.phase) ? observation.phase : null;
     const node =
       (this.options.mode() === 'Debug' && phase
-        ? reading.querySelector(
-            `[data-node-turn="${turn}"][data-node-stage="${phase}"]`,
-          )
+        ? reading.querySelector(`[data-node-turn="${turn}"][data-node-stage="${phase}"]`)
         : null) ?? reading.querySelector(`.turn[data-turn="${turn}"]`);
     if (!node) return;
-    const top =
-      this.visibleBounds()?.top ?? reading.getBoundingClientRect().top;
+    const top = this.visibleBounds()?.top ?? reading.getBoundingClientRect().top;
     reading.scrollTop += node.getBoundingClientRect().top - top;
     this.options.virtualizer()?.paint(true);
   }
@@ -206,10 +174,7 @@ export class ConversationReadingController {
     this.lastCapture = this.capture();
     this.options.positions.set(
       readingPositionKey(this.options.context, this.lastCapture.mode),
-      captureReadingPosition(
-        this.lastCapture.scrollTop,
-        this.lastCapture.anchor,
-      ),
+      captureReadingPosition(this.lastCapture.scrollTop, this.lastCapture.anchor),
     );
     this.disposed = true;
     this.revision++;

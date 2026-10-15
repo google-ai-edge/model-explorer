@@ -33,17 +33,13 @@ export function resolveWorkspaceContext(
   records: readonly SessionSummary[],
 ): WorkspaceCaptureContext {
   const parentSession =
-    records.find(
-      (record) => record.id === parentSessionId && !record.parent_session_id,
-    ) ?? null;
+    records.find((record) => record.id === parentSessionId && !record.parent_session_id) ?? null;
   const activeRecord = !parentSession
     ? null
     : activeChatId === 'capture'
       ? parentSession
       : (records.find(
-          (record) =>
-            record.id === activeChatId &&
-            record.parent_session_id === parentSession.id,
+          (record) => record.id === activeChatId && record.parent_session_id === parentSession.id,
         ) ?? null);
   return {
     parentSessionId,

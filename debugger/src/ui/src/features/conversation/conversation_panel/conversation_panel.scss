@@ -40,6 +40,8 @@ $gap-hatch: repeating-linear-gradient(
 .reading {
   flex: 1;
   overflow: auto;
+  // Keep focused controls clear of the sticky Reference/Target headings.
+  scroll-padding-top: 72px;
   // The last turn, and a trend chart opened under it, must be able to scroll clear of the toolbar.
   padding-bottom: max(110px, var(--composer-clearance, 110px));
   background: linear-gradient(to right, var(--bg) 50%, var(--surface) 50%);
@@ -172,12 +174,12 @@ summary {
 
 .tokens {
   margin-top: 10px;
-  line-height: 28px;
+  line-height: var(--token-line-height, 28px);
 }
 .tokens button {
   border: 0;
   padding: 2px 0;
-  background: transparent;
+  background: var(--token-node-surface, transparent);
   color: var(--on1);
   font: inherit;
   white-space: pre-wrap;
@@ -188,7 +190,7 @@ summary {
   @include token.token-pair-hover;
 }
 .tokens button.hover-origin:not(.selected-token) {
-  @include token.token-pair-hover(20%);
+  @include token.token-pair-hover;
 }
 .tokens .mismatch {
   background: var(--b0);
@@ -445,13 +447,10 @@ summary {
   width: min(760px, calc(100% - 48px));
   padding: 11px 12px 9px;
   gap: 8px;
-  border-color: var(--me-surface-variant-color);
+  border: 0;
   box-shadow:
     0 10px 30px #23283029,
     0 3px 8px #2328301a;
-}
-.chat-composer:focus-within {
-  border-color: var(--me-primary-color);
 }
 .chat-composer textarea {
   box-sizing: border-box;
@@ -512,7 +511,7 @@ summary {
   background-clip: padding-box;
 }
 .composer.chat-composer {
-  min-height: 102px;
+  min-height: 100px;
 }
 .chat-composer textarea {
   min-height: 28px;
@@ -654,6 +653,38 @@ summary {
   transition: none;
 }
 
+.debug-toggle {
+  flex: none;
+  --mat-slide-toggle-track-width: 28px;
+  --mat-slide-toggle-track-height: 14px;
+  --mat-slide-toggle-handle-width: 14px;
+  --mat-slide-toggle-handle-height: 12px;
+  --mat-slide-toggle-selected-handle-size: 12px;
+  --mat-slide-toggle-unselected-handle-size: 12px;
+  --mat-slide-toggle-pressed-handle-size: 12px;
+  --mat-slide-toggle-selected-handle-horizontal-margin: 0 1px;
+  --mat-slide-toggle-unselected-handle-horizontal-margin: 0 1px;
+  --mat-slide-toggle-selected-pressed-handle-horizontal-margin: 0 1px;
+  --mat-slide-toggle-unselected-pressed-handle-horizontal-margin: 0 1px;
+  --mat-slide-toggle-state-layer-size: 28px;
+  --mat-slide-toggle-label-text-size: 12px;
+  --mat-slide-toggle-label-text-line-height: 20px;
+  --mat-slide-toggle-label-text-font: var(--me-font-family);
+  --mat-slide-toggle-label-text-color: var(--on1);
+}
+.composer .debug-toggle-label {
+  display: flex;
+  align-items: center;
+  color: inherit;
+  font: inherit;
+}
+.debug-toggle-label mat-icon {
+  width: 20px;
+  height: 20px;
+  font-size: 20px;
+  line-height: 20px;
+  color: inherit;
+}
 .composer-bottom {
   display: flex;
   align-items: center;
@@ -665,7 +696,7 @@ summary {
   width: 760px;
   max-width: calc(100% - var(--inspector-width) - 48px);
   left: calc((100% - var(--inspector-width)) / 2);
-  min-height: 102px;
+  min-height: 100px;
   display: block;
   padding: 0;
   background: var(--debug-dock-bg);
@@ -709,15 +740,35 @@ summary {
   flex: 1;
   min-width: 0;
 }
+.debug-find {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+}
 .debug-primary .find-tools {
   flex: none;
   flex-wrap: nowrap;
   gap: 0;
 }
+.debug-primary .debug-layer-graph,
 .debug-primary .bookmark-current {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
   width: 32px;
   height: 32px;
   padding: 6px;
+}
+.debug-layer-graph img {
+  display: block;
+  width: 20px;
+  height: 20px;
+}
+.debug-layer-graph:disabled img {
+  opacity: 0.38;
 }
 .debug-primary .bookmark-current mat-icon {
   font-size: 20px;
@@ -790,6 +841,9 @@ summary {
     padding: 8px 12px;
     row-gap: 8px;
   }
+  .debug-find {
+    flex-basis: 310px;
+  }
   .debug-composer .composer-bottom {
     height: auto;
     min-height: 50px;
@@ -803,9 +857,6 @@ summary {
   }
 }
 @media (max-width: 650px) {
-  .debug-primary token-query-control {
-    flex: 1 1 150px;
-  }
   .debug-primary .find-tools {
     width: auto;
   }
@@ -860,16 +911,29 @@ summary {
   background: var(--pinned-node-surface, var(--surface));
   border-bottom: 1px solid var(--outline);
 }
-.debug-node[data-node-selected] {
-  outline: 1px solid var(--pri);
-  outline-offset: -1px;
+.debug-turn:not(
+  :has(
+    :is(
+      .input-token,
+      .tokens button,
+      .nodePreviewToken,
+      .virtualTextLine .token
+    ):hover
+  )
+) {
+  &:has(.inputNode.debug-node:hover) .inputNode.debug-node,
+  &:has(.decodeNode.debug-node:hover) .decodeNode.debug-node {
+    --stage-surface: color-mix(
+      in srgb,
+      var(--me-primary-color) var(--stage-hover-tint),
+      var(--stage-base-surface)
+    );
+    --stage-selection-ring: inset 0 0 0 1px var(--stage-structure-border);
+  }
 }
-.debug-node:focus-visible {
-  outline: 2px solid var(--pri);
+.debug-node:focus-visible:not([data-node-selected]) {
+  outline: 1px dashed var(--me-primary-color);
   outline-offset: 2px;
-}
-.debug-node[data-node-selected] > .nodeTitleTrack > .nodeTitle.isPinned {
-  border-color: var(--pri);
 }
 .captured-input {
   padding: 8px 4px 16px;
@@ -892,15 +956,6 @@ summary {
   display: flex;
   justify-content: flex-end;
   margin-bottom: 2px;
-}
-.input-context-note {
-  font: 10px/16px var(--me-font-family);
-  color: var(--on2);
-  border-bottom: 1px dotted var(--outline);
-  margin-bottom: -4px;
-}
-.input-context-note[data-history-status='differs'] {
-  color: var(--me-color-error, #c5221f);
 }
 .input-row {
   display: grid;
@@ -928,16 +983,17 @@ summary {
   white-space: pre-wrap;
   overflow-wrap: anywhere;
   font: 14px/24px var(--me-font-family);
-  line-height: 28px;
+  line-height: var(--token-line-height, 28px);
 }
 .input-token {
   display: inline-block;
+  background: var(--token-node-surface, transparent);
   border-radius: 2px;
   white-space: pre-wrap;
   @include token.token-type;
 }
 .marker-token {
-  color: light-dark(#8293a8, #9aaec5);
+  color: var(--token-detail-color, light-dark(#8293a8, #9aaec5));
 }
 .input-tokens .mismatch {
   background: var(--b0);
@@ -960,7 +1016,7 @@ summary {
   @include token.token-pair-hover;
 }
 .input-token.hover-origin:not(.selected-token) {
-  @include token.token-pair-hover(20%);
+  @include token.token-pair-hover;
 }
 .input-token.selected-token,
 .input-token:focus-visible {
@@ -974,7 +1030,7 @@ summary {
   white-space: pre-wrap;
   overflow-wrap: anywhere;
   margin-left: 16px;
-  color: light-dark(#8293a8, #9aaec5);
+  color: var(--token-detail-color, light-dark(#8293a8, #9aaec5));
   font: 14px/24px var(--me-font-family);
 }
 .nodeTitleControls,
@@ -987,6 +1043,7 @@ summary {
   display: none;
 }
 .nodeJumpControls button {
+  --on2: var(--stage-label-color, var(--me-on-surface-variant-color));
   border: 0;
   background: transparent;
   display: flex;
@@ -1049,11 +1106,12 @@ summary {
   padding: 0 4px;
   border-radius: 4px;
   font: 400 14px/24px var(--me-font-family);
-  color: light-dark(#8293a8, #9aaec5);
+  color: var(--token-detail-color, light-dark(#8293a8, #9aaec5));
 }
 
 .token-inspector {
   padding: 0;
+  --info-key-width: 136px;
   @include info.metadata;
 }
 
@@ -1125,12 +1183,22 @@ summary {
 .token-inspector .info-token.missing {
   color: var(--me-on-surface-variant-color);
 }
+.token-inspector .token-pair-value .info-token {
+  display: inline;
+  max-width: none;
+  white-space: inherit;
+  overflow: visible;
+  padding: 0;
+  line-height: inherit;
+  vertical-align: baseline;
+}
 .token-inspector {
   @include info.comparison-grid;
 }
 // Model Explorer metadata rows: a fixed key column, values beside it, one divider per section.
 .token-inspector table:not(:has(colgroup)) tr > :first-child {
-  width: 104px;
+  // These cells use border-box; shared metadata lists use a content-box key plus 6px padding.
+  width: calc(var(--info-key-width) + 6px);
 }
 .token-inspector table:not(:has(colgroup)) tr > :nth-child(2):not([colspan]),
 .token-inspector table:not(:has(colgroup)) tr > :nth-child(3) {
@@ -1196,7 +1264,7 @@ summary {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  color: light-dark(#85621b, #d6b66c);
+  color: var(--debug-status-ink, light-dark(#85621b, #d6b66c));
   font: 500 14px/20px var(--me-font-family);
 }
 .target-state::before {
@@ -1210,9 +1278,16 @@ summary {
 // Candidate flow node geometry, scoped to Token Diff.
 :host {
   --node-pinned-height: 40px;
+  --stage-label-color: light-dark(#66758a, #9ca9ba);
+  --stage-detail-color: light-dark(#52647c, #bdc8d6);
+  --stage-hover-tint: 3%;
+  --stage-structure-border: var(--me-outline-hairline-color);
   --reference-surface: light-dark(#fafbfd, #26292e);
   --reference-message: light-dark(#f1f3f6, #30343b);
-  --target-debug-surface: light-dark(#fffefa, #292824);
+  --target-debug-surface: var(
+    --debug-target-surface,
+    light-dark(#fffefa, #292824)
+  );
 }
 .reading:not(.chat-reading) {
   background: linear-gradient(
@@ -1227,7 +1302,7 @@ summary {
   bottom: 0;
   left: calc((100% - var(--inspector-width, 0px)) / 2);
   right: var(--inspector-width, 0px);
-  border: 1px solid light-dark(#d8d5cd, #4a4741);
+  border: 1px solid var(--debug-target-border, light-dark(#d8d5cd, #4a4741));
   border-radius: 5px 5px 0 0;
   pointer-events: none;
   // Over the sticky column headings, under the details panel's resize handle and the toolbar.
@@ -1237,20 +1312,43 @@ summary {
   background: var(--reference-surface);
 }
 .reading:not(.chat-reading) .column-headings header:last-child {
+  position: relative;
   background: var(--target-debug-surface);
 }
 .debug-turn > article {
   padding: 0 24px 28px;
 }
 .debug-node {
+  // Match the Chat user-message surface for Prefill.
+  --stage-base-surface: var(--hover);
   margin: 0;
   padding: 48px 16px 16px;
   border: 0;
   border-radius: 6px;
-  box-shadow: inset 0 0 0 1px var(--outline);
+  box-shadow: var(
+    --stage-selection-ring,
+    inset 0 0 0 1px var(--stage-structure-border)
+  );
 }
-.debug-node.inputNode {
-  background: var(--reference-message);
+.debug-node {
+  --token-border-color: light-dark(#8a96a6, #788697);
+  --token-border-width: 1px;
+  --token-radius: 3px;
+  --token-margin: 1px;
+  --token-detail-color: var(--stage-detail-color);
+  // Neutral tokens inherit the Stage surface; fills communicate data and interaction states.
+  --token-node-surface: transparent;
+  --token-node-text: light-dark(#041e49, #f3f6fc);
+  --on1: var(--token-node-text);
+  background: var(--stage-surface, var(--stage-base-surface));
+  outline: none;
+}
+.debug-node.decodeNode {
+  // Chat responses inherit their runtime column's surface.
+  --stage-base-surface: var(--bg);
+}
+.debug-node.decodeNode[data-node-side='target'] {
+  --stage-base-surface: var(--surface);
 }
 .debug-node .captured-input {
   padding: 0;
@@ -1278,8 +1376,12 @@ summary {
   padding: 0;
 }
 .debug-node .nodeTitle {
-  font: 500 14px/20px var(--me-font-family);
-  color: var(--on1);
+  font: 500 12px/20px var(--me-font-family);
+  color: var(--stage-label-color);
+}
+.debug-node
+  :is(.input-row mat-icon, .phase-icon, .nodeContextPreview > mat-icon) {
+  color: var(--stage-detail-color);
 }
 .debug-node .nodeTitle:not(.isPinned) {
   position: absolute;
@@ -1291,16 +1393,17 @@ summary {
   padding: 0;
 }
 .debug-node .nodeTitle.isPinned {
+  background: var(--stage-surface, var(--stage-base-surface));
   height: var(--node-pinned-height);
   top: 60px;
   margin: 0;
   padding: 0 15px;
-  border: 1px solid var(--outline);
-  border-bottom: 0;
-  border-radius: 6px 6px 0 0;
+  border: 0;
+  border-radius: 0;
   box-shadow: inset 0 -1px var(--outline);
 }
 .debug-node .nodeTitleControls button.mat-mdc-button-base {
+  color: var(--stage-label-color);
   width: 24px;
   height: 24px;
   padding: 0;
@@ -1324,9 +1427,6 @@ summary {
 }
 .reading:not(.chat-reading) .tokens button.selected-token {
   @include token.token-selection;
-}
-.reading:not(.chat-reading) [data-runtime='ref'] .tokens button.selected-token {
-  outline-width: 1px;
 }
 .generated-phase {
   display: grid;
@@ -1363,6 +1463,7 @@ summary {
 }
 .composer.debug-composer {
   @include controls.debug-dock-surface;
+  border: 0;
 }
 // Keep the Model Explorer side-by-side inspector through tablet widths.
 @media (min-width: 651px) and (max-width: 1000px) {
@@ -1405,11 +1506,6 @@ summary {
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
-}
-.nodeCompactStatus {
-  flex: none;
-  color: var(--on2);
-  font: 400 12px/18px var(--me-font-family);
 }
 .debug-node.node-compact {
   box-sizing: border-box;
@@ -1469,23 +1565,19 @@ summary {
   padding: 0 1px;
   border: 0;
   border-radius: 2px;
-  background: transparent;
+  background: var(--token-node-surface, transparent);
   font: 400 14px/24px var(--me-font-family);
   color: var(--on2);
   white-space: pre;
 }
 .nodePreviewToken:hover {
-  background: var(--me-surface-container-high);
+  background: var(--token-node-surface, var(--me-surface-container-high));
   color: var(--on1);
 }
 .nodePreviewToken.changed {
   color: var(--pri);
 }
-.nodePreviewToken.selected {
-  outline: 1px solid var(--pri);
-  background: var(--pri-c);
-  color: var(--pri);
-}
+
 .nodePreviewEllipsis {
   padding: 0 3px;
 }
@@ -1511,7 +1603,10 @@ summary {
   gap: 12px;
   min-width: 0;
   margin: 0 24px;
-  color: color-mix(in srgb, var(--on2) 70%, transparent);
+  color: light-dark(
+    color-mix(in srgb, var(--on2) 70%, transparent),
+    var(--me-on-surface-low-color)
+  );
   font: 400 11px/18px var(--me-font-family);
   white-space: nowrap;
 }
@@ -1693,4 +1788,798 @@ summary {
   padding: 0 4px;
   font: 12px/18px var(--me-font-family);
   color: var(--me-primary-color);
+}
+
+// Preserve the original runtime column boxes and subgrid. Analysis occupies the
+// shared stage-action rows without flattening the Prefill/Decode containers.
+.debug-turn > article {
+  grid-row: 1 / span 5;
+}
+.debug-turn > article[data-runtime='ref'] {
+  grid-column: 1;
+}
+.debug-turn > article[data-runtime='target'] {
+  grid-column: 2;
+}
+.debug-turn > article > .phase-actions {
+  grid-row: 1;
+}
+.debug-turn > article > .inputNode {
+  grid-row: 2;
+}
+.debug-turn > article > .decodeNode {
+  grid-row: 4;
+}
+.stage-analysis-row {
+  grid-column: 1 / -1;
+  min-width: 0;
+}
+.stage-analysis-row[data-stage='prefill'] {
+  grid-row: 3;
+}
+.stage-analysis-row[data-stage='decode'] {
+  grid-row: 5;
+}
+.stage-analysis-list {
+  --stage-analysis-gap: 8px;
+  --analysis-entry-width: 160px;
+  min-width: 0;
+  padding: var(--stage-analysis-gap) 0 24px;
+}
+.stage-analysis-row[data-stage='decode'] .stage-analysis-list {
+  padding-bottom: 4px;
+}
+.stage-analysis {
+  position: relative;
+  margin-bottom: var(--stage-analysis-gap);
+  min-width: 0;
+}
+.analysis-location-frame {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  pointer-events: none;
+  border-radius: 4px;
+}
+.analysis-entry-row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0;
+  margin-left: calc(50% + 50px);
+  min-height: 34px;
+}
+.analysis-entry-row::before,
+.add-analysis::before {
+  content: '';
+  position: absolute;
+  left: -10px;
+  top: calc(-1 * var(--stage-analysis-gap));
+  bottom: 0;
+  border-left: 1px solid var(--stage-structure-border);
+  pointer-events: none;
+}
+.analysis-entry-row::after,
+.add-analysis::after {
+  content: '';
+  position: absolute;
+  left: -10px;
+  top: 16px;
+  width: 10px;
+  border-top: 1px solid var(--stage-structure-border);
+  pointer-events: none;
+}
+.stage-analysis.open .analysis-entry-row::before {
+  bottom: 17px;
+}
+.analysis-entry {
+  margin: 0;
+  justify-content: flex-start;
+  box-sizing: border-box;
+  width: var(--analysis-entry-width);
+  flex: 0 0 var(--analysis-entry-width);
+  height: 34px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--on1);
+  font: 500 12px/20px var(--me-font-family);
+  cursor: pointer;
+  text-align: left;
+}
+.analysis-entry:hover,
+.add-analysis:hover,
+.analysis-layer-graph:hover:not(:disabled),
+.analysis-delete:hover {
+  background: var(--hover);
+}
+.analysis-entry mat-icon,
+.analysis-layer-graph mat-icon,
+.analysis-delete mat-icon {
+  font-size: 16px;
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+.analysis-entry span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.analysis-delete {
+  box-sizing: border-box;
+  width: 28px;
+  height: 34px;
+  flex: 0 0 28px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--on2);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px;
+}
+.analysis-entry:focus-visible,
+.analysis-layer-graph:focus-visible,
+.analysis-delete:focus-visible {
+  outline: 2px solid var(--pri);
+}
+.analysis-layer-graph {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  gap: 5px;
+  height: 34px;
+  padding: 4px 8px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--on2);
+  font: 400 12px/20px var(--me-font-family);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.analysis-layer-graph:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.stage-analysis.open .analysis-entry {
+  border-color: var(--stage-structure-border);
+  border-bottom: 0;
+  border-radius: 4px 4px 0 0;
+  background: var(--analysis-surface);
+  position: relative;
+  z-index: 1;
+}
+.stage-analysis.open .analysis-entry::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: -1px;
+  right: -1px;
+  height: 2px;
+  border-left: 1px solid var(--stage-structure-border);
+  border-right: 1px solid var(--stage-structure-border);
+  background: var(--analysis-surface);
+}
+.stage-analysis-list {
+  --analysis-surface: light-dark(#eef1f5, #17181b);
+}
+.analysis-content {
+  border-top: 1px solid var(--stage-structure-border);
+  border-bottom: 1px solid var(--stage-structure-border);
+  background: var(--analysis-surface);
+  min-width: 0;
+  padding: 12px 24px 14px;
+}
+.analysis-content[hidden] {
+  display: none;
+}
+.analysis-content kv-panel {
+  display: flex;
+  width: 100%;
+}
+.add-analysis {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 0 calc(50% + 50px);
+  padding: 6px 8px;
+  box-sizing: border-box;
+  width: var(--analysis-entry-width);
+  height: 34px;
+  min-height: 34px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--on1);
+  font: 500 12px/20px var(--me-font-family);
+  cursor: pointer;
+}
+.add-analysis::before {
+  bottom: calc(100% - 17px);
+}
+.add-analysis mat-icon {
+  width: 16px;
+  height: 16px;
+  font-size: 16px;
+}
+.analysis-entry,
+.add-analysis,
+.analysis-delete {
+  color: var(--stage-detail-color);
+}
+// Analysis covers the lane divider without covering the Debug composer or sticky headings.
+.target-frame {
+  z-index: 1;
+}
+.stage-analysis-row {
+  position: relative;
+  z-index: 2;
+}
+.column-headings {
+  z-index: 3;
+}
+
+.analysis-dialog {
+  @include controls.settings-dialog-shell;
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100dvh - 64px);
+  > header,
+  > mat-dialog-actions {
+    flex: none;
+  }
+  > mat-dialog-content {
+    min-height: 0;
+    max-height: none;
+  }
+  > mat-dialog-content analysis-architecture {
+    display: block;
+  }
+  button:disabled {
+    opacity: 0.38;
+  }
+}
+
+// Continue the Target frame over the opaque sticky heading without raising the
+// full-height frame above the cross-lane analysis panels.
+.reading:not(.chat-reading) .column-headings header:last-child::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border: 1px solid var(--debug-target-border, light-dark(#d8d5cd, #4a4741));
+  border-bottom: 0;
+  border-radius: 5px 5px 0 0;
+  pointer-events: none;
+}
+
+// Hover lightly tints the data color; selection retains the stronger blue overlay.
+:is(.tokens button, .input-token, .nodePreviewToken).linked-token-hover:not(
+    .selected-token
+  ):not(.linked-token-selected),
+:is(.tokens button, .input-token, .nodePreviewToken).pair-hover:not(
+    .hover-origin
+  ):not(.selected-token):not(.linked-token-selected) {
+  @include token.token-pair-hover;
+}
+:is(.tokens button, .input-token, .nodePreviewToken).hover-origin:not(
+    .selection-origin
+  ):not(.selected-token) {
+  @include token.token-pair-hover;
+}
+:is(.tokens button, .input-token, .nodePreviewToken).linked-token-selected {
+  @include token.token-selection;
+  outline-offset: -2px;
+}
+:is(.tokens button, .input-token, .nodePreviewToken).selection-origin {
+  @include token.token-selection;
+  outline-offset: -2px;
+}
+.reading:not(.chat-reading)
+  :is(.tokens button, .input-token, .nodePreviewToken).linked-token-focus:not(
+    .selected-token
+  ) {
+  @include token.token-selection;
+}
+
+.stage-analysis-list.expanded-analysis {
+  position: fixed;
+  top: var(--analysis-top);
+  right: var(--analysis-right);
+  bottom: 0;
+  left: 0;
+  z-index: 40;
+  padding: 0;
+  background: var(--analysis-surface);
+  overflow: auto;
+}
+.stage-analysis-row:has(.expanded-analysis) {
+  z-index: 40;
+}
+.expanded-analysis .analysis-entry-row,
+.expanded-analysis > .add-analysis {
+  display: none;
+}
+.expanded-analysis .stage-analysis[hidden] {
+  display: none;
+}
+.expanded-analysis .analysis-content {
+  border: 0;
+  padding: 8px 16px;
+}
+.expanded-analysis-context {
+  position: sticky;
+  top: 0;
+  z-index: 4;
+  background: var(--surface);
+}
+.expanded-analysis-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--outline);
+  background: var(--surface);
+  position: sticky;
+  top: 0;
+  z-index: 4;
+  font: 12px/20px var(--me-font-family);
+}
+.expanded-stage {
+  font-weight: 600;
+  display: flex;
+  gap: 12px;
+  flex: none;
+  white-space: nowrap;
+  color: var(--me-on-surface-variant-color);
+}
+.expanded-analysis-header [role='tablist'] {
+  display: flex;
+  gap: 4px;
+  min-width: 0;
+  overflow-x: auto;
+}
+.expanded-analysis-header [role='tab'] {
+  flex: none;
+  white-space: nowrap;
+}
+.expanded-analysis-header button {
+  border: 0;
+  background: transparent;
+  color: var(--on);
+  padding: 6px 10px;
+  cursor: pointer;
+  font: inherit;
+}
+.expanded-analysis-header [role='tab'][aria-selected='true'] {
+  color: var(--me-primary-color);
+  background: var(--me-primary-container-color);
+  box-shadow: inset 0 -2px var(--me-primary-color);
+}
+.expanded-analysis-header button:focus-visible {
+  outline: 2px solid var(--me-primary-color);
+}
+.expanded-analysis-header .exit-expanded {
+  margin-left: auto;
+}
+.expanded-analysis-header .exit-expanded,
+.expanded-analysis-header .add-expanded-analysis {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--me-primary-color);
+  mat-icon {
+    width: 20px;
+    height: 20px;
+    font-size: 20px;
+  }
+  &:hover {
+    background: var(--me-surface-container-highest-color);
+  }
+}
+:host:has(.expanded-analysis) .composer {
+  visibility: hidden;
+}
+
+.conversation-stage-list {
+  margin: 0 16px 0 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font: 12px / normal var(--me-font-family);
+}
+.conversation-stage-title {
+  display: flex;
+  align-items: flex-start;
+  line-height: 20px;
+  gap: 2px;
+  min-height: 24px;
+  .item-index {
+    flex: 0 0 24px;
+    text-align: center;
+    color: var(--me-on-surface-variant-color);
+  }
+  button[explorer-locator] {
+    flex: 1 1 auto;
+    justify-content: flex-start;
+    line-height: 20px;
+  }
+}
+.stage-mismatch-badge {
+  color: var(--me-error-text-color);
+  font: 400 12px/18px var(--me-font-family);
+  white-space: nowrap;
+}
+.conversation-stage-title .stage-mismatch-badge {
+  margin-left: auto;
+  padding-left: 4px;
+  font-size: 11px;
+}
+.token-inspector table.conversation-stage-properties {
+  margin: 0 0 0 26px;
+  width: calc(100% - 26px);
+  max-width: calc(100% - 26px);
+  tr > th:first-child {
+    width: calc(var(--info-key-width) + 6px);
+  }
+  tr > td:nth-child(2):not([colspan]) {
+    width: auto;
+  }
+  th,
+  td {
+    line-height: normal;
+  }
+  .key-container {
+    display: flex;
+    align-items: flex-start;
+  }
+  mat-icon.bullet {
+    flex-shrink: 0;
+    font-size: 4px;
+    width: info.$bullet-width;
+    height: 5px;
+    color: var(--me-on-surface-low-color);
+    margin-right: info.$bullet-gap;
+    margin-top: 6px;
+  }
+}
+.info-locator-list {
+  padding: 0 12px 0 30px;
+}
+.info-locator-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 28px;
+  cursor: pointer;
+  font: 12px/18px var(--me-font-family);
+  &:hover {
+    background: var(--me-surface-container-high-color);
+  }
+  &:focus-visible {
+    outline: 2px solid var(--me-primary-color);
+    outline-offset: -2px;
+  }
+  .turn-label {
+    flex: none;
+  }
+  .locator-text {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  mat-icon {
+    flex: none;
+    margin-left: auto;
+    width: 16px;
+    height: 16px;
+    font-size: 16px;
+    opacity: 0.5;
+  }
+  &:hover mat-icon {
+    opacity: 0.8;
+  }
+}
+.inline-locator {
+  min-height: 20px;
+}
+.info-add-analysis {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--me-on-surface-color);
+  cursor: pointer;
+  mat-icon {
+    width: 18px;
+    height: 18px;
+    font-size: 18px;
+  }
+  &:hover {
+    background: var(--me-surface-container-high-color);
+  }
+}
+
+.token-inspector table.stage-info-table {
+  tr > td:nth-child(2):not([colspan]) {
+    width: auto;
+  }
+  td {
+    vertical-align: middle;
+  }
+}
+
+.state-selection-hint {
+  margin: 8px 12px 8px 30px;
+  font: 12px/18px var(--me-font-family);
+  color: var(--me-on-surface-variant-color);
+}
+
+.analysis-config {
+  display: block;
+  color: var(--me-on-surface-variant-color);
+  font-size: 11px;
+  line-height: 18px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.nodeTitleMain {
+  flex: 1;
+  container-type: inline-size;
+  container-name: stage-title;
+}
+.nodeContextText {
+  flex: 1;
+}
+.nodePreviewTokens {
+  gap: 3px;
+}
+.nodePreviewToken {
+  flex: 0 1 auto;
+  min-width: 14px;
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  border: 1px solid var(--me-outline-variant-color);
+  padding: 0 3px;
+  cursor: pointer;
+}
+.nodePreviewEllipsis {
+  flex: none;
+}
+.nodePreviewToken:focus-visible {
+  outline: 2px solid var(--me-primary-color);
+  outline-offset: -2px;
+}
+
+// Compact previews use the same aligned slots and interaction-origin states as full tokens.
+.nodePreviewTokens {
+  display: grid;
+  width: 100%;
+  justify-content: start;
+  gap: 4px;
+}
+.nodePreviewToken {
+  min-width: 0;
+  max-width: none;
+  width: 100%;
+  box-sizing: border-box;
+  justify-content: flex-start;
+}
+.nodePreviewToken.missing {
+  background: $gap-hatch;
+  color: var(--on2);
+}
+.nodeContextCount {
+  box-sizing: border-box;
+  width: 160px;
+  text-align: right;
+}
+// Preserve complete token labels; extremely wide individual tokens remain scrollable.
+.nodeContextText:has(.nodePreviewTokens) {
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+.nodePreviewTokens {
+  overflow: visible;
+}
+.nodePreviewToken {
+  overflow: visible;
+  text-overflow: clip;
+}
+
+// Compact and expanded tokens share the global Display settings.
+.nodePreviewToken {
+  border: 0;
+  color: var(--on1);
+}
+.nodePreviewTokens.boundaries .nodePreviewToken {
+  @include token.token-outline;
+  margin: 0;
+}
+.nodePreviewToken.mismatch {
+  background: var(--b0);
+}
+.target .nodePreviewToken.mismatch {
+  background: var(--b4);
+}
+.nodePreviewToken.template-token {
+  color: var(--token-detail-color, light-dark(#8293a8, #9aaec5));
+}
+.nodePreviewToken.missing,
+.target .nodePreviewToken.missing {
+  background: $gap-hatch;
+  color: var(--on2);
+}
+
+// Alignment gaps retain their hatch over the selected Display color.
+.reading[data-token-color='token_match']
+  :is(.nodePreviewToken, .input-token, .tokens button).missing {
+  background-color: var(--b0);
+}
+.reading[data-token-color='token_match']
+  .target
+  :is(.nodePreviewToken, .input-token, .tokens button).missing {
+  background-color: var(--b4);
+}
+.reading[data-gap-palette='activation'] {
+  --gap-worst: var(--heat-activation-high);
+}
+.reading[data-gap-palette='logits'] {
+  --gap-worst: var(--heat-semantic-high);
+}
+.reading:not([data-token-color='none']):not([data-token-color='token_match'])
+  :is(.nodePreviewToken, .input-token, .tokens button).missing {
+  background-color: var(--gap-worst);
+}
+
+.analysis-preview-controls {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+.analysis-preview-controls config-picker {
+  width: 230px;
+}
+.tensor-preview {
+  height: 180px;
+  display: grid;
+  grid-template-rows: 18px 1fr 18px 1fr;
+  gap: 4px;
+  margin-top: 8px;
+}
+.tensor-preview-title {
+  font: 10px/18px var(--me-font-family);
+  color: var(--me-on-surface-variant-color);
+}
+.tensor-preview svg {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+}
+.tensor-preview path {
+  fill: none;
+  vector-effect: non-scaling-stroke;
+  stroke-width: 1;
+}
+.preview-axis {
+  stroke: var(--me-outline-hairline-color);
+}
+.preview-ref {
+  stroke: var(--me-primary-color);
+}
+.preview-target {
+  stroke: var(--me-on-surface-variant-color);
+  stroke-dasharray: 3 3;
+}
+.preview-point {
+  fill: var(--me-primary-color);
+}
+
+.token-inspector .token-summary-table {
+  // Use the shared Model Explorer metadata row spacing, including the locator row.
+  button[explorer-locator] {
+    min-height: 0;
+    vertical-align: top;
+  }
+}
+.token-info-root {
+  --info-item-gap: 0px;
+}
+.token-info-list {
+  --info-action-spacer: 1 1 auto;
+}
+.token-pair-list {
+  --position-column-width: max(
+    24px,
+    calc(var(--position-digits, 1) * 1ch + 4px)
+  );
+  margin: 0 16px 0 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font: 12px / normal var(--me-font-family);
+}
+.token-pair-name {
+  display: flex;
+  align-items: flex-start;
+  // Align the position, token text and locator on the same first-line box.
+  line-height: 20px;
+  gap: 2px;
+  min-height: 24px;
+  .token-pair-position {
+    flex: 0 0 var(--position-column-width);
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+    color: var(--me-on-surface-low-color);
+  }
+  .token-pair-value {
+    flex: 0 1 auto;
+    min-width: 0;
+    max-width: calc(100% - 16px);
+    color: var(--me-primary-color);
+  }
+  button[explorer-locator] {
+    flex-shrink: 0;
+  }
+}
+.token-pair-properties {
+  --info-indent: calc(var(--position-column-width) + 2px);
+  margin-right: 0;
+}
+.analysis-view-item {
+  min-width: 0;
+}
+.analysis-view-heading {
+  display: flex;
+  align-items: center;
+  min-height: 24px;
+  gap: 2px;
+}
+.analysis-view-locator {
+  border-radius: 0;
+}
+.analysis-view-properties {
+  --info-indent: 26px;
+  margin-right: 0;
+  margin-bottom: 4px;
+}
+.indexed-panel-list {
+  padding: 0 16px 0 4px;
+  .panel-index {
+    flex: 0 0 24px;
+    text-align: center;
+    color: var(--me-on-surface-low-color);
+  }
+}
+
+.analysis-views-info {
+  --info-action-spacer: 0 0 4px;
+}
+
+// Graph Diff uses surface changes instead of a rule above its toolbar.
+.stage-analysis-list:has(intermediate-graph-arch) analysis-token-strip {
+  border-bottom: 0;
 }

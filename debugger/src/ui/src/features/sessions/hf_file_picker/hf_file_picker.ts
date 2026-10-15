@@ -16,26 +16,23 @@
  * ==============================================================================
  */
 
-import {A11yModule} from '@angular/cdk/a11y';
-import {CdkConnectedOverlay, OverlayModule} from '@angular/cdk/overlay';
 import {
-  afterNextRender,
   Component,
-  computed,
-  inject,
-  Injector,
   input,
   output,
   signal,
+  computed,
   viewChild,
+  inject,
+  Injector,
+  afterNextRender,
 } from '@angular/core';
+import {OverlayModule, CdkConnectedOverlay} from '@angular/cdk/overlay';
+import {A11yModule} from '@angular/cdk/a11y';
 import {MatButtonModule} from '@angular/material/button';
 import {MatIconModule} from '@angular/material/icon';
 import {MatTooltipModule} from '@angular/material/tooltip';
-import {
-  OverlayDialog,
-  OverlayPanel,
-} from '../../../shared/overlay_dialog/overlay_dialog';
+import {OverlayDialog, OverlayPanel} from '../../../shared/overlay_dialog/overlay_dialog';
 export interface HfFile {
   source: 'huggingface';
   repository: string;
@@ -127,18 +124,13 @@ export class HfFilePicker {
   updateRepository(value: string) {
     this.repository.set(value);
     // The conditional path field changes the connected panel's size.
-    afterNextRender(() => this.overlay()?.overlayRef?.updatePosition(), {
-      injector: this.injector,
-    });
+    afterNextRender(() => this.overlay()?.overlayRef?.updatePosition(), {injector: this.injector});
   }
   readonly fileUrl = computed(() => {
     try {
       const url = new URL(this.repository().trim());
-      if (url.protocol !== 'https:' || url.hostname !== 'huggingface.co')
-        return null;
-      const match = url.pathname.match(
-        /^\/([^/]+\/[^/]+)\/resolve\/([^/]+)\/(.+)$/,
-      );
+      if (url.protocol !== 'https:' || url.hostname !== 'huggingface.co') return null;
+      const match = url.pathname.match(/^\/([^/]+\/[^/]+)\/resolve\/([^/]+)\/(.+)$/);
       return match
         ? {
             repository: match[1],
@@ -163,13 +155,7 @@ export class HfFilePicker {
       artifact.split('/').includes('..')
     )
       return null;
-    return {
-      source: 'huggingface',
-      repository,
-      artifact,
-      revision: 'main',
-      sourceUrl: '',
-    };
+    return {source: 'huggingface', repository, artifact, revision: 'main', sourceUrl: ''};
   });
   choose() {
     const selected = this.selection();

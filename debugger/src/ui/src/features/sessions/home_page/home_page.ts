@@ -16,35 +16,26 @@
  * ==============================================================================
  */
 
-import {Clipboard} from '@angular/cdk/clipboard';
+import {ChangeDetectionStrategy, Component, inject, signal, ElementRef} from '@angular/core';
 import {DatePipe} from '@angular/common';
-import {
-  ChangeDetectionStrategy,
-  Component,
-  ElementRef,
-  inject,
-  signal,
-} from '@angular/core';
+import {Clipboard} from '@angular/cdk/clipboard';
 import {MatButtonModule, MatIconButton} from '@angular/material/button';
-import {MatDialog} from '@angular/material/dialog';
 import {MatIconModule} from '@angular/material/icon';
-import {MatMenuModule} from '@angular/material/menu';
-import {MatProgressSpinnerModule} from '@angular/material/progress-spinner';
-import {MatSnackBar} from '@angular/material/snack-bar';
 import {MatTooltipModule} from '@angular/material/tooltip';
+import {MatMenuModule} from '@angular/material/menu';
+import {MatDialog} from '@angular/material/dialog';
+import {MatSnackBar} from '@angular/material/snack-bar';
+import {MatProgressSpinnerModule} from '@angular/material/progress-spinner';
 import {PreferencesService} from '../../../app/preferences_service';
-import {WorkspaceStateService} from '../../../app/workspace_state_service';
-import {SessionSummary} from '../../../data/contracts/session_summary';
-import {RuntimeService} from '../../../data/runtime_service';
 import {SessionListService} from '../../../data/session_list_service';
-import {
-  sessionConfigurationLocked,
-  sessionEnterable,
-} from '../../../data/session_status';
+import {SessionSummary} from '../../../data/contracts/session_summary';
+import {WorkspaceStateService} from '../../../app/workspace_state_service';
+import {sessionConfigurationLocked, sessionEnterable} from '../../../data/session_status';
+import {SessionEditor} from '../session_editor/session_editor';
 import {ModelServerSwitch} from '../model_server_switch/model_server_switch';
 import type {EditorRequest} from '../session_editor/session_editor';
-import {SessionEditor} from '../session_editor/session_editor';
 import {WelcomeCard} from '../welcome_card/welcome_card';
+import {RuntimeService} from '../../../data/runtime_service';
 @Component({
   selector: 'home-page',
   imports: [
@@ -79,9 +70,7 @@ export class HomePage {
     action: 'open' | 'more' = 'more',
   ) {
     if (
-      !this.sessions.listing()?.capabilities[
-        mode === 'duplicate' ? 'duplicate' : 'create'
-      ] ||
+      !this.sessions.listing()?.capabilities[mode === 'duplicate' ? 'duplicate' : 'create'] ||
       sessionConfigurationLocked(session) ||
       (mode === 'update' && session.has_capture)
     )
@@ -91,13 +80,9 @@ export class HomePage {
   }
   /** A created Session stays in the list while its Model Server starts; Open unlocks once it is on. */
   sessionCreated() {
-    this.snackBar.open(
-      'Session created. Its Model Server is starting.',
-      'Dismiss',
-      {
-        duration: 5000,
-      },
-    );
+    this.snackBar.open('Session created. Its Model Server is starting.', 'Dismiss', {
+      duration: 5000,
+    });
   }
   finishEditor(saved: boolean) {
     const origin = this.editorOrigin,
@@ -107,31 +92,21 @@ export class HomePage {
     requestAnimationFrame(() => {
       const row = origin
         ? Array.from(
-            this.element.nativeElement.querySelectorAll<HTMLElement>(
-              '[data-session-id]',
-            ),
+            this.element.nativeElement.querySelectorAll<HTMLElement>('[data-session-id]'),
           ).find((el) => el.dataset['sessionId'] === origin.id)
         : null;
       const trigger = row?.querySelector<HTMLButtonElement>(
         `[data-session-action="${origin?.action}"]`,
       );
       (
-        trigger ??
-        this.element.nativeElement.querySelector<HTMLButtonElement>(
-          '.new-session',
-        )
+        trigger ?? this.element.nativeElement.querySelector<HTMLButtonElement>('.new-session')
       )?.focus();
     });
     if (saved && (updated || !this.sessions.listing()?.generation_available))
-      this.snackBar.open('Session configuration saved', 'Dismiss', {
-        duration: 3000,
-      });
+      this.snackBar.open('Session configuration saved', 'Dismiss', {duration: 3000});
   }
   openSession(session: SessionSummary) {
-    if (
-      session.has_capture === false &&
-      !this.sessions.listing()?.generation_available
-    )
+    if (session.has_capture === false && !this.sessions.listing()?.generation_available)
       this.editSession(session, 'update', 'open');
     else this.workspace.open(session.id);
   }
@@ -145,9 +120,7 @@ export class HomePage {
           if (!deleted) trigger.focus();
           else
             requestAnimationFrame(() =>
-              this.element.nativeElement
-                .querySelector<HTMLButtonElement>('.new-session')
-                ?.focus(),
+              this.element.nativeElement.querySelector<HTMLButtonElement>('.new-session')?.focus(),
             );
           if (deleted)
             this.snackBar
@@ -172,8 +145,7 @@ export class HomePage {
   canOpen(session: SessionSummary) {
     return this.sessions.listing()?.generation_available
       ? sessionEnterable(session)
-      : session.has_capture !== false ||
-          !!this.sessions.listing()?.capabilities?.create;
+      : session.has_capture !== false || !!this.sessions.listing()?.capabilities?.create;
   }
   openHint(session: SessionSummary) {
     return this.canOpen(session)
@@ -241,11 +213,7 @@ export class HomePage {
       this.saving.set(false);
     }
   }
-  renameKey(
-    event: KeyboardEvent,
-    session: SessionSummary,
-    input: HTMLInputElement,
-  ) {
+  renameKey(event: KeyboardEvent, session: SessionSummary, input: HTMLInputElement) {
     if (event.isComposing) return;
     if (event.key === 'Enter' || event.key === 'Escape') {
       event.preventDefault();
@@ -262,48 +230,37 @@ export class HomePage {
   private readonly snackBar = inject(MatSnackBar);
   copy(session: SessionSummary) {
     const copied = this.clipboard.copy(session.id);
-    this.snackBar.open(
-      copied ? 'Session ID copied' : 'Could not copy session ID',
-      'Dismiss',
-      {
-        duration: 3000,
-      },
-    );
+    this.snackBar.open(copied ? 'Session ID copied' : 'Could not copy session ID', 'Dismiss', {
+      duration: 3000,
+    });
   }
   private dialogError(label: string) {
     this.snackBar
-      .open(
-        label + ' could not be loaded. Reload the page and try again.',
-        'Reload',
-      )
+      .open(label + ' could not be loaded. Reload the page and try again.', 'Reload')
       .onAction()
       .subscribe(() => this.reloadPage());
   }
   async showConfiguration(session: SessionSummary, trigger: MatIconButton) {
     try {
-      const {SessionConfiguration} = await import(
-        '../session_configuration/session_configuration'
-      );
+      const {SessionConfiguration} = await import('../session_configuration/session_configuration');
       this.dialogs
-        .open<
-          InstanceType<typeof SessionConfiguration>,
-          SessionSummary,
-          'update' | 'duplicate'
-        >(SessionConfiguration, {
-          data: session,
-          width: '900px',
-          maxWidth: 'calc(100vw - 32px)',
-          panelClass: 'session-configuration-dialog',
-          ariaLabelledBy: 'configuration-title',
-          autoFocus: '#configuration-title',
-          restoreFocus: false,
-        })
+        .open<InstanceType<typeof SessionConfiguration>, SessionSummary, 'update' | 'duplicate'>(
+          SessionConfiguration,
+          {
+            data: session,
+            width: '900px',
+            maxWidth: 'calc(100vw - 32px)',
+            panelClass: 'session-configuration-dialog',
+            ariaLabelledBy: 'configuration-title',
+            autoFocus: '#configuration-title',
+            restoreFocus: false,
+          },
+        )
         .afterClosed()
         .subscribe((action) => {
           if (action)
             this.editSession(
-              this.sessions.items().find((item) => item.id === session.id) ??
-                session,
+              this.sessions.items().find((item) => item.id === session.id) ?? session,
               action,
             );
           else trigger.focus();

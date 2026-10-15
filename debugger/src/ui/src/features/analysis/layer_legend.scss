@@ -1,0 +1,109 @@
+/**
+ * @license
+ * Copyright 2026 The AI Edge Model Explorer Authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ==============================================================================
+ */
+
+@use '../../theme/explorer_controls' as controls;
+@include controls.configuration-picker-trigger;
+:host {
+  display: block;
+  margin-left: auto;
+  flex: none;
+  width: 140px;
+}
+.picker {
+  @include controls.configuration-popup;
+  width: 100%;
+  padding: 8px;
+  border: 1px solid var(--me-outline-variant-color);
+  border-radius: 0 0 4px 4px;
+  font: 12px/20px var(--me-font-family);
+}
+input[type='search'] {
+  @include controls.configuration-input;
+  width: 100%;
+}
+.actions {
+  display: flex;
+  justify-content: space-between;
+}
+.options {
+  max-height: 240px;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 32px;
+  padding: 0 6px;
+  cursor: pointer;
+}
+label:hover,
+label:focus-within {
+  background: var(--me-surface-container-highest-color);
+}
+input[type='checkbox'] {
+  accent-color: var(--me-primary-color);
+}
+i {
+  width: 20px;
+  height: 3px;
+  flex: none;
+}
+mat-icon {
+  width: 18px;
+  height: 18px;
+  font-size: 18px;
+}
+
+.picker button {
+  letter-spacing: normal;
+  font: 12px/20px var(--me-font-family);
+}
+
+.help {
+  margin: 4px 0 8px;
+  color: var(--me-on-surface-variant-color);
+  font: 12px/18px var(--me-font-family);
+}
+
+:host.compact {
+  width: auto;
+}
+:host.compact > button.mat-mdc-button-base.mat-mdc-button {
+  min-width: 0;
+  border-color: transparent;
+  background: transparent;
+}
+
+:host.inline {
+  margin-left: 0;
+  width: 100%;
+}
+.inline-picker {
+  font: 12px/20px var(--me-font-family);
+  strong {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+  }
+}
+.inline-picker button {
+  letter-spacing: normal;
+  font: 12px/20px var(--me-font-family);
+}

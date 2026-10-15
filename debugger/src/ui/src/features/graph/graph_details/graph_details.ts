@@ -17,12 +17,7 @@
  */
 
 import {NgTemplateOutlet} from '@angular/common';
-import {
-  ChangeDetectionStrategy,
-  Component,
-  computed,
-  inject,
-} from '@angular/core';
+import {ChangeDetectionStrategy, Component, computed, inject} from '@angular/core';
 import {MatButtonModule} from '@angular/material/button';
 import {MatIconModule} from '@angular/material/icon';
 import {ExplorerInfoSection} from '../../../shared/explorer_info_section/explorer_info_section';
@@ -44,23 +39,12 @@ interface DetailSection {
   expanded: boolean;
   rows: DetailRow[];
 }
-function toEvidenceRecord(value: unknown): Evidence {
-  return value && typeof value === 'object' && !Array.isArray(value)
-    ? (value as Evidence)
-    : {};
-}
-
-function first(...values: unknown[]): unknown {
-  return values.find((value) => value !== null && value !== undefined);
-}
-
-function attributes(
-  value: {key: string; value: string}[] | undefined,
-): Evidence {
-  return Object.fromEntries(
-    (value ?? []).map((attribute) => [attribute.key, attribute.value]),
-  );
-}
+const object = (value: unknown): Evidence =>
+  value && typeof value === 'object' && !Array.isArray(value) ? (value as Evidence) : {};
+const first = (...values: unknown[]) =>
+  values.find((value) => value !== null && value !== undefined);
+const attributes = (value: {key: string; value: string}[] | undefined): Evidence =>
+  Object.fromEntries((value ?? []).map((attribute) => [attribute.key, attribute.value]));
 
 @Component({
   selector: 'graph-details',
@@ -80,8 +64,8 @@ export class GraphDetails {
   readonly inspection = inject(GraphInspectionService);
   readonly state = this.inspection.state;
   readonly sections = computed<DetailSection[]>(() => {
-    const details = this.inspection.details();
-    const context = this.inspection.context();
+    const details = this.inspection.details(),
+      context = this.inspection.context();
     if (!details || !context) return [];
     const operation = this.inspection.operation();
     const records = [
@@ -91,18 +75,12 @@ export class GraphDetails {
     const pair = !operation && !!records[0] && !!records[1];
     const tensor = !operation && records.some(Boolean);
     const activeSide =
-      operation?.side ??
-      this.inspection.selectedTensor()?.side ??
-      (records[0] ? 'ref' : 'target');
-    const batch = this.state
-      .session()
-      ?.batches.find((batch) => batch.batch === context.batch);
-    const sideIds: readonly GraphSide[] = ['ref', 'target'];
-    const sides = sideIds.map((side, index) => {
+      operation?.side ?? this.inspection.selectedTensor()?.side ?? (records[0] ? 'ref' : 'target');
+    const batch = this.state.session()?.batches.find((batch) => batch.batch === context.batch);
+    const sides = (['ref', 'target'] as GraphSide[]).map((side, index) => {
       const record = operation ? undefined : records[index];
       const execution = details.executions.find((run) => run.id === side);
-      const graphId =
-        operation?.side === side ? operation.graphId : record?.graph;
+      const graphId = operation?.side === side ? operation.graphId : record?.graph;
       const graph = execution?.graphs.find((graph) => graph.id === graphId);
       const nodeId = operation?.side === side ? operation.nodeId : record?.node;
       const node = graph?.nodes.find((node) => node.id === nodeId);
@@ -118,19 +96,15 @@ export class GraphDetails {
         node,
         output,
         run,
-        recordData: toEvidenceRecord(record),
+        recordData: object(record),
         outputAttrs: attributes(output?.attrs),
       };
     });
     type SideEvidence = (typeof sides)[number];
     const selected = sides[activeSide === 'ref' ? 0 : 1];
     const sections: DetailSection[] = [];
-    const properties = (
-      id: string,
-      title: string,
-      rows: DetailRow[],
-      expanded = false,
-    ) => sections.push({id, title, comparison: false, rows, expanded});
+    const properties = (id: string, title: string, rows: DetailRow[], expanded = false) =>
+      sections.push({id, title, comparison: false, rows, expanded});
     const comparison = (
       id: string,
       title: string,
@@ -156,11 +130,7 @@ export class GraphDetails {
       empty: string,
     ) => {
       const keys = [
-        ...new Set(
-          (pair ? sides : [selected]).flatMap((side) =>
-            Object.keys(read(side)),
-          ),
-        ),
+        ...new Set((pair ? sides : [selected]).flatMap((side) => Object.keys(read(side)))),
       ];
       comparison(
         id,
@@ -172,39 +142,6 @@ export class GraphDetails {
     };
 
     if (tensor || operation) {
-      const tensorDescriptors: [string, (side: SideEvidence) => unknown][] =
-        operation
-          ? []
-          : [
-              ['Record ID', (side) => side.record?.id],
-              ['Output port', (side) => side.record?.output],
-              [
-                'Tensor name',
-                (side) =>
-                  first(
-                    side.recordData['tensor'],
-                    side.outputAttrs['tensor_name'],
-                  ),
-              ],
-              [
-                'Shape',
-                (side) =>
-                  first(
-                    side.record?.shape,
-                    side.outputAttrs['shape'],
-                    side.outputAttrs['tensor_shape'],
-                  ),
-              ],
-              [
-                'Dtype',
-                (side) =>
-                  first(
-                    side.record?.dtype,
-                    side.outputAttrs['dtype'],
-                    side.outputAttrs['tensor_dtype'],
-                  ),
-              ],
-            ];
       comparison(
         'identity',
         operation ? 'Operation info' : 'Tensor info',
@@ -214,7 +151,35 @@ export class GraphDetails {
           ['Producer node', (side) => side.node?.id],
           ['Label', (side) => side.node?.label],
           ['Namespace', (side) => side.node?.namespace],
-          ...tensorDescriptors,
+          ...(!operation
+            ? ([
+                ['Record ID', (side: SideEvidence) => side.record?.id],
+                ['Output port', (side: SideEvidence) => side.record?.output],
+                [
+                  'Tensor name',
+                  (side: SideEvidence) =>
+                    first(side.recordData['tensor'], side.outputAttrs['tensor_name']),
+                ],
+                [
+                  'Shape',
+                  (side: SideEvidence) =>
+                    first(
+                      side.record?.shape,
+                      side.outputAttrs['shape'],
+                      side.outputAttrs['tensor_shape'],
+                    ),
+                ],
+                [
+                  'Dtype',
+                  (side: SideEvidence) =>
+                    first(
+                      side.record?.dtype,
+                      side.outputAttrs['dtype'],
+                      side.outputAttrs['tensor_dtype'],
+                    ),
+                ],
+              ] as [string, (side: SideEvidence) => unknown][])
+            : []),
         ],
         true,
       );
@@ -234,10 +199,7 @@ export class GraphDetails {
     if (!operation) {
       const result = this.inspection.result();
       const metricNames = [
-        ...new Set([
-          ...this.state.metrics,
-          ...Object.keys(result?.metrics ?? {}),
-        ]),
+        ...new Set([...this.state.metrics, ...Object.keys(result?.metrics ?? {})]),
       ];
       properties(
         'numerical',
@@ -245,9 +207,7 @@ export class GraphDetails {
         [
           {
             label: 'Status',
-            value: this.inspection.comparing()
-              ? 'Computing'
-              : this.inspection.status(),
+            value: this.inspection.comparing() ? 'Computing' : this.inspection.status(),
           },
           ...metricNames.flatMap((metric) => [
             {label: metric, value: result?.metrics[metric]?.value, metric},
@@ -278,16 +238,8 @@ export class GraphDetails {
         ['Sample', (side) => side.record?.sample],
         ['Shape', (side) => side.record?.shape],
         ['Dtype', (side) => side.record?.dtype],
-        [
-          'Layout',
-          (side) =>
-            first(side.recordData['layout'], side.outputAttrs['layout']),
-        ],
-        [
-          'Byte size',
-          (side) =>
-            first(side.recordData['nbytes'], side.recordData['byte_size']),
-        ],
+        ['Layout', (side) => first(side.recordData['layout'], side.outputAttrs['layout'])],
+        ['Byte size', (side) => first(side.recordData['nbytes'], side.recordData['byte_size'])],
       ]);
       dynamic(
         'output',
@@ -302,16 +254,13 @@ export class GraphDetails {
             first(
               side.recordData['stats'],
               side.recordData['statistics'],
-              toEvidenceRecord(side.recordData['data'])['stats'],
+              object(side.recordData['data'])['stats'],
             ),
         ],
       ]);
       dynamic('record', 'Captured record', (side) => side.recordData, 'Record');
       comparison('storage', 'Tensor storage', [
-        [
-          'File',
-          (side) => first(side.recordData['file'], side.recordData['path']),
-        ],
+        ['File', (side) => first(side.recordData['file'], side.recordData['path'])],
         ['Data', (side) => side.recordData['data']],
         ['Values', (side) => side.recordData['values']],
       ]);
@@ -324,44 +273,34 @@ export class GraphDetails {
         'Attributes',
       );
       comparison('ports', 'Input and output ports', [
-        ['Inputs', (side) => toEvidenceRecord(side.node)['inputsMetadata']],
+        ['Inputs', (side) => object(side.node)['inputsMetadata']],
         ['Outputs', (side) => side.node?.outputsMetadata],
       ]);
       comparison('connections', 'Connections', [
         ['Incoming edges', (side) => side.node?.incomingEdges],
-        [
-          'Upstream nodes',
-          (side) => side.node?.incomingEdges?.map((edge) => edge.sourceNodeId),
-        ],
+        ['Upstream nodes', (side) => side.node?.incomingEdges?.map((edge) => edge.sourceNodeId)],
         [
           'Downstream nodes',
           (side) =>
             side.graph?.nodes
               .filter((node) =>
-                node.incomingEdges?.some(
-                  (edge) => edge.sourceNodeId === side.node?.id,
-                ),
+                node.incomingEdges?.some((edge) => edge.sourceNodeId === side.node?.id),
               )
               .map((node) => node.id),
         ],
         [
           'Inferred edges',
           (side) =>
-            first(
-              toEvidenceRecord(side.graph)['edges_inferred'],
-              toEvidenceRecord(side.execution)['edges_inferred'],
-            ),
+            first(object(side.graph)['edges_inferred'], object(side.execution)['edges_inferred']),
         ],
       ]);
       dynamic(
         'runtime',
         'Runtime',
         (side) => ({
-          ...toEvidenceRecord(side.run),
+          ...object(side.run),
           ...Object.fromEntries(
-            Object.entries(toEvidenceRecord(side.execution)).filter(
-              ([key]) => key !== 'graphs',
-            ),
+            Object.entries(object(side.execution)).filter(([key]) => key !== 'graphs'),
           ),
         }),
         'Run metadata',
@@ -370,11 +309,7 @@ export class GraphDetails {
         'graph',
         'Execution graph metadata',
         (side) =>
-          Object.fromEntries(
-            Object.entries(toEvidenceRecord(side.graph)).filter(
-              ([key]) => key !== 'nodes',
-            ),
-          ),
+          Object.fromEntries(Object.entries(object(side.graph)).filter(([key]) => key !== 'nodes')),
         'Graph metadata',
       );
     }
@@ -382,46 +317,32 @@ export class GraphDetails {
       'parameters',
       'Semantic parameters',
       Object.keys(details.parameters ?? {}).length
-        ? Object.entries(details.parameters).map(([label, value]) => ({
-            label,
-            value,
-          }))
+        ? Object.entries(details.parameters).map(([label, value]) => ({label, value}))
         : [{label: 'Parameters', value: undefined}],
     );
     properties('source', 'Semantic source evidence', [
       {label: 'Binding', value: details.binding},
       ...(details.sources.length
-        ? details.sources.map((source, index) => ({
-            label: 'Source ' + (index + 1),
-            value: source,
-          }))
+        ? details.sources.map((source, index) => ({label: 'Source ' + (index + 1), value: source}))
         : [{label: 'Source', value: undefined}]),
     ]);
-    if (!operation) {
+    if (!operation)
       properties('mapping', 'Mapping', [
-        {
-          label: 'Status',
-          value: this.inspection.mapping() ? 'Draft' : details.saved.status,
-        },
-        {
-          label: 'Reference',
-          value: this.inspection.selectedReference() || undefined,
-        },
+        {label: 'Status', value: this.inspection.mapping() ? 'Draft' : details.saved.status},
+        {label: 'Reference', value: this.inspection.selectedReference() || undefined},
         {label: 'Target', value: this.inspection.selectedTarget() || undefined},
         {label: 'Saved selection', value: details.saved.record},
         {label: 'Scope', value: {capture: this.state.captureId(), ...context}},
       ]);
-    }
     const raw: DetailRow[] = [{label: 'Observation', value: batch}];
     if (tensor || operation) {
       for (const side of pair ? sides : [selected]) {
         const label = side.side === 'ref' ? 'Reference' : 'Target';
-        if (!operation) {
+        if (!operation)
           raw.push(
             {label: label + ' record', value: side.record},
             {label: label + ' output', value: side.output},
           );
-        }
         raw.push(
           {label: label + ' producer', value: side.node},
           {label: label + ' graph', value: side.graph},
@@ -437,23 +358,20 @@ export class GraphDetails {
       {label: 'Binding', value: details.binding},
       {label: 'Sources', value: details.sources},
     );
-    if (!operation) {
+    if (!operation)
       raw.push(
         {label: 'Saved mapping', value: details.saved},
         {label: 'Current comparison', value: this.inspection.result()},
         {label: 'Node response', value: details},
         {label: 'Capture session', value: this.state.session()},
       );
-    }
     properties('raw', 'Original evidence', raw);
     return sections;
   });
 
   text(value: unknown): string {
     if (value === undefined || value === null) return 'Not captured';
-    return typeof value === 'object'
-      ? JSON.stringify(value, null, 2)
-      : String(value);
+    return typeof value === 'object' ? JSON.stringify(value, null, 2) : String(value);
   }
   retry() {
     const context = this.inspection.context();

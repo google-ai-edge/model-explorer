@@ -1,0 +1,26 @@
+# The protocol as code: the proto, and the C++ messages and gRPC service it
+# generates. Python generates its own with grpc_tools.protoc.
+
+load("@grpc//bazel:cc_grpc_library.bzl", "cc_grpc_library")
+load("@protobuf//bazel:cc_proto_library.bzl", "cc_proto_library")
+load("@protobuf//bazel:proto_library.bzl", "proto_library")
+
+package(default_visibility = ["//visibility:public"])
+
+proto_library(
+    name = "runner_proto",
+    srcs = ["runner.proto"],
+    deps = ["@protobuf//:struct_proto"],
+)
+
+cc_proto_library(
+    name = "runner_cc_proto",
+    deps = [":runner_proto"],
+)
+
+cc_grpc_library(
+    name = "runner_cc_grpc",
+    srcs = [":runner_proto"],
+    grpc_only = True,
+    deps = [":runner_cc_proto"],
+)

@@ -25,11 +25,15 @@
 }
 <div
   class="reading"
-  [style.--token-line-height.px]="boundaries() && workspace.mode() === 'Debug' ? 28 : 26"
+  [class.token-outlines]="boundaries()"
+  [attr.data-token-color]="color()"
+  [attr.data-gap-palette]="heatPalette(color())"
+  [style.--token-line-height.px]="boundaries() && workspace.mode() === 'Debug' ? 30 : 26"
   (wheel)="trackReadingIntent($event)"
   (keydown)="trackReadingIntent($event)"
   (pointerdown)="trackReadingIntent($event)"
   (scroll)="readingScrolled()"
+  (click)="readingBackgroundClick($event)"
   [class.virtual-reading]="usesVirtual()"
   [class.chat-reading]="workspace.mode() === 'Chat'"
   [class.with-inspector]="workspace.mode() === 'Debug' && details()"
@@ -92,28 +96,6 @@
             [attr.data-runtime]="run.id"
             [class.target]="run.id === 'target'"
           >
-            @if (workspace.mode() === 'Debug') {
-              <div
-                class="phase-actions"
-                [class.stageActions]="run.id === 'target'"
-                [class.stageActionsSpacer]="run.id === 'ref'"
-                data-stage="start"
-              >
-                @if (run.id === 'target') {
-                  <span [matTooltip]="kvReason(turn.n, 'start')"
-                    ><button
-                      class="graph-link"
-                      [disabled]="!kvSnapshot(turn.n, 'start')"
-                      (click)="openKv(turn.n, 'start')"
-                      [attr.aria-label]="'KV Diff · Turn Start, turn ' + turn.n"
-                    >
-                      <span class="button-icon" aria-hidden="true">storage</span>KV Diff · Turn
-                      Start
-                    </button></span
-                  >
-                }
-              </div>
-            }
             <section
               [class.node-compact]="
                 workspace.mode() === 'Debug' && nodeCollapsed(turn.n, run.id, 'prefill')
@@ -125,6 +107,9 @@
                 'Turn ' + turn.n + ' / Prefill · ' + (run.id === 'ref' ? 'Reference' : 'Target')
               "
               [attr.data-node-selected]="stageSelected(turn.n, 'prefill') ? '' : null"
+              [attr.data-node-origin]="
+                stageSelected(turn.n, 'prefill') && selectedStage()?.side === run.id ? '' : null
+              "
               (click)="selectStagePointer($event, turn.n, run.id, 'prefill')"
               (keydown)="selectStageKey($event, turn.n, run.id, 'prefill')"
               [attr.data-node-turn]="turn.n"
@@ -137,8 +122,8 @@
                   <header class="phase-title nodeTitle">
                     <span class="nodeTitleMain"
                       ><span class="nodeTitleLabel">Turn {{ turn.n }} / Prefill</span>
-                      @if (nodeCollapsed(turn.n, run.id, 'prefill')) {
-                        <span class="nodeCompactStatus">Compact</span>
+                      @if (run.id === 'target' && isFirstMismatchStage(turn.n, 'prefill')) {
+                        <span class="stage-mismatch-badge" role="status">First mismatch</span>
                       }</span
                     ><span class="nodeTitleControls">
                       @if (run.id === 'target') {
@@ -201,14 +186,52 @@
                 >
                   <mat-icon aria-hidden="true">subject</mat-icon
                   ><span class="nodeContextText"
-                    ><span class="nodePreviewTokens"
-                      ><span class="nodePreviewReadonly">{{
-                        compactInput(turn.n, run.id)
-                      }}</span></span
-                    ></span
-                  ><span class="nodeContextCount">{{
-                    compactCount(turn.n, run.id, 'prefill')
-                  }}</span>
+                    ><span
+                      class="nodePreviewTokens"
+                      [class.boundaries]="boundaries()"
+                      [style.grid-template-columns]="compactColumns(turn.n, 'prefill')"
+                    >
+                      @for (
+                        token of compactTokens().get(turn.n + ':' + run.id + ':prefill');
+                        track token.index
+                      ) {
+                        @if (token.ellipsis) {
+                          <span class="nodePreviewEllipsis" aria-hidden="true">…</span>
+                        }
+                        <button
+                          type="button"
+                          class="nodePreviewToken"
+                          [class.mismatch]="color() === 'token_match' && token.match === false"
+                          [class.missing]="token.missing"
+                          [class.selected-token]="isInputSelected(turn.n, token.index)"
+                          [attr.aria-pressed]="isInputSelected(turn.n, token.index)"
+                          [attr.aria-label]="
+                            'Preview ' +
+                            run.id +
+                            ' input position ' +
+                            token.index +
+                            ': ' +
+                            token.text
+                          "
+                          [attr.title]="token.text"
+                          [innerHTML]="compactTokenHtml(token.text)"
+                          data-kind="input"
+                          [attr.data-turn]="turn.n"
+                          [attr.data-side]="run.id"
+                          [attr.data-row]="token.index"
+                          (click)="
+                            $event.stopPropagation(); selectInput(turn.n, token.index, $event)
+                          "
+                        ></button>
+                      } @empty {
+                        <span class="nodePreviewReadonly">{{ compactInput(turn.n, run.id) }}</span>
+                      }
+                    </span></span
+                  ><span
+                    class="nodeContextCount"
+                    title="Tokens are captured tokens; gaps are empty slots added for alignment."
+                    >{{ compactCount(turn.n, run.id, 'prefill') }}</span
+                  >
                 </div>
               }
               <div
@@ -223,19 +246,6 @@
                 "
               >
                 <div>
-                  @if (workspace.mode() === 'Debug' && historyStatus(turn.n); as history) {
-                    @if (history !== 'unknown') {
-                      <div class="input-context-head">
-                        <span
-                          class="input-context-note"
-                          role="status"
-                          [attr.data-history-status]="history"
-                          [matTooltip]="historyReason(history)"
-                          >History {{ history }}</span
-                        >
-                      </div>
-                    }
-                  }
                   @if (
                     workspace.mode() === 'Debug' && !virtualInput(turn.n) && inputPairRows(turn.n);
                     as rows
@@ -257,7 +267,9 @@
                                     role="button"
                                     tabindex="0"
                                     [class.missing]="!pairToken(pair, run.id)"
-                                    [class.mismatch]="pair.match === false"
+                                    [class.mismatch]="
+                                      color() === 'token_match' && pair.match === false
+                                    "
                                     [class.selected-token]="isInputSelected(turn.n, pair.index)"
                                     [attr.aria-pressed]="isInputSelected(turn.n, pair.index)"
                                     [attr.aria-label]="
@@ -290,7 +302,9 @@
                                     role="button"
                                     tabindex="0"
                                     [class.missing]="!pairToken(pair, run.id)"
-                                    [class.mismatch]="pair.match === false"
+                                    [class.mismatch]="
+                                      color() === 'token_match' && pair.match === false
+                                    "
                                     [class.selected-token]="isInputSelected(turn.n, pair.index)"
                                     [attr.aria-pressed]="isInputSelected(turn.n, pair.index)"
                                     [attr.aria-label]="
@@ -323,7 +337,9 @@
                                     role="button"
                                     tabindex="0"
                                     [class.missing]="!pairToken(pair, run.id)"
-                                    [class.mismatch]="pair.match === false"
+                                    [class.mismatch]="
+                                      color() === 'token_match' && pair.match === false
+                                    "
                                     [class.selected-token]="isInputSelected(turn.n, pair.index)"
                                     [attr.aria-pressed]="isInputSelected(turn.n, pair.index)"
                                     [attr.aria-label]="
@@ -469,36 +485,7 @@
                 </div>
               </div>
             </section>
-            @if (workspace.mode() === 'Debug') {
-              <div
-                class="phase-actions"
-                [class.stageActions]="run.id === 'target'"
-                [class.stageActionsSpacer]="run.id === 'ref'"
-                data-stage="prefill"
-              >
-                @if (run.id === 'target') {
-                  <button
-                    class="graph-link"
-                    [disabled]="!stageBatch(turn.n, 'prefill')"
-                    (click)="stageGraph(turn.n, 'prefill')"
-                    [attr.aria-label]="'Graph Diff · Prefill, turn ' + turn.n"
-                  >
-                    <span class="button-icon" aria-hidden="true">account_tree</span>Graph Diff ·
-                    Prefill</button
-                  ><span [matTooltip]="kvReason(turn.n, 'prefill')"
-                    ><button
-                      class="graph-link"
-                      [disabled]="!kvSnapshot(turn.n, 'prefill')"
-                      (click)="openKv(turn.n, 'prefill')"
-                      [attr.aria-label]="'KV Diff · Prefill End, turn ' + turn.n"
-                    >
-                      <span class="button-icon" aria-hidden="true">storage</span>KV Diff · Prefill
-                      End
-                    </button></span
-                  >
-                }
-              </div>
-            }
+
             <section
               [class.node-compact]="
                 workspace.mode() === 'Debug' && nodeCollapsed(turn.n, run.id, 'decode')
@@ -510,6 +497,9 @@
                 'Turn ' + turn.n + ' / Decode · ' + (run.id === 'ref' ? 'Reference' : 'Target')
               "
               [attr.data-node-selected]="stageSelected(turn.n, 'decode') ? '' : null"
+              [attr.data-node-origin]="
+                stageSelected(turn.n, 'decode') && selectedStage()?.side === run.id ? '' : null
+              "
               (click)="selectStagePointer($event, turn.n, run.id, 'decode')"
               (keydown)="selectStageKey($event, turn.n, run.id, 'decode')"
               [attr.data-node-turn]="turn.n"
@@ -522,8 +512,8 @@
                   <header class="phase-title nodeTitle">
                     <span class="nodeTitleMain"
                       ><span class="nodeTitleLabel">Turn {{ turn.n }} / Decode</span>
-                      @if (nodeCollapsed(turn.n, run.id, 'decode')) {
-                        <span class="nodeCompactStatus">Compact</span>
+                      @if (run.id === 'target' && isFirstMismatchStage(turn.n, 'decode')) {
+                        <span class="stage-mismatch-badge" role="status">First mismatch</span>
                       }</span
                     ><span class="nodeTitleControls">
                       @if (run.id === 'target') {
@@ -586,9 +576,13 @@
                 >
                   <mat-icon aria-hidden="true">subject</mat-icon
                   ><span class="nodeContextText"
-                    ><span class="nodePreviewTokens">
+                    ><span
+                      class="nodePreviewTokens"
+                      [class.boundaries]="boundaries()"
+                      [style.grid-template-columns]="compactColumns(turn.n, 'decode')"
+                    >
                       @for (
-                        token of compactTokens().get(turn.n + ':' + run.id);
+                        token of compactTokens().get(turn.n + ':' + run.id + ':decode');
                         track token.index
                       ) {
                         @if (token.ellipsis) {
@@ -597,8 +591,18 @@
                         <button
                           type="button"
                           class="nodePreviewToken"
-                          [class.changed]="token.match === false"
-                          [class.selected]="
+                          [class.mismatch]="color() === 'token_match' && token.match === false"
+                          [class.numeric-token]="tokenHeat(turn.n, token.pair, run.id) !== null"
+                          [class.numeric-missing]="
+                            run.id === 'target' &&
+                            numericColor() &&
+                            tokenHeat(turn.n, token.pair, run.id) === null
+                          "
+                          [style.--heat-level]="tokenHeat(turn.n, token.pair, run.id)"
+                          [attr.data-palette]="heatPalette(color())"
+                          [class.template-token]="isTemplateToken(pairToken(token.pair, run.id))"
+                          [class.missing]="token.missing"
+                          [class.selected-token]="
                             tokenSelection()?.turn === turn.n &&
                             tokenSelection()?.index === token.index
                           "
@@ -614,17 +618,22 @@
                             ': ' +
                             token.text
                           "
-                          (click)="select(turn.n, token.index, $event)"
-                        >
-                          {{ token.text }}
-                        </button>
+                          [attr.title]="token.text"
+                          [innerHTML]="compactTokenHtml(token.text)"
+                          [attr.data-turn]="turn.n"
+                          [attr.data-side]="run.id"
+                          [attr.data-row]="token.index"
+                          (click)="$event.stopPropagation(); select(turn.n, token.index, $event)"
+                        ></button>
                       } @empty {
                         <span class="nodePreviewReadonly">{{ compactOutput(turn.n, run.id) }}</span>
                       }
                     </span></span
-                  ><span class="nodeContextCount">{{
-                    compactCount(turn.n, run.id, 'decode')
-                  }}</span>
+                  ><span
+                    class="nodeContextCount"
+                    title="Tokens are captured tokens; gaps are empty slots added for alignment."
+                    >{{ compactCount(turn.n, run.id, 'decode') }}</span
+                  >
                 </div>
               }
               <div
@@ -840,63 +849,19 @@
                 </div>
               </div>
             </section>
-            @if (workspace.mode() === 'Debug') {
-              <div
-                class="phase-actions"
-                [class.stageActions]="run.id === 'target'"
-                [class.stageActionsSpacer]="run.id === 'ref'"
-                data-stage="decode"
-              >
-                @if (run.id === 'target') {
-                  <button
-                    class="graph-link"
-                    [attr.aria-label]="'Generated Token Trends for turn ' + turn.n"
-                    [attr.aria-expanded]="trendState(turn.n).open"
-                    [attr.aria-controls]="'turnTrend-' + turn.n"
-                    (click)="toggleTrend(turn.n)"
-                  >
-                    <span class="button-icon" aria-hidden="true">show_chart</span>Generated Token
-                    Trends</button
-                  ><button
-                    class="graph-link"
-                    [disabled]="!stageBatch(turn.n, 'decode')"
-                    (click)="stageGraph(turn.n, 'decode')"
-                    [attr.aria-label]="'Graph Diff · Decode, turn ' + turn.n"
-                  >
-                    <span class="button-icon" aria-hidden="true">account_tree</span>Graph Diff ·
-                    Decode</button
-                  ><span [matTooltip]="kvReason(turn.n, 'decode')"
-                    ><button
-                      class="graph-link"
-                      [disabled]="!kvSnapshot(turn.n, 'decode')"
-                      (click)="openKv(turn.n, 'decode')"
-                      [attr.aria-label]="'KV Diff · Decode End, turn ' + turn.n"
-                    >
-                      <span class="button-icon" aria-hidden="true">storage</span>KV Diff · Decode
-                      End
-                    </button></span
-                  >
-                }
-              </div>
-            }
           </article>
         }
+        @if (workspace.mode() === 'Debug') {
+          @for (stage of ['prefill', 'decode']; track stage) {
+            <div class="stage-analysis-row" [attr.data-stage]="stage">
+              <ng-container
+                [ngTemplateOutlet]="stageAnalysis"
+                [ngTemplateOutletContext]="{turn: turn.n, stage: stage}"
+              />
+            </div>
+          }
+        }
       </section>
-      @if (workspace.mode() === 'Debug' && trendState(turn.n).open) {
-        <token-trends
-          [id]="'turnTrend-' + turn.n"
-          [turn]="turn.n"
-          [rows]="rows(turn.n)"
-          [fork]="forks().get(turn.n) ?? null"
-          [alignment]="alignment()"
-          [analysis]="tokenAnalysis()"
-          [settings]="trendState(turn.n)"
-          [selected]="tokenSelection()?.turn === turn.n ? tokenSelection()!.index : null"
-          [loading]="analysisLoading()"
-          (settingsChange)="setTrend(turn.n, $event)"
-          (selectPosition)="select(turn.n, $event)"
-        />
-      }
       @if (workspace.mode() === 'Debug') {
         @let lastTurn = $last;@let nextTurn = turns()[$index + 1];
         <div
@@ -1031,507 +996,223 @@
       (sizeChange)="panelWidth.set($event)"
     ></div>
     <aside class="token-inspector" [style.width.px]="panelWidth()" aria-label="Comparison details">
-      @if (analysisError()) {
-        <div class="analysis-error" role="alert">
-          <p>{{ analysisError() }}</p>
-          <button mat-button (click)="analysisRetry.set(analysisRetry() + 1)">
-            Retry token metrics
-          </button>
-        </div>
-      }
-
-      @if (!selection()) {
-        <explorer-info-section label="Conversation Info" [(expanded)]="infoExpanded">
-          <table>
-            <thead>
-              <tr>
-                <th></th>
-                <th>Reference</th>
-                <th>Target</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <th>Turns</th>
-                <td>{{ turns().length }}</td>
-                <td>{{ turns().length }}</td>
-              </tr>
-              <tr>
-                <th>Generated tokens</th>
-                <td>{{ generatedCount('ref') }}</td>
-                <td>{{ generatedCount('target') }}</td>
-              </tr>
-            </tbody>
-          </table>
-          <table class="turn-index">
-            <thead>
-              <tr>
-                <th></th>
-                <th
-                  matTooltip="Whether both runtimes entered the turn alike: the same input tokens and the same history."
-                  matTooltipPosition="above"
-                >
-                  Prefill
-                </th>
-                <th
-                  matTooltip="Whether the generations are identical, or the first generation step where they differ."
-                  matTooltipPosition="above"
-                >
-                  Decode
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              @for (row of turnIndex(); track row.turn) {
+      @if (overviewPanel(); as panel) {
+        <stage-state-info
+          [panel]="panel"
+          [label]="analysisInstanceLabel(panel)"
+          [range]="analysisRange(panel)"
+          [alignment]="alignment()"
+          [graphSelection]="graphDetailSelection(panel)"
+          [graph]="overviewGraph(panel)"
+          [kv]="overviewKv(panel)"
+          [finalLogits]="overviewFinalLogits(panel)"
+          [kvSelection]="panel.kind === 'kv' ? kvDetailSelection() : null"
+          [points]="stagePoints(panel)"
+          [tokenLoading]="analysisLoading()"
+          [tokenError]="analysisError()"
+          (locateAnalysis)="locateAnalysisArea(panel)"
+          (locateCache)="locateKvCache(panel, $event)"
+          (locateAggregation)="locateAggregation(panel)"
+          (locateMetric)="locateMetric(panel)"
+          (locateView)="locateTokenView(panel)"
+          (locateScope)="locateScopeControl(panel, $event)"
+          (locateGraph)="locateGraphChart(panel)"
+          (locateFinal)="locateFinalChart(panel, $event)"
+          (locateLogitElement)="overviewFinalLogits(panel)?.locateElement($event)"
+          (locateTensorPosition)="locateScopeControl(panel, 'positions')"
+          (location)="locateStatePosition(panel, $event)"
+        />
+      } @else {
+        @if (!selection()) {
+          <explorer-info-section label="Conversation Info" [(expanded)]="infoExpanded">
+            <table>
+              <tbody>
                 <tr>
-                  <th>Turn {{ row.turn }}</th>
+                  <th>Turns</th>
+                  <td>{{ turns().length }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </explorer-info-section>
+          <explorer-info-section
+            label="Stages"
+            [count]="conversationStages().length"
+            [expanded]="groupOpen('conversation-stages')"
+            (expandedChange)="setGroup('conversation-stages', $event)"
+          >
+            <div class="conversation-stage-list" role="list">
+              @for (item of conversationStages(); track item.title; let index = $index) {
+                <div class="conversation-stage-item" role="listitem" [attr.aria-label]="item.title">
+                  <div class="conversation-stage-title">
+                    <span class="item-index">{{ index }}</span>
+                    <button
+                      explorer-locator
+                      [label]="item.title"
+                      [attr.aria-label]="'Locate ' + item.title"
+                      [title]="'Locate ' + item.title"
+                      (click)="locateConversationStage(item.turn, item.stage)"
+                    ></button>
+                  </div>
+                  <table
+                    class="conversation-stage-properties"
+                    [attr.aria-label]="item.title + ' token comparison'"
+                  >
+                    <tbody>
+                      @for (property of item.properties; track property.label) {
+                        <tr>
+                          <th scope="row" [matTooltip]="property.description">
+                            <div class="key-container">
+                              <mat-icon class="bullet" aria-hidden="true">circle</mat-icon
+                              >{{ property.label }}
+                            </div>
+                          </th>
+                          <td>
+                            <explorer-info-value
+                              [value]="property.value"
+                              [label]="item.title + ' ' + property.label"
+                              [inline]="true"
+                            />
+                          </td>
+                        </tr>
+                      }
+                    </tbody>
+                  </table>
+                </div>
+              }
+            </div>
+          </explorer-info-section>
+        }
+        @if (selectionInfo(); as stage) {
+          <explorer-info-section
+            label="Selected Tokens Info"
+            class="token-info-root"
+            [expanded]="groupOpen('token')"
+            (expandedChange)="setGroup('token', $event)"
+          >
+            <table class="stage-info-table token-summary-table">
+              <tbody>
+                <tr>
+                  <th>Stage</th>
                   <td>
                     <button
-                      type="button"
-                      class="index-link"
-                      [class.differs]="row.prefill !== 'Same'"
-                      [attr.aria-label]="'Turn ' + row.turn + ' Prefill: ' + row.prefill"
-                      (click)="openStage(row.turn, 'prefill', $event)"
-                    >
-                      {{ row.prefill }}
-                    </button>
-                  </td>
-                  <td>
-                    <button
-                      type="button"
-                      class="index-link"
-                      [class.differs]="row.decode !== 'Identical'"
-                      [attr.aria-label]="'Turn ' + row.turn + ' Decode: ' + row.decode"
-                      (click)="openStage(row.turn, 'decode', $event)"
-                    >
-                      {{ row.decode }}
-                    </button>
+                      explorer-locator
+                      [label]="
+                        'Turn ' +
+                        stage.turn +
+                        ' · ' +
+                        (stage.stage === 'prefill' ? 'Prefill' : 'Decode')
+                      "
+                      [attr.aria-label]="
+                        'Locate Turn ' +
+                        stage.turn +
+                        ' · ' +
+                        (stage.stage === 'prefill' ? 'Prefill' : 'Decode')
+                      "
+                      title="Locate stage"
+                      (click)="locateConversationStage(stage.turn, stage.stage)"
+                    ></button>
                   </td>
                 </tr>
-              }
-            </tbody>
-          </table>
-        </explorer-info-section>
-      }
-      @if (selectedStage(); as stage) {
-        <explorer-info-section
-          label="Stage Info"
-          [expanded]="groupOpen('stage')"
-          (expandedChange)="setGroup('stage', $event)"
-        >
-          <table>
-            <tbody>
-              <tr>
-                <th>Turn</th>
-                <td colspan="2">{{ stage.turn }}</td>
-              </tr>
-              <tr>
-                <th
-                  matTooltip="Prefill consumes input context. Decode produces generated output."
-                  matTooltipPosition="above"
-                >
-                  Stage
-                </th>
-                <td colspan="2">{{ stage.stage === 'prefill' ? 'Prefill' : 'Decode' }}</td>
-              </tr>
-              <tr>
-                <th
-                  matTooltip="Captured content: Input context, Thinking, Response, Chat template or Special token."
-                  matTooltipPosition="above"
-                >
-                  Content
-                </th>
-                <td colspan="2">
-                  {{ stage.stage === 'prefill' ? 'Input context' : 'Generated output' }}
-                </td>
-              </tr>
-              @if (stagePrefill(); as prefill) {
-                <tr>
-                  <th
-                    matTooltip="Whether both runtimes' tokenizers turned the admitted input into the same tokens."
-                    matTooltipPosition="above"
-                  >
-                    Tokenized alike
-                  </th>
-                  <td colspan="2">{{ prefill.tokenized }}</td>
-                </tr>
-                <tr>
-                  <th [matTooltip]="prefill.historyReason" matTooltipPosition="above">History</th>
-                  <td colspan="2">{{ prefill.history }}</td>
-                </tr>
-              }
-              @if (stageDecode(); as decode) {
-                <tr>
-                  <th
-                    matTooltip="How the two generations relate: Identical, or the first generation step where the runtimes produced different tokens. Not comparable when token text is missing."
-                    matTooltipPosition="above"
-                  >
-                    Outcome
-                  </th>
-                  <td colspan="2">{{ decode.outcome }}</td>
-                </tr>
-                <tr>
-                  <th
-                    matTooltip="Generated tokens that both runtimes produced alike before the first difference."
-                    matTooltipPosition="above"
-                  >
-                    Identical prefix
-                  </th>
-                  <td colspan="2">{{ decode.prefix }}</td>
-                </tr>
-                <tr>
-                  <th
-                    matTooltip="Largest Kullback–Leibler divergence among the steps where the captures prove that both runtimes read the same context, and the step it occurred at."
-                    matTooltipPosition="above"
-                  >
-                    Peak KL
-                  </th>
-                  <td colspan="2">{{ decode.peak }}</td>
-                </tr>
-              }
-            </tbody>
-          </table>
-          <table>
-            <thead>
-              <tr>
-                <th></th>
-                <th>Reference</th>
-                <th>Target</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <th>{{ stage.stage === 'prefill' ? 'Input tokens' : 'Generated tokens' }}</th>
-                <td>{{ stageCount(stage.turn, 'ref', stage.stage) }}</td>
-                <td>{{ stageCount(stage.turn, 'target', stage.stage) }}</td>
-              </tr>
-              @if (stageDecode(); as decode) {
-                @if (decode.fork; as fork) {
+                @for (property of stageAnalysisProperties(); track property.label) {
                   <tr>
-                    <th
-                      matTooltip="The token each runtime produced at the first differing generation step."
-                      matTooltipPosition="above"
-                    >
-                      Differing token
-                    </th>
-                    @for (side of ['ref', 'target']; track side) {
-                      <td>
-                        <span
-                          class="info-token mismatch"
-                          [class.ref]="side === 'ref'"
-                          [class.target]="side === 'target'"
-                          [attr.title]="infoTokenTitle(fork.pair, side)"
-                          [innerHTML]="infoTokenHtml(fork.pair, side)"
-                        ></span>
-                      </td>
+                    <th scope="row">{{ property.label }}</th>
+                    <td>{{ property.value }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </explorer-info-section>
+          <explorer-info-section
+            class="token-info-list"
+            label="Selected Token Pairs"
+            [count]="infoTokenPairs().length"
+            [expanded]="groupOpen('tokens')"
+            (expandedChange)="setGroup('tokens', $event)"
+          >
+            <explorer-pagination
+              section-action
+              label="Token pair pages"
+              previousLabel="Previous token pair page"
+              nextLabel="Next token pair page"
+              [index]="infoTokenPage().index"
+              [pages]="infoTokenPage().pages"
+              (change)="changeTokenInfoPage($event)"
+            />
+            <div
+              class="token-pair-list"
+              role="list"
+              [style.--position-digits]="infoTokenIndexDigits()"
+            >
+              @for (pair of infoTokenPage().pairs; track pair.index) {
+                <div
+                  class="token-pair-item"
+                  role="listitem"
+                  [attr.aria-label]="'Position ' + infoPairPosition(pair)"
+                >
+                  <ng-template #pairText>
+                    @for (side of ['target', 'ref']; track side; let last = $last) {
+                      <span
+                        class="info-token"
+                        [class.ref]="side === 'ref'"
+                        [class.target]="side === 'target'"
+                        [class.mismatch]="color() === 'token_match' && pair.match === false"
+                        [class.missing]="!pairToken(pair, side)"
+                        [attr.title]="infoTokenTitle(pair, side)"
+                        [innerHTML]="infoTokenHtml(pair, side)"
+                      ></span>
+                      @if (!last) {
+                        <span> / </span>
+                      }
                     }
-                  </tr>
-                  <tr>
-                    <th
-                      matTooltip="At the first differing step: probability of the most likely token minus the second most likely, in percentage points. A small margin means the step was close to choosing differently."
-                      matTooltipPosition="above"
+                  </ng-template>
+                  <div class="token-pair-name">
+                    <span class="token-pair-position" title="Aligned position">{{
+                      infoPairPosition(pair)
+                    }}</span>
+                    <div
+                      explorer-locator
+                      [row]="true"
+                      role="button"
+                      tabindex="0"
+                      [attr.aria-label]="'Locate token pair ' + infoPairPosition(pair)"
+                      (click)="locateInfoToken(pair)"
+                      (keydown)="activateTokenLocator($event, pair)"
                     >
-                      Top-2 margin
-                    </th>
-                    <td>{{ decode.margin.ref }}</td>
-                    <td>{{ decode.margin.target }}</td>
-                  </tr>
-                }
-                <tr>
-                  <th
-                    matTooltip="Why each runtime stopped generating in this turn."
-                    matTooltipPosition="above"
-                  >
-                    Ending
-                  </th>
-                  <td>{{ stageEnding(stage.turn, 'ref') }}</td>
-                  <td>{{ stageEnding(stage.turn, 'target') }}</td>
-                </tr>
+                      <explorer-info-value
+                        class="token-pair-value"
+                        [value]="infoPairText(pair)"
+                        [contentTemplate]="pairText"
+                        [label]="
+                          'Position ' + infoPairPosition(pair) + ' tokens (Target / Reference)'
+                        "
+                        [inline]="true"
+                      />
+                    </div>
+                  </div>
+                  <explorer-info-list
+                    class="token-pair-properties"
+                    [bullets]="true"
+                    [items]="[
+                      {
+                        label: 'Token ID (Ref / Target)',
+                        value:
+                          (pairToken(pair, 'ref')?.id ?? '∅') +
+                          ' / ' +
+                          (pairToken(pair, 'target')?.id ?? '∅'),
+                      },
+                    ]"
+                  />
+                </div>
+              } @empty {
+                <p>No captured tokens in this selection.</p>
               }
-            </tbody>
-          </table>
-        </explorer-info-section>
-      }
-      @if (selectedStage(); as stage) {
-        <explorer-info-section
-          label="Actions"
-          [expanded]="groupOpen('actions')"
-          (expandedChange)="setGroup('actions', $event)"
-          ><div class="info-actions">
-            @if (stage.stage === 'decode') {
-              <span
-                [matTooltip]="
-                  forks().get(stage.turn) ? '' : 'This turn has no provable first differing step.'
-                "
-                ><button
-                  class="graph-link"
-                  [disabled]="!forks().get(stage.turn)"
-                  (click)="selectFork(stage.turn)"
-                >
-                  <span class="button-icon" aria-hidden="true">call_split</span>First differing step
-                </button></span
-              ><button
-                class="graph-link"
-                [attr.aria-expanded]="trendState(stage.turn).open"
-                (click)="toggleTrend(stage.turn)"
-              >
-                <span class="button-icon" aria-hidden="true">show_chart</span>Generated Token Trends
-              </button>
-            }
-            <button
-              class="graph-link"
-              [disabled]="!stageBatch(stage.turn, stage.stage)"
-              (click)="stageGraph(stage.turn, stage.stage)"
-            >
-              <span class="button-icon" aria-hidden="true">account_tree</span>Graph Diff ·
-              {{ stage.stage === 'prefill' ? 'Prefill' : 'Decode' }}</button
-            ><span [matTooltip]="kvReason(stage.turn, stage.stage)"
-              ><button
-                class="graph-link"
-                [disabled]="!kvSnapshot(stage.turn, stage.stage)"
-                (click)="openKv(stage.turn, stage.stage)"
-              >
-                <span class="button-icon" aria-hidden="true">storage</span>KV Diff ·
-                {{ stage.stage === 'prefill' ? 'Prefill End' : 'Decode End' }}
-              </button></span
-            ><button class="graph-link" (click)="bookmark(true)">
-              <span class="button-icon" aria-hidden="true">bookmark_add</span>Add bookmark
-            </button>
-          </div></explorer-info-section
-        >
-      }
-      @if (selectedInputPair(); as pair) {
-        <explorer-info-section
-          label="Token Info"
-          [expanded]="groupOpen('token')"
-          (expandedChange)="setGroup('token', $event)"
-        >
-          <table>
-            <tbody>
-              <tr>
-                <th>Turn</th>
-                <td colspan="2">{{ pair.turn }}</td>
-              </tr>
-              <tr>
-                <th matTooltip="Prefill consumes input context." matTooltipPosition="above">
-                  Stage
-                </th>
-                <td colspan="2">Prefill</td>
-              </tr>
-              <tr>
-                <th
-                  matTooltip="Whether both runtimes' tokenizers produced the same token at this aligned position."
-                  matTooltipPosition="above"
-                >
-                  Tokenized alike
-                </th>
-                <td colspan="2">
-                  {{ pair.match === null ? 'Unknown' : pair.match ? 'Same' : 'Different' }}
-                </td>
-              </tr>
-            </tbody>
-          </table>
-          <table>
-            <thead>
-              <tr>
-                <th></th>
-                <th>Reference</th>
-                <th>Target</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <th>Token</th>
-                @for (side of ['ref', 'target']; track side) {
-                  <td>
-                    <span
-                      class="info-token"
-                      [class.ref]="side === 'ref'"
-                      [class.target]="side === 'target'"
-                      [class.mismatch]="pair.match === false"
-                      [class.missing]="!pairToken(pair, side)"
-                      [attr.title]="infoTokenTitle(pair, side)"
-                      [innerHTML]="infoTokenHtml(pair, side)"
-                    ></span>
-                  </td>
-                }
-              </tr>
-              <tr>
-                <th>Token ID</th>
-                <td>{{ pairToken(pair, 'ref')?.id ?? '∅' }}</td>
-                <td>{{ pairToken(pair, 'target')?.id ?? '∅' }}</td>
-              </tr>
-              <tr>
-                <th
-                  matTooltip="Captured content: Input context, Chat template or Special token."
-                  matTooltipPosition="above"
-                >
-                  Content
-                </th>
-                <td>
-                  <explorer-info-value
-                    label="Reference content"
-                    [value]="inputTokenContent(pair.ref)"
-                  />
-                </td>
-                <td>
-                  <explorer-info-value
-                    label="Target content"
-                    [value]="inputTokenContent(pair.target)"
-                  />
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </explorer-info-section>
-        <explorer-info-section
-          label="Actions"
-          [expanded]="groupOpen('actions')"
-          (expandedChange)="setGroup('actions', $event)"
-          ><div class="info-actions">
-            <button
-              class="graph-link"
-              [disabled]="!stageBatch(pair.turn, 'prefill')"
-              (click)="stageGraph(pair.turn, 'prefill')"
-            >
-              <span class="button-icon" aria-hidden="true">account_tree</span>Graph Diff</button
-            ><button class="graph-link" (click)="bookmark(true)">
-              <span class="button-icon" aria-hidden="true">bookmark_add</span>Add bookmark
-            </button>
-          </div></explorer-info-section
-        >
-      }
-      @if (detailPair(); as pair) {
-        <explorer-info-section
-          label="Token Info"
-          [expanded]="groupOpen('token')"
-          (expandedChange)="setGroup('token', $event)"
-        >
-          <table>
-            <tbody>
-              <tr>
-                <th>Turn</th>
-                <td colspan="2">{{ pair.turn }}</td>
-              </tr>
-              <tr>
-                <th
-                  matTooltip="Prefill consumes input context. Decode produces generated output."
-                  matTooltipPosition="above"
-                >
-                  Stage
-                </th>
-                <td colspan="2">Decode</td>
-              </tr>
-              @if (pair.filled) {
-                <tr>
-                  <th [matTooltip]="pairingTitle(pair.filled)" matTooltipPosition="above">
-                    Pairing
-                  </th>
-                  <td colspan="2">Same generation step</td>
-                </tr>
-              }
-            </tbody>
-          </table>
-          <table>
-            <thead>
-              <tr>
-                <th></th>
-                <th>Reference</th>
-                <th>Target</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <th
-                  matTooltip="Generation index within this turn, starting at 0; includes Thinking. This is separate from the aligned position."
-                  matTooltipPosition="above"
-                >
-                  Generation step
-                </th>
-                <td>{{ pair.ref ? (pair.ref.step ?? 'Not captured') : '∅' }}</td>
-                <td>{{ pair.target ? (pair.target.step ?? 'Not captured') : '∅' }}</td>
-              </tr>
-              <tr>
-                <th
-                  matTooltip="Captured content: Input context, Thinking, Response, Chat template or Special token."
-                  matTooltipPosition="above"
-                >
-                  Content
-                </th>
-                <td>
-                  <explorer-info-value
-                    label="Reference content"
-                    [value]="pair.ref ? tokenContentFor(pair.turn, 'ref', pair.ref) : '∅'"
-                  />
-                </td>
-                <td>
-                  <explorer-info-value
-                    label="Target content"
-                    [value]="pair.target ? tokenContentFor(pair.turn, 'target', pair.target) : '∅'"
-                  />
-                </td>
-              </tr>
-              <tr>
-                <th>Token</th>
-                @for (side of ['ref', 'target']; track side) {
-                  <td>
-                    <span
-                      class="info-token"
-                      [class.ref]="side === 'ref'"
-                      [class.target]="side === 'target'"
-                      [class.mismatch]="pair.match === false"
-                      [class.missing]="!pairToken(pair, side)"
-                      [attr.title]="infoTokenTitle(pair, side)"
-                      [innerHTML]="infoTokenHtml(pair, side)"
-                    ></span>
-                  </td>
-                }
-              </tr>
-            </tbody>
-          </table>
-        </explorer-info-section>
-        <explorer-info-section
-          label="Actions"
-          [expanded]="groupOpen('actions')"
-          (expandedChange)="setGroup('actions', $event)"
-          ><div class="info-actions">
-            <button
-              class="graph-link"
-              [disabled]="!canInspect(pair.target)"
-              (click)="inspectToken(pair.target)"
-            >
-              <span class="button-icon" aria-hidden="true">account_tree</span>Graph Diff</button
-            ><span [matTooltip]="kvReason(pair.turn, 'decode', pair.target)"
-              ><button
-                class="graph-link"
-                [disabled]="!kvSnapshot(pair.turn, 'decode', pair.target)"
-                (click)="openKv(pair.turn, 'decode', pair.target)"
-              >
-                <span class="button-icon" aria-hidden="true">storage</span>KV Diff
-              </button></span
-            ><button class="graph-link" (click)="bookmark(true)">
-              <span class="button-icon" aria-hidden="true">bookmark_add</span>Add bookmark
-            </button>
-          </div></explorer-info-section
-        >
-        <explorer-info-section
-          label="Numerical Diff"
-          [expanded]="groupOpen('numerical')"
-          (expandedChange)="setGroup('numerical', $event)"
-          ><token-numerical-info
-            [analysis]="selectedAnalysis()"
-            [loading]="analysisLoading()"
-            [error]="analysisError()"
-        /></explorer-info-section>
-        <explorer-info-section
-          label="Token Distribution"
-          [expanded]="groupOpen('distribution')"
-          (expandedChange)="setGroup('distribution', $event)"
-          ><token-distribution
-            [analysis]="selectedAnalysis()"
-            [loading]="analysisLoading()"
-            [error]="analysisError()"
-        /></explorer-info-section>
+            </div>
+          </explorer-info-section>
+          <ng-container
+            [ngTemplateOutlet]="infoAnalyses"
+            [ngTemplateOutletContext]="{turn: stage.turn, stage: stage.stage}"
+          />
+        }
       }
     </aside>
   }
@@ -1579,53 +1260,50 @@
           (valueChange)="setAlignment($event === 'Context' ? 'content' : 'steps')"
         />
       </div>
-      <token-query-control
-        #queryControl
-        [formula]="formula()"
-        (formulaChange)="formula.set($event)"
-      />
-      <find-navigator
-        [index]="resultIndex()"
-        [total]="mismatches().length"
-        [pending]="numericFindPending()"
-        [countAction]="true"
-        [countLabel]="findResultLabel()"
-        [countTooltip]="numericFindPending() ? findResultLabel() : ''"
-        (first)="find(0)"
-        (previous)="find(-1)"
-        (next)="find(1)"
-        (count)="queryControl.show()"
-      />
-      <button
-        mat-icon-button
-        class="bookmark-current"
-        aria-label="Bookmark current location"
-        matTooltip="Bookmark current location"
-        [attr.aria-pressed]="isBookmarked()"
-        [disabled]="!selection()"
-        (click)="bookmark()"
-      >
-        <mat-icon>{{ isBookmarked() ? 'bookmark' : 'bookmark_add' }}</mat-icon>
-      </button>
+      <div class="debug-find">
+        <token-query-control
+          #queryControl
+          [formula]="formula()"
+          (formulaChange)="formula.set($event)"
+        />
+        <find-navigator
+          [index]="resultIndex()"
+          [total]="mismatches().length"
+          [pending]="numericFindPending()"
+          [countAction]="true"
+          [countLabel]="findResultLabel()"
+          [countTooltip]="numericFindPending() ? findResultLabel() : ''"
+          (first)="find(0)"
+          (previous)="find(-1)"
+          (next)="find(1)"
+          (count)="queryControl.show()"
+        />
+        <button
+          mat-icon-button
+          class="bookmark-current"
+          aria-label="Bookmark current location"
+          matTooltip="Bookmark current location"
+          [attr.aria-pressed]="isBookmarked()"
+          [disabled]="!selection()"
+          (click)="bookmark()"
+        >
+          <mat-icon>{{ isBookmarked() ? 'bookmark' : 'bookmark_add' }}</mat-icon>
+        </button>
+      </div>
     </div>
   }
   <div class="composer-bottom">
-    <div class="mode-switch" role="group" aria-label="Workspace mode">
-      @for (mode of ['Chat', 'Debug']; track mode) {
-        <button
-          [disabled]="mode === 'Debug' && !workspace.chatHasCapture()"
-          [attr.aria-pressed]="workspace.mode() === mode"
-          (click)="workspace.mode.set($any(mode))"
-          [attr.data-mode]="mode.toLowerCase()"
-          [attr.aria-label]="mode"
-        >
-          <span class="button-icon" aria-hidden="true">{{
-            mode === 'Chat' ? 'chat_bubble_outline' : 'bug_report'
-          }}</span
-          ><span>{{ mode }}</span>
-        </button>
-      }
-    </div>
+    <mat-slide-toggle
+      class="debug-toggle"
+      aria-label="Debug"
+      labelPosition="before"
+      [hideIcon]="true"
+      [checked]="workspace.mode() === 'Debug'"
+      [disabled]="!workspace.chatHasCapture()"
+      (change)="workspace.mode.set($event.checked ? 'Debug' : 'Chat')"
+    >
+      <span class="debug-toggle-label"><mat-icon aria-hidden="true">bug_report</mat-icon></span>
+    </mat-slide-toggle>
     @if (workspace.mode() === 'Debug') {
       <div class="applied-color" role="status">Color by: {{ colorLabel(color()) }}</div>
       @if (color() === 'token_match') {
@@ -1677,3 +1355,255 @@
     }
   </div>
 </footer>
+
+<ng-template #stageAnalysis let-turn="turn" let-stage="stage">
+  <div [style.height.px]="isExpandedStage(turn, stage) ? expandedPlaceholder() : null">
+    <div
+      class="stage-analysis-list"
+      [class.expanded-analysis]="isExpandedStage(turn, stage)"
+      [style.--analysis-top.px]="expandedTop()"
+      [style.--analysis-right.px]="details() ? panelWidth() : 0"
+    >
+      @if (isExpandedStage(turn, stage)) {
+        <div class="expanded-analysis-context">
+          <header class="expanded-analysis-header">
+            <div class="expanded-stage">
+              <span>Turn {{ turn }}</span
+              ><span>{{ stage === 'prefill' ? 'Prefill' : 'Decode' }}</span>
+            </div>
+            <div role="tablist" aria-label="Stage analyses">
+              @for (tab of panelsFor(turn, stage); track tab.id) {
+                <button
+                  role="tab"
+                  [attr.aria-selected]="expandedAnalysis()?.id === tab.id"
+                  [attr.aria-controls]="tab.id"
+                  [attr.tabindex]="expandedAnalysis()?.id === tab.id ? 0 : -1"
+                  (keydown)="expandedTabKey($event, tab)"
+                  (click)="selectExpandedAnalysis(tab)"
+                >
+                  {{ analysisInstanceLabel(tab) }}
+                </button>
+              }
+            </div>
+            <button
+              class="add-expanded-analysis"
+              aria-label="Add analysis view"
+              matTooltip="Add analysis view"
+              (click)="openAnalysisPicker(analysisDialog, turn, stage)"
+            >
+              <mat-icon aria-hidden="true">add</mat-icon>
+            </button>
+            <button
+              class="exit-expanded"
+              aria-label="Exit expanded analysis"
+              matTooltip="Exit expanded analysis"
+              (click)="exitExpandedAnalysis()"
+            >
+              <mat-icon aria-hidden="true">close_fullscreen</mat-icon>
+            </button>
+          </header>
+          <analysis-token-strip
+            [context]="expandedTokenContext()"
+            [tokens]="expandedTokens()"
+            [bins]="expandedTokenBins()"
+            [selected]="expandedTokenSelection()"
+            [disabled]="expandedTokenDisabled()"
+            (selectRange)="selectExpandedToken($event)"
+          />
+        </div>
+      }
+      @for (panel of panelsFor(turn, stage); track panel.id) {
+        <section
+          class="stage-analysis"
+          [hidden]="isExpandedStage(turn, stage) && expandedAnalysis()?.id !== panel.id"
+          [class.open]="panel.open"
+          [class.inspected]="
+            metricInspector()?.panelId() === panel.id ||
+            tokenMetricInspector()?.id === panel.id ||
+            analysisOverview()?.id === panel.id
+          "
+        >
+          <div class="analysis-location-frame" aria-hidden="true"></div>
+          <div class="analysis-entry-row">
+            <button
+              class="graph-link analysis-entry"
+              [matTooltip]="analysisInstanceLabel(panel)"
+              [attr.aria-expanded]="panel.open"
+              [attr.aria-controls]="panel.id"
+              (click)="toggleAnalysis(panel)"
+            >
+              <mat-icon>{{ panel.open ? 'expand_more' : 'chevron_right' }}</mat-icon>
+              <span>{{ analysisInstanceLabel(panel) }}</span>
+            </button>
+            <button
+              class="analysis-delete"
+              (click)="removeAnalysis(panel)"
+              [attr.aria-label]="'Remove ' + analysisInstanceLabel(panel)"
+              matTooltip="Remove analysis"
+            >
+              <mat-icon>delete_outline</mat-icon>
+            </button>
+          </div>
+          <div
+            class="analysis-content"
+            [id]="panel.id"
+            [hidden]="!panel.open"
+            (pointerdown)="analysisPointerDown($event, panel)"
+            (click)="analysisBackgroundClick($event, panel)"
+          >
+            @if (panel.kind === 'kv') {
+              <kv-panel
+                [expanded]="expandedAnalysis()?.id === panel.id"
+                (expand)="toggleExpandedAnalysis(panel)"
+                [panelId]="panel.id"
+                [embedded]="true"
+                [explicitEntry]="panel.entry ?? null"
+                [stageTurn]="turn"
+                [positionAlignment]="kvAlignments().get(turn + ':' + stage) ?? null"
+                [stageMoment]="stage === 'prefill' ? 'prefill_post' : 'terminal'"
+                [initialView]="panel.kv ?? null"
+                [chartSelection]="analysisChartSelections().get(panel.id) ?? null"
+                (inspectStage)="inspectAnalysisStage(panel, $event)"
+                (inspectOverview)="inspectAnalysisOverview(panel)"
+                (inspect)="inspectMetric($event)"
+                (positionHover)="hoverAnalysis(panel.id, $event)"
+              />
+            } @else if (panel.kind === 'graph' || panel.kind === 'activations') {
+              <stage-graph-metrics
+                [positionAlignment]="kvAlignments().get(turn + ':' + stage) ?? null"
+                [expanded]="expandedAnalysis()?.id === panel.id"
+                (expand)="toggleExpandedAnalysis(panel)"
+                [category]="panel.kind === 'activations' ? 'activations' : 'intermediate'"
+                [initial]="panel.graph ?? null"
+                [panelId]="panel.id"
+                [turn]="turn"
+                [stage]="stage"
+                [chartSelection]="analysisChartSelections().get(panel.id) ?? null"
+                (inspect)="inspectMetric($event)"
+                (backgroundClick)="inspectAnalysisStage(panel, $event)"
+                (positionHover)="hoverAnalysis(panel.id, $event)"
+              />
+            } @else {
+              <token-trends
+                [panelId]="panel.id"
+                [logitsOnly]="true"
+                [logitMode]="panel.kind === 'distribution' ? 'distribution' : 'comparison'"
+                [globalStart]="stageGlobalStart(turn)"
+                [expanded]="expandedAnalysis()?.id === panel.id"
+                (expand)="toggleExpandedAnalysis(panel)"
+                (positionHover)="hoverAnalysis(panel.id, $event)"
+                class="embedded"
+                [turn]="turn"
+                [rows]="rows(turn)"
+                [fork]="forks().get(turn) ?? null"
+                [alignment]="alignment()"
+                [analysis]="tokenAnalysis()"
+                [settings]="panel.trend!"
+                [selected]="tokenPanelSelectedIndex(panel)"
+                [loading]="analysisLoading()"
+                (settingsChange)="setPanelTrend(panel, $event)"
+                [selectedRange]="analysisChartSelections().get(panel.id) ?? null"
+                (selectRange)="inspectTokenMetric(panel, $event.index, $event.range)"
+                (backgroundClick)="inspectAnalysisStage(panel, $event)"
+              />
+            }
+          </div>
+        </section>
+      }
+      <button
+        class="graph-link add-analysis"
+        (click)="openAnalysisPicker(analysisDialog, turn, stage)"
+      >
+        <mat-icon>add</mat-icon>Add analysis view
+      </button>
+    </div>
+  </div>
+</ng-template>
+
+<ng-template #analysisDialog let-data>
+  @let turn = data.turn;
+  @let stage = data.stage;
+  <div class="analysis-dialog">
+    <header>
+      <h2 mat-dialog-title>Add analysis view</h2>
+      <p>Select an analysis object.</p>
+    </header>
+    <mat-dialog-content>
+      <analysis-architecture
+        [model]="state.session()?.model ?? 'Model'"
+        [stage]="stage"
+        [selected]="analysisPickerKind()"
+        [unavailable]="analysisArchitectureUnavailable(turn, stage)"
+        (selectionChange)="analysisPickerKind.set($event)"
+      />
+    </mat-dialog-content>
+    <mat-dialog-actions align="end">
+      <button mat-button mat-dialog-close>Cancel</button>
+      <button
+        mat-button
+        [disabled]="
+          !analysisPickerOption() ||
+          !!analysisUnavailable(turn, stage, analysisPickerOption()!.kind)
+        "
+        [mat-dialog-close]="analysisPickerKind()"
+      >
+        Add analysis
+      </button>
+    </mat-dialog-actions>
+  </div>
+</ng-template>
+
+<ng-template #infoAnalyses let-turn="turn" let-stage="stage">
+  <explorer-info-section
+    class="analysis-views-info"
+    label="Analysis Views"
+    [count]="panelsFor(turn, stage).length"
+    [expanded]="groupOpen('analyses')"
+    (expandedChange)="setGroup('analyses', $event)"
+  >
+    <button
+      section-action
+      type="button"
+      class="info-add-analysis"
+      aria-label="Add analysis view"
+      matTooltip="Add analysis view"
+      (click)="openAnalysisPicker(analysisDialog, turn, stage)"
+    >
+      <mat-icon>add</mat-icon>
+    </button>
+    <ng-container
+      [ngTemplateOutlet]="analysisPanelItems"
+      [ngTemplateOutletContext]="{turn, stage, indexed: true}"
+    />
+  </explorer-info-section>
+</ng-template>
+<ng-template #analysisPanelItems let-turn="turn" let-stage="stage" let-indexed="indexed">
+  <div class="info-locator-list" [class.indexed-panel-list]="indexed" role="list">
+    @for (panel of panelsFor(turn, stage); track panel.id; let i = $index) {
+      <div role="listitem" class="analysis-view-item">
+        <div class="analysis-view-heading">
+          @if (indexed) {
+            <span class="panel-index">{{ i }}</span>
+          }
+          <button
+            explorer-locator
+            class="analysis-view-locator"
+            [row]="true"
+            [label]="analysisInstanceLabel(panel)"
+            [attr.aria-label]="'Locate ' + analysisInstanceLabel(panel)"
+            (click)="locateAnalysis(panel)"
+          >
+            @if (!indexed) {
+              <small class="analysis-config">{{ analysisConfig(panel) }}</small>
+            }
+          </button>
+        </div>
+        <explorer-info-list
+          class="analysis-view-properties"
+          [bullets]="true"
+          [items]="analysisViewProperties(panel)"
+        />
+      </div>
+    }
+  </div>
+</ng-template>

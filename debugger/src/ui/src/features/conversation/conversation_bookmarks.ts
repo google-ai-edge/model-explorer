@@ -28,30 +28,25 @@ export interface ConversationBookmark {
 }
 
 /** View snapshots are validated when opened, so an expired snapshot remains removable. */
-export const CONVERSATION_BOOKMARK_CODEC: BookmarkCodec<ConversationBookmark> =
-  {
-    parse(value) {
-      if (!value || typeof value !== 'object' || Array.isArray(value))
-        return null;
-      const item = value as Record<string, unknown>;
-      if (
-        !Number.isInteger(item['turn']) ||
-        (item['turn'] as number) < 1 ||
-        !Number.isInteger(item['index']) ||
-        (item['index'] as number) < -1 ||
-        (item['index'] === -1 &&
-          (!item['view'] || typeof item['view'] !== 'object')) ||
-        !['content', 'steps'].includes(item['alignment'] as string)
-      )
-        return null;
-      if (
-        (item['id'] !== undefined &&
-          (typeof item['id'] !== 'string' || !item['id'])) ||
-        (item['title'] !== undefined && typeof item['title'] !== 'string')
-      )
-        return null;
-      return value as ConversationBookmark;
-    },
-    identity: (item) =>
-      item.id ?? `${item.turn}:${item.alignment}:${item.index}`,
-  };
+export const CONVERSATION_BOOKMARK_CODEC: BookmarkCodec<ConversationBookmark> = {
+  parse(value) {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+    const item = value as Record<string, unknown>;
+    if (
+      !Number.isInteger(item['turn']) ||
+      (item['turn'] as number) < 1 ||
+      !Number.isInteger(item['index']) ||
+      (item['index'] as number) < -1 ||
+      (item['index'] === -1 && (!item['view'] || typeof item['view'] !== 'object')) ||
+      !['content', 'steps'].includes(item['alignment'] as string)
+    )
+      return null;
+    if (
+      (item['id'] !== undefined && (typeof item['id'] !== 'string' || !item['id'])) ||
+      (item['title'] !== undefined && typeof item['title'] !== 'string')
+    )
+      return null;
+    return value as ConversationBookmark;
+  },
+  identity: (item) => item.id ?? `${item.turn}:${item.alignment}:${item.index}`,
+};

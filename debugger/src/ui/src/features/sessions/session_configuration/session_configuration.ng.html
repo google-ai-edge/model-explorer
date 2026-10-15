@@ -82,6 +82,9 @@
     </div>
     @if (expanded()) {
       <section id="runtime-configuration">
+        @if (differenceNote) {
+          <p class="configurationNote" role="note">{{ differenceNote }}</p>
+        }
         @if (visibleRuntimeFields().length) {
           <table class="configurationReadTable">
             <thead>

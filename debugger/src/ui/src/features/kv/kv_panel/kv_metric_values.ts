@@ -17,9 +17,9 @@
  */
 
 import {ChangeDetectionStrategy, Component, input} from '@angular/core';
-import type {KvHeadMetric} from '../../../data/contracts/kv';
 import {ExplorerInfoValue} from '../../../shared/explorer_info_value/explorer_info_value';
-import {formatMetric, formatPercent} from '../../../shared/format/format';
+import type {KvHeadMetric} from '../../../data/contracts/kv';
+import {formatAnalysisMetric} from '../../../shared/format/format';
 
 export type KvDetailMetric = Extract<
   KvHeadMetric,
@@ -32,28 +32,20 @@ export const KV_DETAIL_METRICS: readonly {
 }[] = [
   {
     key: 'cosine_similarity',
-    label: 'CosSim',
+    label: 'Cosine similarity',
     description: 'Cosine similarity; higher is more similar.',
   },
   {
     key: 'relative_l2',
     label: 'Relative L2',
-    description:
-      'L2 norm of Target − Ref divided by the Ref L2 norm; shown as a percentage.',
+    description: 'L2 norm of Target − Ref divided by the Ref L2 norm; shown as a percentage.',
   },
   {key: 'rmse', label: 'RMSE', description: 'Root mean squared error.'},
-  {
-    key: 'max_abs',
-    label: 'Max |Δ|',
-    description: 'Largest absolute Target − Ref value.',
-  },
+  {key: 'max_abs', label: 'Max abs error', description: 'Largest absolute Target − Ref value.'},
 ];
 
-export function formatKvMetric(
-  key: KvHeadMetric,
-  value: number | null | undefined,
-): string {
-  return key === 'relative_l2' ? formatPercent(value) : formatMetric(value);
+export function formatKvMetric(key: KvHeadMetric, value: number | null | undefined): string {
+  return formatAnalysisMetric(key, value);
 }
 
 /** The same numerical readout is used for a token tensor and an individual head. */
@@ -85,12 +77,8 @@ export function formatKvMetric(
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class KvMetricValues {
-  readonly metrics = input<Partial<Record<KvHeadMetric, number | null>> | null>(
-    null,
-  );
-  readonly metricStatus = input<Partial<Record<KvHeadMetric, string>> | null>(
-    null,
-  );
+  readonly metrics = input<Partial<Record<KvHeadMetric, number | null>> | null>(null);
+  readonly metricStatus = input<Partial<Record<KvHeadMetric, string>> | null>(null);
   readonly label = input.required<string>();
   readonly definitions = KV_DETAIL_METRICS;
 
@@ -116,8 +104,6 @@ export class KvMetricValues {
     }
   }
   tooltip(metric: {key: KvHeadMetric; description: string}) {
-    return [metric.description, this.reason(metric.key)]
-      .filter(Boolean)
-      .join(' ');
+    return [metric.description, this.reason(metric.key)].filter(Boolean).join(' ');
   }
 }

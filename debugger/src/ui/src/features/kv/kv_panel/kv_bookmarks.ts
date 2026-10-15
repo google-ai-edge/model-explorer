@@ -24,8 +24,7 @@ export interface SavedPoint {
   layer: number | null;
   position: number;
 }
-export const kvBookmarkKey = (captureId: string | null) =>
-  'debugger.kv-bookmarks.' + captureId;
+export const kvBookmarkKey = (captureId: string | null) => 'debugger.kv-bookmarks.' + captureId;
 /** Older entries also carried the Display K/V choice; only the location is kept. */
 export const KV_BOOKMARK_CODEC: BookmarkCodec<SavedPoint> = {
   parse(value) {
@@ -35,22 +34,14 @@ export const KV_BOOKMARK_CODEC: BookmarkCodec<SavedPoint> = {
       position = point['position'];
     if (
       typeof point['context'] !== 'string' ||
-      !(
-        layer === null ||
-        (Number.isInteger(layer) && (layer as number) >= 0)
-      ) ||
+      !(layer === null || (Number.isInteger(layer) && (layer as number) >= 0)) ||
       !Number.isInteger(position) ||
       (position as number) < 0
     )
       return null;
-    return {
-      context: point['context'],
-      layer: layer as number | null,
-      position: position as number,
-    };
+    return {context: point['context'], layer: layer as number | null, position: position as number};
   },
-  identity: (point) =>
-    JSON.stringify([point.context, point.position, point.layer]),
+  identity: (point) => JSON.stringify([point.context, point.position, point.layer]),
 };
 export function kvBookmarkLabel(point: SavedPoint) {
   return point.layer === null

@@ -41,8 +41,7 @@ export interface ComposerWorkspace {
 export class ConversationComposerController {
   constructor(private readonly workspace: ComposerWorkspace) {}
   readonly promptError = computed(() =>
-    new TextEncoder().encode(this.workspace.chatDraft()).length >
-    MAX_PROMPT_BYTES
+    new TextEncoder().encode(this.workspace.chatDraft()).length > MAX_PROMPT_BYTES
       ? 'Message exceeds the 4 MiB upload limit. Your full draft is retained.'
       : '',
   );
@@ -93,11 +92,7 @@ export class ConversationComposerController {
     }
   }
   async send() {
-    if (this.canSend())
-      await this.workspace.runtime.start(
-        'generate',
-        this.workspace.chatDraft(),
-      );
+    if (this.canSend()) await this.workspace.runtime.start('generate', this.workspace.chatDraft());
   }
   stop() {
     return this.workspace.runtime.stop();

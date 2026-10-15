@@ -38,12 +38,7 @@ const KV_QUERY_LANGUAGE: MetricQueryLanguage = {
   percentScale: 0.01,
 };
 /** Mirrors kv_formula.py on the server, which does the actual filtering; only true matches. */
-export function compileKvQuery(
-  expression: string,
-): (metrics: KvQueryMetrics) => boolean {
-  const query = compileMetricQuery<KvQueryMetrics>(
-    expression,
-    KV_QUERY_LANGUAGE,
-  );
+export function compileKvQuery(expression: string): (metrics: KvQueryMetrics) => boolean {
+  const query = compileMetricQuery<KvQueryMetrics>(expression, KV_QUERY_LANGUAGE);
   return (metrics) => query(metrics) === true;
 }

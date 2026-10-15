@@ -11,23 +11,61 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 [build-system]
 requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "model-explorer-debugger"
-version = "0.2.0"
-requires-python = ">=3.10"
-dependencies = ["numpy>=1.26,<3", "safetensors>=0.8,<1", "ml_dtypes>=0.5,<1", "model-debugger-contracts==0.1.0", "fastapi>=0.115,<1", "uvicorn>=0.30,<1", "psutil>=5.9,<8", "sentencepiece>=0.2,<1"]
+name = "model-debugger-server"
+version = "0.0.0"
+description = "The Server of the Model Debugger."
+requires-python = ">=3.11"
+dependencies = [
+  "grpcio>=1.84,<2",
+  "jsonschema>=4.23,<5",
+  "numpy>=2,<3",
+  "protobuf>=6,<8",
+  "safetensors>=0.6,<1",
+  "starlette>=0.47,<1",
+  "uvicorn>=0.35,<1",
+]
 
 [project.optional-dependencies]
-test = ["httpx>=0.28,<1"]
-apple = ["websockets>=15,<17", "flatbuffers>=25,<26"]
+# grpcio-tools compiles the protocol's .proto into src/model_debugger/v1.
+proto = [
+  "grpcio-tools>=1.84,<2",
+]
+test = [
+  "grpcio-tools>=1.84,<2",
+  "httpx>=0.28,<1",
+  "pytest>=8,<9",
+  "ruff>=0.6,<1",
+]
+
+[project.scripts]
+model-debugger-server = "model_debugger_server.main:main"
 
 [tool.setuptools.packages.find]
-where = ["package"]
+where = ["src"]
+namespaces = true
 
-[tool.setuptools.package-data]
-"model_explorer_debugger.runtime" = ["*.json"]
+[tool.ruff]
+line-length = 80
+indent-width = 2
+extend-exclude = ["src/model_debugger"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "D"]
+pydocstyle.convention = "google"
+
+[tool.ruff.lint.isort]
+force-sort-within-sections = true
+known-third-party = [
+  "capture_fixtures",
+  "fake_runner",
+  "model_debugger",
+  "model_debugger_server",
+]
+
+[tool.ruff.format]
+quote-style = "single"

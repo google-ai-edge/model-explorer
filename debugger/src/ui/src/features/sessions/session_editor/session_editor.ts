@@ -17,45 +17,39 @@
  */
 
 import {
-  AfterViewInit,
-  ChangeDetectorRef,
   Component,
-  computed,
-  ElementRef,
   inject,
   input,
-  OnDestroy,
-  OnInit,
   output,
   signal,
+  OnInit,
+  AfterViewInit,
+  OnDestroy,
+  ElementRef,
+  ChangeDetectorRef,
+  computed,
 } from '@angular/core';
+import {MatDialog} from '@angular/material/dialog';
+import {
+  runtimeOptionFields,
+  runtimeOptionValue,
+  runtimeOptionKeys,
+  pytorchRuntimeOptionKeys,
+} from '../runtime_options';
 import {FormsModule} from '@angular/forms';
 import {MatButtonModule} from '@angular/material/button';
-import {MatDialog} from '@angular/material/dialog';
 import {MatIconModule} from '@angular/material/icon';
-import {MatMenuModule} from '@angular/material/menu';
 import {MatTooltipModule} from '@angular/material/tooltip';
-import type {RunnerDevice} from '../../../data/contracts/runtime';
-import {
-  SessionConfig,
-  SessionSummary,
-} from '../../../data/contracts/session_summary';
-import {RuntimeService} from '../../../data/runtime_service';
-import {SessionListService} from '../../../data/session_list_service';
-import {
-  copiedSessionName,
-  sessionConfigurationLocked,
-} from '../../../data/session_status';
+import {HfFilePicker, HfFile} from '../hf_file_picker/hf_file_picker';
 import {ConfigPicker} from '../../../shared/config_picker/config_picker';
-import {formatGiB} from '../../../shared/format/format';
-import {HfFile, HfFilePicker} from '../hf_file_picker/hf_file_picker';
-import {
-  pytorchRuntimeOptionKeys,
-  runtimeOptionFields,
-  runtimeOptionKeys,
-  runtimeOptionValue,
-} from '../runtime_options';
+import {MatMenuModule} from '@angular/material/menu';
+import {SessionSummary, SessionConfig} from '../../../data/contracts/session_summary';
+import {RuntimeService} from '../../../data/runtime_service';
+import type {RunnerDevice} from '../../../data/contracts/runtime';
+import {SessionListService} from '../../../data/session_list_service';
 import {TapPicker} from '../tap_picker/tap_picker';
+import {copiedSessionName, sessionConfigurationLocked} from '../../../data/session_status';
+import {formatGiB} from '../../../shared/format/format';
 export interface EditorRequest {
   session?: SessionSummary;
   mode: 'create' | 'update' | 'duplicate';
@@ -79,9 +73,7 @@ export class SessionEditor implements OnInit, AfterViewInit, OnDestroy {
   readonly runtime = inject(RuntimeService);
   private readonly element: ElementRef<HTMLElement> = inject(ElementRef);
   ngAfterViewInit() {
-    this.element.nativeElement
-      .querySelector<HTMLElement>('#editor-title')
-      ?.focus();
+    this.element.nativeElement.querySelector<HTMLElement>('#editor-title')?.focus();
   }
   readonly request = input.required<EditorRequest>();
   readonly finished = output<boolean>();
@@ -110,9 +102,7 @@ export class SessionEditor implements OnInit, AfterViewInit, OnDestroy {
   ]);
   readonly runtimes = computed(() => [
     ...new Set([
-      ...(this.runtime.capabilities()?.runtimes?.map((r) => r.id) ?? [
-        'LiteRT-LM',
-      ]),
+      ...(this.runtime.capabilities()?.runtimes?.map((r) => r.id) ?? ['LiteRT-LM']),
       ...this.sessions
         .items()
         .flatMap((s) => s.runs.map((r) => r.runtime ?? ''))
@@ -134,27 +124,21 @@ export class SessionEditor implements OnInit, AfterViewInit, OnDestroy {
   }
   private focusError() {
     requestAnimationFrame(() =>
-      this.element.nativeElement
-        .querySelector<HTMLElement>('[role="alert"]')
-        ?.focus(),
+      this.element.nativeElement.querySelector<HTMLElement>('[role="alert"]')?.focus(),
     );
   }
   focusSelectedFile(run: SessionConfig['runs'][number]) {
     requestAnimationFrame(() =>
       this.element.nativeElement
         .querySelector<HTMLButtonElement>(
-          '[aria-label="Clear ' +
-            (run.id === 'ref' ? 'Reference' : 'Target') +
-            ' file selection"]',
+          '[aria-label="Clear ' + (run.id === 'ref' ? 'Reference' : 'Target') + ' file selection"]',
         )
         ?.focus(),
     );
   }
   async configure(run: SessionConfig['runs'][number], trigger: HTMLElement) {
     try {
-      const {RuntimeOptions} = await import(
-        '../runtime_options/runtime_options'
-      );
+      const {RuntimeOptions} = await import('../runtime_options/runtime_options');
       if (!this.alive) return;
       const other = this.config.runs.find((r) => r.id !== run.id)!;
       this.dialogs
@@ -169,7 +153,7 @@ export class SessionEditor implements OnInit, AfterViewInit, OnDestroy {
             capability: this.deviceCapability(run),
             local: !!this.sessions.listing()?.generation_available,
             native: run.runtime === 'LiteRT-LM',
-            ios: this.runnerDevice(run.device)?.platform?.startsWith('iOS'),
+            ios: this.runnerDevice(run.device)?.platform === 'iOS Simulator',
           },
           width: '500px',
           maxWidth: 'calc(100vw - 32px)',
@@ -192,9 +176,7 @@ export class SessionEditor implements OnInit, AfterViewInit, OnDestroy {
           trigger.focus();
         });
     } catch {
-      this.error.set(
-        'Runtime settings could not be loaded. Reload the page and try again.',
-      );
+      this.error.set('Runtime settings could not be loaded. Reload the page and try again.');
       trigger.focus();
     }
   }
@@ -209,10 +191,7 @@ export class SessionEditor implements OnInit, AfterViewInit, OnDestroy {
         ]
       : runtimeOptionFields;
     return fields
-      .filter(
-        (f) =>
-          runtimeOptionValue(run, f.key) !== runtimeOptionValue(other, f.key),
-      )
+      .filter((f) => runtimeOptionValue(run, f.key) !== runtimeOptionValue(other, f.key))
       .map((f) => ({label: f.label, value: runtimeOptionValue(run, f.key)}));
   }
   isPyTorch(run: SessionConfig['runs'][number]) {
@@ -232,9 +211,24 @@ export class SessionEditor implements OnInit, AfterViewInit, OnDestroy {
       ? {
           ...cap,
           ...(observed ? {backends: observed.backends} : {}),
-          ...(run.runtime === 'LiteRT-LM' &&
-          runner?.capabilities?.contextLengths
+          ...(run.runtime === 'LiteRT-LM' && runner?.capabilities?.contextLengths
             ? {contextLengths: runner.capabilities.contextLengths}
+            : {}),
+          // A connected Runner narrows the contract's option vocabulary to what its build applies.
+          ...(run.runtime === 'LiteRT-LM' && runner?.capabilities?.engineOptions
+            ? {
+                supported_options: [
+                  'backend',
+                  'contextLength',
+                  ...runner.capabilities.engineOptions,
+                ],
+              }
+            : {}),
+          ...(run.runtime === 'LiteRT-LM' && runner?.capabilities?.conversationOptions
+            ? {chat_options: ['maxOutputTokens', ...runner.capabilities.conversationOptions]}
+            : {}),
+          ...(run.runtime === 'LiteRT-LM' && runner?.capabilities?.samplerTypes
+            ? {sampler_types: runner.capabilities.samplerTypes}
             : {}),
         }
       : cap;
@@ -262,8 +256,7 @@ export class SessionEditor implements OnInit, AfterViewInit, OnDestroy {
       this.runtime
         .capabilities()
         ?.models.filter(
-          (model) =>
-            (model.runtime ?? 'LiteRT-LM') === (run.runtime ?? 'LiteRT-LM'),
+          (model) => (model.runtime ?? 'LiteRT-LM') === (run.runtime ?? 'LiteRT-LM'),
         ) ?? []
     );
   }
@@ -277,10 +270,7 @@ export class SessionEditor implements OnInit, AfterViewInit, OnDestroy {
     run.source = runtime === 'PyTorch' ? 'registered' : 'upload';
     run.device = 'local';
     delete run.runnerBuild;
-    for (const key of runtimeOptionKeys) {
-      if (key === 'forceF32') run.forceF32 = false;
-      else run[key] = '';
-    }
+    for (const key of runtimeOptionKeys) run[key] = '';
     delete run.precision;
     const backends = this.runtime.capability(runtime)?.backends ?? ['CPU'];
     run.backend = backends[0] ?? 'CPU';
@@ -295,10 +285,7 @@ export class SessionEditor implements OnInit, AfterViewInit, OnDestroy {
     if (!id || id === 'Server host') id = 'local';
     const device = this.runnerDevice(id);
     if (id === 'local' || device?.id === 'local')
-      return (
-        'This computer · ' +
-        (device ? this.runtime.deviceStatusLabel(device) : 'Unchecked')
-      );
+      return 'This computer · ' + (device ? this.runtime.deviceStatusLabel(device) : 'Unchecked');
     return device
       ? device.name +
           ' · ' +
@@ -314,11 +301,7 @@ export class SessionEditor implements OnInit, AfterViewInit, OnDestroy {
   runnerDevice(id: string | undefined) {
     return this.runtime
       .devices()
-      .find(
-        (d) =>
-          d.id === (!id || id === 'Server host' ? 'local' : id) ||
-          d.runnerId === id,
-      );
+      .find((d) => d.id === (!id || id === 'Server host' ? 'local' : id) || d.runnerId === id);
   }
   deviceCheckedAt(value: string) {
     return new Date(value).toLocaleTimeString();
@@ -357,9 +340,7 @@ export class SessionEditor implements OnInit, AfterViewInit, OnDestroy {
             ? ' · ' +
               (owner.sessionName || owner.sessionId) +
               ' · ' +
-              (owner.isCurrentServer
-                ? 'Current Server'
-                : owner.serverName || owner.serverId)
+              (owner.isCurrentServer ? 'Current Server' : owner.serverName || owner.serverId)
             : ' · Owner unknown')
       : device.runnerState === 'not_running'
         ? 'Model Server off'
@@ -403,8 +384,7 @@ export class SessionEditor implements OnInit, AfterViewInit, OnDestroy {
         this.config.runs
           .map((run) => this.runnerDevice(run.device))
           .filter(
-            (device): device is RunnerDevice =>
-              !!device && device.runnerState === 'not_running',
+            (device): device is RunnerDevice => !!device && device.runnerState === 'not_running',
           )
           .map((device) => device.id),
       ),
@@ -416,10 +396,8 @@ export class SessionEditor implements OnInit, AfterViewInit, OnDestroy {
         run.runnerBuild = device.runner?.build?.id ?? device.runner?.buildId;
         continue;
       }
-      const available =
-        this.buildCatalog(run)?.builds.filter((build) => build.available) ?? [];
-      if (!run.runnerBuild && available.length === 1)
-        run.runnerBuild = available[0].id;
+      const available = this.buildCatalog(run)?.builds.filter((build) => build.available) ?? [];
+      if (!run.runnerBuild && available.length === 1) run.runnerBuild = available[0].id;
     }
     this.changeDetector.markForCheck();
   }
@@ -429,9 +407,7 @@ export class SessionEditor implements OnInit, AfterViewInit, OnDestroy {
   }
   buildLabel(run: SessionConfig['runs'][number]) {
     return (
-      this.buildCatalog(run)?.builds.find(
-        (build) => build.id === run.runnerBuild,
-      )?.label ||
+      this.buildCatalog(run)?.builds.find((build) => build.id === run.runnerBuild)?.label ||
       run.runnerBuild ||
       'Select Runner build'
     );
@@ -451,9 +427,7 @@ export class SessionEditor implements OnInit, AfterViewInit, OnDestroy {
       this.buildCatalog(run)?.builds.map((build) => [
         build.label,
         build.reason ||
-          [build.version, build.cl ? 'CL ' + build.cl : '']
-            .filter(Boolean)
-            .join(' · '),
+          [build.version, build.cl ? 'CL ' + build.cl : ''].filter(Boolean).join(' · '),
       ]) ?? [],
     );
   }
@@ -469,45 +443,25 @@ export class SessionEditor implements OnInit, AfterViewInit, OnDestroy {
     for (const run of this.config.runs) {
       const device = this.runnerDevice(run.device),
         side = run.id === 'ref' ? 'Reference' : 'Target';
-      if (
-        !device ||
-        !['not_running', 'idle'].includes(device.runnerState ?? 'unknown')
-      )
+      if (!device || !['not_running', 'idle'].includes(device.runnerState ?? 'unknown'))
         return (
-          side +
-          ': ' +
-          (device
-            ? this.deviceOccupancy(device)
-            : 'device availability is unknown')
+          side + ': ' + (device ? this.deviceOccupancy(device) : 'device availability is unknown')
         );
       if (device.runnerState === 'idle') continue;
       const catalog = this.buildCatalog(run);
       if (!catalog?.canLaunch)
-        return (
-          side +
-          ': ' +
-          (catalog?.reason || 'No launchable Model Server builds registered')
-        );
-      if (
-        !catalog.builds.some(
-          (build) => build.id === run.runnerBuild && build.available,
-        )
-      )
+        return side + ': ' + (catalog?.reason || 'No launchable Model Server builds registered');
+      if (!catalog.builds.some((build) => build.id === run.runnerBuild && build.available))
         return side + ': select an available Model Server build';
     }
     const [ref, target] = this.config.runs,
       device = this.runnerDevice(ref?.device);
-    if (
-      device?.id === this.runnerDevice(target?.device)?.id &&
-      device?.platform !== 'macOS'
-    )
+    if (device?.id === this.runnerDevice(target?.device)?.id && device?.platform !== 'macOS')
       return 'This device supports one Runner. Select different devices for Reference and Target.';
     return '';
   }
   selectDevice(run: SessionConfig['runs'][number], label: string) {
-    const device = this.runtime
-      .devices()
-      .find((d) => this.deviceLabel(d.id) === label);
+    const device = this.runtime.devices().find((d) => this.deviceLabel(d.id) === label);
     if (!device || this.unavailableDevices(run).includes(label)) return;
     run.device = device.id;
     run.runnerBuild =
@@ -516,23 +470,14 @@ export class SessionEditor implements OnInit, AfterViewInit, OnDestroy {
         : undefined;
     if (run.runtime === 'LiteRT-LM') {
       const capability = this.deviceCapability(run),
-        backends = device.platform?.startsWith('iOS')
-          ? ['CPU']
-          : (capability?.backends ?? ['CPU']);
-      if (!backends.includes(run.backend ?? ''))
-        run.backend = backends[0] ?? 'CPU';
-      run.cpuThreads = '';
-      if (
-        !(capability?.contextLengths ?? [1024, 4096]).includes(
-          Number(run.contextLength),
-        )
-      )
+        backends =
+          device.platform === 'iOS Simulator' ? ['CPU'] : (capability?.backends ?? ['CPU']);
+      if (!backends.includes(run.backend ?? '')) run.backend = backends[0] ?? 'CPU';
+      if (!(capability?.contextLengths ?? [1024, 4096]).includes(Number(run.contextLength)))
         run.contextLength = '1024';
-      run.audioBackend = '';
-      run.audioCpuThreads = '';
-      run.visionBackend = '';
-      run.forceF32 = false;
-      run.prefillBatchSizes = '';
+      // A device change keeps only the Session options its Runner build applies.
+      const supported = capability?.supported_options ?? ['backend', 'contextLength'];
+      for (const key of runtimeOptionKeys) if (!supported.includes(key)) run[key] = '';
     }
     void this.loadSelectedBuilds();
     if (!this.customName) this.suggest();
@@ -540,20 +485,15 @@ export class SessionEditor implements OnInit, AfterViewInit, OnDestroy {
   config: SessionConfig = {name: '', model: '', runs: []};
   ngOnInit() {
     // A saved-capture Server (--data) has no Runner registry; do not probe devices there.
-    if (this.sessions.listing()?.generation_available !== false)
-      void this.refreshDevices();
+    if (this.sessions.listing()?.generation_available !== false) void this.refreshDevices();
     this.customName = this.request().mode !== 'create';
     const source =
       this.request().session ??
       this.sessions.listing()?.configuration_template ??
       this.sessions.items()[0];
     this.config = {
-      tap_points:
-        this.request().mode === 'create'
-          ? {}
-          : structuredClone(source?.tap_points ?? {}),
-      tap_profile:
-        this.request().mode === 'create' ? '' : (source?.tap_profile ?? ''),
+      tap_points: this.request().mode === 'create' ? {} : structuredClone(source?.tap_points ?? {}),
+      tap_profile: this.request().mode === 'create' ? '' : (source?.tap_profile ?? ''),
       name:
         this.request().mode === 'duplicate'
           ? copiedSessionName(source?.name ?? 'Session')
@@ -576,7 +516,6 @@ export class SessionEditor implements OnInit, AfterViewInit, OnDestroy {
         run.source = this.isPyTorch(run) ? 'registered' : 'upload';
         run.backend = 'CPU';
         if (run.runtime === 'LiteRT-LM') run.contextLength = '1024';
-        run.forceF32 = false;
         delete run.precision;
         delete run.runnerBuild;
         run.device = 'local';
@@ -605,16 +544,13 @@ export class SessionEditor implements OnInit, AfterViewInit, OnDestroy {
     this.uploadProgress.set(null);
     this.error.set('');
     requestAnimationFrame(() =>
-      this.element.nativeElement
-        .querySelector<HTMLButtonElement>('[data-cancel-upload]')
-        ?.focus(),
+      this.element.nativeElement.querySelector<HTMLButtonElement>('[data-cancel-upload]')?.focus(),
     );
     try {
       const result = await this.runtime.api.upload(file, {
         signal: request.signal,
         onProgress: (loaded, total) => {
-          if (this.uploadRequest === request && total > 0)
-            this.uploadProgress.set(loaded / total);
+          if (this.uploadRequest === request && total > 0) this.uploadProgress.set(loaded / total);
         },
       });
       if (request.signal.aborted || !this.alive) return;
@@ -635,9 +571,7 @@ export class SessionEditor implements OnInit, AfterViewInit, OnDestroy {
         if (request.signal.aborted && this.alive)
           requestAnimationFrame(() =>
             this.element.nativeElement
-              .querySelector<HTMLButtonElement>(
-                '[data-run="' + run.id + '"] [data-source-upload]',
-              )
+              .querySelector<HTMLButtonElement>('[data-run="' + run.id + '"] [data-source-upload]')
               ?.focus(),
           );
       }
@@ -660,9 +594,7 @@ export class SessionEditor implements OnInit, AfterViewInit, OnDestroy {
           '[data-run="' +
             run.id +
             '"] ' +
-            (this.isPyTorch(run)
-              ? '[data-source-local]'
-              : '[data-source-upload]'),
+            (this.isPyTorch(run) ? '[data-source-local]' : '[data-source-upload]'),
         )
         ?.focus(),
     );
@@ -691,13 +623,12 @@ export class SessionEditor implements OnInit, AfterViewInit, OnDestroy {
   }
   modelName(artifact: string) {
     return (
-      this.runtime.capabilities()?.models.find((m) => m.artifact === artifact)
-        ?.name ?? artifact.split('/').pop()
+      this.runtime.capabilities()?.models.find((m) => m.artifact === artifact)?.name ??
+      artifact.split('/').pop()
     );
   }
   selectLocal(run: SessionConfig['runs'][number], artifact: string) {
-    if (!this.localModels(run).some((model) => model.artifact === artifact))
-      return;
+    if (!this.localModels(run).some((model) => model.artifact === artifact)) return;
     run.artifact = artifact;
     run.source = 'registered';
     run.repository = '';
@@ -712,26 +643,24 @@ export class SessionEditor implements OnInit, AfterViewInit, OnDestroy {
         (r.source !== 'huggingface' || r.repository?.trim()) &&
         (!this.isPyTorch(r) ||
           (r.source === 'registered' &&
-            this.localModels(r).some(
-              (model) => model.artifact === r.artifact,
-            ))),
+            this.localModels(r).some((model) => model.artifact === r.artifact))),
     );
   }
   readonly scanReady = signal<Record<string, boolean>>({});
   captureGroups() {
     const runs = this.config.runs.filter((r) => r.runtime === 'LiteRT-LM');
-    return [
-      ...new Set(runs.map((r) => r.artifact).filter((a): a is string => !!a)),
-    ].map((artifact) => ({
-      artifact,
-      label:
-        runs
-          .filter((r) => r.artifact === artifact)
-          .map((r) => (r.id === 'ref' ? 'Reference' : 'Target'))
-          .join(' + ') +
-        ' · ' +
-        this.modelName(artifact),
-    }));
+    return [...new Set(runs.map((r) => r.artifact).filter((a): a is string => !!a))].map(
+      (artifact) => ({
+        artifact,
+        label:
+          runs
+            .filter((r) => r.artifact === artifact)
+            .map((r) => (r.id === 'ref' ? 'Reference' : 'Target'))
+            .join(' + ') +
+          ' · ' +
+          this.modelName(artifact),
+      }),
+    );
   }
   selectTaps(artifact: string, points: string[]) {
     this.config.tap_points = {...this.config.tap_points, [artifact]: points};
@@ -743,8 +672,7 @@ export class SessionEditor implements OnInit, AfterViewInit, OnDestroy {
       !this.config.tap_profile ||
       this.captureGroups().every(
         (g) =>
-          this.scanReady()[g.artifact] &&
-          (this.config.tap_points?.[g.artifact]?.length ?? 0) > 0,
+          this.scanReady()[g.artifact] && (this.config.tap_points?.[g.artifact]?.length ?? 0) > 0,
       )
     );
   }
@@ -759,24 +687,18 @@ export class SessionEditor implements OnInit, AfterViewInit, OnDestroy {
       this.deviceConfigurationError()
     )
       return;
-    const capability =
-      this.request().mode === 'duplicate' ? 'duplicate' : 'create';
+    const capability = this.request().mode === 'duplicate' ? 'duplicate' : 'create';
     if (!this.sessions.listing()?.capabilities[capability]) {
-      this.error.set(
-        'Session configuration changes are unavailable. Return to the session list.',
-      );
+      this.error.set('Session configuration changes are unavailable. Return to the session list.');
       return;
     }
     const original = this.request().session;
     const current =
-      this.sessions
-        .items()
-        .find((item) => item.id === (this.savedId ?? original?.id)) ?? original;
+      this.sessions.items().find((item) => item.id === (this.savedId ?? original?.id)) ?? original;
     if (
       current &&
       (sessionConfigurationLocked(current) ||
-        ((this.savedId || this.request().mode === 'update') &&
-          current.has_capture))
+        ((this.savedId || this.request().mode === 'update') && current.has_capture))
     ) {
       this.error.set(
         'This session can no longer be edited. Return to the list and check its current state.',
@@ -788,25 +710,16 @@ export class SessionEditor implements OnInit, AfterViewInit, OnDestroy {
     let preparing = false;
     try {
       const id =
-        this.savedId ??
-        (this.request().mode === 'update'
-          ? this.request().session?.id
-          : undefined);
+        this.savedId ?? (this.request().mode === 'update' ? this.request().session?.id : undefined);
       const session = await this.sessions.manage(id ? 'update' : 'create', {
         ...this.config,
         tap_points: Object.fromEntries(
-          this.captureGroups().map((g) => [
-            g.artifact,
-            this.config.tap_points?.[g.artifact] ?? [],
-          ]),
+          this.captureGroups().map((g) => [g.artifact, this.config.tap_points?.[g.artifact] ?? []]),
         ),
         id,
       });
       this.savedId = session.id;
-      if (
-        this.config.tap_profile &&
-        this.sessions.listing()?.generation_available === true
-      ) {
+      if (this.config.tap_profile && this.sessions.listing()?.generation_available === true) {
         preparing = true;
         await this.runtime.lifecycle(session.id, 'prepare');
         await this.sessions.load();
@@ -814,15 +727,12 @@ export class SessionEditor implements OnInit, AfterViewInit, OnDestroy {
       // A new Session starts its Model Server right away; with selected outputs, as soon as the
       // capture model is prepared. The list shows it starting and opens the way in once it is on.
       const starting =
-        this.request().mode !== 'update' &&
-        this.sessions.listing()?.generation_available === true;
+        this.request().mode !== 'update' && this.sessions.listing()?.generation_available === true;
       if (starting) {
         if (preparing) this.runtime.startWhenPrepared(session.id);
         else {
           await this.sessions.load();
-          const summary = this.sessions
-            .allItems()
-            .find((item) => item.id === session.id);
+          const summary = this.sessions.allItems().find((item) => item.id === session.id);
           if (summary) void this.runtime.toggleModelServer(summary);
         }
       }

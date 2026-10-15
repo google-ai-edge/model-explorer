@@ -1,0 +1,333 @@
+// Copyright 2026 The AI Edge Model Explorer Authors.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+// The Model Debugger Protocol: what the server asks of a runner.
+// Version 1.0.0
+//
+// A runner hosts one runtime. Over one connection the server loads one model
+// on it, uploading the file first if the runner does not have it, holds one
+// chat with that model, and reads the tensor files the runtime captures while
+// it generates. A runner serves only the connection of its first RPC, for its
+// whole life; an RPC on another connection fails with FAILED_PRECONDITION.
+// Cancelling a Send RPC stops the reply; the chat is then over, and so is
+// generation on this connection. Errors are gRPC statuses with the canonical
+// codes; INTERNAL is a failure of the runner or its runtime.
+
+syntax = "proto3";
+
+package model_debugger.v1;
+
+import "google/protobuf/struct.proto";
+
+service Runner {
+  // Who this runner is: protocol version, host, runtime and the options the
+  // runtime takes. The server calls it first and proceeds only if
+  // protocol_version is its own.
+  rpc GetInfo(GetInfoRequest) returns (RunnerInfo);
+
+  // Puts a model file in the runner's store, by its sha256. Already there:
+  // succeeds at once, the stream unread. Runners may share a store: the
+  // server uploads a model to one runner at a time, never two uploads of one
+  // model at once. On any failure nothing is kept. INVALID_ARGUMENT: the
+  // stream does not start with a valid header, or brings more bytes than it
+  // announced. DATA_LOSS: fewer bytes arrived, or they do not hash to the
+  // sha256 announced. RESOURCE_EXHAUSTED: no room.
+  rpc UploadModel(stream UploadModelRequest) returns (UploadModelResponse);
+
+  // Loads the one model of this connection. A second call, or one while
+  // another is in progress, fails with FAILED_PRECONDITION; so does a device
+  // the runner cannot run on, such as GPU without its GPU plugins. NOT_FOUND
+  // only means the runner's model store has no file of this sha256; the
+  // server then uploads it and calls again.
+  rpc Load(LoadRequest) returns (LoadResponse);
+
+  // Creates the one chat of this connection, from its starting messages and
+  // options. A second call, or one while another is in progress, fails with
+  // FAILED_PRECONDITION.
+  rpc CreateChat(CreateChatRequest) returns (CreateChatResponse);
+
+  // Sends the user's next turn. The stream carries the reply as chunks and
+  // ends with the completion. One call at a time; cancelling the call stops
+  // the model. INVALID_ARGUMENT: the turn was refused and nothing changed.
+  // Any other failure, CANCELLED included, ends the chat: the model may hold
+  // a turn the server never got. FAILED_PRECONDITION afterwards.
+  rpc Send(SendRequest) returns (stream SendResponse);
+
+  // The files the runtime captured during one completed turn. NOT_FOUND: the
+  // turn has no capture: it is not completed, was cancelled, or was released.
+  rpc ListCaptures(ListCapturesRequest) returns (ListCapturesResponse);
+
+  // The bytes of one captured file, in order. NOT_FOUND: as ListCaptures, or
+  // the turn has no such file. INVALID_ARGUMENT: path is not a name in the
+  // listing.
+  rpc ReadCapture(ReadCaptureRequest) returns (stream CaptureData);
+
+  // Deletes one turn's capture from the runner, once the server holds every
+  // file of it: captures are large, and a runner keeps those not released
+  // until it exits. NOT_FOUND: as ListCaptures; releasing twice is one of
+  // these.
+  rpc ReleaseCaptures(ReleaseCapturesRequest) returns (ReleaseCapturesResponse);
+}
+
+// ---- GetInfo
+
+message GetInfoRequest {}
+
+message RunnerInfo {
+  // The protocol version the runner was built against, MAJOR.MINOR.PATCH.
+  string protocol_version = 1;
+  HostInfo host = 2;
+  RuntimeInfo runtime = 3;
+}
+
+// The machine the runner runs on, as the system reports it. Nothing here is
+// guessed; a value the platform cannot report is left unset.
+message HostInfo {
+  enum Platform {
+    PLATFORM_UNSPECIFIED = 0;
+    MACOS = 1;
+    IOS = 2;
+    LINUX = 3;
+    ANDROID = 4;
+  }
+  Platform platform = 1;
+  string os_version = 2;    // Such as "27.2".
+  string os_build = 3;      // Tells a beta or a vendor build apart.
+  string architecture = 4;  // "arm64" or "x86_64".
+  string model = 5;  // The machine's model identifier, such as "Mac14,6".
+  optional string chip =
+      6;                   // Such as "Apple M2 Max"; unset where not reported.
+  int32 cpu_count = 7;     // Logical processors.
+  int64 memory_bytes = 8;  // Physical memory.
+  optional Gpu gpu = 9;    // Unset when the runner can only run on the CPU.
+
+  message Gpu {
+    string name = 1;
+    optional string driver_version = 2;  // Where separate from the OS.
+    optional int64 memory_bytes = 3;     // Dedicated memory; unset if unified.
+  }
+}
+
+// The runtime a runner hosts, known before any model is loaded.
+message RuntimeInfo {
+  enum Name {
+    NAME_UNSPECIFIED = 0;
+    LITERT_LM = 1;
+    PYTORCH = 2;
+  }
+  Name name = 1;
+  // The runtime's full identifier: the complete commit it was built from, or
+  // its release number. Never abbreviated.
+  string version = 2;
+  // A JSON Schema (draft 2020-12) for LoadRequest.runtime_options: the keys
+  // this runtime takes beyond the fixed ones, their types, which are required.
+  string load_options_schema = 3;
+  // The same for ChatOptions.runtime_options.
+  string chat_options_schema = 4;
+}
+
+// ---- UploadModel
+
+// The first message of the stream is the header; every message after it is
+// data, in order.
+message UploadModelRequest {
+  oneof request {
+    ModelHeader header = 1;
+    bytes data = 2;  // At most 1 MiB per message.
+  }
+}
+
+message ModelHeader {
+  // SHA-256 of the whole file, lower-case hex: the name the file is loaded by.
+  string sha256 = 1;
+  int64 size = 2;  // Bytes to follow.
+}
+
+message UploadModelResponse {}
+
+// ---- Load
+
+enum Device {
+  DEVICE_UNSPECIFIED = 0;
+  CPU = 1;
+  GPU = 2;
+}
+
+message LoadRequest {
+  // The model file, by identity: SHA-256 of the whole file, lower-case hex.
+  string sha256 = 1;
+  Device device = 2;
+  // Most tokens the model holds, prompt and reply together.
+  int32 context_length = 3;
+  // The runtime's own options, validated by the server against
+  // RuntimeInfo.load_options_schema. Never a path on the runner's machine.
+  google.protobuf.Struct runtime_options = 4;
+}
+
+// What is known only once the model is loaded. Both come from the model's own
+// metadata and are never configured through this protocol.
+message LoadResponse {
+  // The id the runtime puts before a prompt by itself; unset if none.
+  optional int32 start_token = 1;
+  repeated StopToken stop_tokens = 2;
+}
+
+// A token that ends a reply, as the model names it.
+message StopToken {
+  oneof token {
+    TokenIds ids = 1;
+    string text = 2;  // When the text does not tokenize back to one id.
+  }
+}
+
+message TokenIds {
+  repeated int32 ids = 1;
+}
+
+// ---- CreateChat
+
+message CreateChatRequest {
+  // What the chat starts with: a system message first if any, then turns the
+  // model must not regenerate. Empty means none.
+  repeated ChatMessage messages = 1;
+  ChatOptions options = 2;
+}
+
+message CreateChatResponse {}
+
+// A chat message, as OpenAI's Chat Completions API names it.
+message ChatMessage {
+  enum Role {
+    ROLE_UNSPECIFIED = 0;
+    SYSTEM = 1;
+    USER = 2;
+    ASSISTANT = 3;
+  }
+  Role role = 1;
+  string content = 2;
+}
+
+// The chat's settings. The named fields are the ones every runtime takes, by
+// OpenAI's names; the runtime's own go in runtime_options.
+message ChatOptions {
+  // Most tokens a reply may have, reasoning included. Required: a runtime does
+  // not say why a reply ended, and a reply that reaches this ends with
+  // FINISH_REASON_LENGTH.
+  int32 max_completion_tokens = 1;
+  optional float temperature = 2;
+  optional float top_p = 3;
+  optional int32 seed = 4;
+  optional int32 top_k = 5;  // 1 is greedy.
+  // Validated by the server against RuntimeInfo.chat_options_schema.
+  google.protobuf.Struct runtime_options = 6;
+}
+
+// ---- Send
+
+message SendRequest {
+  ChatMessage message = 1;  // Role USER.
+}
+
+message SendResponse {
+  oneof response {
+    Chunk chunk = 1;
+    Completion completion = 2;
+  }
+}
+
+// One piece of the reply as the model produces it, of one kind.
+message Chunk {
+  oneof delta {
+    string content = 1;
+    string reasoning_content = 2;
+  }
+}
+
+// The whole reply. The chunks sent before, joined, equal content and
+// reasoning_content.
+message Completion {
+  string content = 1;
+  string reasoning_content = 2;
+  FinishReason finish_reason = 3;
+  Usage usage = 4;
+  ModelDebugger model_debugger = 5;
+}
+
+enum FinishReason {
+  FINISH_REASON_UNSPECIFIED = 0;
+  FINISH_REASON_STOP = 1;  // The model finished.
+  // max_completion_tokens was reached, or the context, context_length, is
+  // full.
+  FINISH_REASON_LENGTH = 2;
+}
+
+// Tokens the turn took, as OpenAI counts them.
+message Usage {
+  int32 prompt_tokens = 1;      // The whole context when the reply began.
+  int32 completion_tokens = 2;  // Produced by the model, reasoning included.
+  int32 total_tokens = 3;
+}
+
+// What the Model Debugger needs of the turn beyond the reply. Stands on its
+// own: with the capture files and this, nothing else is needed to line them up.
+message ModelDebugger {
+  // Which turn this reply ends: the n-th of the chat, from 1. A Send refused
+  // with INVALID_ARGUMENT is no turn.
+  int32 turn = 1;
+  // The text the model received for this turn, as the runtime tokenized it,
+  // without the start token. Before the first turn it holds the starting
+  // messages and the turn; afterwards the turn alone.
+  repeated PromptToken prompt_tokens = 2;
+  // Tokens in the context when the turn ended; equals Usage.total_tokens.
+  int32 context_token_count = 3;
+}
+
+message PromptToken {
+  int32 id = 1;
+  string text = 2;
+}
+
+// ---- Captures
+
+message ListCapturesRequest {
+  int32 turn = 1;
+}
+
+// The files of one turn's capture: every tensor file the runtime wrote during
+// the turn, named as the runtime named it, and the turn's
+// generated_tokens.jsonl.
+message ListCapturesResponse {
+  repeated CaptureFile files = 1;
+}
+
+message CaptureFile {
+  string path = 1;  // Relative to the turn's directory.
+  int64 size = 2;
+  string sha256 = 3;
+}
+
+message ReadCaptureRequest {
+  int32 turn = 1;
+  string path = 2;
+}
+
+message CaptureData {
+  bytes data = 1;  // At most 1 MiB per message.
+}
+
+message ReleaseCapturesRequest {
+  int32 turn = 1;
+}
+
+message ReleaseCapturesResponse {}

@@ -16,17 +16,41 @@
  * ==============================================================================
  */
 
-/** Configuration fields from debugger-shell.html runtimeConfigKeys; these are requests, not captured values. */
+/**
+ * Session-level (engine) options of a run. They are requests, not captured values, and map
+ * onto CaptureJob.engine plus the fixed backend and contextLength (src/contracts/SPEC.md).
+ * Every value is saved as text: digits, an enum value, or '' / 'on' / 'off' for a switch.
+ */
 import type {RuntimeOptions} from '../../data/contracts/session_summary';
+export type RuntimeOptionKind = 'backend' | 'threads' | 'context' | 'enum' | 'int' | 'switch';
+export interface RuntimeOptionField {
+  key: RuntimeOptionKey;
+  label: string;
+  kind: RuntimeOptionKind;
+  /** Only meaningful with this text backend; disabled and cleared otherwise. */
+  backend?: 'CPU' | 'GPU';
+  options?: readonly string[];
+  help: string;
+}
 export const runtimeOptionKeys = [
   'backend',
   'cpuThreads',
   'audioBackend',
   'audioCpuThreads',
   'visionBackend',
-  'forceF32',
-  'prefillBatchSizes',
+  'activationDataType',
+  'prefillChunkSize',
   'contextLength',
+  'enableYnnpack',
+  'speculativeDecoding',
+  'parallelFileSectionLoading',
+  'singleThreadedExecution',
+  'useRingbuffersLocalAttention',
+  'gpuDecodeStepsPerSync',
+  'gpuWaitForWeightUploads',
+  'gpuMetalResidencySet',
+  'loraRank',
+  'audioLoraRank',
 ] as const;
 export const pytorchRuntimeOptionKeys = [
   'backend',
@@ -37,28 +61,95 @@ export const pytorchRuntimeOptionKeys = [
 export type RuntimeOptionKey =
   | (typeof runtimeOptionKeys)[number]
   | (typeof pytorchRuntimeOptionKeys)[number];
-export const runtimeOptionFields = [
+export const activationDataTypes = ['float32', 'float16', 'int16', 'int8'] as const;
+/** Members beyond the backend, thread and context settings; shown as "Advanced engine settings". */
+export const advancedRuntimeOptionFields: readonly RuntimeOptionField[] = [
+  {
+    key: 'enableYnnpack',
+    label: 'YNNPACK',
+    kind: 'switch',
+    help: 'Delegate supported operations to YNNPACK before XNNPACK (set_enable_ynnpack).',
+  },
+  {
+    key: 'speculativeDecoding',
+    label: 'Speculative decoding (engine)',
+    kind: 'switch',
+    help: 'Engine-level speculative decoding. The Runner keeps it off unless enabled; the debugger pairs one released token per step.',
+  },
+  {
+    key: 'parallelFileSectionLoading',
+    label: 'Parallel section loading',
+    kind: 'switch',
+    help: 'Load the sections of the .litertlm file in parallel (runtime default: on).',
+  },
+  {
+    key: 'singleThreadedExecution',
+    label: 'Single-threaded execution',
+    kind: 'switch',
+    help: 'Run the engine on a single thread (set_single_threaded_execution).',
+  },
+  {
+    key: 'useRingbuffersLocalAttention',
+    label: 'Ring-buffer local attention',
+    kind: 'switch',
+    help: 'Use ring buffers for local attention; ignored with a warning on unsupported models or backends.',
+  },
+  {
+    key: 'gpuDecodeStepsPerSync',
+    label: 'GPU decode steps per sync',
+    kind: 'int',
+    backend: 'GPU',
+    help: 'Decode steps between GPU synchronizations (1–1024). GPU backend only.',
+  },
+  {
+    key: 'gpuWaitForWeightUploads',
+    label: 'GPU wait for weight uploads',
+    kind: 'switch',
+    backend: 'GPU',
+    help: 'Wait for weight uploads before running. GPU backend only.',
+  },
+  {
+    key: 'gpuMetalResidencySet',
+    label: 'GPU Metal residency set',
+    kind: 'switch',
+    backend: 'GPU',
+    help: 'Keep GPU resources resident through a Metal residency set. GPU backend only.',
+  },
+  {
+    key: 'loraRank',
+    label: 'LoRA rank',
+    kind: 'int',
+    help: 'Rank of the text LoRA adapter the model was prepared with (0–1024).',
+  },
+  {
+    key: 'audioLoraRank',
+    label: 'Audio LoRA rank',
+    kind: 'int',
+    help: 'Rank of the audio LoRA adapter (0–1024).',
+  },
+];
+export const runtimeOptionFields: readonly {key: RuntimeOptionKey; label: string}[] = [
   {key: 'backend', label: 'Text Backend'},
   {key: 'cpuThreads', label: 'Text CPU threads'},
   {key: 'audioBackend', label: 'Audio Backend'},
   {key: 'audioCpuThreads', label: 'Audio CPU threads'},
   {key: 'visionBackend', label: 'Vision Backend'},
-  {key: 'forceF32', label: 'Activation dtype'},
-  {key: 'prefillBatchSizes', label: 'Prefill batch sizes'},
+  {key: 'activationDataType', label: 'Activation dtype'},
+  {key: 'prefillChunkSize', label: 'Prefill chunk size'},
   {key: 'contextLength', label: 'Context length'},
-] as const;
-export function runtimeOptionValue(
-  run: RuntimeOptions,
-  key: RuntimeOptionKey,
-): string {
+  ...advancedRuntimeOptionFields.map(({key, label}) => ({key, label})),
+];
+export const switchRuntimeOptionKeys = advancedRuntimeOptionFields
+  .filter((field) => field.kind === 'switch')
+  .map((field) => field.key);
+export function runtimeOptionValue(run: RuntimeOptions, key: RuntimeOptionKey): string {
   if (
     (key === 'cpuThreads' && run.backend !== 'CPU') ||
     (key === 'audioCpuThreads' && run.audioBackend !== 'CPU')
   )
     return '—';
-  return key === 'forceF32'
-    ? run.forceF32
-      ? 'FP32'
-      : 'Default'
-    : String(run[key] || 'Default');
+  const value = run[key];
+  if ((switchRuntimeOptionKeys as readonly string[]).includes(key))
+    return value === 'on' ? 'On' : value === 'off' ? 'Off' : 'Default';
+  return String(value || 'Default');
 }

@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The Model Debugger logo. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="256dp" android:height="256dp"
+    android:viewportWidth="256" android:viewportHeight="256">
+  <path android:pathData="M229,64.5 L229,192.5 L128,248.5 L127.5,115.5 L229,64.5 Z">
+    <aapt:attr name="android:fillColor">
+      <gradient android:type="linear"
+          android:startX="144.5" android:startY="232"
+          android:endX="219" android:endY="69.5">
+        <item android:offset="0" android:color="#FF4285F4"/>
+        <item android:offset="1" android:color="#FF2C5CAC"/>
+      </gradient>
+    </aapt:attr>
+  </path>
+  <path android:fillColor="#FFFBBC05" android:pathData="M26,61 L47.5,72.5 L47.5,200 L26,187 L26,61 Z"/>
+  <path android:fillColor="#FFDCA810" android:pathData="M125.5,10.5 L145.5,21 L145.5,60.5 L125.5,56.5 L125.5,10.5 Z"/>
+  <path android:fillColor="#FFD33D30" android:pathData="M164,31 L184,41.5 L184,81 L164,78 L164,31 Z"/>
+  <path android:fillColor="#FFB3261E" android:pathData="M164,31 L184,41.5 L87,94 L65,82 L164,31 Z"/>
+  <path android:fillColor="#FF2C5CAC" android:pathData="M208,54.5 L229,64.5 L128,116 L107,105 L208,54.5 Z"/>
+  <path android:fillColor="#FFC78B15" android:pathData="M125.5,10.5 L145.5,21 L47.5,72.5 L26,61 L125.5,10.5 Z"/>
+  <path android:fillColor="#FFEA4335" android:pathData="M65,82 L87,94 L87,224 L65,210.5 L65,82 Z"/>
+  <path android:fillColor="#FF4285F4" android:pathData="M107,105 L128,116 L128,248.5 L107,236 L107,105 Z"/>
+  <path android:fillColor="#FFFFFFFF" android:fillType="evenOdd" android:pathData="M128,116 L186,87 Q208,76 208,98 L208,162 Q208,184 186,195 L128,224 Z M148,126 L148,194 L179,178.5 Q188,174 188,165 L188,115 Q188,106 179,110.5 Z"/>
+</vector>

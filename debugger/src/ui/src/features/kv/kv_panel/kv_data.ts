@@ -17,16 +17,17 @@
  */
 
 import {signal} from '@angular/core';
+import type {ReportApiService} from '../../../data/report_api_service';
 import type {
   KvAnalysis,
+  KvRangeResponse,
+  KvRangeDetails,
   KvFindResponse,
   KvRangeBin,
-  KvRangeDetails,
-  KvRangeResponse,
+  KvPositionAlignment,
 } from '../../../data/contracts/kv';
-import type {ReportApiService} from '../../../data/report_api_service';
-import type {KvRangeSelection} from './kv_range_types';
 import type {KvViewIdentity} from './kv_view_state';
+import type {KvRangeSelection} from './kv_range_types';
 
 /** One current request. Abort-insensitive adapters still cannot publish late data or errors. */
 export class KvRequest<T> {
@@ -61,9 +62,7 @@ export class KvRequest<T> {
           receive?.(value);
         } catch (error) {
           if (!controller.signal.aborted)
-            this.error.set(
-              error instanceof Error ? error.message : String(error),
-            );
+            this.error.set(error instanceof Error ? error.message : String(error));
         } finally {
           if (!controller.signal.aborted) this.loading.set(false);
         }
@@ -80,12 +79,14 @@ export class KvRequest<T> {
 
 interface KvContextQuery extends KvViewIdentity {
   contextId: string;
+  alignment?: KvPositionAlignment | null;
 }
 export interface KvRangeQuery extends KvContextQuery {
   range: KvRangeBin;
   bins: number;
   kind: string;
   head: string;
+  heads?: number[] | null;
   formula: string;
 }
 export interface KvSelectionQuery extends KvContextQuery {
@@ -95,10 +96,7 @@ export interface KvFindQuery extends KvContextQuery {
   formula: string;
   page: number;
 }
-type KvApi = Pick<
-  ReportApiService,
-  'kvMetadata' | 'kvRange' | 'kvSelection' | 'kvFind'
->;
+type KvApi = Pick<ReportApiService, 'kvMetadata' | 'kvRange' | 'kvSelection' | 'kvFind'>;
 
 /** Owns KV network lifecycles; the panel supplies current query values and renders resource state. */
 export class KvDataController {
@@ -109,15 +107,9 @@ export class KvDataController {
   readonly find = new KvRequest<KvFindResponse>();
   constructor(private readonly api: KvApi) {}
 
-  loadMetadata(
-    identity: KvViewIdentity | null,
-    receive: (analysis: KvAnalysis) => void,
-  ) {
+  loadMetadata(identity: KvViewIdentity | null, receive: (analysis: KvAnalysis) => void) {
     return this.metadata.load(
-      identity
-        ? (signal) =>
-            this.api.kvMetadata(identity.captureId, identity.turn, signal)
-        : null,
+      identity ? (signal) => this.api.kvMetadata(identity.captureId, identity.turn, signal) : null,
       receive,
     );
   }
@@ -133,30 +125,20 @@ export class KvDataController {
       query.head,
       query.formula,
       signal,
+      query.alignment,
+      query.heads,
     );
     this.checkRange(data, query.contextId, query.range);
     return data;
   }
-  private checkRange(
-    data: KvRangeResponse | KvRangeDetails,
-    contextId: string,
-    range: KvRangeBin,
-  ) {
-    if (
-      data.context_id !== contextId ||
-      data.start !== range.start ||
-      data.end !== range.end
-    )
-      throw new Error(
-        'KV response did not match the requested observation and position range.',
-      );
+  private checkRange(data: KvRangeResponse | KvRangeDetails, contextId: string, range: KvRangeBin) {
+    if (data.context_id !== contextId || data.start !== range.start || data.end !== range.end)
+      throw new Error('KV response did not match the requested observation and position range.');
   }
   loadScale(query: KvRangeQuery | null) {
     // Full-observation colors remain stable across zoom, Find and chart changes.
     return this.scale.load(
-      query
-        ? (signal) => this.readRange({...query, bins: 1, formula: ''}, signal)
-        : null,
+      query ? (signal) => this.readRange({...query, bins: 1, formula: ''}, signal) : null,
     );
   }
   loadRange(query: KvRangeQuery | null) {
@@ -179,6 +161,7 @@ export class KvDataController {
               query.selection.end,
               query.selection.layer,
               signal,
+              query.alignment,
             );
             this.checkRange(data, query.contextId, query.selection);
             return data;
@@ -203,13 +186,7 @@ export class KvDataController {
     );
   }
   destroy() {
-    for (const request of [
-      this.metadata,
-      this.scale,
-      this.range,
-      this.selection,
-      this.find,
-    ])
+    for (const request of [this.metadata, this.scale, this.range, this.selection, this.find])
       request.destroy();
   }
 }

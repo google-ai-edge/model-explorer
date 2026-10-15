@@ -29,12 +29,7 @@ export const SIDE_TREND_METRICS = [
     unit: 'probability',
     reading: 'higher = more confident in the chosen token',
   },
-  {
-    key: 'entropy',
-    label: 'Per runtime · Entropy',
-    unit: 'bits',
-    reading: 'higher = less certain',
-  },
+  {key: 'entropy', label: 'Per runtime · Entropy', unit: 'bits', reading: 'higher = less certain'},
   {
     key: 'margin',
     label: 'Per runtime · Top-2 margin',
@@ -43,19 +38,39 @@ export const SIDE_TREND_METRICS = [
   },
 ] as const;
 export type SideTrendMetric = (typeof SIDE_TREND_METRICS)[number]['key'];
-export type TokenTrendMetric = TokenMetricKey | SideTrendMetric;
+export const FINAL_LOGIT_METRICS = [
+  {key: 'logit_rmse', label: 'Root mean square error', unit: '', reading: '0 = identical values'},
+  {key: 'logit_max_abs', label: 'Max absolute error', unit: '', reading: '0 = identical values'},
+] as const;
+export type FinalLogitMetric = (typeof FINAL_LOGIT_METRICS)[number]['key'];
+export type TokenTrendMetric = TokenMetricKey | SideTrendMetric | FinalLogitMetric;
+export const isFinalLogitMetric = (key: string): key is FinalLogitMetric =>
+  FINAL_LOGIT_METRICS.some((metric) => metric.key === key);
 export const isSideTrendMetric = (key: string): key is SideTrendMetric =>
   SIDE_TREND_METRICS.some((metric) => metric.key === key);
 export interface TokenTrendState {
+  samplingView?: 'comparison' | 'inspection';
+  samplingPosition?: number;
+  samplingTopK?: number;
+  logitView?: 'comparison' | 'inspection';
+  logitPlot?: 'index' | 'scatter';
+  logitElementRange?: {start: number; end: number};
+  logitValueRange?: {start: number; end: number};
+  logitElementReduction?: 'min' | 'max' | 'mean';
+  /** @deprecated Accepted in old saved views; all Final Logits UI values use raw logits. */
+  logitTransform?: 'raw' | 'centered';
+  logitPosition?: number;
+  logitOffset?: number;
+  logitOrder?: 'index' | 'ref' | 'target' | 'delta' | 'absolute_delta';
+  logitSortDirection?: 'ascending' | 'descending';
+  positionRange?: {start: number; end: number};
+  positionReduction?: 'min' | 'max' | 'mean';
   open: boolean;
   metric: TokenTrendMetric;
   start: number;
   end: number;
 }
-export function normalizeTrendRange(
-  length: number,
-  range: number[],
-): [number, number] {
+export function normalizeTrendRange(length: number, range: number[]): [number, number] {
   const max = Math.max(1, length - 1),
     lo = Math.max(0, Math.min(max - 1, Math.floor(Math.min(...range)))),
     hi = Math.max(lo + 1, Math.min(max, Math.ceil(Math.max(...range))));
@@ -66,11 +81,7 @@ export function trendTickStep(range: number[]) {
     unit = 10 ** Math.floor(Math.log10(raw));
   return Math.max(1, ([1, 2, 5, 10].find((n) => n * unit >= raw) || 10) * unit);
 }
-export function sampleTokenTrend(
-  source: (number | null)[],
-  range: number[],
-  width: number,
-) {
+export function sampleTokenTrend(source: (number | null)[], range: number[], width: number) {
   const bins = Math.max(32, Math.min(600, Math.floor(width / 2))),
     indices = new Set<number>();
   if (source.length) {
@@ -120,11 +131,7 @@ export const plotText = (text: string) =>
   text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 /** One hover line for one runtime: its generation step, its token as a quoted string so that
  *  whitespace stays legible, and its value when the metric is per runtime. A gap reads ∅. */
-export function trendTokenLine(
-  name: string,
-  token: CapturedToken | undefined,
-  value?: string,
-) {
+export function trendTokenLine(name: string, token: CapturedToken | undefined, value?: string) {
   if (!token) return `${name}: ∅`;
   return (
     `${name} · step ${token.step} ${plotText(JSON.stringify(capturedTokenLabel(token)))}` +

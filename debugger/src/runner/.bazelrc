@@ -1,0 +1,49 @@
+# Dependencies come from MODULE.bazel and the Bazel Central Registry; what they
+# resolved to is committed in MODULE.bazel.lock.
+build --cxxopt=-std=c++17 --host_cxxopt=-std=c++17
+build --cxxopt=-Wall --cxxopt=-Wextra --cxxopt=-Wpedantic --cxxopt=-Werror
+# What is fetched is not held to our warnings: its own files compile with
+# none, and its headers are system headers to clang, named by the prefix they
+# are included by, so that what one of them does with another (gRPC still uses
+# an Abseil constructor Abseil has deprecated) is not our error.
+build --per_file_copt=external/.*@-w
+build --cxxopt=--system-header-prefix=absl/
+build --cxxopt=--system-header-prefix=google/
+build --cxxopt=--system-header-prefix=grpc/
+build --cxxopt=--system-header-prefix=grpcpp/
+build --cxxopt=--system-header-prefix=gtest/
+build --cxxopt=--system-header-prefix=gmock/
+build --cxxopt=--system-header-prefix=model_debugger/v1/
+build --cxxopt=--system-header-prefix=nlohmann/
+build --cxxopt=--system-header-prefix=third_party/
+build --enable_platform_specific_config
+# apple_support's toolchain, as LiteRT-LM uses: Bazel's own does not accept the
+# Xcode 26+ SDK.
+build:macos --apple_platform_type=macos
+build:macos --platforms=@build_bazel_apple_support//platforms:darwin_arm64
+
+# Java 17, which the Android tools and Gradle (the Maven pin) require; only
+# Android uses Java.
+build --java_language_version=17 --java_runtime_version=remotejdk_17
+build --tool_java_language_version=17 --tool_java_runtime_version=remotejdk_17
+
+# The Android App: bazel build --config=android_app //model_debugger/runner/app/android:runner
+# android_binary moves its native code to the platform named arm64-v8a, which
+# names the APK's library directory. The NDK that ANDROID_NDK_HOME names
+# (rules_android_ndk) is registered here alone, so that no other build
+# needs one.
+build:android_app --android_platforms=//model_debugger/runner/app/android:arm64-v8a
+build:android_app --extra_toolchains=@androidndk//:all
+build:android_app --extra_toolchains=//model_debugger/runner/app/android:kotlin_toolchain
+build:android_app --@rules_kotlin//kotlin/settings:jvm_emit_jdeps=False
+
+# bazel test --config=thread / --config=address: the toolchain's own features,
+# which also take care of what a sanitizer conflicts with.
+build:thread --features=tsan --copt=-fno-omit-frame-pointer
+build:address --features=asan --copt=-fno-omit-frame-pointer
+
+# The tests that load a model read it from the environment and skip without
+# one; see testing/model_test.bzl. A Runner keeps everything under HOME; each
+# test gives it a HOME of its own (testing/test_utils.h).
+test --test_env=RUNNER_MODEL
+test --test_output=errors
