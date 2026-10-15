@@ -349,7 +349,10 @@ export class GraphProcessor {
     // from its namespace.
     //
     // Repeatedly do this until no such nodes are found.
-    if (!this.keepLayersWithASingleChild) {
+    const keepLayersWithASingleChild =
+      modelGraph.layoutConfigs?.keepLayersWithASingleChild ??
+      this.keepLayersWithASingleChild;
+    if (!keepLayersWithASingleChild) {
       while (true) {
         let numNodeProcessed = 0;
         for (const node of modelGraph.nodes) {
