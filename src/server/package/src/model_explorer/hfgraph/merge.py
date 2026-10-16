@@ -18,6 +18,7 @@
 from __future__ import annotations
 
 import collections
+from collections.abc import Sequence
 import math
 import re
 from typing import Any
@@ -37,12 +38,15 @@ CACHE_WORDS = (
 
 
 # ---------------------------------------------------------------- loop folding
-def _period(signatures: list[Any]) -> int | None:
+def period(signatures: Sequence[Any]) -> int | None:
   """Find minimum repeating period length in a sequence of op signatures."""
-  n = len(signatures)
-  for period in range(1, n // 2 + 1):
-    if all(signatures[i] == signatures[i % period] for i in range(n)):
-      return period
+  num_signatures = len(signatures)
+  for period_len in range(1, num_signatures // 2 + 1):
+    if all(
+        signatures[i] == signatures[i % period_len]
+        for i in range(num_signatures)
+    ):
+      return period_len
   return None
 
 
@@ -82,13 +86,13 @@ def fold_loops(
         (trace.ops[i].path, trace.ops[i].line, trace.ops[i].aten)
         for i in indices
     ]
-    period = _period(signatures)
-    if period is None or len(signatures) < 2 * period:
+    period_len = period(signatures)
+    if period_len is None or len(signatures) < 2 * period_len:
       continue
-    n_iterations = math.ceil(len(signatures) / period)
+    n_iterations = math.ceil(len(signatures) / period_len)
     folded[loop_path] = n_iterations
     for position, i in enumerate(indices):
-      if position < period:
+      if position < period_len:
         trace.ops[i].loop_iter = 0
         trace.ops[i].attrs["iterations"] = str(n_iterations)
       else:
@@ -176,7 +180,7 @@ def parse_draft(txt: str) -> list[tuple[str, int, str]]:
 
 
 # ---------------------------------------------------------------- coverage
-def _enclosing_region(path: str) -> str | None:
+def enclosing_region(path: str) -> str | None:
   """Find the nearest enclosing region path."""
   segments = path.split("/")[:-1]
   for i in range(len(segments), 0, -1):
@@ -403,7 +407,7 @@ def coverage(
     )
     # A region can only be taken in a trace that executed its enclosing region
     # (or its owner, at top level).
-    enclosing = _enclosing_region(region.path)
+    enclosing = enclosing_region(region.path)
     taken_by = [
         t
         for t, value in decided.items()

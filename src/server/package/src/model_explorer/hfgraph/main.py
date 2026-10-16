@@ -106,11 +106,34 @@ def _graph(graph_dict: dict[str, Any]) -> gb.Graph:
       id=graph_dict["id"],
       nodes=[_node(n) for n in graph_dict.get("nodes", [])],
   )
-  if graph_dict.get("groupNodeAttributes"):
-    group_attrs = {}
-    for k, v in graph_dict["groupNodeAttributes"].items():
-      group_attrs[k] = {kk: str(vv) for kk, vv in v.items()}
-    graph.groupNodeAttributes = group_attrs
+  group_node_attrs = graph_dict.get("groupNodeAttributes")
+  if group_node_attrs:
+    graph.groupNodeAttributes = {
+        k: {kk: str(vv) for kk, vv in v.items()}
+        for k, v in group_node_attrs.items()
+    }
+  group_node_configs = graph_dict.get("groupNodeConfigs")
+  if group_node_configs:
+    graph.groupNodeConfigs = [
+        gb.GroupNodeConfig(
+            namespaceRegex=config["namespaceRegex"],
+            layoutDirection=config.get("layoutDirection"),
+            backgroundColor=config.get("backgroundColor"),
+            borderColor=config.get("borderColor"),
+            textColor=config.get("textColor"),
+        )
+        for config in group_node_configs
+    ]
+  layout_configs = graph_dict.get("layoutConfigs")
+  if layout_configs:
+    graph.layoutConfigs = gb.LayoutConfigs(
+        nodeSep=layout_configs.get("nodeSep"),
+        rankSep=layout_configs.get("rankSep"),
+        edgeSep=layout_configs.get("edgeSep"),
+        keepLayersWithASingleChild=layout_configs.get(
+            "keepLayersWithASingleChild"
+        ),
+    )
   return graph
 
 

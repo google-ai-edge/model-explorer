@@ -21,6 +21,7 @@ An op's path is its namespace.
 from __future__ import annotations
 
 import collections
+import re
 from typing import Any
 
 from . import prune
@@ -40,6 +41,44 @@ CAT_COLOR = {
     "embedding": "#c8e6c9",
 }
 COND_CHARS = 80
+EVIDENCE_CHARS = 200
+PLACEHOLDER_DEFAULT_COLORS = ("#eeeeee", "#9e9e9e")
+INFO_NODE_STYLE = {"backgroundColor": "#ffffff", "borderColor": "#bdbdbd"}
+
+
+def unescape_namespace(namespace: str) -> str:
+  r"""Unescapes `\/` in a rendered namespace to match the frontend renderer."""
+  return namespace.replace(r"\/", "/")
+
+
+def _node_path(node: dict[str, Any]) -> str | None:
+  """Returns the `path` attribute value from an emitted graph node, if present."""
+  return next(
+      (attr["value"] for attr in node["attrs"] if attr["key"] == "path"), None
+  )
+
+
+def _append_info_nodes(
+    gid: str,
+    nodes: list[dict[str, Any]],
+    group_attrs: dict[str, dict[str, str]],
+) -> None:
+  """Appends synthetic `info:` nodes to single-child region namespaces."""
+  children = collections.Counter(node["namespace"] for node in nodes)
+  for namespace, n_children in children.items():
+    if n_children == 1 and namespace in group_attrs:
+      attrs = group_attrs[namespace]
+      nodes.append({
+          "id": f"info:{gid}:{namespace}",
+          "label": "ℹ " + attrs["condition"][:COND_CHARS],
+          "namespace": namespace,
+          "attrs": [
+              {"key": key, "value": value} for key, value in attrs.items()
+          ],
+          "incomingEdges": [],
+          "outputsMetadata": [],
+          "style": dict(INFO_NODE_STYLE),
+      })
 
 
 class Emitter:
@@ -49,6 +88,9 @@ class Emitter:
     skeleton: Skeleton representing static model structure.
     coverage: Coverage analysis across execution paths.
     iterations: Mapping of loop paths to iteration counts.
+    emit_info_nodes: Whether to emit synthetic `info:` nodes inside single-child
+      region namespaces. Defaults to True until the pre-compiled web UI bundle
+      includes `keepLayersWithASingleChild` support.
     templates: Pre-indexed function and module templates from skeleton.
     status: Mapping from region path to PathCoverage records.
   """
@@ -58,10 +100,22 @@ class Emitter:
       skeleton: schema.Skeleton,
       coverage: schema.Coverage,
       iterations: dict[str, int],
-  ):
+      emit_info_nodes: bool = True,
+  ) -> None:
+    """Initializes the instance.
+
+    Args:
+      skeleton: Skeleton representing static model structure.
+      coverage: Coverage analysis across execution paths.
+      iterations: Mapping of loop paths to iteration counts.
+      emit_info_nodes: Whether to emit synthetic `info:` nodes inside
+        single-child region namespaces. Defaults to True until the pre-compiled
+        web UI bundle includes `keepLayersWithASingleChild` support.
+    """
     self.skeleton = skeleton
     self.coverage = coverage
     self.iterations = iterations
+    self.emit_info_nodes = emit_info_nodes
     self.templates = prune.Templates(skeleton)
     self.status = {row.path: row for row in coverage.paths}
     self._render_cache: dict[str, str] = {}
@@ -102,7 +156,19 @@ class Emitter:
       edges: list[schema.Edge],
       shapes_by_id: dict[str, list[str]] | None = None,
   ) -> dict[str, Any]:
-    """Build a Model Explorer graph dict from ops and edges."""
+    """Builds a Model Explorer graph dict from ops and edges.
+
+    Args:
+      gid: Graph identifier for the emitted Model Explorer graph.
+      ops: Tensor operations belonging to the graph.
+      edges: Data-flow edges connecting the operations.
+      shapes_by_id: Optional mapping from operation ID to per-trace shape
+        strings. If None, `shapes_by_trace` attributes are omitted.
+
+    Returns:
+      A Model Explorer graph dictionary containing `id`, `nodes`,
+      `groupNodeAttributes`, `groupNodeConfigs`, and `layoutConfigs`.
+    """
     nodes = []
     by_dst = collections.defaultdict(list)
     for edge in edges:
@@ -159,7 +225,7 @@ class Emitter:
       namespace = self.render(row.path)
       if namespace in present_prefixes:
         continue
-      background, border = COLORS.get(row.status, ("#eeeeee", "#9e9e9e"))
+      background, border = COLORS.get(row.status, PLACEHOLDER_DEFAULT_COLORS)
       label = row.status if row.status != "covered" else "taken (no tensor ops)"
       nodes.append({
           "id": f"ph:{gid}:{row.path}",
@@ -177,14 +243,26 @@ class Emitter:
           "style": {"backgroundColor": background, "borderColor": border},
       })
       present_prefixes.add(namespace)
-    # group attributes for every region group, info node for single-child groups
-    group_attrs = {}
-    namespace_to_path = {}
+    group_attrs, group_configs = self._group_attributes_and_configs(nodes)
+    if self.emit_info_nodes:
+      _append_info_nodes(gid, nodes, group_attrs)
+    return {
+        "id": gid,
+        "nodes": nodes,
+        "groupNodeAttributes": group_attrs,
+        "groupNodeConfigs": group_configs,
+        "layoutConfigs": {"keepLayersWithASingleChild": True},
+    }
+
+  def _group_attributes_and_configs(
+      self, nodes: list[dict[str, Any]]
+  ) -> tuple[dict[str, dict[str, str]], list[dict[str, str]]]:
+    """Builds per-region group attributes and coverage-status styling configs."""
+    group_attrs: dict[str, dict[str, str]] = {}
+    group_configs: list[dict[str, str]] = []
+    namespace_to_path: dict[str, str] = {}
     for node in nodes:
-      node_path = next(
-          (a["value"] for a in node["attrs"] if a["key"] == "path"),
-          node["namespace"],
-      )
+      node_path = _node_path(node) or node["namespace"]
       segments = node_path.split("/")
       for i, segment in enumerate(segments):
         if "#" in segment:
@@ -193,31 +271,26 @@ class Emitter:
     for namespace, region_path in namespace_to_path.items():
       row = self.status.get(region_path)
       branch = self.templates.branch_at(region_path)
+      status = row.status if row else "executed"
       group_attrs[namespace] = {
           "path": region_path,
           "condition": branch.cond_src if branch else "",
           "kind": branch.cond_kind if branch else "",
-          "status": row.status if row else "executed",
+          "status": status,
           "source": f"{branch.file}:{branch.line_start}" if branch else "",
-          "evidence": (row.evidence if row else "")[:200],
+          "evidence": (row.evidence if row else "")[:EVIDENCE_CHARS],
           "needs": row.needs if row and row.needs else "",
       }
-    children = collections.Counter(node["namespace"] for node in nodes)
-    for namespace, n_children in list(children.items()):
-      if n_children == 1 and namespace in group_attrs:
-        attrs = group_attrs[namespace]
-        nodes.append({
-            "id": f"info:{gid}:{namespace}",
-            "label": "ℹ " + attrs["condition"][:COND_CHARS],
-            "namespace": namespace,
-            "attrs": [
-                {"key": key, "value": value} for key, value in attrs.items()
-            ],
-            "incomingEdges": [],
-            "outputsMetadata": [],
-            "style": {"backgroundColor": "#ffffff", "borderColor": "#bdbdbd"},
+      colors = COLORS.get(status)
+      if colors is not None:
+        background, border = colors
+        unescaped = unescape_namespace(namespace)
+        group_configs.append({
+            "namespaceRegex": f"^{re.escape(unescaped)}$",
+            "backgroundColor": background,
+            "borderColor": border,
         })
-    return {"id": gid, "nodes": nodes, "groupNodeAttributes": group_attrs}
+    return group_attrs, group_configs
 
   def emit(self, traces: list[schema.Trace], primary: str) -> dict[str, Any]:
     """Emit the full GraphCollection with merged graph and individual traces.
@@ -284,9 +357,7 @@ def check(
   merged_graph = graph_collection["graphs"][0]
   paths_present = set()
   for node in merged_graph["nodes"]:
-    node_path = next(
-        (a["value"] for a in node["attrs"] if a["key"] == "path"), None
-    )
+    node_path = _node_path(node)
     if node_path:
       segments = node_path.split("/")
       for i in range(1, len(segments) + 1):

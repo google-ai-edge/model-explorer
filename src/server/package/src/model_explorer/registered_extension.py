@@ -13,7 +13,7 @@
 # limitations under the License.
 # ==============================================================================
 
-from .extension_matadata import ExtensionMetadata
+from .extension_metadata import ExtensionMetadata
 from .types import ExtensionClassType
 
 

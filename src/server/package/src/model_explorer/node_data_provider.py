@@ -20,7 +20,7 @@ from typing import Union
 
 from .config_editor import ConfigEditor, ConfigEditorGroup
 from .extension_base import Extension
-from .extension_matadata import ExtensionMetadata
+from .extension_metadata import ExtensionMetadata
 from .graph_builder import Graph
 from .node_data_builder import GraphNodeData
 
