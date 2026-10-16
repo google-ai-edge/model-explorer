@@ -240,6 +240,7 @@ $card_width: 1016px;
   .btns-container {
     display: flex;
     align-items: center;
+    flex-shrink: 0;
     color: var(--me-on-surface-variant-color);
 
     .share-button-container {
@@ -256,8 +257,12 @@ $card_width: 1016px;
       margin-right: 8px;
     }
 
+    // Keep settings + theme buttons on one row instead of wrapping/stacking.
     .btns-container-external {
       margin-left: -12px;
+      display: flex;
+      align-items: center;
+      flex-shrink: 0;
     }
   }
 }

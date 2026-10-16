@@ -30,14 +30,22 @@
 
     mat-icon {
       margin-right: 4px;
+      flex-shrink: 0;
     }
 
     mat-spinner {
       margin-right: 6px;
+      flex-shrink: 0;
     }
 
     .label {
       font-size: 13px;
+      white-space: nowrap;
+
+      // Narrow title bars: show only the "+" icon (tooltip still explains it).
+      @container me-title-bar (max-width: 640px) {
+        display: none;
+      }
     }
 
     &:hover {

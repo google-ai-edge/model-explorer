@@ -27,6 +27,8 @@
   justify-content: space-between;
   border-bottom: 1px solid var(--me-outline-hairline-color);
   background-color: var(--me-surface-color);
+  // Lets title bar styles (and its children's) react to the bar's width.
+  container: me-title-bar / inline-size;
 
   .title {
     font-weight: normal;
@@ -35,9 +37,14 @@
     font-size: 20px;
     display: flex;
     align-items: center;
+    // The title gives up space first; its text is clipped instead of the buttons.
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
 
     me-logo {
       margin-right: 6px;
+      flex-shrink: 0;
     }
 
     new-version-chip {
@@ -56,6 +63,12 @@
   .right-container {
     display: flex;
     align-items: center;
+    flex-shrink: 0;
+
+    // Buttons and dividers keep their size.
+    > * {
+      flex-shrink: 0;
+    }
   }
 
   .divider {
@@ -83,5 +96,20 @@
 
   open-in-new-tab-button {
     margin-left: 8px;
+  }
+
+  // Narrow bars: tighten divider spacing.
+  @container me-title-bar (max-width: 800px) {
+    .divider {
+      margin: 0 8px;
+
+      &.tighter-right {
+        margin-right: 4px;
+      }
+    }
+
+    new-version-chip {
+      display: none;
+    }
   }
 }
