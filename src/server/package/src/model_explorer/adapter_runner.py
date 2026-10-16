@@ -13,18 +13,61 @@
 # limitations under the License.
 # ==============================================================================
 
+from collections.abc import Callable
+import inspect
 import os
+from typing import Any
+
 from .registered_extension import RegisteredExtension
-from .types import AdapterCommand, ModelExplorerGraphs
+from .types import AdapterCommand, ModelExplorerGraphs, ProgressCallback
 from .utils import get_instance_method
+
+
+def _accepts_on_progress(fn: Callable[..., Any]) -> bool:
+  """Whether `fn` declares a parameter literally named `on_progress`.
+
+  A `**kwargs` parameter doesn't count: adapters that forward their keyword
+  arguments elsewhere would break on an unexpected `on_progress`.
+
+  Args:
+    fn: The adapter method.
+
+  Returns:
+    Whether `fn` opted into progress reporting.
+  """
+  try:
+    params = inspect.signature(fn).parameters.values()
+  except (TypeError, ValueError):
+    return False
+  return any(
+      param.name == 'on_progress'
+      and param.kind != inspect.Parameter.VAR_KEYWORD
+      for param in params
+  )
 
 
 class AdapterRunner:
   """A runner to run adapter extension."""
 
   def run_adapter(
-      self, extension: RegisteredExtension, cmd: AdapterCommand
+      self,
+      extension: RegisteredExtension,
+      cmd: AdapterCommand,
+      on_progress: ProgressCallback | None = None,
   ) -> ModelExplorerGraphs:
+    """Runs the adapter method named by `cmd['cmdId']`.
+
+    Args:
+      extension: The adapter extension to run.
+      cmd: The adapter command.
+      on_progress: Optional progress callback. It is passed as the `on_progress`
+        keyword argument only to adapter methods that declare a parameter of
+        that name, so 2-argument `(model_path, settings)` and `**kwargs`
+        adapters keep working unchanged.
+
+    Returns:
+      The converted graphs.
+    """
     # Get extension class and create an instance.
     extension_class = extension.ext_class
     instance = extension_class()
@@ -36,5 +79,7 @@ class AdapterRunner:
           f'Method {cmd["cmdId"]} not implemented in the adapter extension'
           f' "{extension.metadata.name}"'
       )
-    modelPath = os.path.expanduser(cmd['modelPath'])
-    return fn(modelPath, cmd['settings'])
+    model_path = os.path.expanduser(cmd['modelPath'])
+    if on_progress is not None and _accepts_on_progress(fn):
+      return fn(model_path, cmd['settings'], on_progress=on_progress)
+    return fn(model_path, cmd['settings'])
