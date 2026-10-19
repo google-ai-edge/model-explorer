@@ -148,16 +148,21 @@ def test_a_local_runner_that_exits_says_why(tmp_path):
 def test_a_local_runner_that_never_listens_is_stopped(tmp_path, monkeypatch):
   """A local runner that never says its port is stopped at the deadline."""
   monkeypatch.setattr(launchers, '_LAUNCH_SECONDS', 1)
-  pid_file = tmp_path / 'pid'
-  script = _script(
-      tmp_path,
-      'import os\n'
-      f'open({str(pid_file)!r}, "w").write(str(os.getpid()))\n'
-      'time.sleep(60)',
-  )
+  # Records the runner as it is spawned: under a slow interpreter (e.g. a
+  # sanitizer build) it may be stopped before it runs a single line.
+  started = []
+  real_popen = launchers.subprocess.Popen
+
+  def popen(*args, **kwargs):
+    started.append(real_popen(*args, **kwargs))
+    return started[-1]
+
+  monkeypatch.setattr(launchers.subprocess, 'Popen', popen)
+  script = _script(tmp_path, 'time.sleep(60)')
   with pytest.raises(RuntimeError, match='did not say its port'):
     launchers.Launchers(script).launch('local')
-  assert _gone(int(pid_file.read_text()))
+  assert len(started) == 1
+  assert _gone(started[0].pid)
 
 
 def test_no_binary_no_local_device(monkeypatch, tmp_path):
