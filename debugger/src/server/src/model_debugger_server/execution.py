@@ -745,9 +745,9 @@ class Executions:
           for failure in failures.values()
       ):
         # Both refused the turn and nothing changed: the chat goes on.
+        # The sides finish in either order; name them in a fixed one.
         message = ' '.join(
-            f'{SIDE_NAMES[role]}: {failure}'
-            for role, failure in failures.items()
+            f'{SIDE_NAMES[role]}: {failures[role]}' for role in SIDES
         )
         self._end_job(execution, turn, 'active')
         self._jobs.finish(turn.job_id, 'failed', message)
@@ -925,9 +925,10 @@ class Executions:
       closing = execution.closing
     # A side this server cancelled because the other failed says nothing.
     cause = [
-        f'{SIDE_NAMES[role]}: {failure}'
-        for role, failure in failures.items()
-        if _code(failure) != grpc.StatusCode.CANCELLED
+        f'{SIDE_NAMES[role]}: {failures[role]}'
+        for role in SIDES
+        if role in failures
+        and _code(failures[role]) != grpc.StatusCode.CANCELLED
     ]
     if cancelled or closing:
       message = 'Generation stopped.'
