@@ -38,4 +38,4 @@ __all__ = [
     'config_editor',
 ]
 
-__version__ = '0.1.33'
+__version__ = '0.1.34'
