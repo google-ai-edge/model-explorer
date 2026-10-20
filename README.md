@@ -48,6 +48,7 @@ instructions and check out its [demos](src/custom_element_demos/).
 - ONNX Adapter: https://github.com/justinchuby/model-explorer-onnx
 - VGF Adapter: https://github.com/arm/vgf-adapter-model-explorer
 - TOSA Adapter: https://github.com/arm/tosa-adapter-model-explorer
+- PTE Adapter: https://github.com/arm/pte-adapter-model-explorer
 
 ## Contributions
 
