@@ -13,7 +13,7 @@
 # limitations under the License.
 # ==============================================================================
 
-"""Loads LogicGraph (`model-explorer-hfgraph`) outputs into Model Explorer.
+"""Loads `model-explorer-hfgraph` outputs into Model Explorer.
 
 Two file types:
   *.hfgraph: a Model Explorer GraphCollection JSON written by

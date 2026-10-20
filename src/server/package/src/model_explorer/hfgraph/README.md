@@ -1,15 +1,15 @@
-# LogicGraph (`model-explorer-hfgraph`)
+# Hugging Face Transformers Adapter (`model-explorer-hfgraph`)
 
-See a Hugging Face model in Model Explorer **the way the source is written**:
-module hierarchy, every `if` / `for` in `modeling_*.py` (including the regions
-the tracer never took), loops folded to one iteration, and a source line on
-every op.
+See a Hugging Face Transformers model in Model Explorer **the way the source is
+written**: module hierarchy, every `if` / `for` in `modeling_*.py` (including
+the regions the tracer never took), loops folded to one iteration, and a source
+line on every op.
 
-`torch.export` alone gives you one path. LogicGraph gives you the whole program,
-with the traced path filled in.
+`torch.export` alone gives you one path. This adapter gives you the whole
+program, with the traced path filled in.
 
-LogicGraph ships inside `ai-edge-model-explorer`: the built-in
-`builtin_hfgraph` adapter opens `.hfgraph` and `.hfrun` files, and the
+It ships inside `ai-edge-model-explorer` (`builtin_hfgraph`): the adapter opens
+`.hfgraph` and `.hfrun` files in Model Explorer, and the
 `model-explorer-hfgraph` command builds them.
 
 ## Requirements
@@ -47,8 +47,8 @@ model-explorer-hfgraph Qwen/Qwen3.5-2B out/qwen3_5_2b --decode
 model-explorer-hfgraph-view out/qwen3_5_2b --open
 ```
 
-Model Explorer also opens LogicGraph files directly, with no `--extensions`
-flag:
+Model Explorer also opens `.hfgraph` and `.hfrun` files directly, with no
+`--extensions` flag:
 
 ```bash
 cp out/qwen3_5_2b/model_explorer.json qwen3_5_2b.hfgraph

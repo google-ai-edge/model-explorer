@@ -13,11 +13,11 @@
 # limitations under the License.
 # ==============================================================================
 
-"""LogicGraph (model-explorer-hfgraph): logic-complete source-structure graphs.
+"""Hugging Face Transformers adapter (`model-explorer-hfgraph`).
 
-Builds source-structured graphs of Hugging Face models for Model Explorer.
-Viewing `.hfgraph` files is handled by the built-in `builtin_hfgraph` adapter;
-running the pipeline requires the `hfgraph` extra:
+Builds source-structured, logic-complete graphs of Hugging Face Transformers
+models for Model Explorer. Viewing `.hfgraph` files is handled by the built-in
+`builtin_hfgraph` adapter; running the pipeline requires the `hfgraph` extra:
 pip install "ai-edge-model-explorer[hfgraph]".
 """
 

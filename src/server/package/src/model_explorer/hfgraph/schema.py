@@ -13,7 +13,7 @@
 # limitations under the License.
 # ==============================================================================
 
-"""LogicGraph data model v3 (see the "Output" section of hfgraph/README.md).
+"""`hfgraph` data model v3 (see the "Output" section of hfgraph/README.md).
 
 Three parts:
   templates: every source construct once: a class forward, a helper function, a

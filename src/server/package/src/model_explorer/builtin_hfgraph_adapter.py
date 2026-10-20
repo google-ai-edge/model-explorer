@@ -13,7 +13,7 @@
 # limitations under the License.
 # ==============================================================================
 
-"""Built-in adapter for LogicGraph (`model-explorer-hfgraph`) files.
+"""Built-in Hugging Face Transformers adapter (`model-explorer-hfgraph`).
 
 This module must stay importable on a base install (Python 3.9, no `torch`,
 `transformers`, or `pydantic`): it only depends on `hfgraph.main`, which is
@@ -31,17 +31,17 @@ from .hfgraph import main as hfgraph_main
 
 
 class BuiltinHfGraphAdapter(adapter.Adapter):
-  """Built-in adapter for Hugging Face logic-complete graphs (LogicGraph)."""
+  """Built-in adapter for Hugging Face Transformers models (`hfgraph`)."""
 
   metadata = adapter.AdapterMetadata(
       id='builtin_hfgraph',
-      name='HF logic graph adapter (LogicGraph)',
+      name='Hugging Face Transformers adapter',
       description=(
           'A built-in adapter that loads source-structured, logic-complete'
-          ' graphs of Hugging Face models: module hierarchy, every source'
-          ' branch and its coverage status, folded loops, and the source line'
-          ' per op. Opening a .hfrun spec runs the pipeline first and requires'
-          f' `{hfgraph_main.HFGRAPH_EXTRA_INSTALL_HINT}`.'
+          ' graphs of Hugging Face Transformers models: module hierarchy, every'
+          ' source branch and its coverage status, folded loops, and the source'
+          ' line per op. Opening a .hfrun spec runs the pipeline first and'
+          f' requires `{hfgraph_main.HFGRAPH_EXTRA_INSTALL_HINT}`.'
       ),
       fileExts=['hfgraph', 'hfrun'],
   )

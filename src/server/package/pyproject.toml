@@ -35,8 +35,9 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-# LogicGraph (`model-explorer-hfgraph`) pipeline for running `.hfrun` specs.
-# Viewing an existing `.hfgraph` file only needs the base package.
+# Hugging Face Transformers adapter (`model-explorer-hfgraph`) pipeline for
+# running `.hfrun` specs. Viewing an existing `.hfgraph` file only needs the
+# base package.
 hfgraph = [
   "torch>=2.8; python_version>='3.10'",
   "transformers>=5.0; python_version>='3.10'",
@@ -51,7 +52,7 @@ model-explorer-hfgraph-view = "model_explorer.hfgraph.view:main"
 [tool.setuptools.dynamic]
 version = {attr = "model_explorer.__version__"}
 
-# Include all files in "web_app" dir, and the LogicGraph JSON schemas.
+# Include all files in "web_app" dir, and the hfgraph JSON schemas.
 [tool.setuptools.package-data]
 "model_explorer.web_app" = ["**/*"]
 "model_explorer.hfgraph" = ["schema/*.json"]

@@ -34,8 +34,8 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
   parser = argparse.ArgumentParser(
       prog="model-explorer-hfgraph",
       description=(
-          "Build a LogicGraph (source-structured, logic-complete graph) of a"
-          " Hugging Face model for Model Explorer."
+          "Build a source-structured, logic-complete graph of a Hugging Face"
+          " Transformers model for Model Explorer."
       ),
   )
   parser.add_argument(

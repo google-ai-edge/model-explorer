@@ -13,7 +13,7 @@
 # limitations under the License.
 # ==============================================================================
 
-"""Stage F: LogicGraph → Google Model Explorer GraphCollection.
+"""Stage F: `hfgraph` → Google Model Explorer GraphCollection.
 
 An op's path is its namespace.
 """
