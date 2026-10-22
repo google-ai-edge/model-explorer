@@ -3919,3 +3919,4 @@ export class WebglRenderer implements OnInit, OnChanges, OnDestroy {
     this.syncNavigationDiffHighlights.setNodeHighlights(curHighlights, true);
   }
 }
+
