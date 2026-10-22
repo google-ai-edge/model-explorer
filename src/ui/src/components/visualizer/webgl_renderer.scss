@@ -30,6 +30,16 @@
     box-sizing: border-box;
   }
 
+  svg.svg-texts {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    user-select: none;
+  }
+
   canvas.snapshot,
   canvas.download-png {
     position: absolute;
