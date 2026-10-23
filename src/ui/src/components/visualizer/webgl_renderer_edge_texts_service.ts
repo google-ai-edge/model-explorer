@@ -70,8 +70,26 @@ export class WebglRendererEdgeTextsService {
       data?.sourceNodeAttrKey,
       data?.targetNodeAttrKey,
     );
-    this.edgeTexts.generateMesh(labels);
-    this.webglRendererThreejsService.addToScene(this.edgeTexts.mesh);
+    if (
+      this.webglRenderer.appService.config()?.svgTextRenderer &&
+      !this.webglRenderer.forceDisableSvg
+    ) {
+      this.edgeTexts.generateMesh([]);
+      this.webglRendererThreejsService.removeFromScene(this.edgeTexts.mesh);
+      this.webglRenderer.svgTextRendererService.renderTexts(
+        this.webglRenderer.svgTextRenderer.nativeElement,
+        labels,
+        this.webglRenderer.appService.theme() === 'dark',
+        'g.edge-labels-group',
+      );
+    } else {
+      this.webglRenderer.svgTextRendererService.clear(
+        this.webglRenderer.svgTextRenderer.nativeElement,
+        'g.edge-labels-group',
+      );
+      this.edgeTexts.generateMesh(labels);
+      this.webglRendererThreejsService.addToScene(this.edgeTexts.mesh);
+    }
   }
 
   genLabelsOnEdges(
