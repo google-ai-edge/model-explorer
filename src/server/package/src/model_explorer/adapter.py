@@ -14,7 +14,7 @@
 # ==============================================================================
 
 from dataclasses import dataclass, field
-from typing import Any, Dict
+from typing import Any
 
 from .extension_base import Extension
 from .extension_metadata import ExtensionMetadata
@@ -38,8 +38,17 @@ class Adapter(Extension):
   def __init__(self):
     Extension.__init__(self)
 
-  def convert(self, model_path: str, settings: Dict) -> ModelExplorerGraphs:
+  def convert(
+      self, model_path: str, settings: dict[str, Any]
+  ) -> ModelExplorerGraphs:
     """Converts the given model with the given settings.
+
+    Implementations may opt into progress reporting and cooperative
+    cancellation by adding an optional third parameter,
+    `on_progress: ProgressCallback | None = None`. The server passes it only
+    to implementations that declare it, so 2-argument adapters keep working.
+    The callback receives a progress dictionary and returns `False` to request
+    cancellation.
 
     Args:
       model_path: the absolute path of the model.
