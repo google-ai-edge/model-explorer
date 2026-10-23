@@ -43,6 +43,7 @@ import {MatProgressSpinnerModule} from '@angular/material/progress-spinner';
 import {MatSlideToggleModule} from '@angular/material/slide-toggle';
 import {MatSnackBar} from '@angular/material/snack-bar';
 import {MatTooltipModule} from '@angular/material/tooltip';
+import {apiFetch} from '../../common/api_auth';
 import {
   ConfigEditorGroup,
   ConfigEditorType,
@@ -502,7 +503,7 @@ export class RunNdpExtensionDialog {
     );
     const data = new FormData();
     data.append('file', file, file.name);
-    const uploadResp = await fetch(UPLOAD_API_PATH, {
+    const uploadResp = await apiFetch(UPLOAD_API_PATH, {
       method: 'POST',
       body: data,
     });

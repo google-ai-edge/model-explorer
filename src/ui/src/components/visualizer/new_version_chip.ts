@@ -24,6 +24,7 @@ import {
 } from '@angular/core';
 import {MatIconModule} from '@angular/material/icon';
 
+import {apiFetch} from '../../common/api_auth';
 import {IS_EXTERNAL} from '../../common/flags';
 import {getElectronApi} from '../../common/utils';
 import {Bubble} from '../bubble/bubble';
@@ -59,7 +60,7 @@ export class NewVersionService {
 
   private async checkNewVersion() {
     try {
-      const resp = await fetch(CHECK_NEW_VERSION);
+      const resp = await apiFetch(CHECK_NEW_VERSION);
       if (resp.ok) {
         const json = (await resp.json()) as CheckNewVersionResponse;
         this.info.set(json);

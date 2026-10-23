@@ -39,6 +39,7 @@ import {MatSnackBar, MatSnackBarModule} from '@angular/material/snack-bar';
 import {MatTooltipModule} from '@angular/material/tooltip';
 import {ActivatedRoute, Router} from '@angular/router';
 
+import {registerApiTokenRejectedHandler} from '../../common/api_auth';
 import {type ModelLoaderServiceInterface} from '../../common/model_loader_service_interface';
 import {ExtensionService} from '../../services/extension_service';
 import {GaEventType, GaService} from '../../services/ga_service';
@@ -68,6 +69,10 @@ import {
 } from '../../services/settings_service';
 import {ThemePreference, ThemeService} from '../../services/theme_service';
 import {UrlService} from '../../services/url_service';
+import {
+  ApiTokenDialog,
+  ApiTokenDialogData,
+} from '../api_token_dialog/api_token_dialog';
 import {ModelSourceInput} from '../model_source_input/model_source_input';
 import {OpenInNewTabButton} from '../open_in_new_tab_button/open_in_new_tab_button';
 import {OpenSourceLibsDialog} from '../open_source_libs_dialog/open_source_libs_dialog';
@@ -194,6 +199,14 @@ export class HomePage implements AfterViewInit {
     readonly threejsService: ThreejsService,
     private readonly urlService: UrlService,
   ) {
+    // Explain how to fix it when the server rejects the page's access token
+    // (only the external version uses the token).
+    registerApiTokenRejectedHandler((reason) => {
+      this.dialog.open<ApiTokenDialog, ApiTokenDialogData>(ApiTokenDialog, {
+        data: {reason},
+      });
+    });
+
     this.serverDirectorService.init();
 
     this.loadingExtensions = this.extensionService.loading;
