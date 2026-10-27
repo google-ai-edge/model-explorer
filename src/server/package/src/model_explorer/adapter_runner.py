@@ -14,9 +14,8 @@
 # ==============================================================================
 
 import os
-from .types import AdapterCommand, ModelExplorerGraphs
-
 from .registered_extension import RegisteredExtension
+from .types import AdapterCommand, ModelExplorerGraphs
 from .utils import get_instance_method
 
 

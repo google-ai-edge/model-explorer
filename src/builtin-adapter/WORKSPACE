@@ -28,21 +28,15 @@ http_archive(
     url = "https://github.com/bazelbuild/rules_shell/releases/download/v0.4.1/rules_shell-v0.4.1.tar.gz",
 )
 
-load("@rules_shell//shell:repositories.bzl", "rules_shell_dependencies", "rules_shell_toolchains")
-
-rules_shell_dependencies()
-
-rules_shell_toolchains()
-
 # TensorFlow
 # To update TensorFlow to a new revision,
 # a) update TENSORFLOW_COMMIT to the new git commit hash
 # b) get the sha256 hash of the commit by running:
 #    curl -L https://github.com/tensorflow/tensorflow/archive/<COMMIT_HASH>.tar.gz | sha256sum
 #    and update TENSORFLOW_SHA256 with the result.
-TENSORFLOW_COMMIT = "04f70dca46784a7827dc53b38ac2f3626a448808"
+TENSORFLOW_COMMIT = "aede00d206ebc4f0c3eebe95a1fe21c404249e5c"
 
-TENSORFLOW_SHA256 = "7350a523293b90234f830cb5831c4da561c15f73436760501532278273eb3ed8"
+TENSORFLOW_SHA256 = "847c3d2e124171abe3efa269d2eee84acc9c6fce61254e8a752ac94ad96b2242"
 
 http_archive(
     name = "org_tensorflow",
@@ -61,14 +55,28 @@ load("@org_tensorflow//tensorflow:workspace3.bzl", "tf_workspace3")
 
 tf_workspace3()
 
+load("@bazel_features//:deps.bzl", "bazel_features_deps")
+
+bazel_features_deps()
+
+load("@rules_cc//cc:extensions.bzl", "compatibility_proxy_repo")
+
+compatibility_proxy_repo()
+
+load("@rules_shell//shell:repositories.bzl", "rules_shell_dependencies", "rules_shell_toolchains")
+
+rules_shell_dependencies()
+
+rules_shell_toolchains()
+
 # Initialize ML Toolchains
 # Details: https://github.com/google-ml-infra/rules_ml_toolchain
 http_archive(
     name = "rules_ml_toolchain",
-    sha256 = "9dbee8f24cc1b430bf9c2a6661ab70cbca89979322ddc7742305a05ff637ab6b",
-    strip_prefix = "rules_ml_toolchain-545c80f1026d526ea9c7aaa410bf0b52c9a82e74",
+    sha256 = "9285d90601757838d064a12f51f14374d40064ddc2fa198979908b6bd0f89348",
+    strip_prefix = "rules_ml_toolchain-7f40603f574b95746152332ef3ad5fce63f1768d",
     urls = [
-        "https://github.com/google-ml-infra/rules_ml_toolchain/archive/545c80f1026d526ea9c7aaa410bf0b52c9a82e74.tar.gz",
+        "https://github.com/google-ml-infra/rules_ml_toolchain/archive/7f40603f574b95746152332ef3ad5fce63f1768d.tar.gz",
     ],
 )
 
@@ -99,6 +107,7 @@ python_init_repositories(
         "3.11": "@org_tensorflow//:requirements_lock_3_11.txt",
         "3.12": "@org_tensorflow//:requirements_lock_3_12.txt",
         "3.13": "@org_tensorflow//:requirements_lock_3_13.txt",
+        "3.14": "@org_tensorflow//:requirements_lock_3_14.txt",
     },
 )
 

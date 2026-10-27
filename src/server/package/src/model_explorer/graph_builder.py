@@ -12,12 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
+"""Graph builder data structures for Model Explorer."""
 
-from dataclasses import dataclass, field
-from typing import Dict, Literal, Union
+from __future__ import annotations
+
+import dataclasses
+from typing import Literal, Union
+
+# pylint: disable=invalid-name  # Field names match camelCase frontend JSON schema.
 
 
-@dataclass
+@dataclasses.dataclass
 class Graph:
   """A Model Explorer graph."""
 
@@ -25,18 +30,18 @@ class Graph:
   id: str
 
   # A list of nodes in the graph.
-  nodes: list['GraphNode'] = field(default_factory=list)
+  nodes: list[GraphNode] = dataclasses.field(default_factory=list)
 
   # Attributes for group nodes.
   #
   # It is displayed in the side panel when the group is selected.
-  groupNodeAttributes: Union['GroupNodeAttributes', None] = None
+  groupNodeAttributes: GroupNodeAttributes | None = None
 
   # Custom configs for group nodes.
   #
   # A group node will be matched to the first config whose namespace regex
   # matches its namespace.
-  groupNodeConfigs: Union[list['GroupNodeConfig'], None] = None
+  groupNodeConfigs: list[GroupNodeConfig] | None = None
 
   # A list of labels. Nodes whose label matches any label in the list
   # (case-insensitive) will be hidden from the visualization.
@@ -44,17 +49,17 @@ class Graph:
   # This overrides the node labels set in the settings, or the
   # `nodeLabelsToHide` field in the `VisualizerConfig` passed to the
   # visualizer.
-  nodeLabelsToHide: Union[list[str], None] = None
+  nodeLabelsToHide: list[str] | None = None
 
   # The data for various tasks that provide extra data to be visualized, such
   # as node data, edge overlay, etc.
-  tasksData: Union['TasksData', None] = None
+  tasksData: TasksData | None = None
 
   # Layout-related options.
-  layoutConfigs: Union['LayoutConfigs', None] = None
+  layoutConfigs: LayoutConfigs | None = None
 
 
-@dataclass
+@dataclasses.dataclass
 class GraphNode:
   """A node in a graph."""
 
@@ -88,7 +93,7 @@ class GraphNode:
   # from a drop-down list, and see the visualization for the selected subgraph.
   #
   # (optional)
-  subgraphIds: list[str] = field(default_factory=list)
+  subgraphIds: list[str] = dataclasses.field(default_factory=list)
 
   # The attributes of the node.
   #
@@ -102,10 +107,10 @@ class GraphNode:
   # ...
   #
   # (optional)
-  attrs: list['KeyValue'] = field(default_factory=list)
+  attrs: list[KeyValue] = dataclasses.field(default_factory=list)
 
   # A list of incoming edges.
-  incomingEdges: list['IncomingEdge'] = field(default_factory=list)
+  incomingEdges: list[IncomingEdge] = dataclasses.field(default_factory=list)
 
   # Metadata for outputs.
   #
@@ -123,7 +128,7 @@ class GraphNode:
   # ...
   #
   # (optional)
-  outputsMetadata: list['MetadataItem'] = field(default_factory=list)
+  outputsMetadata: list[MetadataItem] = dataclasses.field(default_factory=list)
 
   # Metadata for inputs.
   #
@@ -134,20 +139,20 @@ class GraphNode:
   #   tflite direct adapter.
   #
   # (optional)
-  inputsMetadata: list['MetadataItem'] = field(default_factory=list)
+  inputsMetadata: list[MetadataItem] = dataclasses.field(default_factory=list)
 
   # The style of the node.
   #
   # This will overwrite the default node styles.
   #
   # (optional)
-  style: Union['GraphNodeStyle', None] = None
+  style: GraphNodeStyle | None = None
 
   # The custom configs for the node.
-  config: Union['GraphNodeConfig', None] = None
+  config: GraphNodeConfig | None = None
 
 
-@dataclass
+@dataclasses.dataclass
 class IncomingEdge:
   """An incoming edge of a graph node."""
 
@@ -168,25 +173,27 @@ class IncomingEdge:
 # A "node ids" node attribute value.
 #
 # Clicking on a node id will jump to the corresponding node in the graph.
-@dataclass
+@dataclasses.dataclass
 class NodeIdsNodeAttributeValue:
+  """A node attribute value that links to a list of target node IDs."""
+
   type: str = 'node_ids'
-  nodeIds: list[str] = field(default_factory=list)
+  nodeIds: list[str] = dataclasses.field(default_factory=list)
 
 
 SpecialNodeAttributeValue = NodeIdsNodeAttributeValue
 NodeAttributeValue = Union[str, SpecialNodeAttributeValue]
 
 
-@dataclass
+@dataclasses.dataclass
 class KeyValue:
-  """A key-value pair"""
+  """A key-value pair."""
 
   key: str
   value: NodeAttributeValue
 
 
-@dataclass
+@dataclasses.dataclass
 class MetadataItem:
   """A single output metadata item for a specific output id."""
 
@@ -196,10 +203,10 @@ class MetadataItem:
   # The attributes for the input/output.
   #
   # (optional)
-  attrs: list[KeyValue] = field(default_factory=list)
+  attrs: list[KeyValue] = dataclasses.field(default_factory=list)
 
 
-@dataclass
+@dataclasses.dataclass
 class GraphNodeStyle:
   """Style of the node."""
 
@@ -219,7 +226,7 @@ class GraphNodeStyle:
   hoveredBorderColor: str = ''
 
 
-@dataclass
+@dataclasses.dataclass
 class GraphNodeConfig:
   """Custom configs for the node."""
 
@@ -233,14 +240,12 @@ class GraphNodeConfig:
 #
 # Use empty group namespace for the graph-level attributes (i.e. shown in
 # side panel when no node is selected).
-GroupNodeAttributes = Dict[str, Dict[str, str]]
+GroupNodeAttributes = dict[str, dict[str, str]]
 
 
-@dataclass
+@dataclasses.dataclass
 class GroupNodeConfig:
-  """
-  Custom configs for group nodes matched by the namespace regex.
-  """
+  """Custom configs for group nodes matched by the namespace regex."""
 
   # The regex of the namespace of the group node. The namespace to match should
   # include the name of the group itself.
@@ -253,7 +258,22 @@ class GroupNodeConfig:
   #
   # 0: top-bottom (default)
   # 1: left-right
-  layoutDirection: Union[int, None] = None
+  layoutDirection: int | None = None
+
+  # The background color of the group node in CSS format.
+  #
+  # (optional)
+  backgroundColor: str | None = None
+
+  # The border color of the group node in CSS format.
+  #
+  # (optional)
+  borderColor: str | None = None
+
+  # The text color of the group node in CSS format.
+  #
+  # (optional)
+  textColor: str | None = None
 
 
 class LayoutDirection:
@@ -263,8 +283,10 @@ class LayoutDirection:
   LEFT_RIGHT = 1
 
 
-@dataclass
+@dataclasses.dataclass
 class GraphCollection:
+  """A collection of graphs."""
+
   # The label of the collection.
   #
   # It will be appended to the file name to distinguish different graph
@@ -272,7 +294,7 @@ class GraphCollection:
   label: str
 
   # A list of graphs in this collection.
-  graphs: list[Graph] = field(default_factory=list)
+  graphs: list[Graph] = dataclasses.field(default_factory=list)
 
   # The sorting of the graphs.
   graphSorting: Literal[
@@ -280,7 +302,7 @@ class GraphCollection:
   ] = 'node_count_desc'
 
 
-@dataclass
+@dataclasses.dataclass
 class Edge:
   """An edge in the overlay."""
 
@@ -291,10 +313,10 @@ class Edge:
   targetNodeId: str
 
   # Label shown on the edge.
-  label: Union[str, None] = None
+  label: str | None = None
 
 
-@dataclass
+@dataclasses.dataclass
 class EdgeOverlay:
   """An edge overlay."""
 
@@ -308,22 +330,22 @@ class EdgeOverlay:
   edgeColor: str
 
   # The edges that define the overlay.
-  edges: list[Edge] = field(default_factory=list)
+  edges: list[Edge] = dataclasses.field(default_factory=list)
 
   # The width of the overlay edges. Default to 2.
-  edgeWidth: Union[int, None] = 2
+  edgeWidth: int | None = 2
 
   # The font size of the edge labels. Default to 7.5.
-  edgeLabelFontSize: Union[float, None] = 7.5
+  edgeLabelFontSize: float | None = 7.5
 
   # If set to `true`, only edges that are directly connected to the currently
   # selected node (i.e., edges that either start from or end at the selected
   # node) will be displayed for this overlay. All other edges within this
   # overlay will be hidden.
-  showEdgesConnectedToSelectedNodeOnly: Union[bool, None] = None
+  showEdgesConnectedToSelectedNodeOnly: bool | None = None
 
 
-@dataclass
+@dataclasses.dataclass
 class EdgeOverlaysData:
   """The data for edge overlays."""
 
@@ -333,33 +355,33 @@ class EdgeOverlaysData:
   type: str = 'edge_overlays'
 
   # A list of edge overlays.
-  overlays: list[EdgeOverlay] = field(default_factory=list)
+  overlays: list[EdgeOverlay] = dataclasses.field(default_factory=list)
 
 
-@dataclass
+@dataclasses.dataclass
 class TasksData:
   """Data for various tasks that provide extra data to be visualized."""
 
   # List of data for edge overlays that will be applied to the left pane
   # (2-pane view) or the only pane (1-pane view).
-  edgeOverlaysDataListLeftPane: list[EdgeOverlaysData] = field(
+  edgeOverlaysDataListLeftPane: list[EdgeOverlaysData] = dataclasses.field(
       default_factory=list
   )
 
   # List of data for edge overlays that will be applied to the right pane.
-  edgeOverlaysDataListRightPane: list[EdgeOverlaysData] = field(
+  edgeOverlaysDataListRightPane: list[EdgeOverlaysData] = dataclasses.field(
       default_factory=list
   )
 
 
-@dataclass
+@dataclasses.dataclass
 class LayoutConfigs:
   """Layout-related configs."""
 
   # Number of pixels that separate nodes horizontally in the layout.
   #
   # Default is 20.
-  nodeSep: Union[int, None] = None
+  nodeSep: int | None = None
 
   # Number of pixels between each rank in the layout.
   #
@@ -368,9 +390,15 @@ class LayoutConfigs:
   # crossings.
   #
   # Default is 50.
-  rankSep: Union[int, None] = None
+  rankSep: int | None = None
 
   # Number of pixels that separate edges horizontally in the layout.
   #
   # Default is 20.
-  edgeSep: Union[int, None] = None
+  edgeSep: int | None = None
+
+  # Whether to keep layers with a single child op node instead of collapsing
+  # them.
+  #
+  # (optional)
+  keepLayersWithASingleChild: bool | None = None

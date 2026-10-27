@@ -244,4 +244,13 @@ export declare interface LayoutConfigs {
    * Default is 20.
    */
   edgeSep?: number;
+
+  /**
+   * Whether to keep layers with a single child op node instead of collapsing
+   * them.
+   *
+   * When unset, falls back to the visualizer's global setting (default is
+   * false).
+   */
+  keepLayersWithASingleChild?: boolean;
 }

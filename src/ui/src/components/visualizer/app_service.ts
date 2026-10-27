@@ -78,6 +78,8 @@ export class AppService {
 
   readonly curSelectedRenderer = signal<RendererInfo | undefined>(undefined);
 
+  readonly collapsedGraphKeys = signal<Set<string>>(new Set<string>());
+
   readonly spaceKeyToZoomFitClicked = new Subject<{}>();
 
   readonly searchKeyClicked = new Subject<{}>();
@@ -1106,6 +1108,7 @@ export class AppService {
     this.groupNodeChildrenCountThresholdFromUrl = null;
     this.paneIdToGraph = {};
     this.paneIdToCurModelGraphs = {};
+    this.collapsedGraphKeys.set(new Set<string>());
 
     this.init();
   }
@@ -1127,6 +1130,17 @@ export class AppService {
           break;
       }
     });
+  }
+
+  toggleGraphCollapse(key: string) {
+    const collapsed = this.collapsedGraphKeys();
+    const newSet = new Set(collapsed);
+    if (newSet.has(key)) {
+      newSet.delete(key);
+    } else {
+      newSet.add(key);
+    }
+    this.collapsedGraphKeys.set(newSet);
   }
 
   private init() {

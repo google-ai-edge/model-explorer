@@ -14,10 +14,10 @@
 # ==============================================================================
 
 from dataclasses import dataclass, field
-from typing import Dict, Any
+from typing import Any, Dict
 
 from .extension_base import Extension
-from .extension_matadata import ExtensionMetadata
+from .extension_metadata import ExtensionMetadata
 from .types import ModelExplorerGraphs
 
 

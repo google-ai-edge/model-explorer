@@ -24,6 +24,8 @@ import {
   Input,
   Output,
   computed,
+  inject,
+  signal,
 } from '@angular/core';
 import {ReactiveFormsModule} from '@angular/forms';
 import {MatFormFieldModule} from '@angular/material/form-field';
@@ -56,10 +58,20 @@ const DEFAULT_PADDING_LEFT = 24;
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class GraphSelectorPanel {
-  @Input({required: true}) graphCollectionItems: GraphCollectionItem[] = [];
-  @Output() readonly onClose = new EventEmitter<{}>();
+  private readonly appService = inject(AppService);
 
-  hasFilteredOutGraphs = false;
+  readonly graphCollectionItemsSignal = signal<GraphCollectionItem[]>([]);
+  readonly filterText = signal<string>('');
+
+  @Input({required: true})
+  set graphCollectionItems(items: GraphCollectionItem[]) {
+    this.graphCollectionItemsSignal.set(items);
+  }
+  get graphCollectionItems(): GraphCollectionItem[] {
+    return this.graphCollectionItemsSignal();
+  }
+
+  @Output() readonly onClose = new EventEmitter<{}>();
 
   readonly selectedGraphId = computed(() => {
     const pane = this.appService.getSelectedPane();
@@ -69,9 +81,65 @@ export class GraphSelectorPanel {
     return pane.modelGraph.id;
   });
 
-  private curFilterText = '';
+  private readonly processedData = computed<{
+    items: GraphCollectionItem[];
+    hasFilteredOutGraphs: boolean;
+  }>(() => {
+    const filterText = this.filterText();
+    const collapsedKeys = this.appService.collapsedGraphKeys();
+    const graphCollectionItems: GraphCollectionItem[] = [];
+    let hasFilteredOutGraphs = false;
 
-  constructor(private readonly appService: AppService) {}
+    for (const {
+      label,
+      collection,
+      graphs,
+    } of this.graphCollectionItemsSignal()) {
+      const collectionItem: GraphCollectionItem = {
+        label,
+        collection,
+        graphs: [],
+        hasSubgraphs: graphs.some((g) => g.hasSubgraphs),
+      };
+      let hiddenBelowLevel = Infinity;
+      for (const graph of graphs) {
+        if (
+          filterText !== '' &&
+          !graph.title.toLowerCase().includes(filterText)
+        ) {
+          hasFilteredOutGraphs = true;
+          continue;
+        }
+
+        // Only apply collapse filtering in tree view (when not searching).
+        if (filterText === '') {
+          if (graph.level <= hiddenBelowLevel) {
+            hiddenBelowLevel = Infinity;
+          }
+          if (graph.level > hiddenBelowLevel) {
+            continue;
+          }
+          if (collapsedKeys.has(this.getGraphKey(graph))) {
+            hiddenBelowLevel = graph.level;
+          }
+        }
+
+        collectionItem.graphs.push(graph);
+      }
+      if (collectionItem.graphs.length > 0) {
+        graphCollectionItems.push(collectionItem);
+      }
+    }
+    return {
+      items: graphCollectionItems,
+      hasFilteredOutGraphs,
+    };
+  });
+
+  readonly curGraphCollectionItems = computed(() => this.processedData().items);
+  readonly hasFilteredOutGraphs = computed(
+    () => this.processedData().hasFilteredOutGraphs,
+  );
 
   getGraphNonHiddenNodeCountLabel(count: number): string {
     return `${count} node${count === 1 ? '' : 's'}`;
@@ -89,7 +157,7 @@ export class GraphSelectorPanel {
   }
 
   handleFilterTextChanged(value: string) {
-    this.curFilterText = value.toLowerCase();
+    this.filterText.set(value.toLowerCase());
   }
 
   handleClickOpenInSplitPane(event: MouseEvent, graphItem: GraphItem) {
@@ -101,12 +169,16 @@ export class GraphSelectorPanel {
   }
 
   showIndentSymbol(graphItem: GraphItem): boolean {
-    return !this.hasFilteredOutGraphs && (graphItem.level ?? 0) > 0;
+    return (
+      !this.hasFilteredOutGraphs() &&
+      (graphItem.level ?? 0) > 0 &&
+      !graphItem.hasSubgraphs
+    );
   }
 
   getGraphItemPaddingLeft(graphItem: GraphItem): number {
     // Don't show tree indentation in filter mode.
-    if (this.hasFilteredOutGraphs) {
+    if (this.hasFilteredOutGraphs()) {
       return DEFAULT_PADDING_LEFT;
     }
     return DEFAULT_PADDING_LEFT + (graphItem.level ?? 0) * 12;
@@ -120,33 +192,29 @@ export class GraphSelectorPanel {
   }
 
   trackByGraph(index: number, graphItem: GraphItem): string {
-    return `${graphItem.graph.collectionLabel}___${graphItem.graph.id}`;
+    return `${graphItem.graph.collectionLabel}___${graphItem.graph.id}___${index}`;
   }
 
-  get curGraphCollectionItems(): GraphCollectionItem[] {
-    const graphCollectionItems: GraphCollectionItem[] = [];
-    this.hasFilteredOutGraphs = false;
-    for (const {label, collection, graphs} of this.graphCollectionItems) {
-      const collectionItem: GraphCollectionItem = {
-        label,
-        collection,
-        graphs: [],
-      };
-      for (const graph of graphs) {
-        if (
-          this.curFilterText !== '' &&
-          !graph.title.toLowerCase().includes(this.curFilterText)
-        ) {
-          this.hasFilteredOutGraphs = true;
-          continue;
-        }
-        collectionItem.graphs.push(graph);
-      }
-      if (collectionItem.graphs.length > 0) {
-        graphCollectionItems.push(collectionItem);
-      }
-    }
-    return graphCollectionItems;
+  getGraphKey(graphItem: GraphItem): string {
+    return `${graphItem.graph.collectionLabel}___${graphItem.id}`;
+  }
+
+  isCollapsed(graphItem: GraphItem): boolean {
+    return this.appService
+      .collapsedGraphKeys()
+      .has(this.getGraphKey(graphItem));
+  }
+
+  toggleCollapse(event: Event, graphItem: GraphItem) {
+    event.stopPropagation();
+    event.preventDefault();
+    const key = this.getGraphKey(graphItem);
+    this.appService.toggleGraphCollapse(key);
+  }
+
+  getSubgraphCountLabel(count?: number): string {
+    const c = count ?? 0;
+    return `${c} subgraph${c === 1 ? '' : 's'}`;
   }
 
   get showOpenInSplitPane(): boolean {
@@ -154,7 +222,6 @@ export class GraphSelectorPanel {
   }
 
   private resetFilter() {
-    this.curFilterText = '';
-    this.hasFilteredOutGraphs = false;
+    this.filterText.set('');
   }
 }

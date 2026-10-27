@@ -1,0 +1,94 @@
+{
+ "$defs": {
+  "PathCoverage": {
+   "description": "Coverage status and classification for a hierarchy path.",
+   "properties": {
+    "path": {
+     "title": "Path",
+     "type": "string"
+    },
+    "branch": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "null"
+      }
+     ],
+     "default": null,
+     "title": "Branch"
+    },
+    "status": {
+     "enum": [
+      "covered",
+      "pruned",
+      "guarded",
+      "uncovered",
+      "data_dependent",
+      "conflict"
+     ],
+     "title": "Status",
+     "type": "string"
+    },
+    "reason": {
+     "default": "",
+     "title": "Reason",
+     "type": "string"
+    },
+    "evidence": {
+     "default": "",
+     "title": "Evidence",
+     "type": "string"
+    },
+    "covered_by": {
+     "items": {
+      "type": "string"
+     },
+     "title": "Covered By",
+     "type": "array"
+    },
+    "needs": {
+     "anyOf": [
+      {
+       "type": "string"
+      },
+      {
+       "type": "null"
+      }
+     ],
+     "default": null,
+     "title": "Needs"
+    }
+   },
+   "required": [
+    "path",
+    "status"
+   ],
+   "title": "PathCoverage",
+   "type": "object"
+  }
+ },
+ "description": "Aggregate coverage collection across all hierarchy paths.",
+ "properties": {
+  "paths": {
+   "items": {
+    "$ref": "#/$defs/PathCoverage"
+   },
+   "title": "Paths",
+   "type": "array"
+  },
+  "summary": {
+   "additionalProperties": {
+    "type": "integer"
+   },
+   "title": "Summary",
+   "type": "object"
+  }
+ },
+ "required": [
+  "paths"
+ ],
+ "title": "Coverage",
+ "type": "object"
+}

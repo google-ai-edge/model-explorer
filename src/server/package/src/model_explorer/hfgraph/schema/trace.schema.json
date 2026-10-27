@@ -1,0 +1,291 @@
+{
+ "$defs": {
+  "Edge": {
+   "description": "A directed edge connecting two operation nodes.",
+   "properties": {
+    "src": {
+     "title": "Src",
+     "type": "string"
+    },
+    "src_out": {
+     "default": 0,
+     "title": "Src Out",
+     "type": "integer"
+    },
+    "dst": {
+     "title": "Dst",
+     "type": "string"
+    },
+    "dst_in": {
+     "default": 0,
+     "title": "Dst In",
+     "type": "integer"
+    }
+   },
+   "required": [
+    "src",
+    "dst"
+   ],
+   "title": "Edge",
+   "type": "object"
+  },
+  "Op": {
+   "description": "An executed operation node within a trace.",
+   "properties": {
+    "id": {
+     "title": "Id",
+     "type": "string"
+    },
+    "path": {
+     "title": "Path",
+     "type": "string"
+    },
+    "fx_name": {
+     "title": "Fx Name",
+     "type": "string"
+    },
+    "aten": {
+     "title": "Aten",
+     "type": "string"
+    },
+    "label": {
+     "title": "Label",
+     "type": "string"
+    },
+    "file": {
+     "title": "File",
+     "type": "string"
+    },
+    "line": {
+     "title": "Line",
+     "type": "integer"
+    },
+    "loop_iter": {
+     "anyOf": [
+      {
+       "type": "integer"
+      },
+      {
+       "type": "null"
+      }
+     ],
+     "default": null,
+     "title": "Loop Iter"
+    },
+    "inputs": {
+     "items": {
+      "$ref": "#/$defs/Tensor"
+     },
+     "title": "Inputs",
+     "type": "array"
+    },
+    "outputs": {
+     "items": {
+      "$ref": "#/$defs/Tensor"
+     },
+     "title": "Outputs",
+     "type": "array"
+    },
+    "attrs": {
+     "additionalProperties": {
+      "type": "string"
+     },
+     "title": "Attrs",
+     "type": "object"
+    }
+   },
+   "required": [
+    "id",
+    "path",
+    "fx_name",
+    "aten",
+    "label",
+    "file",
+    "line"
+   ],
+   "title": "Op",
+   "type": "object"
+  },
+  "PathRecord": {
+   "description": "Execution record tracking path traversal and folded iterations.",
+   "properties": {
+    "path": {
+     "title": "Path",
+     "type": "string"
+    },
+    "ops": {
+     "default": 0,
+     "title": "Ops",
+     "type": "integer"
+    },
+    "iterations": {
+     "anyOf": [
+      {
+       "type": "integer"
+      },
+      {
+       "type": "null"
+      }
+     ],
+     "default": null,
+     "title": "Iterations"
+    }
+   },
+   "required": [
+    "path"
+   ],
+   "title": "PathRecord",
+   "type": "object"
+  },
+  "Specialized": {
+   "description": "Trace specialization evidence for a guarded branch.",
+   "properties": {
+    "branch_path": {
+     "title": "Branch Path",
+     "type": "string"
+    },
+    "kind": {
+     "enum": [
+      "guard",
+      "shape_eval",
+      "draft_failure"
+     ],
+     "title": "Kind",
+     "type": "string"
+    },
+    "evidence": {
+     "title": "Evidence",
+     "type": "string"
+    }
+   },
+   "required": [
+    "branch_path",
+    "kind",
+    "evidence"
+   ],
+   "title": "Specialized",
+   "type": "object"
+  },
+  "Tensor": {
+   "description": "Tensor metadata including name, shape, and datatype.",
+   "properties": {
+    "name": {
+     "title": "Name",
+     "type": "string"
+    },
+    "shape": {
+     "items": {
+      "type": "integer"
+     },
+     "title": "Shape",
+     "type": "array"
+    },
+    "dtype": {
+     "title": "Dtype",
+     "type": "string"
+    }
+   },
+   "required": [
+    "name",
+    "shape",
+    "dtype"
+   ],
+   "title": "Tensor",
+   "type": "object"
+  },
+  "TraceInfo": {
+   "description": "Metadata, configuration, and inputs for an execution trace.",
+   "properties": {
+    "id": {
+     "title": "Id",
+     "type": "string"
+    },
+    "inputs": {
+     "additionalProperties": {
+      "type": "string"
+     },
+     "title": "Inputs",
+     "type": "object"
+    },
+    "plan": {
+     "additionalProperties": {
+      "type": "integer"
+     },
+     "title": "Plan",
+     "type": "object"
+    },
+    "config_overrides": {
+     "additionalProperties": {
+      "type": "string"
+     },
+     "title": "Config Overrides",
+     "type": "object"
+    },
+    "strict": {
+     "default": true,
+     "title": "Strict",
+     "type": "boolean"
+    },
+    "primary": {
+     "default": false,
+     "title": "Primary",
+     "type": "boolean"
+    },
+    "specialized": {
+     "items": {
+      "$ref": "#/$defs/Specialized"
+     },
+     "title": "Specialized",
+     "type": "array"
+    },
+    "stats": {
+     "additionalProperties": {
+      "type": "integer"
+     },
+     "title": "Stats",
+     "type": "object"
+    }
+   },
+   "required": [
+    "id",
+    "inputs"
+   ],
+   "title": "TraceInfo",
+   "type": "object"
+  }
+ },
+ "description": "Execution trace containing ops, edges, and traversed paths.",
+ "properties": {
+  "trace": {
+   "$ref": "#/$defs/TraceInfo"
+  },
+  "ops": {
+   "items": {
+    "$ref": "#/$defs/Op"
+   },
+   "title": "Ops",
+   "type": "array"
+  },
+  "edges": {
+   "items": {
+    "$ref": "#/$defs/Edge"
+   },
+   "title": "Edges",
+   "type": "array"
+  },
+  "paths": {
+   "items": {
+    "$ref": "#/$defs/PathRecord"
+   },
+   "title": "Paths",
+   "type": "array"
+  }
+ },
+ "required": [
+  "trace",
+  "ops",
+  "edges"
+ ],
+ "title": "Trace",
+ "type": "object"
+}

@@ -13,32 +13,31 @@
 // limitations under the License.
 // =============================================================================
 
-#ifndef MODELS_TO_JSON_LIB_H_
-#define MODELS_TO_JSON_LIB_H_
+#ifndef MODEL_EXPLORER_BACKEND_MODELS_TO_JSON_LIB_H_
+#define MODEL_EXPLORER_BACKEND_MODELS_TO_JSON_LIB_H_
 
 #include <string>
 
 #include "absl/status/statusor.h"
 #include "absl/strings/string_view.h"
-#include "visualize_config.h"
+#include "common/visualize_config.h"
 
-namespace tooling {
-namespace visualization_client {
+namespace model_explorer {
+namespace adapter {
 
 // Converts a model to model explorer JSON string.
 //
-// The model can be a TFLite Flatbuffer, a TF SavedModel or GraphDef, or a
+// The model can be a LiteRT Flatbuffer, a TF SavedModel or GraphDef, or a
 // StableHLO module represented using MLIR textual or bytecode format.
 //
 // If `disable_mlir` is true, the model will be converted to JSON directly
-// without going through MLIR. Currently, this only applies to TFLite and TF
-// adapters. For TFLite, it's preferred to set `disable_mlir` to true. For TF
+// without going through MLIR. Currently, this only applies to LiteRT and TF
+// adapters. For LiteRT, it's preferred to set `disable_mlir` to true. For TF
 // SavedModel, it's preferred to set `disable_mlir` to false.
 absl::StatusOr<std::string> ConvertModelToJson(const VisualizeConfig& config,
                                                absl::string_view input_file,
                                                bool disable_mlir);
 
-}  // namespace visualization_client
-}  // namespace tooling
-
-#endif  // MODELS_TO_JSON_LIB_H_
+}  // namespace adapter
+}  // namespace model_explorer
+#endif  // MODEL_EXPLORER_BACKEND_MODELS_TO_JSON_LIB_H_

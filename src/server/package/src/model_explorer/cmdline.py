@@ -15,19 +15,22 @@
 
 import argparse
 
-from . import server
-from .config import ModelExplorerConfig
-from .consts import DEFAULT_HOST, DEFAULT_PORT
-
 parser = argparse.ArgumentParser(
     prog='model-explorer',
     description='A modern model graph visualizer and debugger',
     formatter_class=argparse.ArgumentDefaultsHelpFormatter,
 )
+
+from typing import Any
+
+from . import server
+from .config import ModelExplorerConfig
+from .consts import DEFAULT_HOST, DEFAULT_PORT
+
 parser.add_argument(
     'model_paths', nargs='*', help='model file paths, space- or comma-separated'
 )
-parser.add_argument('--host', default=DEFAULT_HOST, help='host of the server')
+parser.add_argument('--host', help='host of the server')
 parser.add_argument(
     '--port', default=DEFAULT_PORT, type=int, help='port of the server'
 )
@@ -81,21 +84,28 @@ parser.add_argument(
 args = parser.parse_args()
 
 
-def main():
+def main(parsed_args: Any = None) -> None:
   """Entry point for the command line version of model explorer."""
+  if parsed_args is None:
+    parsed_args = parser.parse_args()
 
-  model_paths: list[str] = args.model_paths
-  if len(args.model_paths) == 1:
-    comma_separated_model_paths = args.model_paths[0]
+  model_paths: list[str] = parsed_args.model_paths
+  if len(parsed_args.model_paths) == 1:
+    comma_separated_model_paths = parsed_args.model_paths[0]
     model_paths = [x.strip() for x in comma_separated_model_paths.split(',')]
 
   node_data_paths: list[str] = []
-  if args.node_data_paths is not None and args.node_data_paths != '':
-    node_data_paths = [x.strip() for x in args.node_data_paths.split(',')]
+  if (
+      parsed_args.node_data_paths is not None
+      and parsed_args.node_data_paths != ''
+  ):
+    node_data_paths = [
+        x.strip() for x in parsed_args.node_data_paths.split(',')
+    ]
 
   extensions: list[str] = []
-  if args.extensions is not None:
-    extensions = [x.strip() for x in args.extensions.split(',')]
+  if parsed_args.extensions is not None:
+    extensions = [x.strip() for x in parsed_args.extensions.split(',')]
 
   # Construct config.
   config = ModelExplorerConfig()
@@ -103,18 +113,21 @@ def main():
     config.add_model_from_path(model_path)
   for node_data_path in node_data_paths:
     config.add_node_data_from_path(node_data_path)
-  if args.reuse_server:
+  if parsed_args.reuse_server:
     config.set_reuse_server(
-        server_host=args.reuse_server_host, server_port=args.reuse_server_port
+        server_host=parsed_args.reuse_server_host,
+        server_port=parsed_args.reuse_server_port,
     )
 
+  host = parsed_args.host if parsed_args.host else DEFAULT_HOST
+
   server.start(
-      host=args.host,
-      port=args.port,
+      host=host,
+      port=parsed_args.port,
       config=config,
       extensions=extensions,
-      cors_host=args.cors_host,
-      no_open_in_browser=args.no_open_in_browser,
-      skip_health_check=args.skip_health_check,
-      watch=args.watch,
+      cors_host=parsed_args.cors_host,
+      no_open_in_browser=parsed_args.no_open_in_browser,
+      skip_health_check=parsed_args.skip_health_check,
+      watch=parsed_args.watch,
   )

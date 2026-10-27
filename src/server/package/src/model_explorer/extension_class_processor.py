@@ -13,7 +13,7 @@
 # limitations under the License.
 # ==============================================================================
 
-from typing import Union, Dict, TypedDict, Any
+from typing import Any, Dict, TypedDict, Union
 
 from .types import ExtensionClassType
 
@@ -27,11 +27,11 @@ class ExtensionInfo(TypedDict):
 
 
 class ExtensionClassProcessor(type):
-  """
-  Processes the class related info for the corresponding extension. This class
-  is used as metaclass for the base Extension class and its __init__ function
-  will be called when the module that contains any Extension based class is
-  imported.
+  """Processes the class related info for the corresponding extension.
+
+  This class is used as metaclass for the base Extension class and its __init__
+  function will be called when the module that contains any Extension based
+  class is imported.
   """
 
   # To add a new extension type:
