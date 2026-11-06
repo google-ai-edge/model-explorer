@@ -23,9 +23,9 @@
 #include <memory>
 #include <string>
 
-#include "absl/status/statusor.h"
 #include "grpcpp/server.h"
 #include "model_debugger/runner/service/runner_service.h"
+#include "absl/status/statusor.h"
 
 namespace model_debugger::runner {
 

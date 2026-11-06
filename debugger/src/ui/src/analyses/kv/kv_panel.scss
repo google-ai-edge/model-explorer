@@ -1,0 +1,575 @@
+/* stylelint-disable */
+/**
+ * @license
+ * Copyright 2026 The AI Edge Model Explorer Authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ==============================================================================
+ */
+
+@use '../../widgets/styles/display_settings' as display;
+@use '../shared/analysis_toolbar' as toolbar;
+@use '../shared/analysis_view_switch' as view-switch;
+@use '../shared/chart_state';
+@use '../../theme/data_table' as data-table;
+@use '../../theme/token_diff' as token-diff;
+@use '../../theme/explorer_controls' as controls;
+@include data-table.defaults;
+
+/* Local analytical surfaces reuse the Model Explorer control and text tokens. */
+:host {
+  @include token-diff.activation-colors;
+  --kv-text: var(--me-on-surface-color);
+  --kv-muted: var(--me-on-surface-variant-color);
+  --kv-line: var(--me-outline-hairline-color);
+  --kv-control: var(--me-surface-container-high-color);
+  --kv-hover: var(--me-surface-container-highest-color);
+  --kv-accent: var(--me-primary-color);
+  --kv-selected: var(--me-primary-container-color);
+  --kv-selected-text: var(--me-on-primary-container-color);
+  --kv-panel: var(--me-surface-color);
+  --chart-canvas: #f2f4f8;
+  --kv-grid: #dce2eb;
+  --kv-missing: #d6dce4;
+  color: var(--kv-text);
+  font: 400 12px/20px var(--me-font-family);
+}
+:host-context([data-theme='dark']) {
+  --chart-canvas: #202124;
+  --kv-grid: #3c4043;
+  --kv-missing: #3c4043;
+}
+:host {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+button,
+select,
+input {
+  font: inherit;
+  color: var(--kv-text);
+}
+button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 28px;
+  margin: 0;
+  padding: 2px 8px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  font-weight: 400;
+  cursor: pointer;
+}
+button:hover:not(:disabled) {
+  background: var(--kv-hover);
+}
+button[aria-pressed='true'] {
+  background: var(--kv-selected);
+  color: var(--kv-selected-text);
+}
+button:disabled {
+  opacity: 0.36;
+  cursor: default;
+}
+:focus-visible {
+  outline: 2px solid var(--kv-accent);
+  outline-offset: 2px;
+}
+.icon-button {
+  width: 28px;
+  height: 28px;
+  min-width: 28px;
+  flex: none;
+  padding: 3px;
+}
+mat-icon {
+  font-size: 18px;
+  width: 18px;
+  height: 18px;
+  line-height: 18px;
+  flex: none;
+}
+select,
+input {
+  min-width: 0;
+  min-height: 30px;
+  padding: 4px 8px;
+  border: 1px solid var(--me-outline-variant-color);
+  border-radius: 4px;
+  background: var(--me-runtime-field-color);
+}
+select {
+  cursor: pointer;
+}
+label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+h2,
+h3,
+p {
+  margin: 0;
+}
+.outlined {
+  border: 1px solid var(--me-outline-variant-color);
+}
+.primary {
+  background: var(--kv-accent);
+  color: var(--me-on-primary-color);
+  padding: 3px 16px;
+}
+.primary:hover:not(:disabled) {
+  background: var(--kv-accent);
+  filter: brightness(0.95);
+}
+[role='alert'] {
+  color: var(--me-error-text-color);
+  overflow-wrap: anywhere;
+}
+
+.kv-workspace {
+  // The toolbar row, then the plot or its state message; .analysis only groups them.
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr);
+  flex: 1;
+  position: relative;
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+.analysis {
+  display: contents;
+}
+// A single toolbar row; narrow panels scroll controls instead of wrapping them.
+.toolbar {
+  grid-row: 1;
+  align-self: flex-start;
+  width: 100%;
+  min-width: 0;
+  z-index: 2;
+  @include toolbar.layout;
+  & {
+    @include toolbar.fixed-actions;
+  }
+}
+@include view-switch.styles;
+.toolbar button.mat-mdc-button-base:hover:not(:disabled) {
+  background: transparent;
+}
+.notice-banner {
+  flex: none;
+  margin: 0 12px 8px;
+  padding: 6px 10px;
+  border: 1px solid var(--kv-line);
+  border-radius: 4px;
+  background: var(--me-warning-container-color);
+  color: var(--me-warning-text-color);
+  font-size: 11px;
+  line-height: 17px;
+  overflow-wrap: anywhere;
+}
+.analysis-body {
+  grid-row: 2;
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+.canvas {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+  cursor: default;
+  touch-action: auto;
+}
+.plot-scroll {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  padding: 6px 12px 0;
+  overflow: hidden;
+}
+.state-message {
+  grid-row: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+  min-height: 180px;
+  padding: 40px 28px;
+  text-align: center;
+  color: var(--kv-muted);
+}
+.state-message > mat-icon {
+  font-size: 28px;
+  width: 28px;
+  height: 28px;
+  line-height: 28px;
+  margin-bottom: 4px;
+}
+.state-message h2 {
+  font-size: 15px;
+  line-height: 24px;
+  font-weight: 500;
+  color: var(--kv-text);
+}
+.state-message p {
+  max-width: 520px;
+  line-height: 20px;
+  overflow-wrap: anywhere;
+}
+.state-message button,
+.state-message label {
+  margin-top: 6px;
+}
+
+.detail-note {
+  margin: 4px 12px;
+  color: var(--kv-muted);
+  font: 12px/18px var(--me-font-family);
+  overflow-wrap: anywhere;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .canvas {
+    scroll-behavior: auto;
+  }
+}
+
+.undo-zoom {
+  @include controls.compact-icon(28px);
+  flex: none;
+}
+.range-canvas {
+  position: relative;
+  display: flex;
+  flex: none;
+  min-width: 0;
+  min-height: 0;
+}
+range-chart {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+}
+@include chart_state.pending;
+.chart-status {
+  position: absolute;
+  z-index: 1;
+  top: 38px;
+  left: 64px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: calc(100% - 76px);
+  padding: 4px 8px;
+  border: 1px solid var(--kv-line);
+  border-radius: 3px;
+  background: var(--kv-panel);
+  color: var(--kv-muted);
+  font-size: 11px;
+}
+.chart-status.error {
+  color: var(--me-error-text-color);
+}
+.chart-legend {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: nowrap;
+}
+.chart-legend > span {
+  white-space: nowrap;
+}
+.chart-legend i {
+  width: 12px;
+  height: 3px;
+  display: inline-block;
+}
+.chart-legend label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.layer-picker {
+  padding: 12px;
+  width: 260px;
+  background: var(--kv-panel);
+  border: 1px solid var(--kv-line);
+  border-radius: 4px;
+  box-shadow: 0 4px 12px #0002;
+}
+.layer-options {
+  max-height: 260px;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+}
+.layer-options label {
+  padding: 3px;
+}
+
+.toolbar [hidden] {
+  display: none;
+}
+
+// A single reading order: metric, low endpoint, ramp, high endpoint.
+// Fixed tracks keep labels, endpoints and the ramp stable across metrics.
+.heatmap-color-legend {
+  display: grid;
+  grid-template-columns: 24px 80px 24px;
+  width: 136px;
+  min-width: 136px;
+  max-width: 136px;
+  flex: 0 0 136px;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+  font-size: 11px;
+  color: var(--kv-muted);
+  .color-metric,
+  .color-endpoint {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .color-metric {
+    text-align: right;
+  }
+  .color-endpoint {
+    font: 10px/16px var(--mono);
+    text-align: center;
+  }
+  .color-ramp {
+    display: flex;
+    width: 80px;
+    height: 6px;
+    gap: 1px;
+    &.continuous {
+      background: linear-gradient(to right, var(--heat-low), var(--heat-high));
+    }
+    i {
+      flex: 1;
+    }
+  }
+}
+
+.toolbar-scroll {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  flex: 1;
+  overflow-x: auto;
+}
+.toolbar-scroll heatmap-controls {
+  flex: none;
+  flex-wrap: nowrap;
+}
+:host ::ng-deep .toolbar-scroll heatmap-controls .range-group {
+  flex-wrap: nowrap;
+}
+.toolbar-scroll .chart-legend {
+  flex: none;
+}
+.toolbar-view {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+  font: 12px/20px var(--me-font-family);
+  color: var(--me-on-surface-color);
+}
+.toolbar-section-divider,
+.toolbar-range.tensor-range::before,
+.toolbar-actions::before {
+  content: '';
+  height: 24px;
+  flex: 0 0 1px;
+  background: var(--me-outline-hairline-color);
+}
+.kv-view-picker {
+  flex: 0 0 160px;
+  width: 160px;
+}
+.tensor-control,
+.tensor-position-control {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex: none;
+  white-space: nowrap;
+  font-size: 12px;
+}
+.tensor-position-control input {
+  width: 66px;
+  min-width: 0;
+  font: inherit;
+  padding: 3px 4px;
+  border: 1px solid var(--me-outline-hairline-color);
+  border-radius: 3px;
+  background: var(--me-surface-color);
+  color: var(--me-on-surface-color);
+}
+.tensor-position-control .icon-button {
+  padding: 0;
+  width: 20px;
+  height: 24px;
+  min-width: 20px;
+}
+.tensor-plots {
+  width: 100%;
+  min-width: 0;
+}
+.tensor-plot-group {
+  min-width: 0;
+  padding: 8px 0;
+}
+.tensor-plot-group + .tensor-plot-group {
+  border-top: 1px solid var(--me-outline-hairline-color);
+}
+.tensor-plot-group h3 {
+  margin: 0 12px 8px;
+  font: 500 12px/20px var(--me-font-family);
+  color: var(--me-on-surface-color);
+}
+
+.toolbar-scroll position-range-control {
+  flex: none;
+  white-space: nowrap;
+}
+
+.tensor-line-frame {
+  padding: 6px 12px 0;
+}
+.tensor-line-canvas {
+  position: relative;
+  min-height: 260px;
+}
+
+// Legend and fullscreen stay outside the scrolling analysis controls.
+.toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: none;
+}
+.toolbar-legend {
+  width: 144px;
+  flex: 0 0 144px;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+}
+.toolbar-legend .chart-legend {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-height: 32px;
+}
+.tensor-axis-legend {
+  white-space: nowrap;
+  color: var(--kv-muted);
+  font: 11px/20px var(--me-font-family);
+}
+.view-display-button.mat-mdc-icon-button {
+  --mdc-icon-button-state-layer-size: 32px;
+  --mdc-icon-button-icon-size: 20px;
+  width: 32px;
+  height: 32px;
+  padding: 6px;
+  mat-icon {
+    width: 20px;
+    height: 20px;
+    font-size: 20px;
+  }
+}
+.toolbar-range {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: none;
+  white-space: nowrap;
+}
+
+.chart-display {
+  @include display.styles;
+  .series-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .series-count {
+    color: var(--me-on-surface-variant-color);
+  }
+  .series-search {
+    @include controls.configuration-input;
+    width: 100%;
+    margin-bottom: 4px;
+  }
+  .series-options {
+    max-height: min(240px, max(64px, calc(70vh - 300px)));
+    overflow-y: auto;
+  }
+  .series-options label {
+    min-height: 32px;
+    padding: 0 6px;
+    cursor: pointer;
+  }
+  .series-options label:hover,
+  .series-options label:focus-within {
+    background: var(--me-surface-container-highest-color);
+  }
+  .series-options input {
+    width: 13px;
+    height: 13px;
+    margin: 0 2px 0 0;
+    accent-color: var(--me-primary-color);
+  }
+  .series-options i {
+    width: 20px;
+    border-top: 2px solid;
+    flex: none;
+  }
+  .series-options i.dashed {
+    border-top-style: dashed;
+  }
+  .series-actions {
+    display: flex;
+    gap: 16px;
+  }
+  .series-empty {
+    color: var(--me-on-surface-variant-color);
+    margin: 4px 6px;
+  }
+}

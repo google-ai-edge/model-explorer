@@ -1,0 +1,134 @@
+# What a model is: the architectures' definitions (from a Hugging Face
+# config.json), the semantic skeleton schema and its checks, and each
+# architecture's pinned configs and the skeletons they make. Nothing of a
+# runtime: how a LiteRT-LM graph binds to an architecture is graph/'s.
+
+load("@rules_python//python:py_binary.bzl", "py_binary")
+load("@rules_python//python:py_library.bzl", "py_library")
+load("@rules_python//python:py_test.bzl", "py_test")
+load("@server_pypi//:requirements.bzl", "requirement")
+
+package(default_visibility = ["//visibility:public"])
+
+py_library(
+    name = "skeleton",
+    srcs = [
+        "__init__.py",
+        "skeleton.py",
+    ],
+    deps = ["//model_debugger/server:package"],
+)
+
+py_library(
+    name = "builder",
+    srcs = [
+        "__init__.py",
+        "builder.py",
+    ],
+    deps = [":skeleton"],
+)
+
+py_library(
+    name = "gemma4",
+    srcs = [
+        "__init__.py",
+        "gemma4.py",
+    ],
+    deps = [
+        ":builder",
+        ":skeleton",
+    ],
+)
+
+# Each architecture's file, pinned configs and skeletons, beside the module.
+py_library(
+    name = "catalog",
+    srcs = [
+        "__init__.py",
+        "catalog.py",
+    ],
+    data = glob(["data/**/*.json"]),
+    deps = [
+        ":gemma4",
+        ":skeleton",
+    ],
+)
+
+py_library(
+    name = "generate_lib",
+    srcs = [
+        "__init__.py",
+        "generate.py",
+    ],
+    deps = [
+        ":catalog",
+        ":skeleton",
+        requirement("absl-py"),
+    ],
+)
+
+# Writes the skeletons from the pinned configs, in the source tree; with
+# --check (ci/check_server.sh), fails unless they are unchanged:
+#   bazel run //model_debugger/server/architectures:generate [-- --check]
+py_binary(
+    name = "generate",
+    main_module = "model_debugger.server.architectures.generate",
+    deps = [":generate_lib"],
+)
+
+py_test(
+    name = "skeleton_test",
+    srcs = ["skeleton_test.py"],
+    deps = [
+        ":catalog",
+        ":skeleton",
+        "//model_debugger/server/testing:test_main",
+        requirement("absl-py"),
+    ],
+)
+
+py_test(
+    name = "builder_test",
+    srcs = ["builder_test.py"],
+    deps = [
+        ":builder",
+        "//model_debugger/server/testing:test_main",
+        requirement("absl-py"),
+    ],
+)
+
+py_test(
+    name = "gemma4_test",
+    srcs = ["gemma4_test.py"],
+    data = glob(["data/gemma4/*.config.json"]),
+    deps = [
+        ":gemma4",
+        ":skeleton",
+        "//model_debugger/server/testing:test_main",
+        requirement("absl-py"),
+    ],
+)
+
+py_test(
+    name = "catalog_test",
+    srcs = ["catalog_test.py"],
+    # The generator provenance() names, read as a file.
+    data = ["generate.py"],
+    deps = [
+        ":catalog",
+        ":skeleton",
+        "//model_debugger/server/testing:test_main",
+        requirement("absl-py"),
+    ],
+)
+
+py_test(
+    name = "generate_test",
+    srcs = ["generate_test.py"],
+    deps = [
+        ":catalog",
+        ":generate_lib",
+        "//model_debugger/server/testing:test_main",
+        requirement("absl-py"),
+    ],
+)

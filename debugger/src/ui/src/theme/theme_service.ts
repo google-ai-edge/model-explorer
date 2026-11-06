@@ -18,7 +18,7 @@
 
 import {computed, DestroyRef, effect, inject, Injectable, signal} from '@angular/core';
 import {DOCUMENT} from '@angular/common';
-import {PreferencesService} from '../app/preferences_service';
+import {PreferencesService} from '../state/preferences_service';
 export type ThemePreference = 'system' | 'light' | 'dark';
 
 /** Matches Model Explorer: persisted preference, system listener, one derived theme. */
@@ -39,13 +39,15 @@ export class ThemeService {
     {id: 'android-studio', label: 'Android Studio inspired'},
   ] as const;
   readonly debugPalette = signal(this.initialDebugPalette());
-  private initialDebugPalette() {
+  private initialDebugPalette(): (typeof this.debugPalettes)[number]['id'] {
     const id = new URLSearchParams(window.location.search).get('debugPalette');
     return this.debugPalettes.find((p) => p.id === id)?.id ?? 'original';
   }
-  setDebugPalette(id: string) {
+  setDebugPalette(id: string): void {
     const choice = this.debugPalettes.find((p) => p.id === id);
-    if (choice) this.debugPalette.set(choice.id);
+    if (choice) {
+      this.debugPalette.set(choice.id);
+    }
   }
   readonly systemDark = signal(this.media.matches);
   readonly preference = signal<ThemePreference>(this.initialPreference());
@@ -70,11 +72,11 @@ export class ThemeService {
     const value = this.preferences.read('debugger.theme');
     return value === 'light' || value === 'dark' ? value : 'system';
   }
-  setPreference(value: ThemePreference) {
+  setPreference(value: ThemePreference): void {
     this.preference.set(value);
     this.preferences.save('debugger.theme', value);
   }
-  toggle() {
+  toggle(): void {
     this.setPreference(this.dark() ? 'light' : 'dark');
   }
 }

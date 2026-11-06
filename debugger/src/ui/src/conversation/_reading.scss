@@ -1,0 +1,178 @@
+/**
+ * @license
+ * Copyright 2026 The AI Edge Model Explorer Authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ==============================================================================
+ */
+
+// The two-column reading that the Chat and the Debug reading both draw: the runtime columns and
+// their headings, each turn's user message and response, and how a reply and the chat end. Each
+// reading includes these where they fall among its own rules, so its cascade stays its own.
+
+// The reading's frame: the scroller, the sticky runtime headings and the turn grid.
+@mixin frame {
+  :host {
+    display: contents;
+  }
+  .reading {
+    flex: 1;
+    overflow: auto;
+    // Keep focused controls clear of the sticky Reference/Target headings.
+    scroll-padding-top: 72px;
+    // The last turn, and a chart opened under it, must be able to scroll clear of the toolbar.
+    padding-bottom: max(110px, var(--composer-clearance, 110px));
+    background: linear-gradient(to right, var(--bg) 50%, var(--surface) 50%);
+  }
+  // Avoid repacking a long capture on every intermediate width of the sidebar animation.
+  .reading.virtual-reading {
+    transition: none;
+  }
+  .column-headings,
+  .turn {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+  .column-headings {
+    position: sticky;
+    top: 0;
+    background: var(--surface);
+    z-index: 1;
+  }
+  .column-headings header {
+    padding: 12px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+  .column-headings header:first-child {
+    background: var(--bg);
+  }
+}
+
+// Each side of a turn: the user message and the response.
+@mixin messages {
+  .turn article {
+    padding: 14px 40px 24px;
+    min-width: 0;
+  }
+  .user-message {
+    border-radius: 8px;
+    background: var(--hover);
+    padding: 16px 18px;
+  }
+  .user-message strong span {
+    font-weight: 400;
+    color: var(--on2);
+  }
+  strong {
+    font-weight: 500;
+  }
+  p {
+    white-space: pre-wrap;
+    line-height: 24px;
+    margin: 10px 0 0;
+    overflow-wrap: anywhere;
+  }
+  .response {
+    padding: 18px;
+  }
+}
+
+// Narrower screens pad the sides and the headings less.
+@mixin message-widths {
+  @media (max-width: 1000px) {
+    .turn article {
+      padding: 12px 20px;
+    }
+    .column-headings header {
+      padding: 12px 20px;
+    }
+  }
+  @media (max-width: 650px) {
+    .turn article {
+      padding: 10px;
+    }
+    .user-message,
+    .response {
+      padding: 12px;
+    }
+    .column-headings header {
+      padding: 12px;
+    }
+  }
+}
+
+// A stage's contents, which collapse with it.
+@mixin node-reveal {
+  .node-reveal {
+    display: grid;
+    grid-template-rows: 1fr;
+  }
+  .node-reveal > div {
+    min-height: 0;
+    overflow: hidden;
+  }
+}
+
+// Why a reply and the chat ended.
+@mixin endings {
+  /* Why the chat is over, as the server says it, after its last turn. */
+  .chat-over {
+    margin: 16px 40px 24px;
+    padding: 8px 12px;
+    border-radius: 4px;
+    background: var(--hover);
+    color: var(--on2);
+    font: 13px/20px var(--me-font-family);
+  }
+  /* Why a side's reply ended, as the server says it. */
+  .reply-end {
+    margin: 6px 0 0;
+    font-size: 12px;
+    color: var(--on2);
+  }
+}
+
+// On a phone the two columns keep their width and the reading scrolls sideways.
+@mixin narrow-columns {
+  @media (max-width: 650px) {
+    .column-headings,
+    .turn {
+      min-width: 680px;
+    }
+    .reading {
+      background: var(--bg);
+    }
+    .turn article.target {
+      background: var(--surface);
+    }
+  }
+}
+
+// The Read full button under a long text, and the runtime's name in its column heading.
+@mixin controls {
+  .read-full.mat-mdc-button {
+    display: block;
+    height: 28px;
+    font: 12px/20px var(--me-font-family);
+    letter-spacing: normal;
+    padding: 0 4px;
+    margin: 4px 0;
+  }
+  .column-headings .runtime-name {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+}

@@ -1,0 +1,37 @@
+# pytorch-collector's tests, those of the capture library, moved with it:
+# one py_test per file, run by pytest (run_test_file.py). With transformers
+# in the runner's packages, the ones that need it run too, not skipped; one
+# needs an MPS device and skips without one.
+
+load("@rules_python//python:py_test.bzl", "py_test")
+load("@runner_pytorch_pypi//:requirements.bzl", "requirement")
+
+[py_test(
+    name = test,
+    srcs = [
+        "run_test_file.py",
+        test + ".py",
+    ],
+    args = ["$(rootpath {}.py)".format(test)],
+    main = "run_test_file.py",
+    deps = [
+        "//model_debugger/runner_pytorch/testing:test_main",
+        "//pytorch_collector",
+        requirement("pytest"),
+        requirement("torch"),
+        requirement("transformers"),
+    ],
+) for test in [
+    "test_cache",
+    "test_cache_edges",
+    "test_collector",
+    "test_dispatch",
+    "test_dispatch_lifecycle",
+    "test_edges",
+    "test_exit_thread",
+    "test_graph",
+    "test_module_selection",
+    "test_multi_forward",
+    "test_snapshots",
+    "test_transformers_call",
+]]

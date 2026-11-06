@@ -1,0 +1,333 @@
+# Driving runners: launching them on devices and talking to them.
+
+load("@rules_python//python:py_library.bzl", "py_library")
+load("@rules_python//python:py_test.bzl", "py_test")
+load("@server_pypi//:requirements.bzl", "requirement")
+
+package(default_visibility = ["//visibility:public"])
+
+py_library(
+    name = "capture_writer",
+    srcs = [
+        "__init__.py",
+        "capture_writer.py",
+    ],
+    deps = [
+        "//model_debugger/server:package",
+        "@protocol//model_debugger/protocol:runner_py_pb2",
+    ],
+)
+
+py_library(
+    name = "runner_client",
+    srcs = [
+        "__init__.py",
+        "runner_client.py",
+    ],
+    deps = [
+        ":capture_writer",
+        ":launcher",
+        "//model_debugger/server:package",
+        "@protocol//model_debugger/protocol:runner_py_pb2",
+        "@protocol//model_debugger/protocol:runner_py_pb2_grpc",
+        requirement("grpcio"),
+    ],
+)
+
+py_library(
+    name = "app_version",
+    srcs = [
+        "__init__.py",
+        "app_version.py",
+    ],
+    deps = ["//model_debugger/server:package"],
+)
+
+py_library(
+    name = "runner_builds",
+    srcs = [
+        "__init__.py",
+        "runner_builds.py",
+    ],
+    deps = ["//model_debugger/server:package"],
+)
+
+py_library(
+    name = "launch_records",
+    srcs = [
+        "__init__.py",
+        "launch_records.py",
+    ],
+    deps = [
+        "//model_debugger/server/util:json_file",
+        requirement("absl-py"),
+    ],
+)
+
+py_library(
+    name = "launcher",
+    srcs = [
+        "__init__.py",
+        "launcher.py",
+    ],
+    deps = [
+        ":app_version",
+        ":runner_builds",
+        "//model_debugger/server:package",
+        requirement("absl-py"),
+    ],
+)
+
+py_library(
+    name = "tool",
+    srcs = [
+        "__init__.py",
+        "tool.py",
+    ],
+    deps = [
+        "//model_debugger/server:package",
+        requirement("absl-py"),
+    ],
+)
+
+py_library(
+    name = "local_launcher",
+    srcs = [
+        "__init__.py",
+        "local_launcher.py",
+    ],
+    deps = [
+        ":launch_records",
+        ":launcher",
+        ":runner_builds",
+        ":tool",
+        requirement("absl-py"),
+    ],
+)
+
+py_library(
+    name = "android_launcher",
+    srcs = [
+        "__init__.py",
+        "android_launcher.py",
+    ],
+    deps = [
+        ":app_version",
+        ":launch_records",
+        ":launcher",
+        ":tool",
+        requirement("absl-py"),
+    ],
+)
+
+py_library(
+    name = "ios_device_launcher",
+    srcs = [
+        "__init__.py",
+        "ios_device_launcher.py",
+    ],
+    deps = [
+        ":app_version",
+        ":launch_records",
+        ":launcher",
+        ":tool",
+        requirement("absl-py"),
+    ],
+)
+
+py_library(
+    name = "ios_simulator_launcher",
+    srcs = [
+        "__init__.py",
+        "ios_simulator_launcher.py",
+    ],
+    deps = [
+        ":app_version",
+        ":launch_records",
+        ":launcher",
+        ":tool",
+        requirement("absl-py"),
+    ],
+)
+
+py_library(
+    name = "launchers",
+    srcs = [
+        "__init__.py",
+        "launchers.py",
+    ],
+    deps = [
+        ":android_launcher",
+        ":ios_device_launcher",
+        ":ios_simulator_launcher",
+        ":launch_records",
+        ":launcher",
+        ":local_launcher",
+        ":runner_builds",
+        "//model_debugger/server/util:errors",
+        requirement("absl-py"),
+    ],
+)
+
+py_test(
+    name = "capture_writer_test",
+    srcs = ["capture_writer_test.py"],
+    deps = [
+        ":capture_writer",
+        "//model_debugger/server/testing:test_main",
+        "@protocol//model_debugger/protocol:runner_py_pb2",
+        requirement("absl-py"),
+    ],
+)
+
+py_test(
+    name = "runner_client_test",
+    srcs = ["runner_client_test.py"],
+    deps = [
+        ":launcher",
+        ":runner_client",
+        "//model_debugger/server/testing:fake_runner",
+        "//model_debugger/server/testing:test_main",
+        "@protocol//model_debugger/protocol:runner_py_pb2",
+        requirement("absl-py"),
+        requirement("grpcio"),
+    ],
+)
+
+py_test(
+    name = "app_version_test",
+    srcs = ["app_version_test.py"],
+    deps = [
+        ":app_version",
+        "//model_debugger/server/testing:test_main",
+        requirement("absl-py"),
+    ],
+)
+
+py_test(
+    name = "runner_builds_test",
+    srcs = ["runner_builds_test.py"],
+    deps = [
+        ":runner_builds",
+        "//model_debugger/server/testing:fake_builds",
+        "//model_debugger/server/testing:test_main",
+        requirement("absl-py"),
+    ],
+)
+
+py_test(
+    name = "launch_records_test",
+    srcs = ["launch_records_test.py"],
+    deps = [
+        ":launch_records",
+        "//model_debugger/server/testing:test_main",
+        "//model_debugger/server/util:json_file",
+        requirement("absl-py"),
+    ],
+)
+
+py_test(
+    name = "launcher_test",
+    srcs = ["launcher_test.py"],
+    deps = [
+        ":launcher",
+        "//model_debugger/server/testing:fake_runner",
+        "//model_debugger/server/testing:test_main",
+        requirement("absl-py"),
+    ],
+)
+
+# Runs the real command-line runner too, when it is built (RUNNER_BINARY, or
+# the runner's own Bazel build). The runner is outside Bazel's view, so the
+# test is "external": Bazel runs it every time rather than reuse a result from
+# before the runner was rebuilt.
+py_test(
+    name = "local_launcher_test",
+    srcs = ["local_launcher_test.py"],
+    tags = ["external"],
+    deps = [
+        ":launch_records",
+        ":launcher",
+        ":local_launcher",
+        ":runner_builds",
+        ":runner_client",
+        ":tool",
+        "//model_debugger/server/testing:fake_builds",
+        "//model_debugger/server/testing:fake_runner",
+        "//model_debugger/server/testing:real_runner",
+        "//model_debugger/server/testing:test_main",
+        "//model_debugger/server/util:json_file",
+        "@protocol//model_debugger/protocol:runner_py_pb2",
+        requirement("absl-py"),
+    ],
+)
+
+py_test(
+    name = "android_launcher_test",
+    srcs = ["android_launcher_test.py"],
+    deps = [
+        ":android_launcher",
+        ":app_version",
+        ":launch_records",
+        ":launcher",
+        ":launchers",
+        ":runner_builds",
+        ":tool",
+        "//model_debugger/server/testing:fake_runner",
+        "//model_debugger/server/testing:fake_tools",
+        "//model_debugger/server/testing:test_main",
+        "//model_debugger/server/util:json_file",
+        requirement("absl-py"),
+    ],
+)
+
+py_test(
+    name = "ios_device_launcher_test",
+    srcs = ["ios_device_launcher_test.py"],
+    deps = [
+        ":android_launcher",
+        ":app_version",
+        ":ios_device_launcher",
+        ":launch_records",
+        ":launcher",
+        ":launchers",
+        ":runner_builds",
+        ":tool",
+        "//model_debugger/server/testing:fake_runner",
+        "//model_debugger/server/testing:fake_tools",
+        "//model_debugger/server/testing:test_main",
+        requirement("absl-py"),
+    ],
+)
+
+py_test(
+    name = "ios_simulator_launcher_test",
+    srcs = ["ios_simulator_launcher_test.py"],
+    deps = [
+        ":android_launcher",
+        ":app_version",
+        ":ios_simulator_launcher",
+        ":launch_records",
+        ":launcher",
+        ":launchers",
+        ":runner_builds",
+        ":tool",
+        "//model_debugger/server/testing:fake_runner",
+        "//model_debugger/server/testing:fake_tools",
+        "//model_debugger/server/testing:test_main",
+        requirement("absl-py"),
+    ],
+)
+
+py_test(
+    name = "launchers_test",
+    srcs = ["launchers_test.py"],
+    deps = [
+        ":android_launcher",
+        ":launchers",
+        ":runner_builds",
+        "//model_debugger/server/testing:test_main",
+        "//model_debugger/server/util:errors",
+        requirement("absl-py"),
+    ],
+)

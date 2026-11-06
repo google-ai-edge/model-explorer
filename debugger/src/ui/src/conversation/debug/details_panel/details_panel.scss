@@ -1,0 +1,495 @@
+/**
+ * @license
+ * Copyright 2026 The AI Edge Model Explorer Authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ==============================================================================
+ */
+
+@use '../../../theme/data_table' as data-table;
+@use '../../../theme/explorer_info' as info;
+
+:host {
+  display: contents;
+}
+@include data-table.defaults;
+p {
+  white-space: pre-wrap;
+  line-height: 24px;
+  margin: 10px 0 0;
+  overflow-wrap: anywhere;
+}
+.token-inspector {
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  box-sizing: border-box;
+  width: 320px;
+  border-left: 1px solid var(--outline);
+  background: var(--surface);
+  padding: 18px;
+  overflow: auto;
+}
+.token-inspector header {
+  display: flex;
+  justify-content: space-between;
+}
+.token-inspector button:disabled {
+  opacity: 0.5;
+}
+@media (max-width: 1000px) {
+  .token-inspector {
+    top: auto;
+    bottom: 120px;
+    max-height: 45%;
+    box-shadow: 0 4px 20px #0002;
+  }
+}
+.token-inspector {
+  padding: 12px 18px;
+}
+.token-inspector header {
+  align-items: center;
+}
+.token-inspector button {
+  border: 0;
+}
+.resize-handle {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 5px;
+  cursor: col-resize;
+  touch-action: none;
+}
+.resize-handle:hover,
+.resize-handle:focus-visible {
+  background: var(--me-primary-color);
+}
+.panel-toggle {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  z-index: 3;
+}
+.token-inspector {
+  z-index: 2;
+}
+// The demo changes reading geometry immediately; its mode transition only
+// fades the newly visible composer controls, avoiding reflow while scrolling.
+@media (max-width: 1000px) {
+  .token-inspector {
+    max-width: calc(100% - 24px);
+  }
+}
+@media (max-width: 650px) {
+  .token-inspector {
+    bottom: 250px;
+  }
+}
+.token-inspector {
+  padding: 0;
+  --info-key-width: 136px;
+  @include info.metadata;
+}
+// Model Explorer info_panel resizer and hide-toggle geometry.
+.panel-toggle.mat-mdc-button-base {
+  top: auto;
+  bottom: 2px;
+  width: 24px;
+  height: 26px;
+  padding: 0;
+  border: 1px solid var(--me-outline-variant-color);
+  border-right: 0;
+  border-radius: 99px 0 0 99px;
+  box-sizing: border-box;
+  background: var(--me-surface-container-lowest-color);
+  color: var(--me-on-surface-variant-color);
+  z-index: 3;
+}
+.panel-toggle.mat-mdc-button-base:hover {
+  background: var(--me-surface-container-low-color);
+}
+.panel-toggle mat-icon {
+  width: 24px;
+  height: 24px;
+  font-size: 24px;
+}
+.panel-toggle ::ng-deep .mat-mdc-button-touch-target {
+  display: none;
+}
+.resize-handle {
+  left: auto;
+  width: 6px;
+  z-index: 3;
+  background: transparent;
+  cursor: ew-resize;
+}
+.resize-handle:hover,
+.resize-handle:focus-visible {
+  background: var(--me-surface-container-low-color);
+}
+.resize-handle:focus-visible {
+  outline: 1px solid var(--me-primary-color);
+  outline-offset: -1px;
+}
+.token-inspector .info-key {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+// The selected pair's tokens read like the conversation tokens, mismatch colors included.
+.token-inspector .info-token {
+  display: inline-block;
+  max-width: 100%;
+  padding: 0 4px;
+  border-radius: 2px;
+  font: 12px/18px var(--me-font-family);
+  white-space: pre;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  vertical-align: top;
+}
+.token-inspector .info-token.mismatch.ref {
+  background: var(--b0);
+}
+.token-inspector .info-token.mismatch.target {
+  background: var(--b4);
+}
+.token-inspector .info-token.missing {
+  color: var(--me-on-surface-variant-color);
+}
+.token-inspector .token-pair-value .info-token {
+  display: inline;
+  max-width: none;
+  white-space: inherit;
+  overflow: visible;
+  padding: 0;
+  line-height: inherit;
+  vertical-align: baseline;
+}
+.token-inspector {
+  @include info.comparison-grid;
+}
+// Model Explorer metadata rows: a fixed key column, values beside it, one divider per section.
+.token-inspector table:not(:has(colgroup)) tr > :first-child {
+  // These cells use border-box; shared metadata lists use a content-box key plus 6px padding.
+  width: calc(var(--info-key-width) + 6px);
+}
+.token-inspector table:not(:has(colgroup)) tr > :nth-child(2):not([colspan]),
+.token-inspector table:not(:has(colgroup)) tr > :nth-child(3) {
+  width: auto;
+}
+.token-inspector {
+  @include info.panel-chrome;
+  @include info.section-dividers;
+}
+.token-inspector th[mattooltip] {
+  cursor: help;
+}
+.token-inspector button.property-help {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 18px;
+  padding: 0;
+  background: transparent;
+  color: var(--me-on-surface-variant-color);
+}
+.property-help mat-icon {
+  font-size: 12px;
+  width: 12px;
+  height: 12px;
+}
+.property-help:focus-visible {
+  outline: 1px solid var(--me-primary-color);
+}
+// Keep the Model Explorer side-by-side inspector through tablet widths.
+@media (min-width: 651px) and (max-width: 1000px) {
+  .token-inspector {
+    top: 0;
+    bottom: 0;
+    max-height: none;
+    max-width: none;
+    box-shadow: none;
+  }
+}
+// Conversation Info's turn index: each cell opens its stage. A differing cell reads in the
+// regular text color, an unremarkable one stays muted, so the eye lands on what changed.
+.turn-index .index-link {
+  margin: 0 0 0 -4px;
+  border: 0;
+  border-radius: 3px;
+  padding: 1px 4px;
+  background: transparent;
+  color: var(--me-on-surface-variant-color);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.turn-index .index-link.differs {
+  color: var(--me-on-surface-color);
+  font-weight: 500;
+}
+.turn-index .index-link:hover,
+.turn-index .index-link:focus-visible {
+  background: var(--me-surface-container-high);
+  color: var(--me-primary-color);
+}
+.info-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  // The link's own 6px padding completes the indent, so its icon sits under the title.
+  margin: 0 12px 0 calc(var(--info-indent, 12px) - 6px);
+}
+.info-actions .graph-link {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  min-height: 24px;
+  box-sizing: border-box;
+  justify-content: flex-start;
+  margin: 0;
+  padding: 3px 4px;
+  border: 0;
+  border-radius: 3px;
+  background: transparent;
+  color: var(--pri);
+  font: 400 12px/18px var(--me-font-family);
+  text-align: left;
+}
+.info-actions .graph-link:not(:disabled):hover {
+  background: var(--me-surface-container-high);
+}
+.conversation-stage-list {
+  margin: 0 16px 0 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font: 12px / normal var(--me-font-family);
+}
+.conversation-stage-title {
+  display: flex;
+  align-items: flex-start;
+  line-height: 20px;
+  gap: 2px;
+  min-height: 24px;
+  .item-index {
+    flex: 0 0 24px;
+    text-align: center;
+    color: var(--me-on-surface-variant-color);
+  }
+  button[explorer-locator] {
+    flex: 1 1 auto;
+    justify-content: flex-start;
+    line-height: 20px;
+  }
+}
+.conversation-stage-title .stage-mismatch-badge {
+  margin-left: auto;
+  padding-left: 4px;
+  font-size: 11px;
+}
+.token-inspector table.conversation-stage-properties {
+  margin: 0 0 0 26px;
+  width: calc(100% - 26px);
+  max-width: calc(100% - 26px);
+  tr > th:first-child {
+    width: calc(var(--info-key-width) + 6px);
+  }
+  tr > td:nth-child(2):not([colspan]) {
+    width: auto;
+  }
+  th,
+  td {
+    line-height: normal;
+  }
+  .key-container {
+    display: flex;
+    align-items: flex-start;
+  }
+  mat-icon.bullet {
+    flex-shrink: 0;
+    font-size: 4px;
+    width: info.$bullet-width;
+    height: 5px;
+    color: var(--me-on-surface-low-color);
+    margin-right: info.$bullet-gap;
+    margin-top: 6px;
+  }
+}
+.info-locator-list {
+  padding: 0 12px 0 30px;
+}
+.info-locator-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 28px;
+  cursor: pointer;
+  font: 12px/18px var(--me-font-family);
+  &:hover {
+    background: var(--me-surface-container-high-color);
+  }
+  &:focus-visible {
+    outline: 2px solid var(--me-primary-color);
+    outline-offset: -2px;
+  }
+  .turn-label {
+    flex: none;
+  }
+  .locator-text {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  mat-icon {
+    flex: none;
+    margin-left: auto;
+    width: 16px;
+    height: 16px;
+    font-size: 16px;
+    opacity: 0.5;
+  }
+  &:hover mat-icon {
+    opacity: 0.8;
+  }
+}
+.inline-locator {
+  min-height: 20px;
+}
+.info-add-analysis {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--me-on-surface-color);
+  cursor: pointer;
+  mat-icon {
+    width: 18px;
+    height: 18px;
+    font-size: 18px;
+  }
+  &:hover {
+    background: var(--me-surface-container-high-color);
+  }
+}
+.token-inspector table.stage-info-table {
+  tr > td:nth-child(2):not([colspan]) {
+    width: auto;
+  }
+  td {
+    vertical-align: middle;
+  }
+}
+.state-selection-hint {
+  margin: 8px 12px 8px 30px;
+  font: 12px/18px var(--me-font-family);
+  color: var(--me-on-surface-variant-color);
+}
+.analysis-config {
+  display: block;
+  color: var(--me-on-surface-variant-color);
+  font-size: 11px;
+  line-height: 18px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.token-inspector .token-summary-table {
+  // Use the shared Model Explorer metadata row spacing, including the locator row.
+  button[explorer-locator] {
+    min-height: 0;
+    vertical-align: top;
+  }
+}
+.token-info-root {
+  --info-item-gap: 0px;
+}
+.token-info-list {
+  --info-action-spacer: 1 1 auto;
+}
+.token-pair-list {
+  --position-column-width: max(24px, calc(var(--position-digits, 1) * 1ch + 4px));
+  margin: 0 16px 0 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font: 12px / normal var(--me-font-family);
+}
+.token-pair-name {
+  display: flex;
+  align-items: flex-start;
+  // Align the position, token text and locator on the same first-line box.
+  line-height: 20px;
+  gap: 2px;
+  min-height: 24px;
+  .token-pair-position {
+    flex: 0 0 var(--position-column-width);
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+    color: var(--me-on-surface-low-color);
+  }
+  .token-pair-value {
+    flex: 0 1 auto;
+    min-width: 0;
+    max-width: calc(100% - 16px);
+    color: var(--me-primary-color);
+  }
+  button[explorer-locator] {
+    flex-shrink: 0;
+  }
+}
+.token-pair-properties {
+  --info-indent: calc(var(--position-column-width) + 2px);
+  margin-right: 0;
+}
+.analysis-view-item {
+  min-width: 0;
+}
+.analysis-view-heading {
+  display: flex;
+  align-items: center;
+  min-height: 24px;
+  gap: 2px;
+}
+.analysis-view-locator {
+  border-radius: 0;
+}
+.analysis-view-properties {
+  --info-indent: 26px;
+  margin-right: 0;
+  margin-bottom: 4px;
+}
+.indexed-panel-list {
+  padding: 0 16px 0 4px;
+  .panel-index {
+    flex: 0 0 24px;
+    text-align: center;
+    color: var(--me-on-surface-low-color);
+  }
+}
+.analysis-views-info {
+  --info-action-spacer: 0 0 4px;
+}

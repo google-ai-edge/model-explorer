@@ -1,3 +1,4 @@
+/* stylelint-disable */
 /**
  * @license
  * Copyright 2026 The AI Edge Model Explorer Authors.
@@ -16,7 +17,7 @@
  * ==============================================================================
  */
 
-@use '../shared/styles/data_table' as data-table;
+@use './data_table' as data-table;
 // Model Explorer info_panel: nested content starts 18px inside its parent item.
 $child-indent: 18px;
 $bullet-width: 5px;
@@ -149,12 +150,8 @@ $bullet-text-indent: $bullet-width + $bullet-gap;
   :is(.layer-table, .inspector-table),
   .note.statistic-table-note {
     margin: 3px 16px 0 calc(var(--info-indent, 12px) + #{$bullet-text-indent});
-    width: calc(
-      100% - 16px - var(--info-indent, 12px) - #{$bullet-text-indent}
-    );
-    max-width: calc(
-      100% - 16px - var(--info-indent, 12px) - #{$bullet-text-indent}
-    );
+    width: calc(100% - 16px - var(--info-indent, 12px) - #{$bullet-text-indent});
+    max-width: calc(100% - 16px - var(--info-indent, 12px) - #{$bullet-text-indent});
   }
   :is(.layer-table, .inspector-table) {
     font-variant-numeric: tabular-nums;

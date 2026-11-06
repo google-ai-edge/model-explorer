@@ -1,0 +1,484 @@
+<!--
+ Copyright 2026 The AI Edge Model Explorer Authors.
+
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+ ==============================================================================
+-->
+<section class="editor" aria-labelledby="editor-title">
+  <header>
+    <button
+      mat-icon-button
+      aria-label="Back to sessions"
+      matTooltip="Return to sessions without saving"
+      [disabled]="saving() || !!uploading()"
+      (click)="finished.emit()"
+    >
+      <mat-icon>arrow_back</mat-icon>
+    </button>
+    <h2 id="editor-title" tabindex="-1">New debug session</h2>
+  </header>
+  <form #form="ngForm" (ngSubmit)="save()">
+    <section class="identity" role="group" aria-label="Session">
+      <h3>Session</h3>
+      <label
+        ><span>Name</span>
+        <div class="name-control">
+          <input
+            name="name"
+            aria-label="Name"
+            required
+            maxlength="80"
+            [(ngModel)]="config.name"
+            (ngModelChange)="customName = true"
+            [disabled]="saving() || !!uploading()"
+          /><button
+            type="button"
+            mat-icon-button
+            aria-label="Generate suggested name"
+            matTooltip="Generate a name from the model and runtime settings"
+            [disabled]="saving() || !!uploading()"
+            (click)="suggest()"
+          >
+            <mat-icon>auto_fix_high</mat-icon>
+          </button>
+        </div></label
+      >
+    </section>
+    <section role="group" aria-label="Comparison">
+      <h3>Comparison</h3>
+      @if (!runtime.capabilities() && runtime.error()) {
+        <p role="status">
+          Runtime capabilities unavailable. Saved configuration management remains available.
+          <button type="button" mat-button (click)="runtime.refreshCapabilities()">Retry</button>
+        </p>
+      }
+      @if (runtime.deviceError()) {
+        <p role="status">{{ runtime.deviceError() }}</p>
+      }
+      <div class="runtime-grid">
+        @for (run of config.runs; track run.id) {
+          <section [attr.data-run]="run.id">
+            <h3>{{ run.id === 'ref' ? 'Reference' : 'Target' }}</h3>
+            <div class="device-field">
+              <label class="device-label"
+                ><span>Device</span
+                ><config-picker
+                  [label]="run.id === 'ref' ? 'Reference device' : 'Target device'"
+                  [value]="deviceLabel(run.device)"
+                  [options]="deviceOptions(run)"
+                  [unavailable]="unavailableDevices()"
+                  [descriptions]="deviceDescriptions()"
+                  [disabled]="saving() || !!uploading()"
+                  (valueChange)="selectDevice(run, $event)"
+                />
+                @if (runtime.capabilities()) {
+                  <button
+                    type="button"
+                    mat-icon-button
+                    data-refresh-devices
+                    aria-label="Refresh the available devices"
+                    matTooltip="Refresh the available devices"
+                    (click)="refreshDevices()"
+                    [disabled]="saving() || !!uploading() || refreshing()"
+                    [attr.aria-busy]="refreshing()"
+                  >
+                    <mat-icon [class.spinning]="refreshing()">refresh</mat-icon>
+                  </button>
+                }
+              </label>
+              @if (runnerDevice(run.device); as device) {
+                <div class="runner-observation">
+                  <div class="runtime-notice" role="status">
+                    <span
+                      >Device: {{ device.transport || device.platform || device.name }} ·
+                      {{ runtime.deviceStatusText(device) }}</span
+                    >
+                    @if (device.holder || !device.choosable.allowed) {
+                      <span>{{ device.holder || device.choosable.reason }}</span>
+                    }
+                    @if (device.reason) {
+                      <span>{{ device.reason }}</span>
+                    }
+                    @if (device.app; as app) {
+                      <span data-runner-app [title]="app.version">{{ appLabel(app) }}</span>
+                      @if (app.notice) {
+                        <span>{{ app.notice }}</span>
+                      }
+                    }
+                    @if (deviceCapability(run); as capability) {
+                      <span data-runtime-backends>{{ backendsText(capability) }}</span>
+                    }
+                    @if (device.checkedAt) {
+                      <span [title]="device.checkedAt"
+                        >Checked {{ deviceCheckedAt(device.checkedAt) }}</span
+                      >
+                    }
+                  </div>
+                  <button
+                    type="button"
+                    mat-button
+                    matTooltip="Check this device and its Model Server again"
+                    (click)="checkDevice(device.id)"
+                    [disabled]="saving()"
+                    [attr.aria-busy]="!!runtime.checking()[device.id]"
+                    [attr.aria-label]="
+                      'Check ' + (run.id === 'ref' ? 'Reference' : 'Target') + ' device again'
+                    "
+                  >
+                    {{ runtime.checking()[device.id] ? 'Checking…' : 'Check again' }}
+                  </button>
+                </div>
+              }
+            </div>
+            <!-- The runner version picker: this computer sends runnerState 'not_running' and
+                 offers its builds (GET /api/devices/builds); a phone sends none. Hidden for now
+                 (showRunnerVersion): each side runs its runtime's default build. -->
+            @if (showRunnerVersion && runnerDevice(run.device); as device) {
+              @if (device.runnerState) {
+                <div class="build-field">
+                  @if (device.runnerState === 'not_running') {
+                    <label
+                      >Runner version<config-picker
+                        [label]="
+                          run.id === 'ref' ? 'Reference runner version' : 'Target runner version'
+                        "
+                        [value]="buildLabel(run)"
+                        [options]="buildOptions(run)"
+                        [unavailable]="unavailableBuilds(run)"
+                        [descriptions]="buildDescriptions(run)"
+                        [disabled]="
+                          saving() ||
+                          !!uploading() ||
+                          !buildCatalog(run)?.canLaunch ||
+                          runtime.buildLoading()[device.id]
+                        "
+                        (valueChange)="selectBuild(run, $event)"
+                    /></label>
+                    <p class="runtime-notice" role="status">
+                      {{
+                        runtime.buildLoading()[device.id]
+                          ? 'Loading runner versions…'
+                          : buildCatalog(run)?.reason ||
+                            'Each start of this side runs this version.'
+                      }}
+                    </p>
+                  } @else if (device.runnerState === 'active' || device.runnerState === 'idle') {
+                    <label
+                      >Runner version<span class="fixed-build">{{
+                        device.runner?.build?.label ||
+                          device.runner?.build?.id ||
+                          device.runner?.buildId ||
+                          'Unknown'
+                      }}</span></label
+                    >
+                  } @else {
+                    <p class="runtime-notice">Check the device before choosing a runner version.</p>
+                  }
+                </div>
+              }
+            }
+            <label
+              >Runtime
+              <div class="runtime-control">
+                <config-picker
+                  [label]="run.id === 'ref' ? 'Reference runtime' : 'Target runtime'"
+                  [value]="run.runtime ?? 'LiteRT-LM'"
+                  [options]="runtimes()"
+                  [disabled]="saving() || !!uploading()"
+                  (valueChange)="selectRuntime(run, $event)"
+                /><button
+                  type="button"
+                  mat-button
+                  [disabled]="saving() || !!uploading()"
+                  [attr.aria-label]="
+                    run.id === 'ref' ? 'Configure Reference runtime' : 'Configure Target runtime'
+                  "
+                  matTooltip="Configure runtime settings for this side"
+                  (click)="configure(run, $any($event.currentTarget))"
+                >
+                  <mat-icon>settings</mat-icon>Configure
+                </button>
+              </div>
+              @if (runtimeNotice(run)) {
+                <span class="runtime-notice" role="status">{{ runtimeNotice(run) }}</span>
+              }
+            </label>
+            <div class="differences">
+              <span>Configuration differences</span>
+              @for (field of differences(run); track field.label) {
+                <div>
+                  <span>{{ field.label }}</span
+                  ><strong>{{ field.value }}</strong>
+                </div>
+              } @empty {
+                <p>No differences</p>
+              }
+            </div>
+            <div class="artifact-label">
+              <span>Model</span>
+              @if (run.id === 'target') {
+                <button
+                  type="button"
+                  mat-button
+                  [disabled]="!canUseReference() || saving() || !!uploading()"
+                  matTooltip="Use the Reference model for Target; runtime settings stay unchanged"
+                  (click)="sameFile()"
+                >
+                  <mat-icon>content_copy</mat-icon
+                  >{{ isPyTorch(run) ? 'Use Reference model' : 'Use Reference file' }}
+                </button>
+              }
+            </div>
+            <input
+              type="file"
+              hidden
+              #artifactFile
+              [disabled]="isPyTorch(run)"
+              (change)="upload($event, run)"
+            />
+            @if (run.artifact) {
+              <div class="selected-artifact">
+                <mat-icon>{{ isPyTorch(run) ? 'folder_open' : 'description' }}</mat-icon>
+                <div>
+                  <span>{{ modelName(run.artifact) }}</span
+                  ><small [title]="hfSource(run)?.commit ?? ''">{{
+                    (hfSource(run) ? 'Hugging Face · ' + hfSource(run)!.repo : 'Uploaded') +
+                      (onServer(run.artifact) ? ' · On the Server' : ' · Not on the Server')
+                  }}</small>
+                </div>
+                <button
+                  type="button"
+                  mat-icon-button
+                  [attr.aria-label]="
+                    'Clear ' + (run.id === 'ref' ? 'Reference' : 'Target') + ' file selection'
+                  "
+                  [disabled]="saving() || !!uploading()"
+                  matTooltip="Clear this model selection"
+                  (click)="clearFile(run)"
+                >
+                  <mat-icon>close</mat-icon>
+                </button>
+              </div>
+            } @else {
+              <div class="model-source">
+                <div class="artifact-actions">
+                  @if (!isPyTorch(run)) {
+                    <button
+                      type="button"
+                      mat-button
+                      [disabled]="saving() || !!uploading()"
+                      data-source-upload
+                      matTooltip="Upload a LiteRT-LM model file from this browser's computer to the Server"
+                      (click)="artifactFile.click()"
+                    >
+                      <mat-icon>upload_file</mat-icon
+                      >{{
+                        uploading() === run.id
+                          ? downloading()
+                            ? 'Downloading…'
+                            : 'Uploading…'
+                          : 'Upload file'
+                      }}</button
+                    ><span>or</span>
+                    <button
+                      type="button"
+                      mat-button
+                      [matMenuTriggerFor]="serverModelMenu"
+                      [disabled]="saving() || !!uploading()"
+                      data-source-server
+                      matTooltip="Choose a model already on the Server, uploaded or downloaded before"
+                    >
+                      <mat-icon>dns</mat-icon>On the Server</button
+                    ><span>or</span
+                    ><mat-menu #serverModelMenu="matMenu">
+                      @for (model of serverModels(run); track model.artifact) {
+                        <button
+                          type="button"
+                          mat-menu-item
+                          (click)="selectServerModel(run, model.artifact)"
+                        >
+                          {{ model.name }}
+                          @if (model.size) {
+                            <small> · {{ sizeText(model.size) }}</small>
+                          }
+                        </button>
+                      } @empty {
+                        <button type="button" mat-menu-item disabled>
+                          No models on the Server yet. Upload a file or name one on Hugging Face.
+                        </button>
+                      }
+                    </mat-menu>
+                  }
+                  <hf-file-picker
+                    [form]="deviceCapability(run)?.huggingface"
+                    [runtime]="run.runtime ?? 'LiteRT-LM'"
+                    [side]="run.id === 'ref' ? 'Reference' : 'Target'"
+                    [disabled]="saving() || !!uploading()"
+                    (selected)="selectHf(run, $event)"
+                  />
+                </div>
+              </div>
+            }
+            <div
+              class="side-capture"
+              role="group"
+              [attr.aria-label]="(run.id === 'ref' ? 'Reference' : 'Target') + ' tensor capture'"
+              [attr.data-capture]="run.id"
+            >
+              <span class="capture-heading">Tensor capture</span>
+              @if (tapReason(run); as reason) {
+                <p class="automatic-capture">{{ reason }}</p>
+              }
+              @if (!tapReason(run) && pytorchCapture(run); as capture) {
+                <p class="capture-details" [matTooltip]="capture.details">{{ capture.text }}</p>
+                @if (capture.budget; as budget) {
+                  <label class="anchor-budget" [matTooltip]="budget.help"
+                    >{{ budget.label
+                    }}<input
+                      type="number"
+                      [name]="'observeMemoryGiB-' + run.id"
+                      [min]="budget.minimum ?? 1"
+                      [max]="budget.maximum ?? 1024"
+                      step="1"
+                      placeholder="Default"
+                      [ngModel]="run.observeMemoryGiB"
+                      (ngModelChange)="setBudget(run, $event)"
+                      [disabled]="saving() || !!uploading()"
+                  /></label>
+                }
+                @if (pairedLitert(run); as paired) {
+                  <counterpart-summary
+                    [artifact]="paired.artifact"
+                    [pytorch]="run.artifact ?? ''"
+                    [points]="paired.points"
+                  />
+                }
+              }
+              @if (!tapReason(run) && !pytorchCapture(run) && capturable(run)) {
+                @if (runtime.capabilities()?.tap_anchors; as anchorCapture) {
+                  <p class="capture-details">{{ anchorCapture.description }}</p>
+                  @if (run.artifact) {
+                    <anchor-summary
+                      [artifact]="run.artifact"
+                      [shared]="comparison()?.capture_shared ?? ''"
+                    />
+                  }
+                }
+                @if (showTapPicker && runtime.capabilities()?.tap_profiles?.length) {
+                  <details class="advanced-capture" [open]="sideAdvanced(run)">
+                    <summary>Advanced · more tensor outputs</summary>
+                    <label
+                      class="capture-toggle"
+                      [matTooltip]="runtime.capabilities()?.tap_profiles?.[0]?.description ?? ''"
+                      ><input
+                        type="checkbox"
+                        [name]="'captureTaps-' + run.id"
+                        [ngModel]="sideAdvanced(run)"
+                        (ngModelChange)="setAdvanced(run, $event)"
+                        [disabled]="saving() || !!uploading()"
+                      />{{ runtime.capabilities()?.tap_profiles?.[0]?.name }}</label
+                    >
+                    @if (run.artifact) {
+                      <tap-picker
+                        [artifact]="run.artifact"
+                        [label]="modelName(run.artifact) ?? run.artifact"
+                        [enabled]="sideAdvanced(run)"
+                        [disabled]="saving() || !!uploading()"
+                        [selected]="config.tap_points?.[run.artifact] ?? []"
+                        [pairedWith]="pairedPyTorch()"
+                        (selectionChange)="selectTaps(run, $event)"
+                        (readiness)="setScanReady(run.artifact, $event)"
+                      />
+                    } @else {
+                      <p class="capture-details">Choose a model to discover its output tensors.</p>
+                    }
+                    @if (sideAdvanced(run)) {
+                      <p class="capture-details">
+                        {{ runtime.capabilities()?.tap_profiles?.[0]?.description }}
+                      </p>
+                    }
+                  </details>
+                }
+              }
+            </div>
+          </section>
+        }
+      </div>
+      @if (bothModels(); as models) {
+        <layer-ops-picker
+          [ref]="models.ref"
+          [target]="models.target"
+          [selected]="config.tap_ops ?? []"
+          [disabled]="saving() || !!uploading()"
+          (selectionChange)="config.tap_ops = $event"
+          (readiness)="opsReady.set($event)"
+        />
+      }
+      @if (comparison(); as hint) {
+        <p class="comparison-hint" role="status" [attr.data-comparison]="hint.code">
+          <mat-icon aria-hidden="true">{{
+            hint.code === 'different' ? 'info_outline' : 'check_circle_outline'
+          }}</mat-icon
+          ><span>{{ hint.text }}</span>
+        </p>
+      }
+    </section>
+    @if (uploading()) {
+      <p role="status" [attr.data-download]="downloading() ? uploading() : null">
+        {{ uploadLabel() }}
+        @if (!downloading()) {
+          <button type="button" mat-button data-cancel-upload (click)="cancelUpload()">
+            Cancel upload
+          </button>
+        } @else {
+          <button type="button" mat-button data-cancel-download (click)="cancelDownload()">
+            Cancel download
+          </button>
+        }
+      </p>
+    }
+    @if (error()) {
+      <p role="alert" tabindex="-1">{{ error() }}</p>
+    }
+    @if (deviceConfigurationError()) {
+      <p class="device-validation" role="status">{{ deviceConfigurationError() }}</p>
+    }
+    <footer>
+      <p class="notice" [hidden]="!saveNotice()">{{ saveNotice() }}</p>
+      <button
+        type="button"
+        mat-button
+        [disabled]="saving() || !!uploading()"
+        matTooltip="Discard changes and return to sessions"
+        (click)="finished.emit()"
+      >
+        Cancel</button
+      ><button
+        type="submit"
+        mat-button
+        matTooltip="Create the session and start its Model Server"
+        [disabled]="
+          form.invalid ||
+          !captureReady() ||
+          !artifactsReady() ||
+          !config.name.trim() ||
+          !!deviceConfigurationError() ||
+          saving() ||
+          !!uploading()
+        "
+      >
+        {{ saving() ? 'Creating…' : 'Create session' }}
+      </button>
+    </footer>
+  </form>
+</section>

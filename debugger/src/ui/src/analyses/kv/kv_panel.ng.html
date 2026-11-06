@@ -1,0 +1,575 @@
+<!--
+ Copyright 2026 The AI Edge Model Explorer Authors.
+
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+ ==============================================================================
+-->
+<section class="kv-workspace" aria-label="KV Diff">
+  <main class="analysis" aria-label="KV Analysis">
+    <div class="toolbar" role="group" aria-label="KV analysis controls">
+      <div class="toolbar-scroll">
+        <div class="toolbar-view">
+          <span>View</span>
+          <config-picker
+            class="kv-view-picker"
+            [attr.title]="visualizationLabel()"
+            label="Visualization"
+            plural="visualizations"
+            [value]="visualizationLabel()"
+            [options]="visualizationOptions"
+            [groups]="visualizationGroups"
+            [optionLabels]="visualizationLabels"
+            [compact]="true"
+            [searchable]="false"
+            (valueChange)="chooseVisualization($event)"
+          />
+        </div>
+        <span class="toolbar-section-divider" aria-hidden="true"></span>
+        @if (tensorView()) {
+          <label class="tensor-position-control"
+            >Token Position
+            <button
+              class="icon-button"
+              aria-label="Previous tensor position"
+              [disabled]="
+                tensorPosition() === null || tensorPosition()! <= (fullRange()?.start ?? 0)
+              "
+              (click)="moveTensorPosition(-1)"
+            >
+              <mat-icon>chevron_left</mat-icon>
+            </button>
+            <input
+              aria-label="Token Position"
+              type="number"
+              step="1"
+              placeholder="Select"
+              [min]="fullRange()?.start ?? 0"
+              [max]="(fullRange()?.end ?? 1) - 1"
+              [value]="tensorPosition() ?? ''"
+              (change)="
+                setTensorPosition($any($event.target).value);
+                $any($event.target).value = tensorPosition() ?? ''
+              "
+              (keydown.enter)="setTensorPosition($any($event.target).value)"
+            />
+            <button
+              class="icon-button"
+              aria-label="Next tensor position"
+              [disabled]="
+                tensorPosition() === null || tensorPosition()! >= (fullRange()?.end ?? 1) - 1
+              "
+              (click)="moveTensorPosition(1)"
+            >
+              <mat-icon>chevron_right</mat-icon>
+            </button>
+          </label>
+          <span class="tensor-control"
+            ><span>Tensor Index</span>
+            <tensor-index-control
+              [dimensions]="tensorIndexDimensions()"
+              (valueChange)="setTensorIndex($event)"
+            />
+          </span>
+        }
+        <div
+          class="toolbar-range"
+          [class.tensor-range]="tensorView()"
+          role="group"
+          [attr.aria-label]="
+            tensorView()
+              ? tensorPlot() === 'scatter'
+                ? 'Value Range controls'
+                : 'Element Range controls'
+              : 'Token Range controls'
+          "
+        >
+          @if (tensorView() && tensorPlot() === 'scatter') {
+            <value-range-control
+              [range]="tensorValueRange()"
+              (rangeChange)="tensorValueZoom.set($event)"
+            />
+            <view-actions
+              [range]="tensorValueRange()"
+              [full]="tensorValueFull()"
+              [expandable]="false"
+              (resetView)="tensorValueZoom.set(null)"
+            />
+          } @else if (tensorView()) {
+            <position-range-control
+              label="Element Range"
+              [range]="tensorChannelRange()"
+              [full]="tensorChannelFull()"
+              (rangeChange)="tensorChannelZoom.set($event)"
+            />
+            <view-actions
+              [range]="tensorChannelRange()"
+              [full]="tensorChannelFull()"
+              [expandable]="false"
+              (resetView)="tensorChannelZoom.set(null)"
+            />
+          } @else {
+            <position-range-control
+              label="Token Range"
+              [range]="visibleRange()"
+              [full]="fullRange()"
+              (rangeChange)="zoomTo($event)"
+            />
+            <view-actions
+              [range]="visibleRange()"
+              [full]="fullRange()"
+              [expandable]="false"
+              (resetView)="resetView()"
+            />
+          }
+        </div>
+        @if (!tensorView()) {
+          <span class="toolbar-section-divider" aria-hidden="true"></span>
+          <heatmap-controls
+            [showRangeControls]="false"
+            [metrics]="metrics()"
+            [metric]="metric()"
+            [dimensions]="heatmapDimensions()"
+            [aggregation]="aggregation()"
+            (aggregationChange)="setAggregation($event)"
+            [range]="visibleRange()"
+            [fullRange]="fullRange()"
+            (rangeChange)="zoomTo($event)"
+            (metricChange)="setHeatmapMetric($event)"
+            (dimensionChange)="setHeatmapDimension($event)"
+          />
+        }
+      </div>
+      <div class="toolbar-actions">
+        <div class="toolbar-legend">
+          @if (!tensorView()) {
+            <ng-container [ngTemplateOutlet]="chartLegend" />
+          } @else if (tensorPlot() === 'index') {
+            <runtime-legend [runtimes]="tensorVisibleRuntimes()" />
+          } @else {
+            <div class="tensor-axis-legend" aria-label="Tensor scatter axes">
+              X: Ref · Y: Target
+            </div>
+          }
+        </div>
+        <button
+          mat-icon-button
+          cdkOverlayOrigin
+          #viewDisplayOrigin="cdkOverlayOrigin"
+          class="view-display-button"
+          aria-label="Display"
+          [disabled]="tensorView() && tensorPlot() === 'scatter'"
+          [matTooltip]="
+            tensorView() && tensorPlot() === 'scatter'
+              ? 'No display settings for Scatter plot'
+              : displaySummary()
+          "
+          [attr.aria-expanded]="
+            popup() === 'view-display' && !(tensorView() && tensorPlot() === 'scatter')
+          "
+          (click)="toggleChartDisplay()"
+        >
+          <mat-icon>visibility</mat-icon>
+        </button>
+        <view-actions
+          class="panel-expand"
+          [showReset]="false"
+          [hidden]="expanded()"
+          [expanded]="expanded()"
+          (expandView)="expand.emit()"
+        />
+      </div>
+      <ng-template
+        overlayDialog
+        [origin]="viewDisplayOrigin"
+        [open]="popup() === 'view-display' && !(tensorView() && tensorPlot() === 'scatter')"
+        placement="below-end"
+        [width]="360"
+        (closed)="closePopup()"
+      >
+        <div class="chart-display">
+          <section class="settings-panel" overlayPanel aria-label="Chart display">
+            <header>
+              <strong>Display</strong>
+              <button mat-icon-button aria-label="Close chart display" (click)="closePopup()">
+                <mat-icon>close</mat-icon>
+              </button>
+            </header>
+            <div class="setting">
+              <label>Bins</label>
+              <config-picker
+                label="Bins"
+                plural="functions"
+                [compact]="true"
+                [searchable]="false"
+                [options]="channelBinOptions"
+                [value]="displayBinsDisabled() ? '-' : displayDraft().bins"
+                [disabled]="displayBinsDisabled()"
+                (valueChange)="draftDisplayBins($event)"
+              />
+              <button
+                mat-button
+                [disabled]="displayBinsDisabled() || displayDraft().bins === displayDefaultBins()"
+                aria-label="Reset Bins to default"
+                (click)="draftDisplayBins(displayDefaultBins())"
+              >
+                Reset to default
+              </button>
+            </div>
+            @if (displaySeries().length) {
+              <div class="setting" #layerDisplay>
+                <div class="series-heading">
+                  <label>{{ displaySeriesLabel() }}</label
+                  ><span class="series-count"
+                    >{{ displayDraft().visible.length }}/{{ displaySeries().length }}</span
+                  >
+                </div>
+                @if (displaySeries().length > 8) {
+                  <input
+                    class="series-search"
+                    type="search"
+                    [attr.aria-label]="'Search ' + displaySeriesLabel().toLowerCase()"
+                    [placeholder]="'Search ' + displaySeriesLabel().toLowerCase()"
+                    [value]="displayQuery()"
+                    (input)="setDisplayQuery($any($event.target).value)"
+                  />
+                }
+                <div
+                  class="series-options"
+                  role="group"
+                  [attr.aria-label]="'Visible ' + displaySeriesLabel().toLowerCase()"
+                  (mouseleave)="highlightDisplaySeries(null)"
+                >
+                  @for (series of displayFilteredSeries(); track series.id) {
+                    <label
+                      (mouseenter)="highlightDisplaySeries(series.id)"
+                      (focusin)="highlightDisplaySeries(series.id)"
+                      (focusout)="highlightDisplaySeries(null)"
+                    >
+                      <input
+                        type="checkbox"
+                        [attr.aria-label]="'Show ' + series.label"
+                        [checked]="displayDraft().visible.includes(series.id)"
+                        (change)="toggleDisplaySeries(series.id)"
+                      />
+                      <i [style.border-top-color]="series.color" [class.dashed]="series.dashed"></i
+                      ><span>{{ series.label }}</span>
+                    </label>
+                  } @empty {
+                    <p class="series-empty">No matching {{ displaySeriesLabel().toLowerCase() }}</p>
+                  }
+                </div>
+                <div class="series-actions">
+                  <button
+                    mat-button
+                    [disabled]="displaySeriesDefault()"
+                    [attr.aria-label]="'Reset ' + displaySeriesLabel() + ' to default'"
+                    (click)="draftDisplayVisible(displayDefaultVisible())"
+                  >
+                    Reset to default
+                  </button>
+                  <button
+                    mat-button
+                    [disabled]="!displayDraft().visible.length"
+                    [attr.aria-label]="'Clear ' + displaySeriesLabel()"
+                    (click)="draftDisplayVisible([])"
+                  >
+                    Clear
+                  </button>
+                </div>
+              </div>
+            }
+            <footer>
+              <span role="status" class="sr-only">{{
+                displayDirty() ? 'Unapplied changes' : 'Display settings applied'
+              }}</span>
+              <button
+                mat-flat-button
+                color="primary"
+                [disabled]="!displayDirty()"
+                (click)="applyChartDisplay()"
+              >
+                Apply
+              </button>
+            </footer>
+          </section>
+        </div>
+      </ng-template>
+    </div>
+    @if (stateNotice()) {
+      <p class="notice-banner" role="status">{{ stateNotice() }}</p>
+    }
+    @if (loading()) {
+      <div class="state-message" role="status">
+        <mat-icon>hourglass_empty</mat-icon>
+        <h2>Loading captured KV cache</h2>
+        <p>Comparing stored positions and heads…</p>
+      </div>
+    } @else if (error()) {
+      <div class="state-message" role="alert">
+        <mat-icon>error_outline</mat-icon>
+        <h2>KV analysis unavailable</h2>
+        <p>{{ error() }}</p>
+        <button class="outlined" (click)="retryAnalysis()">Retry</button>
+      </div>
+    } @else if (!context()) {
+      <div class="state-message">
+        <mat-icon>grid_off</mat-icon>
+        <h2>KV cache not captured</h2>
+        <p>No stored KV observation is available for Turn {{ selectedTurn() }}.</p>
+        @if ((state.session()?.turns?.length ?? 0) > 1) {
+          <p>Choose another turn to inspect its captured cache.</p>
+        }
+      </div>
+    } @else {
+      <div class="analysis-body">
+        <section class="canvas" aria-label="Visualization">
+          @if (tensorView()) {
+            <div class="tensor-plots">
+              @if (
+                tensorPlot() === 'index' &&
+                tensorReady() &&
+                tensorHead() !== null &&
+                tensorChannelRange() &&
+                tensorChannelFull()
+              ) {
+                <div class="tensor-line-frame">
+                  <div class="tensor-line-canvas" [style.height]="chartViewportHeight()">
+                    <channel-chart
+                      (backgroundClick)="inspectStage.emit($event)"
+                      [visibleRuntimes]="tensorVisibleRuntimes()"
+                      [rows]="tensorEvidence('key')?.evidence?.channels ?? []"
+                      [otherRows]="tensorEvidence('value')?.evidence?.channels ?? []"
+                      [messages]="[tensorPlotMessage('key'), tensorPlotMessage('value')]"
+                      [range]="tensorChannelRange()!"
+                      [full]="tensorChannelFull()!"
+                      [reduction]="tensorChannelReduction()"
+                      [capacity]="tensorChannelCapacity()"
+                      [selected]="tensorChannels()['key']"
+                      [otherSelected]="tensorChannels()['value']"
+                      [channelSelection]="tensorChannelSelection()"
+                      (channelSelectionChange)="tensorChannelSelection.set($event)"
+                      (zoom)="tensorChannelZoom.set($event)"
+                      (capacityChange)="tensorChannelCapacity.set($event)"
+                      (select)="selectTensorChannel($event)"
+                      (otherSelect)="selectTensorChannel($event)"
+                    />
+                  </div>
+                </div>
+              }
+              @if (tensorPlot() === 'scatter' && tensorReady() && tensorHead() !== null) {
+                <div class="tensor-line-frame">
+                  <div class="tensor-line-canvas" [style.height]="chartViewportHeight()">
+                    <scatter-chart
+                      (backgroundClick)="inspectStage.emit($event)"
+                      [rows]="tensorEvidence('key')?.evidence?.channels ?? []"
+                      [otherRows]="tensorEvidence('value')?.evidence?.channels ?? []"
+                      [messages]="[tensorPlotMessage('key'), tensorPlotMessage('value')]"
+                      [range]="tensorValueRange()"
+                      [selected]="tensorChannels()['key']"
+                      (select)="selectTensorChannel($event)"
+                      (zoom)="tensorValueZoom.set($event)"
+                    />
+                  </div>
+                </div>
+              }
+              @for (group of tensorGroups(); track group.kind) {
+                @if (
+                  !tensorReady() ||
+                  tensorHead() === null ||
+                  group.request.loading() ||
+                  group.request.error() ||
+                  tensorEvidence(group.kind)?.error
+                ) {
+                  <section
+                    class="tensor-plot-group"
+                    [attr.data-tensor-kind]="group.kind"
+                    [attr.aria-label]="group.label + ' head dimensions'"
+                  >
+                    <h3>{{ group.label }}</h3>
+                    @if (!tensorReady()) {
+                      <p class="detail-note">Select a Position and Layer to inspect tensor data.</p>
+                    } @else if (group.request.loading()) {
+                      <p class="detail-note" role="status">Loading {{ group.label }}…</p>
+                    } @else if (group.request.error()) {
+                      <p class="detail-note" role="alert">
+                        {{ group.request.error() }}
+                        <button class="outlined" (click)="tensorRetry.update(incrementTensorRetry)">
+                          Retry
+                        </button>
+                      </p>
+                    } @else if (tensorHead() === null) {
+                      <p class="detail-note">Select a Head to inspect its Head dimensions.</p>
+                    } @else if (tensorEvidence(group.kind)) {
+                      @let row = tensorEvidence(group.kind)!;
+                      <kv-head-details
+                        [plotOnly]="true"
+                        [hidePlot]="true"
+                        [channel]="tensorChannels()[group.kind]"
+                        [selectedBin]="
+                          tensorPlot() === 'index' &&
+                          tensorChannelSelection() &&
+                          (tensorChannelSelection()!.plane === null ||
+                            tensorChannelSelection()!.plane === (group.kind === 'key' ? 0 : 1))
+                            ? tensorChannelSelection()
+                            : null
+                        "
+                        (channelChange)="selectTensorChannel($event)"
+                        [channelRange]="tensorChannelRange()"
+                        [channelFull]="tensorChannelFull()"
+                        [channelReduction]="tensorChannelReduction()"
+                        [channelCapacity]="tensorChannelCapacity()"
+                        (channelZoom)="tensorChannelZoom.set($event)"
+                        (channelCapacityChange)="tensorChannelCapacity.set($event)"
+                        [view]="tensorPlot()"
+                        [evidence]="row.evidence"
+                        [error]="row.error"
+                        (retry)="tensorRetry.update(incrementTensorRetry)"
+                      />
+                    } @else {
+                      <p class="detail-note">This Head was not captured.</p>
+                    }
+                  </section>
+                }
+              }
+            </div>
+          } @else if (!fullRange()) {
+            <div class="state-message">
+              <mat-icon>grid_off</mat-icon>
+              <h2>Position comparison unavailable</h2>
+              <p>
+                {{
+                  reasonText(selectedLayer()?.reasons) ||
+                    'No comparable ' +
+                      (kind() === 'key' ? 'Key' : 'Value') +
+                      ' tensors were captured for this observation.'
+                }}
+              </p>
+              @if (layers().length) {
+                <label
+                  >Layer
+                  <select
+                    aria-label="Inspect captured layer"
+                    [value]="selectedLayer()?.layer"
+                    (change)="chooseLayer(+$any($event.target).value)"
+                  >
+                    @for (row of layers(); track row.layer) {
+                      <option [value]="row.layer" [selected]="row.layer === selectedLayer()?.layer">
+                        Layer {{ row.layer }} · {{ statusLabel(row.status) }}
+                      </option>
+                    }
+                  </select></label
+                >
+              }
+            </div>
+          } @else {
+            <div class="plot-scroll">
+              <div
+                class="range-canvas"
+                [style.height]="chartViewportHeight()"
+                [attr.aria-busy]="chartLoading()"
+              >
+                <range-chart
+                  [class.chart-pending]="chartPending()"
+                  label="KV"
+                  [positionAlignment]="positionAlignment()"
+                  [columnSteps]="columnSteps"
+                  (backgroundClick)="inspectStage.emit($event)"
+                  (positionHover)="positionHover.emit($event)"
+                  [head]="head()"
+                  [positionReduction]="positionReduction()"
+                  [view]="view()"
+                  [visibleRange]="visibleRange()"
+                  [fullRange]="fullRange()"
+                  [overview]="overviewData.range.last()"
+                  [otherOverview]="otherOverviewData.range.last()"
+                  [kind]="kind()"
+                  [scaleMaximum]="scaleMax()"
+                  [scaleMode]="colorScale()"
+                  [description]="description()"
+                  [layers]="visibleMetricLayers()"
+                  [bins]="chartBins()"
+                  [rows]="chartRows()"
+                  [otherRows]="bothTensors() ? (otherChartRows()?.rows ?? []) : null"
+                  [metric]="metric()"
+                  [selected]="chartSelection() === undefined ? inspectedRange() : chartSelection()!"
+                  [selectedKind]="selectedCurve()"
+                  [lineChartLayer]="selectedLayer()?.layer ?? 0"
+                  [highlightedLayer]="highlightedLayer()"
+                  [series]="view() === 'lineChart' ? chartSeries() : null"
+                  [format]="chartFormat"
+                  [disabled]="chartLoading() || !!chartError()"
+                  (select)="selectRange($event)"
+                  (seriesSelect)="selectedCurve.set($event)"
+                  (zoom)="zoomTo($event)"
+                  (capacity)="setCapacity($event)"
+                />
+                @if (!chartLoading() && !chartError() && !visibleMetricLayers().length) {
+                  <span class="chart-status" role="status"
+                    >No layers selected. Select layers in Display.</span
+                  >
+                }
+                @if (chartPending()) {
+                  <p class="chart-state" role="status">Loading range…</p>
+                } @else if (chartLoading()) {
+                  <span class="chart-status" role="status">Loading range…</span>
+                } @else if (chartError()) {
+                  <div class="chart-status error" role="alert">
+                    <span>{{ chartError() }}</span
+                    ><button class="outlined" (click)="retryRange()">
+                      Retry
+                    </button>
+                  </div>
+                }
+              </div>
+            </div>
+          }
+        </section>
+      </div>
+    }
+  </main>
+</section>
+
+<ng-template #chartFooter>
+  <div
+    class="heatmap-color-legend"
+    aria-label="Metric color scale"
+    [title]="
+      'Positions: ' +
+      positionReduction() +
+      ' over finite per-position metric values, after Heads aggregation. Scale: ' +
+      scale().join(', ')
+    "
+  >
+    <span class="color-endpoint" [title]="scale()[0] ?? '—'">{{ scale()[0] ?? '—' }}</span>
+    <span class="color-ramp" [class.continuous]="!stepped()" aria-hidden="true">
+      @if (stepped()) {
+        @for (i of [0, 1, 2, 3, 4]; track i) {
+          <i [style.background]="paletteColor(i * 25)"></i>
+        }
+      }
+    </span>
+    <span class="color-endpoint">{{
+      stepped() ? '≥' + scale()[scale().length - 2] : (scale()[scale().length - 1] ?? '—')
+    }}</span>
+  </div>
+</ng-template>
+
+<ng-template #chartLegend>
+  <div class="chart-legend">
+    @if (view() === 'lineChart') {
+      <span>Layers {{ selectedLineChartLayers().length }}/{{ layerIds().length }}</span>
+    } @else {
+      <ng-container [ngTemplateOutlet]="chartFooter" />
+    }
+  </div>
+</ng-template>

@@ -31,6 +31,7 @@ bazel_dep(name = "nlohmann_json", version = "3.12.0")
 bazel_dep(name = "apple_support", version = "2.9.1", repo_name = "build_bazel_apple_support")
 bazel_dep(name = "platforms", version = "1.0.0")
 bazel_dep(name = "rules_cc", version = "0.2.22")
+bazel_dep(name = "rules_shell", version = "0.6.1")
 
 # The App: Swift, bundled for macOS and for iOS (app/).
 bazel_dep(name = "rules_apple", version = "5.3.0")
@@ -147,7 +148,7 @@ litert_lm_library = use_repo_rule(
     "litert_lm_library",
 )
 
-LITERT_LM_COMMIT = "a0f1e97361155c8bb9cd3d6aa045c04320d4334b"
+LITERT_LM_COMMIT = "61dcfc77225019e067580dceb3ea268483d1938c"
 
 litert_lm_library(
     name = "litert_lm_macos_arm64",

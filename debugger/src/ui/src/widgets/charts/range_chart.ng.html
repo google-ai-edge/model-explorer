@@ -1,0 +1,141 @@
+<!--
+ Copyright 2026 The AI Edge Model Explorer Authors.
+
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+ ==============================================================================
+-->
+<div
+  #plot
+  class="plot"
+  role="group"
+  tabindex="0"
+  [attr.aria-label]="
+    view() === 'heatmap'
+      ? label() + ' Heatmap with position range slider'
+      : label() + ' Line chart with position range slider'
+  "
+  (mouseleave)="clearCellHover()"
+  (mousemove)="trackPointer($event)"
+></div>
+@if (error()) {
+  <div class="chart-error" role="alert">{{ error() }} <button (click)="retry()">Retry</button></div>
+}
+<span class="sr-only" role="status">{{ announcement() }}</span>
+
+@if (columnAxis(); as axis) {
+  <range-axis-selection
+    [axis]="axis"
+    [height]="columnStripHeight"
+    [cells]="axisCells()"
+    [hover]="hoveredColumn()"
+    [selected]="selectedAxisRange()"
+    [disabled]="disabled()"
+    label="Select a Position column"
+    (pointerHover)="hoverColumn($event)"
+    (pointerLeave)="clearColumnHover()"
+    (choose)="selectColumn($event)"
+    (navigate)="columnKeyDown($event)"
+  />
+}
+@if (hoveredColumn(); as column) {
+  @for (box of column.boxes; track $index) {
+    <div
+      class="column-preview"
+      aria-hidden="true"
+      [style.left.px]="box.left"
+      [style.top.px]="box.top"
+      [style.width.px]="box.width"
+      [style.height.px]="box.height"
+    ></div>
+  }
+}
+
+@for (cell of missingCells(); track $index) {
+  <div
+    class="cell-unavailable"
+    aria-hidden="true"
+    [style.left.px]="cell.left"
+    [style.top.px]="cell.top"
+    [style.width.px]="cell.width"
+    [style.height.px]="cell.height"
+  ></div>
+}
+
+@for (box of hoveredBands(); track $index) {
+  <div
+    class="column-preview"
+    aria-hidden="true"
+    [style.left.px]="box.left"
+    [style.top.px]="box.top"
+    [style.width.px]="box.width"
+    [style.height.px]="box.height"
+  ></div>
+}
+@for (point of hoveredPoints(); track $index) {
+  <div
+    class="cell-hover point-hover"
+    aria-hidden="true"
+    [style.left.px]="point.left"
+    [style.top.px]="point.top"
+  ></div>
+}
+@for (cell of selectedCells(); track $index) {
+  <div
+    class="cell-selected"
+    aria-hidden="true"
+    [style.left.px]="cell.left"
+    [style.top.px]="cell.top"
+    [style.width.px]="cell.width"
+    [style.height.px]="cell.height"
+  ></div>
+}
+@for (cell of hoveredCells(); track $index) {
+  <div
+    class="cell-hover"
+    aria-hidden="true"
+    [style.left.px]="cell.left"
+    [style.top.px]="cell.top"
+    [style.width.px]="cell.width"
+    [style.height.px]="cell.height"
+  ></div>
+}
+
+@if (tooltip(); as tip) {
+  <chart-hover [info]="tip" />
+}
+
+@if (locatedRegion(); as region) {
+  <div
+    #locationTarget
+    class="cache-location"
+    aria-hidden="true"
+    [attr.data-kind]="region.kind"
+    [attr.data-position]="region.position"
+    [attr.data-layer]="region.layer"
+    [style.left.px]="region.left"
+    [style.top.px]="region.top"
+    [style.width.px]="region.width"
+    [style.height.px]="region.height"
+  ></div>
+  <div
+    class="location-label"
+    aria-hidden="true"
+    [style.left]="'clamp(8px, ' + region.left + 'px, calc(100% - 248px))'"
+    [style.top.px]="region.top > 44 ? region.top - 44 : region.top + region.height + 12"
+  >
+    {{ locationName(region.kind, region.layer) }}
+    @if (region.position !== undefined) {
+      · {{ showLayers() ? 'Layer ' + region.layer : 'Final' }} · Position {{ region.position }}
+    }
+  </div>
+}

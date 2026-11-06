@@ -1,0 +1,725 @@
+<!--
+ Copyright 2026 The AI Edge Model Explorer Authors.
+
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+ ==============================================================================
+-->
+<!-- The design study frames the Target column in Debug: a hairline from the pane split to the
+     details panel, rounded at the top, over the content and under the panel and the toolbar. -->
+<div
+  class="target-frame"
+  aria-hidden="true"
+  [style.--inspector-width.px]="tokens.details() ? tokens.panelWidth() : 0"
+></div>
+<div
+  class="reading"
+  [class.token-outlines]="tokens.boundaries()"
+  [attr.data-token-color]="tokens.color()"
+  [attr.data-gap-palette]="tokens.heatPalette(tokens.color())"
+  [style.--token-line-height.px]="tokens.boundaries() ? 30 : 26"
+  (wheel)="dom.trackReadingIntent($event)"
+  (keydown)="dom.trackReadingIntent($event)"
+  (pointerdown)="conversation.trackReadingIntent($event)"
+  (scroll)="dom.readingScrolled()"
+  (click)="dom.readingBackgroundClick($event)"
+  [class.virtual-reading]="conversation.usesVirtual()"
+  [class.with-inspector]="tokens.details()"
+  [style.--inspector-width.px]="tokens.panelWidth()"
+>
+  <div class="column-headings">
+    @for (run of conversation.runs(); track run.id) {
+      <header>
+        <div class="runtime-name">
+          <strong>{{ run.id === 'ref' ? 'Reference' : 'Target' }}</strong>
+          @if (run.id === 'target') {
+            <span class="target-state" role="status">Debugging</span>
+          }
+        </div>
+        <span
+          [matTooltip]="
+            (run.runtime || 'Runtime not captured') +
+            ' · ' +
+            (run.backend || 'Backend not captured')
+          "
+          >{{ run.id === 'ref' ? 'Baseline conversation' : 'Conversation under inspection' }}</span
+        >
+      </header>
+    }
+  </div>
+  <div class="turns">
+    @for (turn of conversation.turns(); track turn.n) {
+      <section
+        class="turn debug-turn"
+        [attr.data-turn]="turn.n"
+        [attr.aria-label]="'Turn ' + turn.n"
+      >
+        @for (run of conversation.runs(); track run.id) {
+          <article
+            class="conversation-side"
+            [attr.data-runtime]="run.id"
+            [class.target]="run.id === 'target'"
+          >
+            <section
+              [class.node-compact]="tokens.nodeCollapsed(turn.n, run.id, 'prefill')"
+              class="phase-node inputNode debug-node"
+              role="group"
+              tabindex="0"
+              [attr.aria-label]="
+                'Turn ' + turn.n + ' / Prefill · ' + (run.id === 'ref' ? 'Reference' : 'Target')
+              "
+              [attr.data-node-selected]="tokens.stageSelected(turn.n, 'prefill') ? '' : null"
+              [attr.data-node-origin]="
+                tokens.stageSelected(turn.n, 'prefill') && tokens.selectedStage()?.side === run.id
+                  ? ''
+                  : null
+              "
+              (click)="tokens.selectStagePointer($event, turn.n, run.id, 'prefill')"
+              (keydown)="tokens.selectStageKey($event, turn.n, run.id, 'prefill')"
+              [attr.data-node-turn]="turn.n"
+              data-node-stage="prefill"
+              [attr.data-node-side]="run.id"
+            >
+              <ng-container
+                [ngTemplateOutlet]="nodeTitle"
+                [ngTemplateOutletContext]="{turn, run, stage: 'prefill'}"
+              />
+              @if (tokens.nodeCollapsed(turn.n, run.id, 'prefill')) {
+                <div
+                  class="nodeContextPreview"
+                  [attr.aria-label]="'Compact Prefill preview · ' + run.id + ' · Turn ' + turn.n"
+                >
+                  <mat-icon aria-hidden="true">subject</mat-icon
+                  ><span class="nodeContextText"
+                    ><span
+                      class="nodePreviewTokens"
+                      [class.boundaries]="tokens.boundaries()"
+                      [style.grid-template-columns]="compact.compactColumns(turn.n, 'prefill')"
+                    >
+                      @for (
+                        token of compact.compactTokens().get(turn.n + ':' + run.id + ':prefill');
+                        track token.index
+                      ) {
+                        @if (token.ellipsis) {
+                          <span class="nodePreviewEllipsis" aria-hidden="true">…</span>
+                        }
+                        <button
+                          type="button"
+                          class="nodePreviewToken"
+                          [class.mismatch]="
+                            tokens.color() === 'token_match' && token.match === false
+                          "
+                          [class.missing]="token.missing"
+                          [class.selected-token]="tokens.isInputSelected(turn.n, token.index)"
+                          [attr.aria-pressed]="tokens.isInputSelected(turn.n, token.index)"
+                          [attr.aria-label]="
+                            'Preview ' +
+                            run.id +
+                            ' input position ' +
+                            token.index +
+                            ': ' +
+                            token.text
+                          "
+                          [attr.title]="token.text"
+                          [innerHTML]="compact.compactTokenHtml(token.text)"
+                          data-kind="input"
+                          [attr.data-turn]="turn.n"
+                          [attr.data-side]="run.id"
+                          [attr.data-row]="token.index"
+                          (click)="
+                            $event.stopPropagation();
+                            tokens.selectInput(turn.n, token.index, $event)
+                          "
+                        ></button>
+                      } @empty {
+                        <span class="nodePreviewReadonly">{{
+                          compact.compactInput(turn.n, run.id)
+                        }}</span>
+                      }
+                    </span></span
+                  ><span
+                    class="nodeContextCount"
+                    title="Tokens are captured tokens; gaps are empty slots added for alignment."
+                    >{{ compact.compactCount(turn.n, run.id, 'prefill') }}</span
+                  >
+                </div>
+              }
+              <div
+                class="node-reveal"
+                [class.collapsed]="tokens.nodeCollapsed(turn.n, run.id, 'prefill')"
+                [attr.inert]="tokens.nodeCollapsed(turn.n, run.id, 'prefill') ? '' : null"
+              >
+                <div>
+                  @let pairInputRows =
+                    conversation.virtualInput(turn.n) ? null : tokens.inputPairRows(turn.n);
+                  @let sideInputRows =
+                    conversation.virtualInput(turn.n) || pairInputRows
+                      ? null
+                      : inputRows(turn.n, run.id);
+                  @if (pairInputRows; as rows) {
+                    <div class="captured-input input-rows" aria-label="Captured model input">
+                      @for (row of rows; track $index) {
+                        <div
+                          class="input-row"
+                          [attr.data-message-role]="row.role"
+                          [attr.aria-label]="roleLabel(row.role) + ' · admitted tokens'"
+                        >
+                          <mat-icon aria-hidden="true">{{ roleIcon(row.role) }}</mat-icon>
+                          <div class="input-tokens" [class.boundaries]="tokens.boundaries()">
+                            @if (row.leading.length) {
+                              <div class="marker-row">
+                                @for (pair of row.leading; track pair.index) {
+                                  <ng-container
+                                    [ngTemplateOutlet]="inputToken"
+                                    [ngTemplateOutletContext]="{turn, run, pair, marker: true}"
+                                  />
+                                }
+                              </div>
+                            }
+                            @if (row.text.length) {
+                              <div class="input-text">
+                                @for (pair of row.text; track pair.index) {
+                                  <ng-container
+                                    [ngTemplateOutlet]="inputToken"
+                                    [ngTemplateOutletContext]="{turn, run, pair, marker: false}"
+                                  />
+                                }
+                              </div>
+                            }
+                            @if (row.trailing.length) {
+                              <div class="marker-row">
+                                @for (pair of row.trailing; track pair.index) {
+                                  <ng-container
+                                    [ngTemplateOutlet]="inputToken"
+                                    [ngTemplateOutletContext]="{turn, run, pair, marker: true}"
+                                  />
+                                }
+                              </div>
+                            }
+                          </div>
+                        </div>
+                      }
+                    </div>
+                  } @else if (sideInputRows; as rows) {
+                    <div class="captured-input input-rows" aria-label="Captured model input">
+                      @for (row of rows; track $index) {
+                        <div
+                          class="input-row"
+                          [attr.data-message-role]="row.role"
+                          [attr.aria-label]="roleLabel(row.role) + ' · admitted tokens'"
+                        >
+                          <mat-icon aria-hidden="true">{{ roleIcon(row.role) }}</mat-icon>
+                          <div class="input-tokens" [class.boundaries]="tokens.boundaries()">
+                            @if (row.leading.length) {
+                              <div class="marker-row">
+                                @for (token of row.leading; track $index) {
+                                  <span
+                                    class="input-token marker-token"
+                                    [innerHTML]="tokenHtml(token)"
+                                  ></span>
+                                }
+                              </div>
+                            }
+                            @if (row.text.length) {
+                              <div class="input-text">
+                                @for (token of row.text; track $index) {
+                                  <span class="input-token" [innerHTML]="tokenHtml(token)"></span>
+                                }
+                              </div>
+                            }
+                            @if (row.trailing.length) {
+                              <div class="marker-row">
+                                @for (token of row.trailing; track $index) {
+                                  <span
+                                    class="input-token marker-token"
+                                    [innerHTML]="tokenHtml(token)"
+                                  ></span>
+                                }
+                              </div>
+                            }
+                          </div>
+                        </div>
+                      }
+                    </div>
+                  } @else if (!conversation.virtualInput(turn.n)) {
+                    <div class="captured-input" aria-label="Captured model input">
+                      @for (segment of inputSegments(turn.n, run.id); track $index) {
+                        @if (segment.kind === 'template') {
+                          <span class="template-input" data-input-template>{{ segment.text }}</span>
+                        } @else {
+                          <section
+                            class="input-segment"
+                            [attr.data-message-role]="segment.role"
+                            [attr.aria-label]="
+                              segment.role === 'system'
+                                ? 'System'
+                                : segment.role === 'user'
+                                  ? 'User'
+                                  : segment.role === 'assistant'
+                                    ? 'Assistant'
+                                    : 'Serialized input'
+                            "
+                          >
+                            <strong>{{
+                              segment.role === 'system'
+                                ? 'System'
+                                : segment.role === 'user'
+                                  ? 'User'
+                                  : segment.role === 'assistant'
+                                    ? 'Assistant'
+                                    : 'Serialized input'
+                            }}</strong>
+                            <p>{{ segment.text }}</p>
+                          </section>
+                        }
+                      } @empty {
+                        <p>Input text not captured</p>
+                      }
+                    </div>
+                  } @else {
+                    <div class="user-message">
+                      <strong
+                        >User
+                        <span>· Turn {{ turn.n }}</span>
+                      </strong>
+                      @if (conversation.virtualInput(turn.n)) {
+                        <button
+                          mat-button
+                          class="read-full"
+                          [attr.aria-label]="'Read full input · ' + run.id + ' · Turn ' + turn.n"
+                          (click)="conversation.readFullText(turn.n, run.id, 'input')"
+                        >
+                          Read full text
+                        </button>
+                        <div
+                          class="virtualTextHost virtual-input"
+                          [attr.data-v-side]="run.id"
+                          [attr.data-v-turn]="turn.n"
+                          data-v-stage="Prefill"
+                          data-v-kind="input"
+                        ></div>
+                      } @else {
+                        <p>
+                          {{
+                            conversation.captured(turn.n, run.id)?.input ??
+                              'Input text not captured'
+                          }}
+                        </p>
+                      }
+                    </div>
+                  }
+                </div>
+              </div>
+            </section>
+
+            <section
+              [class.node-compact]="tokens.nodeCollapsed(turn.n, run.id, 'decode')"
+              class="phase-node decodeNode debug-node"
+              role="group"
+              tabindex="0"
+              [attr.aria-label]="
+                'Turn ' + turn.n + ' / Decode · ' + (run.id === 'ref' ? 'Reference' : 'Target')
+              "
+              [attr.data-node-selected]="tokens.stageSelected(turn.n, 'decode') ? '' : null"
+              [attr.data-node-origin]="
+                tokens.stageSelected(turn.n, 'decode') && tokens.selectedStage()?.side === run.id
+                  ? ''
+                  : null
+              "
+              (click)="tokens.selectStagePointer($event, turn.n, run.id, 'decode')"
+              (keydown)="tokens.selectStageKey($event, turn.n, run.id, 'decode')"
+              [attr.data-node-turn]="turn.n"
+              data-node-stage="decode"
+              [attr.data-node-side]="run.id"
+            >
+              <ng-container
+                [ngTemplateOutlet]="nodeTitle"
+                [ngTemplateOutletContext]="{turn, run, stage: 'decode'}"
+              />
+              @if (tokens.nodeCollapsed(turn.n, run.id, 'decode')) {
+                <div
+                  class="nodeContextPreview"
+                  [attr.aria-label]="'Compact Decode preview · ' + run.id + ' · Turn ' + turn.n"
+                >
+                  <mat-icon aria-hidden="true">subject</mat-icon
+                  ><span class="nodeContextText"
+                    ><span
+                      class="nodePreviewTokens"
+                      [class.boundaries]="tokens.boundaries()"
+                      [style.grid-template-columns]="compact.compactColumns(turn.n, 'decode')"
+                    >
+                      @for (
+                        token of compact.compactTokens().get(turn.n + ':' + run.id + ':decode');
+                        track token.index
+                      ) {
+                        @if (token.ellipsis) {
+                          <span class="nodePreviewEllipsis" aria-hidden="true">…</span>
+                        }
+                        <button
+                          type="button"
+                          class="nodePreviewToken"
+                          [class.mismatch]="
+                            tokens.color() === 'token_match' && token.match === false
+                          "
+                          [class.numeric-token]="
+                            tokens.tokenHeat(turn.n, token.pair, run.id) !== null
+                          "
+                          [class.numeric-missing]="
+                            run.id === 'target' &&
+                            tokens.numericColor() &&
+                            tokens.tokenHeat(turn.n, token.pair, run.id) === null
+                          "
+                          [style.--heat-level]="tokens.tokenHeat(turn.n, token.pair, run.id)"
+                          [attr.data-palette]="tokens.heatPalette(tokens.color())"
+                          [class.template-token]="
+                            isTemplateToken(tokens.pairToken(token.pair, run.id))
+                          "
+                          [class.missing]="token.missing"
+                          [class.selected-token]="
+                            tokens.tokenSelection()?.turn === turn.n &&
+                            tokens.tokenSelection()?.index === token.index
+                          "
+                          [attr.aria-pressed]="
+                            tokens.tokenSelection()?.turn === turn.n &&
+                            tokens.tokenSelection()?.index === token.index
+                          "
+                          [attr.aria-label]="
+                            'Preview ' +
+                            run.id +
+                            ' generation step ' +
+                            token.step +
+                            ': ' +
+                            token.text
+                          "
+                          [attr.title]="token.text"
+                          [innerHTML]="compact.compactTokenHtml(token.text)"
+                          [attr.data-turn]="turn.n"
+                          [attr.data-side]="run.id"
+                          [attr.data-row]="token.index"
+                          (click)="
+                            $event.stopPropagation(); tokens.select(turn.n, token.index, $event)
+                          "
+                        ></button>
+                      } @empty {
+                        <span class="nodePreviewReadonly">{{
+                          compact.compactOutput(turn.n, run.id)
+                        }}</span>
+                      }
+                    </span></span
+                  ><span
+                    class="nodeContextCount"
+                    title="Tokens are captured tokens; gaps are empty slots added for alignment."
+                    >{{ compact.compactCount(turn.n, run.id, 'decode') }}</span
+                  >
+                </div>
+              }
+              <div
+                class="node-reveal"
+                [class.collapsed]="tokens.nodeCollapsed(turn.n, run.id, 'decode')"
+                [attr.inert]="tokens.nodeCollapsed(turn.n, run.id, 'decode') ? '' : null"
+              >
+                <div class="response">
+                  @for (phase of tokenPhases; track phase) {
+                    @if (
+                      phase === 'response' ||
+                      phaseText(turn.n, 'ref', phase) ||
+                      phaseText(turn.n, 'target', phase)
+                    ) {
+                      <section
+                        class="generated-phase"
+                        [class.thinking]="phase === 'thinking'"
+                        [attr.data-token-phase]="phase"
+                        [attr.aria-label]="
+                          (phase === 'thinking' ? 'Thinking' : 'Response') +
+                          ' · ' +
+                          run.id +
+                          ' · Turn ' +
+                          turn.n
+                        "
+                      >
+                        <mat-icon
+                          class="phase-icon"
+                          aria-hidden="true"
+                          [matTooltip]="phase === 'thinking' ? 'Thinking' : 'Response'"
+                          >{{
+                            phase === 'thinking' ? 'lightbulb' : 'chat_bubble_outline'
+                          }}</mat-icon
+                        >
+                        <div class="phase-body">
+                          @if (
+                            conversation.hasTokenCapture(turn.n, run.id) &&
+                            conversation.virtualPhase(turn.n, phase)
+                          ) {
+                            <button
+                              mat-button
+                              class="read-full"
+                              [attr.aria-label]="
+                                'Read full ' + phase + ' · ' + run.id + ' · Turn ' + turn.n
+                              "
+                              (click)="
+                                conversation.readFullText(
+                                  turn.n,
+                                  run.id,
+                                  phase === 'thinking' ? 'thinking' : 'output'
+                                )
+                              "
+                            >
+                              Read full text
+                            </button>
+                            <div
+                              class="virtualTextHost virtual-output"
+                              [attr.data-v-side]="run.id"
+                              [attr.data-v-turn]="turn.n"
+                              [attr.data-v-stage]="phase === 'thinking' ? 'Thinking' : 'Output'"
+                              data-v-kind="output"
+                            ></div>
+                          } @else if (
+                            conversation.hasTokenCapture(turn.n, run.id) &&
+                            rowsForPhase(turn.n, run.id, phase).length
+                          ) {
+                            <div
+                              class="tokens"
+                              [class.boundaries]="tokens.boundaries()"
+                              [attr.aria-label]="'Captured ' + phase + ' tokens'"
+                            >
+                              @for (pair of rowsForPhase(turn.n, run.id, phase); track pair.index) {
+                                <button
+                                  [class.empty-token]="
+                                    tokens.zeroWidthText(
+                                      tokenText(run.id === 'ref' ? pair.ref : pair.target)
+                                    )
+                                  "
+                                  [class.numeric-token]="
+                                    tokens.tokenHeat(turn.n, pair, run.id) !== null
+                                  "
+                                  [class.numeric-missing]="
+                                    run.id === 'target' &&
+                                    tokens.numericColor() &&
+                                    tokens.tokenHeat(turn.n, pair, run.id) === null
+                                  "
+                                  [style.--heat-level]="tokens.tokenHeat(turn.n, pair, run.id)"
+                                  [attr.data-palette]="tokens.heatPalette(tokens.color())"
+                                  [class.first-divergence]="
+                                    tokens.isFirstDivergence(turn.n, pair.index, run.id)
+                                  "
+                                  [class.step-partner]="
+                                    tokens.isStepPartner(turn.n, pair.index, run.id)
+                                  "
+                                  [class.template-token]="
+                                    isTemplateToken(run.id === 'ref' ? pair.ref : pair.target)
+                                  "
+                                  [attr.data-row]="pair.index"
+                                  [attr.data-turn]="turn.n"
+                                  [attr.data-side]="run.id"
+                                  [class.mismatch]="
+                                    tokens.color() === 'token_match' && pair.match === false
+                                  "
+                                  [class.missing]="!(run.id === 'ref' ? pair.ref : pair.target)"
+                                  [class.unknown-stop]="
+                                    isUnknownStop(run.id === 'ref' ? pair.ref : pair.target)
+                                  "
+                                  [attr.title]="
+                                    isUnknownStop(run.id === 'ref' ? pair.ref : pair.target)
+                                      ? unknownStopHint
+                                      : null
+                                  "
+                                  [class.selected-token]="
+                                    tokens.selection()?.turn === turn.n &&
+                                    tokens.tokenSelection()?.index === pair.index
+                                  "
+                                  [attr.aria-label]="
+                                    run.id +
+                                    ' aligned position ' +
+                                    pair.index +
+                                    ': ' +
+                                    spokenToken(run.id === 'ref' ? pair.ref : pair.target) +
+                                    (tokens.isFirstDivergence(turn.n, pair.index, run.id)
+                                      ? ' · First divergence'
+                                      : '')
+                                  "
+                                  [attr.aria-pressed]="
+                                    tokens.selection()?.turn === turn.n &&
+                                    tokens.tokenSelection()?.index === pair.index
+                                  "
+                                  (click)="tokens.select(turn.n, pair.index, $event)"
+                                  [innerHTML]="tokenHtml(run.id === 'ref' ? pair.ref : pair.target)"
+                                ></button>
+                                <!-- A line break ends the line after its row for both runtimes. -->
+                                @for (lineBreak of rowBreaks(pair); track lineBreak) {
+                                  <br class="row-break" />
+                                }
+                              }
+                            </div>
+                          } @else {
+                            <p class="captured-text-fallback">
+                              {{
+                                phaseText(turn.n, run.id, phase) ||
+                                  (phase === 'thinking'
+                                    ? 'Thinking text not captured'
+                                    : 'Response text not captured')
+                              }}
+                            </p>
+                          }
+                        </div>
+                      </section>
+                    }
+                  }
+                  @if (conversation.stageEnding(turn.n, run.id); as ending) {
+                    <p class="reply-end">{{ ending }}</p>
+                  }
+                  @if (
+                    !conversation.hasTokenCapture(turn.n, run.id) || !tokens.rows(turn.n).length
+                  ) {
+                    <p class="capture-note">Token IDs and per-token comparisons: Not captured.</p>
+                  }
+                </div>
+              </div>
+            </section>
+          </article>
+        }
+        @for (stage of stages; track stage) {
+          <stage-analysis-rail [turn]="turn.n" [stage]="stage" />
+        }
+      </section>
+      @let nextTurn = conversation.turnAfter($index);@let lastTurn = !nextTurn;
+      <div
+        class="turn-boundary"
+        role="group"
+        [attr.aria-label]="
+          lastTurn
+            ? 'Turn ' + turn.n + ' · ' + conversation.turnEnding(turn.n)
+            : 'Turn ' + turn.n + ' complete; context continues to Turn ' + nextTurn?.n
+        "
+      >
+        @for (run of conversation.runs(); track run.id) {
+          <span class="turn-boundary-lane" aria-hidden="true"
+            ><span class="turn-boundary-label"
+              ><span>Turn {{ turn.n }}</span
+              ><mat-icon>{{
+                !lastTurn
+                  ? 'arrow_forward'
+                  : conversation.turnEnding(turn.n) === 'Conversation complete'
+                    ? 'check_circle'
+                    : conversation.turnEnding(turn.n) === 'Generation failed'
+                      ? 'error_outline'
+                      : conversation.turnEnding(turn.n) === 'Generation stopped'
+                        ? 'pause_circle_outline'
+                        : 'last_page'
+              }}</mat-icon
+              ><span class="turn-boundary-destination">{{
+                lastTurn ? conversation.turnEnding(turn.n) : 'Turn ' + nextTurn?.n
+              }}</span></span
+            ></span
+          >
+        }
+      </div>
+    }
+    @for (turn of conversation.rejectedTurns(); track turn.n) {
+      <rejected-turn [turn]="turn" [sides]="conversation.sideIds()" [debug]="true" />
+    }
+    @if (conversation.chatNotice(); as notice) {
+      <p class="chat-over" role="status">{{ notice }}</p>
+    }
+  </div>
+</div>
+
+<!-- A node's title: its turn and stage, the first mismatch's badge on the Target side, the jump
+     controls of a long Target node, and the toggle that collapses the stage on both sides. -->
+<ng-template #nodeTitle let-turn="turn" let-run="run" let-stage="stage">
+  <div class="nodeTitleTrack">
+    <header class="phase-title nodeTitle">
+      <span class="nodeTitleMain"
+        ><span class="nodeTitleLabel"
+          >Turn {{ turn.n }} / {{ stage === 'prefill' ? 'Prefill' : 'Decode' }}</span
+        >
+        @if (run.id === 'target' && tokens.isFirstMismatchStage(turn.n, stage)) {
+          <span class="stage-mismatch-badge" role="status">First mismatch</span>
+        }</span
+      ><span class="nodeTitleControls">
+        @if (run.id === 'target') {
+          <span class="nodeJumpControls" hidden>
+            @for (action of ['previous', 'start', 'end', 'next']; track action) {
+              <button
+                type="button"
+                [attr.data-node-jump]="action"
+                [attr.data-node-index]="nodeIndex(turn.n, stage)"
+                [disabled]="
+                  (action === 'previous' && nodeIndex(turn.n, stage) === 0) ||
+                  (action === 'next' &&
+                    nodeIndex(turn.n, stage) === conversation.turns().length * 2 - 1)
+                "
+                [attr.aria-label]="
+                  action === 'previous'
+                    ? 'Previous node'
+                    : action === 'next'
+                      ? 'Next node'
+                      : action === 'start'
+                        ? 'Current node start'
+                        : 'Current node end'
+                "
+              >
+                <mat-icon>{{
+                  action === 'previous'
+                    ? 'keyboard_arrow_up'
+                    : action === 'next'
+                      ? 'keyboard_arrow_down'
+                      : action === 'start'
+                        ? 'vertical_align_top'
+                        : 'vertical_align_bottom'
+                }}</mat-icon>
+              </button>
+            }
+          </span>
+        }
+        <button
+          mat-icon-button
+          class="node-toggle"
+          [attr.data-node-toggle]="''"
+          [attr.data-node-index]="nodeIndex(turn.n, stage)"
+          [attr.aria-label]="
+            tokens.nodeCollapsed(turn.n, run.id, stage) ? 'Expand node' : 'Collapse node'
+          "
+          [attr.aria-expanded]="!tokens.nodeCollapsed(turn.n, run.id, stage)"
+        >
+          <mat-icon>{{
+            tokens.nodeCollapsed(turn.n, run.id, stage) ? 'unfold_more' : 'unfold_less'
+          }}</mat-icon>
+        </button></span
+      >
+    </header>
+  </div>
+</ng-template>
+
+<!-- One admitted Prefill token of a message row: a chat-template marker or message text. -->
+<ng-template #inputToken let-turn="turn" let-run="run" let-pair="pair" let-marker="marker">
+  <span
+    class="input-token"
+    [class.marker-token]="marker"
+    role="button"
+    tabindex="0"
+    [class.missing]="!tokens.pairToken(pair, run.id)"
+    [class.mismatch]="tokens.color() === 'token_match' && pair.match === false"
+    [class.selected-token]="tokens.isInputSelected(turn.n, pair.index)"
+    [attr.aria-pressed]="tokens.isInputSelected(turn.n, pair.index)"
+    [attr.aria-label]="
+      run.id + ' input position ' + pair.index + ': ' + spokenToken(tokens.pairToken(pair, run.id))
+    "
+    data-kind="input"
+    [attr.data-turn]="turn.n"
+    [attr.data-side]="run.id"
+    [attr.data-row]="pair.index"
+    (click)="tokens.selectInput(turn.n, pair.index, $event)"
+    (keydown.enter)="tokens.selectInput(turn.n, pair.index, $event)"
+    (keydown.space)="tokens.selectInput(turn.n, pair.index, $event); $event.preventDefault()"
+    [innerHTML]="inputTokenHtml(pair, run.id)"
+  ></span>
+</ng-template>

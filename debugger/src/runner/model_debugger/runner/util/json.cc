@@ -15,9 +15,9 @@
 #include "model_debugger/runner/util/json.h"
 
 #include <string>
+#include <string_view>
 
 #include "absl/status/status.h"
-#include "absl/strings/string_view.h"
 
 namespace model_debugger::runner {
 namespace {
@@ -31,7 +31,7 @@ std::string Write(const Json& value, Json::error_handler_t handler) {
 
 }  // namespace
 
-absl::StatusOr<Json> ParseJson(absl::string_view text) {
+absl::StatusOr<Json> ParseJson(std::string_view text) {
   Json value = Json::parse(text, /*cb=*/nullptr, /*allow_exceptions=*/false);
   if (value.is_discarded()) {
     return absl::InvalidArgumentError("Expected a JSON value.");

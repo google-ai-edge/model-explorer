@@ -1,3 +1,4 @@
+/* stylelint-disable */
 /**
  * @license
  * Copyright 2026 The AI Edge Model Explorer Authors.
@@ -19,7 +20,7 @@
 /**
  * Shared control primitives adapted from Model Explorer (Apache-2.0).
  * References: styles.scss, settings_dialog and model_source_input.
- * Layout stays with each feature; Material owns interaction state layers.
+ * Layout stays with each component; Material owns interaction state layers.
  */
 @use '@angular/material' as mat;
 
@@ -41,11 +42,7 @@
   }
 }
 
-@mixin compact-icon(
-  $size: 36px,
-  $icon-size: 20px,
-  $padding: calc((#{$size} - #{$icon-size}) / 2)
-) {
+@mixin compact-icon($size: 36px, $icon-size: 20px, $padding: calc((#{$size} - #{$icon-size}) / 2)) {
   // Beat the dark Material theme's html[data-theme] density selector too.
   // Otherwise the same popup's close button grows from 36px to 48px in dark mode.
   &.mat-mdc-button-base.mat-mdc-icon-button {

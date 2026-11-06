@@ -12,18 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// The Runner as a command: serves model_debugger.v1.Runner until the process
-// is stopped.
+// The Runner as a command: serves model_debugger.protocol.Runner until the
+// process is stopped.
 
 #include <iostream>
 #include <memory>
 #include <string>
 
+#include "model_debugger/runner/runner.h"
 #include "absl/flags/flag.h"
 #include "absl/flags/parse.h"
 #include "absl/flags/usage.h"
 #include "absl/status/statusor.h"
-#include "model_debugger/runner/runner.h"
 
 ABSL_FLAG(std::string, listen, "127.0.0.1:8769",
           "HOST:PORT to serve on; port 0 picks a free one.");

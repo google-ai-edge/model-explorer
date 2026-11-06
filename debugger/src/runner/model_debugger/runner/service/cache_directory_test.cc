@@ -14,7 +14,7 @@
 
 #include "model_debugger/runner/service/cache_directory.h"
 
-#include <stdlib.h>
+#include <cstdlib>
 
 #include "gtest/gtest.h"
 

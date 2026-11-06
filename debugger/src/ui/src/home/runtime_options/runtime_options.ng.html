@@ -1,0 +1,118 @@
+<!--
+ Copyright 2026 The AI Edge Model Explorer Authors.
+
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+ ==============================================================================
+-->
+<header>
+  <h2>{{ data.side }} configuration</h2>
+  <div class="context">
+    <span class="runtime-label">Runtime: {{ data.runtime }}</span>
+    <div class="copy-actions">
+      <button
+        mat-button
+        [attr.aria-label]="'Copy all settings from ' + data.other"
+        [disabled]="!canCopy()"
+        matTooltip="Copy supported settings from the other side"
+        (click)="copy()"
+      >
+        <mat-icon>content_copy</mat-icon>Copy from {{ data.other }}
+      </button>
+      @if (copied()) {
+        <span role="status">Copied</span
+        ><button
+          mat-button
+          matTooltip="Restore settings from before the last copy"
+          (click)="undo()"
+        >
+          Undo
+        </button>
+      }
+    </div>
+  </div>
+</header>
+<p class="context">
+  Session settings apply when the engine is created; changing one closes the Session and initializes
+  again. Settings the runner on this device does not take are disabled; their help says why.
+</p>
+@if (data.capability?.notice) {
+  <p class="context" role="status">{{ data.capability?.notice }}</p>
+}
+<form (ngSubmit)="close()">
+  <div class="body">
+    @for (group of groups; track group.name) {
+      <section [attr.aria-label]="group.name">
+        <h3>{{ group.name }}</h3>
+        @for (field of group.fields; track field.key) {
+          <label
+            ><span class="caption"
+              >{{ field.option.label
+              }}<button
+                type="button"
+                class="help"
+                [matTooltip]="help(field.option)"
+                [attr.aria-label]="field.option.label + ' help'"
+              >
+                <mat-icon>help_outline</mat-icon>
+              </button></span
+            >
+            @if (field.option.type === 'switch') {
+              <config-picker
+                [label]="field.option.label"
+                [value]="switchLabel(field.key)"
+                [options]="switchLabels"
+                [disabled]="!editable(field.key)"
+                (valueChange)="setSwitch(field.key, $event)"
+              />
+            } @else if (field.option.type === 'choice') {
+              <config-picker
+                [label]="field.option.label"
+                [value]="choiceLabel(field)"
+                [options]="choiceOptions(field.option)"
+                [disabled]="!editable(field.key)"
+                (valueChange)="selectChoice(field, $event)"
+              />
+            } @else {
+              <input
+                type="number"
+                [disabled]="!editable(field.key)"
+                [attr.aria-label]="field.option.label"
+                [name]="field.key"
+                [(ngModel)]="draft[field.key]"
+                [min]="field.option.minimum ?? null"
+                [max]="field.option.maximum ?? null"
+                [step]="field.option.type === 'integer' ? 1 : 'any'"
+                placeholder="Default"
+              />
+            }
+            <button
+              type="button"
+              class="reset"
+              matTooltip="Restore this setting to the runtime default"
+              [disabled]="!editable(field.key)"
+              (click)="reset(field.key)"
+            >
+              Reset to default
+            </button></label
+          >
+        }
+      </section>
+    }
+  </div>
+  <footer>
+    <button type="button" mat-button matTooltip="Discard changes" (click)="cancel()">Cancel</button>
+    <button type="submit" mat-button matTooltip="Apply settings and return to the session">
+      Apply
+    </button>
+  </footer>
+</form>

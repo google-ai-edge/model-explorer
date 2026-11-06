@@ -1,0 +1,71 @@
+<!--
+ Copyright 2026 The AI Edge Model Explorer Authors.
+
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+ ==============================================================================
+-->
+@if (list(); as found) {
+  <details
+    class="layer-ops"
+    [open]="expanded() ?? selected().length > 0"
+    (toggle)="expanded.set($any($event.target).open)"
+  >
+    <summary>
+      {{ found.title }}
+      @if (selected().length) {
+        <span class="summary-total">· {{ selected().length }} ticked</span>
+      }
+    </summary>
+    <p class="layer-ops-text">{{ found.description }}</p>
+    @if (found.status !== 'found') {
+      <p class="layer-ops-text" [attr.data-ops-status]="found.status">{{ found.text }}</p>
+    } @else {
+      <div class="blocks">
+        @for (block of found.blocks; track block.name) {
+          <fieldset class="block" [attr.data-block]="block.name">
+            <legend>{{ block.name }}</legend>
+            @for (op of block.ops; track op.id) {
+              <label
+                class="op"
+                [class.unavailable]="!op.available"
+                [title]="op.label + (op.size_detail ? ' · ' + op.size_detail : '')"
+                [attr.data-op]="op.id"
+                ><input
+                  type="checkbox"
+                  [checked]="ticked(op.id)"
+                  [disabled]="disabled() || (!op.available && !ticked(op.id))"
+                  (change)="toggle(op.id, $any($event.target).checked)"
+                /><span class="op-name">{{ op.name }}</span
+                ><span class="op-kind">{{ op.kind }}</span
+                ><span class="op-size">{{ op.size }}</span>
+                @if (op.reason) {
+                  <span class="op-reason">{{ op.reason }}</span>
+                }
+              </label>
+            }
+          </fieldset>
+        }
+      </div>
+      @for (note of found.notes; track note) {
+        <p class="layer-ops-text">{{ note }}</p>
+      }
+      <p class="layer-ops-total" role="status">{{ found.total.text }}</p>
+      @if (found.refusal) {
+        <p role="alert">{{ found.refusal }}</p>
+      }
+    }
+  </details>
+}
+@if (error()) {
+  <p role="alert">{{ error() }}</p>
+}

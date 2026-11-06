@@ -22,10 +22,10 @@
 #define MODEL_DEBUGGER_RUNNER_UTIL_JSON_H_
 
 #include <string>
+#include <string_view>
 
-#include "absl/status/statusor.h"
-#include "absl/strings/string_view.h"
 #include "nlohmann/json.hpp"
+#include "absl/status/statusor.h"
 
 namespace model_debugger::runner {
 
@@ -37,7 +37,7 @@ using Json = nlohmann::json;
 // Returns the value that `text` holds.
 //
 // Returns InvalidArgument if `text` is not JSON, or is not UTF-8.
-absl::StatusOr<Json> ParseJson(absl::string_view text);
+absl::StatusOr<Json> ParseJson(std::string_view text);
 
 // Returns `value` as compact JSON text.
 //

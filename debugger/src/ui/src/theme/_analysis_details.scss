@@ -1,0 +1,233 @@
+/* stylelint-disable */
+/**
+ * @license
+ * Copyright 2026 The AI Edge Model Explorer Authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ==============================================================================
+ */
+
+@use 'explorer_info' as info;
+/** The details panel of an analysis: its Analysis Info, Statistics, Metadata and Values sections
+ * and their tables. The frame and every body and table of the details include it, so each styles
+ * its own elements alike. */
+@mixin body {
+  @include info.metadata;
+  @include info.section-dividers;
+  @include info.actions;
+  @include info.statistic-table;
+  th,
+  td {
+    overflow-wrap: anywhere;
+    white-space: normal;
+  }
+  .analysis-items {
+    margin: 0 16px 0 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    font: 12px / normal var(--me-font-family);
+  }
+  .analysis-item {
+    min-width: 0;
+  }
+  .item-heading {
+    display: flex;
+    align-items: flex-start;
+    gap: 2px;
+    min-height: 24px;
+  }
+  .item-index {
+    flex: 0 0 16px;
+    color: var(--me-on-surface-variant-color);
+    line-height: 24px;
+  }
+  .item-name {
+    color: var(--me-primary-color);
+    line-height: 24px;
+  }
+  .analysis-properties {
+    --info-indent: 18px;
+    --info-key-offset: 0px;
+    margin-right: 0;
+  }
+  .analysis-item .source-section {
+    // Center the arrow over the single-digit index, keeping labels in the name column.
+    margin-left: 0;
+    --info-heading-color: var(--me-on-surface-low-color);
+    --info-content-spacing: 2px;
+    --info-content-bottom-spacing: 0px;
+    --info-compact-row-height: 20px;
+    --info-toggle-width: 18px;
+    --info-toggle-offset: -6px;
+    border-top: 0;
+  }
+  .source-section explorer-info-list {
+    --info-indent: 18px;
+    --info-key-offset: 0px;
+    margin-right: 0;
+  }
+  .statistic-title {
+    min-width: 0;
+    flex: 1;
+    line-height: 24px;
+  }
+  .statistic-summary {
+    color: var(--me-on-surface-variant-color);
+  }
+  .statistic-title [explorer-locator] {
+    vertical-align: middle;
+  }
+  .analysis-item > .layer-table,
+  .analysis-item > .inspector-table,
+  .analysis-item > .statistic-table-note {
+    margin: 2px 0 0 18px;
+    width: calc(100% - 18px);
+    max-width: calc(100% - 18px);
+  }
+  .column-sort .sort-label {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .tensor-pagination {
+    margin-left: auto;
+    align-self: center;
+  }
+  .sampling-inspection-item {
+    display: grid;
+    grid-template-columns: 16px minmax(0, 1fr);
+    column-gap: 2px;
+  }
+  .sampling-inspection-item > .item-heading {
+    display: contents;
+  }
+  .sampling-details-table {
+    grid-column: 2;
+    margin-top: 2px;
+    width: 100%;
+  }
+  .inspector-table {
+    --info-table-identity-width: var(--info-inspector-identity-width, 48px);
+  }
+  .inspector-table th:first-child,
+  .inspector-table td:first-child {
+    --info-table-action-size: 12px;
+    --info-table-action-gap: 0px;
+    --explorer-help-icon-size: 12px;
+    --explorer-help-gap: 0px;
+  }
+  .inspector-table tr.tensor-element-selected td,
+  .inspector-table tr.tensor-element-selected:hover td,
+  .inspector-table tr.tensor-head-selected td,
+  .inspector-table tr.tensor-head-selected:hover td {
+    background: var(--me-primary-container-color);
+  }
+  :is(.layer-table, .inspector-table) button.column-sort {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) var(--info-table-action-size);
+    align-items: center;
+    width: 100%;
+    gap: var(--info-table-action-gap);
+    padding: 0;
+    text-align: inherit;
+    font-weight: 400;
+    border-radius: 3px;
+    color: inherit;
+  }
+  :is(.layer-table, .inspector-table) th:not(:first-child),
+  :is(.layer-table, .inspector-table) td:not(:first-child) {
+    text-align: right;
+  }
+  .layer-table .stat-value {
+    justify-content: flex-end;
+  }
+  :is(.layer-table, .inspector-table) .stat-locator [explorer-locator] {
+    width: var(--info-table-action-size);
+    flex-basis: var(--info-table-action-size);
+  }
+  .column-sort .sort-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--info-table-action-size);
+    height: 20px;
+  }
+  .column-sort mat-icon {
+    width: 12px;
+    height: 12px;
+    font-size: 12px;
+    line-height: 12px;
+    color: inherit;
+  }
+  :is(.layer-table, .inspector-table) button.column-sort:not(:disabled):is(:hover, :focus-visible) {
+    color: var(--me-on-surface-color);
+  }
+  .layer-table .stat-value {
+    border-radius: 2px;
+    color: var(--me-on-surface-color);
+  }
+  :is(.layer-table, .inspector-table) button.column-sort:disabled {
+    opacity: 0.4;
+    cursor: default;
+    background: transparent;
+  }
+  explorer-info-value {
+    flex: 1;
+    min-width: 0;
+    text-align: inherit;
+  }
+  .selection {
+    color: var(--me-on-surface-variant-color);
+    font-weight: 400;
+  }
+  .tensor-details {
+    margin: 0 12px;
+  }
+  .note {
+    margin: 4px 12px 4px var(--info-indent, 30px);
+    color: var(--me-on-surface-variant-color);
+    font: 12px / normal var(--me-font-family);
+  }
+  button:not([explorer-locator]) {
+    border: 0;
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+    font: inherit;
+    padding: 2px;
+  }
+  button:hover {
+    background: var(--me-surface-container-high-color);
+  }
+  button:focus-visible {
+    outline: 2px solid var(--me-primary-color);
+  }
+  .locate {
+    float: right;
+  }
+  mat-icon {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+    vertical-align: middle;
+  }
+  summary {
+    cursor: pointer;
+    padding: 6px 12px 6px 30px;
+  }
+  .position-link {
+    color: var(--me-primary-color);
+  }
+}

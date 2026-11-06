@@ -9,11 +9,7 @@
     "isolatedModules": true,
     "esModuleInterop": true,
     "importHelpers": true,
-    "lib": [
-      "ES2022",
-      "DOM"
-    ],
-    "resolveJsonModule": true
+    "lib": ["ES2022", "DOM"]
   },
   "angularCompilerOptions": {
     "strictInjectionParameters": true,

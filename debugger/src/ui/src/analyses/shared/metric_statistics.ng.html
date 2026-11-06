@@ -1,0 +1,130 @@
+<!--
+ Copyright 2026 The AI Edge Model Explorer Authors.
+
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+ ==============================================================================
+-->
+
+@let section = this.section();
+@let details = this.details();
+@if (section.loading) {
+  <p class="note statistic-table-note" role="status">Loading statistics…</p>
+} @else {
+  <table
+    explorer-statistic-table
+    class="layer-table"
+    [label]="section.label + ' statistics'"
+    [rows]="section.rows"
+    [header]="layerHeader"
+    [row]="layerRow"
+    [columnCount]="5"
+    rowClass="kv-layer"
+    [emptyText]="details.statisticsEmptyText(section)"
+  ></table>
+}
+<ng-template #layerHeader>
+  <ng-container
+    [ngTemplateOutlet]="sortHeader"
+    [ngTemplateOutletContext]="{
+      group: section.label,
+      columns: details.sortColumns,
+      count: section.rows.length,
+      defaultColumn: 'layer',
+    }"
+  />
+</ng-template>
+<ng-template #layerRow let-row>
+  <tr class="statistic-row">
+    <td>
+      <span class="stat-cell"
+        ><span>{{ details.rowLabel(row) }}</span
+        ><span class="stat-locator" aria-hidden="true"></span
+      ></span>
+    </td>
+    @for (stat of details.statisticColumns; track stat) {
+      <td
+        [attr.colspan]="$last ? 2 : 1"
+        [title]="
+          details.statisticLabel(stat) +
+          ': ' +
+          details.metricValueTitle(details.statistic(row.stats, stat))
+        "
+      >
+        @let position =
+          stat === 'min' ? row.stats.min_position : stat === 'max' ? row.stats.max_position : null;
+        <tensor-numeric-cell
+          [details]="details"
+          [label]="section.label + ' ' + row.label + ' ' + details.statisticLabel(stat)"
+          [value]="details.fmtCompact(details.statistic(row.stats, stat))"
+          [color]="details.statisticColor(details.statistic(row.stats, stat))"
+          [location]="
+            position === null
+              ? null
+              : {
+                  row: row,
+                  index: position,
+                  title:
+                    'Locate ' +
+                    details.statisticLabel(stat) +
+                    ' · ' +
+                    row.label +
+                    ' · Position ' +
+                    position,
+                  label: 'Locate ' + stat + ' position in ' + row.label,
+                }
+          "
+        />
+      </td>
+    }
+  </tr>
+</ng-template>
+
+<ng-template
+  #sortHeader
+  let-group="group"
+  let-columns="columns"
+  let-count="count"
+  let-defaultColumn="defaultColumn"
+>
+  <tr class="layer-columns">
+    @for (column of columns; track column) {
+      <th
+        [attr.colspan]="columns.length === 4 && $last ? 2 : 1"
+        [attr.aria-sort]="details.sortDirection(group, column, defaultColumn)"
+      >
+        <button
+          class="column-sort"
+          (click)="details.sortBy(group, column, defaultColumn)"
+          [disabled]="count < 2"
+          [attr.aria-label]="details.sortAction(group, column, defaultColumn)"
+          [title]="
+            count < 2
+              ? 'Sorting requires at least two rows'
+              : details.sortAction(group, column, defaultColumn)
+          "
+        >
+          <span class="sort-label">{{ details.statisticLabel(column) }}</span>
+          <span class="sort-icon" aria-hidden="true">
+            <mat-icon>{{
+              details.sortDirection(group, column, defaultColumn) === 'none'
+                ? 'swap_vert'
+                : details.sortDirection(group, column, defaultColumn) === 'ascending'
+                  ? 'arrow_upward'
+                  : 'arrow_downward'
+            }}</mat-icon>
+          </span>
+        </button>
+      </th>
+    }
+  </tr>
+</ng-template>

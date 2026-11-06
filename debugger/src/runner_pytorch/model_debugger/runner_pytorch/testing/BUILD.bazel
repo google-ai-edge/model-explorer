@@ -1,0 +1,71 @@
+# What the tests share: pytest's main, a tiny Gemma 4, a client and the
+# Server's capture index.
+
+load("@rules_python//python:py_library.bzl", "py_library")
+load("@runner_pytorch_pypi//:requirements.bzl", "requirement")
+
+package(
+    default_testonly = True,
+    default_visibility = ["//model_debugger/runner_pytorch:__subpackages__"],
+)
+
+# What every test module runs as its main, pytorch-collector's too.
+py_library(
+    name = "test_main",
+    srcs = [
+        "__init__.py",
+        "test_main.py",
+    ],
+    visibility = [
+        "//model_debugger/runner_pytorch:__subpackages__",
+        "//pytorch_collector/tests:__pkg__",
+    ],
+    deps = [
+        "//model_debugger/runner_pytorch:package",
+        requirement("pytest"),
+    ],
+)
+
+py_library(
+    name = "tiny_gemma4",
+    srcs = [
+        "__init__.py",
+        "tiny_gemma4.py",
+    ],
+    deps = [
+        "//model_debugger/runner_pytorch:package",
+        requirement("tokenizers"),
+        requirement("torch"),
+        requirement("transformers"),
+    ],
+)
+
+py_library(
+    name = "runner_client",
+    srcs = [
+        "__init__.py",
+        "runner_client.py",
+    ],
+    deps = [
+        "//model_debugger/runner_pytorch:package",
+        "@protocol//model_debugger/protocol:runner_py_pb2",
+        "@protocol//model_debugger/protocol:runner_py_pb2_grpc",
+    ],
+)
+
+# The Server's capture index, imported from the source tree beside this one
+# (../server), on this workspace's numpy, safetensors and protobuf.
+py_library(
+    name = "server_capture",
+    srcs = [
+        "__init__.py",
+        "server_capture.py",
+    ],
+    deps = [
+        "//model_debugger/runner_pytorch:package",
+        "@protocol//model_debugger/protocol:runner_py_pb2",
+        requirement("numpy"),
+        requirement("protobuf"),
+        requirement("safetensors"),
+    ],
+)

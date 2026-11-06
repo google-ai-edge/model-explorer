@@ -1,0 +1,109 @@
+<!--
+ Copyright 2026 The AI Edge Model Explorer Authors.
+
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+ ==============================================================================
+-->
+<explorer-info-section label="Analysis Info">
+  <explorer-info-list [items]="samplingInfoItems()" (locate)="locateDefinition($event)" />
+</explorer-info-section>
+<explorer-info-section label="Statistics" [count]="1">
+  <div class="analysis-items" role="list">
+    @for (section of sections(); track section.label) {
+      <div
+        class="analysis-item"
+        role="listitem"
+        aria-label="Sampling distribution statistics summary"
+        [attr.aria-busy]="section.loading"
+      >
+        <div class="item-heading">
+          <span class="item-index">0</span><span class="item-name">Sampling distribution</span>
+          <button
+            explorer-locator
+            aria-label="Locate Sampling distribution Line chart"
+            title="Locate Sampling distribution Line chart"
+            (click)="locateStatistic(section.label)"
+          ></button>
+        </div>
+        <metric-statistics [details]="this" [section]="section" />
+        @if (rangeData.error()) {
+          <p class="note statistic-table-note" role="alert">{{ rangeData.error() }}</p>
+        }
+      </div>
+    }
+  </div>
+</explorer-info-section>
+<explorer-info-section label="Distribution Metadata" [count]="tensorRuntimes.length">
+  <div class="analysis-items" role="list">
+    @for (runtime of tensorRuntimes; track runtime.side; let i = $index) {
+      <div
+        class="analysis-item"
+        role="listitem"
+        [attr.aria-label]="runtime.label + ' sampling source'"
+      >
+        <div class="item-heading">
+          <span class="item-index">{{ i }}</span
+          ><span class="item-name">{{ runtime.label }}</span>
+        </div>
+        @if (rangeData.loading()) {
+          <p class="note statistic-table-note" role="status">Loading distribution metadata…</p>
+        } @else if (rangeData.error()) {
+          <p class="note statistic-table-note">Distribution metadata unavailable.</p>
+        } @else {
+          <explorer-info-section
+            class="source-section"
+            label="Sampling distribution"
+            [compact]="true"
+            ><explorer-info-list [bullets]="true" [items]="samplingSourceItems(runtime.side)"
+          /></explorer-info-section>
+        }
+      </div>
+    }
+  </div>
+</explorer-info-section>
+<explorer-info-section label="Metric Metadata" [count]="1">
+  <div class="analysis-items" role="list">
+    <div class="analysis-item" role="listitem" [attr.aria-label]="metricLabel() + ' output'">
+      <div class="item-heading">
+        <span class="item-index">0</span><span class="item-name">{{ metricLabel() }}</span>
+      </div>
+      <explorer-info-section class="source-section" label="Sampling distribution" [compact]="true">
+        <explorer-info-list [bullets]="true" [items]="samplingMetricMetadata()" />
+      </explorer-info-section>
+    </div>
+  </div>
+</explorer-info-section>
+<explorer-info-section label="Distribution Inspection" [count]="1">
+  <div class="analysis-items" role="list">
+    <div
+      class="analysis-item sampling-inspection-item"
+      role="listitem"
+      aria-label="Sampling distribution inspection"
+    >
+      <div class="item-heading">
+        <span class="item-index">0</span
+        ><span class="item-name"
+          >Sampling distribution{{
+            inspectedPosition() === null ? '' : ' · Position ' + inspectedPosition()
+          }}</span
+        >
+      </div>
+      <sampling-distribution-inspection
+        class="sampling-details-table"
+        [singlePosition]="inspectedPoint() !== null"
+        [refDistribution]="samplingInspectionSource('ref')"
+        [targetDistribution]="samplingInspectionSource('target')"
+      />
+    </div>
+  </div>
+</explorer-info-section>

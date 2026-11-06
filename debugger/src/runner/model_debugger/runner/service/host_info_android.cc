@@ -15,15 +15,14 @@
 // Android: the build's facts from system properties, the machine's from the
 // kernel.
 
-#include "model_debugger/runner/service/host_info.h"
-
 #include <sys/system_properties.h>
 #include <unistd.h>
 
 #include <cstdint>
 #include <string>
 
-#include "model_debugger/v1/runner.pb.h"
+#include "model_debugger/protocol/runner.pb.h"
+#include "model_debugger/runner/service/host_info.h"
 
 namespace model_debugger::runner::service {
 namespace {
@@ -37,9 +36,9 @@ std::string Property(const char* name) {
 
 }  // namespace
 
-v1::HostInfo MeasureHost(bool can_run_on_gpu) {
-  v1::HostInfo host;
-  host.set_platform(v1::HostInfo::ANDROID);
+protocol::HostInfo MeasureHost(bool can_run_on_gpu) {
+  protocol::HostInfo host;
+  host.set_platform(protocol::HostInfo::ANDROID);
   if (std::string version = Property("ro.build.version.release");
       !version.empty()) {
     host.set_os_version(version);
@@ -68,13 +67,13 @@ v1::HostInfo MeasureHost(bool can_run_on_gpu) {
     // The GPU is the SoC's; the system names it by the SoC.
     host.mutable_gpu()->set_name(chip);
   }
-  if (const long cpus = sysconf(_SC_NPROCESSORS_CONF); cpus > 0) {
+  if (const int64_t cpus = sysconf(_SC_NPROCESSORS_CONF); cpus > 0) {
     host.set_cpu_count(static_cast<int32_t>(cpus));
   }
-  if (const long pages = sysconf(_SC_PHYS_PAGES),
+  if (const int64_t pages = sysconf(_SC_PHYS_PAGES),
       page_size = sysconf(_SC_PAGE_SIZE);
       pages > 0 && page_size > 0) {
-    host.set_memory_bytes(static_cast<int64_t>(pages) * page_size);
+    host.set_memory_bytes(pages * page_size);
   }
   return host;
 }

@@ -1,3 +1,4 @@
+/* stylelint-disable */
 /**
  * @license
  * Copyright 2026 The AI Edge Model Explorer Authors.
@@ -20,8 +21,8 @@
 @use './tokens';
 @use './typography';
 @use './button_base';
-@use '../shared/styles/mode_switch';
-@use '../shared/styles/find_navigation';
+@use './mode_switch';
+@use './find_navigation';
 @use './toolbar_interactions';
 @use './conversation_actions';
 @use './material';
@@ -42,7 +43,7 @@ body {
   line-height: 20px;
   -webkit-font-smoothing: antialiased;
 }
-report-app {
+app-shell {
   display: block;
   height: 100%;
 }

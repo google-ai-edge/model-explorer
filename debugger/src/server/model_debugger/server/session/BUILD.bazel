@@ -1,0 +1,610 @@
+# The Session itself: its stores, its jobs, and the Model Server that runs it
+# on two runners.
+
+load("@rules_python//python:py_library.bzl", "py_library")
+load("@rules_python//python:py_test.bzl", "py_test")
+load("@server_pypi//:requirements.bzl", "requirement")
+
+package(default_visibility = ["//visibility:public"])
+
+py_library(
+    name = "workspace",
+    srcs = [
+        "__init__.py",
+        "workspace.py",
+    ],
+    deps = ["//model_debugger/server:package"],
+)
+
+py_library(
+    name = "jobs",
+    srcs = [
+        "__init__.py",
+        "jobs.py",
+    ],
+    deps = [
+        "//model_debugger/server/util:clock",
+        "//model_debugger/server/util:errors",
+    ],
+)
+
+py_library(
+    name = "hf_models",
+    srcs = [
+        "__init__.py",
+        "hf_models.py",
+    ],
+    deps = [
+        ":jobs",
+        ":model_store",
+        requirement("huggingface-hub"),
+    ],
+)
+
+py_library(
+    name = "model_store",
+    srcs = [
+        "__init__.py",
+        "model_store.py",
+    ],
+    deps = [
+        ":workspace",
+        "//model_debugger/server/tap:model_facts",
+        "//model_debugger/server/util:errors",
+        "//model_debugger/server/util:json_file",
+        "@protocol//model_debugger/protocol:runner_py_pb2",
+        requirement("protobuf"),
+    ],
+)
+
+py_library(
+    name = "options",
+    srcs = [
+        "__init__.py",
+        "options.py",
+    ],
+    deps = [
+        ":model_store",
+        "//model_debugger/server/capture:capture_index",
+        "@protocol//model_debugger/protocol:runner_py_pb2",
+        requirement("jsonschema"),
+    ],
+)
+
+py_library(
+    name = "session_store",
+    srcs = [
+        "__init__.py",
+        "session_store.py",
+    ],
+    deps = [
+        ":model_store",
+        ":options",
+        ":tap_scans",
+        ":workspace",
+        "//model_debugger/server/capture:capture_index",
+        "//model_debugger/server/graph:layer_ops",
+        "//model_debugger/server/runner:launcher",
+        "//model_debugger/server/runner:runner_builds",
+        "//model_debugger/server/tap:tap_model",
+        "//model_debugger/server/util:clock",
+        "//model_debugger/server/util:errors",
+        "//model_debugger/server/util:json_file",
+    ],
+)
+
+py_library(
+    name = "capture_store",
+    srcs = [
+        "__init__.py",
+        "capture_store.py",
+    ],
+    deps = [
+        ":session_store",
+        ":workspace",
+        "//model_debugger/server/capture:capture_index",
+    ],
+)
+
+py_library(
+    name = "side",
+    srcs = [
+        "__init__.py",
+        "side.py",
+    ],
+    deps = [
+        "//model_debugger/server/runner:launcher",
+        "//model_debugger/server/runner:runner_builds",
+        "//model_debugger/server/runner:runner_client",
+        "@protocol//model_debugger/protocol:runner_py_pb2",
+    ],
+)
+
+py_library(
+    name = "model_server",
+    srcs = [
+        "__init__.py",
+        "model_server.py",
+    ],
+    deps = [
+        ":capture_store",
+        ":jobs",
+        ":model_store",
+        ":options",
+        ":session_store",
+        ":side",
+        "//model_debugger/server/capture:capture_index",
+        "//model_debugger/server/runner:launcher",
+        "//model_debugger/server/runner:runner_client",
+        "//model_debugger/server/tap:model_facts",
+        "//model_debugger/server/util:errors",
+        "@protocol//model_debugger/protocol:runner_py_pb2",
+        requirement("absl-py"),
+    ],
+)
+
+py_library(
+    name = "model_servers",
+    srcs = [
+        "__init__.py",
+        "model_servers.py",
+    ],
+    deps = [
+        ":capture_store",
+        ":jobs",
+        ":model_graphs",
+        ":model_server",
+        ":model_store",
+        ":prepared_models",
+        ":session_store",
+        ":side",
+        "//model_debugger/server/runner:launcher",
+        "//model_debugger/server/util:errors",
+        "@protocol//model_debugger/protocol:runner_py_pb2",
+        requirement("absl-py"),
+    ],
+)
+
+py_library(
+    name = "tap_scans",
+    srcs = [
+        "__init__.py",
+        "tap_scans.py",
+    ],
+    deps = [
+        ":model_store",
+        "//model_debugger/server/tap:tap_scan",
+        requirement("absl-py"),
+    ],
+)
+
+py_library(
+    name = "model_graphs",
+    srcs = [
+        "__init__.py",
+        "model_graphs.py",
+    ],
+    deps = [
+        ":jobs",
+        ":model_store",
+        ":tap_scans",
+        ":workspace",
+        "//model_debugger/server/analysis:tensor_analysis",
+        "//model_debugger/server/architectures:catalog",
+        "//model_debugger/server/graph:architecture",
+        "//model_debugger/server/graph:graph_converter",
+        "//model_debugger/server/graph:model_graph",
+        "//model_debugger/server/graph:pytorch_binding",
+        "//model_debugger/server/graph:pytorch_graph",
+        "//model_debugger/server/tap:tap_scan",
+        "//model_debugger/server/util:clock",
+        "//model_debugger/server/util:errors",
+        "//model_debugger/server/util:json_file",
+        requirement("absl-py"),
+    ],
+)
+
+py_library(
+    name = "model_comparison",
+    srcs = [
+        "__init__.py",
+        "model_comparison.py",
+    ],
+    deps = [
+        ":model_graphs",
+        ":model_store",
+        ":session_store",
+        "//model_debugger/server/analysis:comparability",
+    ],
+)
+
+# The editor's list of the operators inside the layers of two models.
+py_library(
+    name = "op_menu",
+    srcs = [
+        "__init__.py",
+        "op_menu.py",
+    ],
+    deps = [
+        ":anchor_points",
+        ":model_graphs",
+        ":model_store",
+        ":prepared_models",
+        ":tap_scans",
+        "//model_debugger/server/architectures:catalog",
+        "//model_debugger/server/graph:layer_ops",
+        "//model_debugger/server/graph:pytorch_binding",
+        "//model_debugger/server/tap:tap_model",
+        "//model_debugger/server/util:errors",
+    ],
+)
+
+py_library(
+    name = "anchor_points",
+    srcs = [
+        "__init__.py",
+        "anchor_points.py",
+    ],
+    deps = [
+        ":model_graphs",
+        ":model_store",
+        ":tap_scans",
+        "//model_debugger/server/analysis:tensor_analysis",
+        "//model_debugger/server/tap:tap_scan",
+    ],
+)
+
+py_library(
+    name = "mappings",
+    srcs = [
+        "__init__.py",
+        "mappings.py",
+    ],
+    deps = [
+        ":model_graphs",
+        ":model_store",
+        ":workspace",
+        "//model_debugger/server/util:clock",
+        "//model_debugger/server/util:errors",
+        "//model_debugger/server/util:json_file",
+    ],
+)
+
+py_library(
+    name = "prepared_models",
+    srcs = [
+        "__init__.py",
+        "prepared_models.py",
+    ],
+    deps = [
+        ":anchor_points",
+        ":jobs",
+        ":mappings",
+        ":model_graphs",
+        ":model_store",
+        ":options",
+        ":session_store",
+        ":tap_scans",
+        ":workspace",
+        "//model_debugger/server/analysis:metrics",
+        "//model_debugger/server/analysis:tensor_analysis",
+        "//model_debugger/server/architectures:catalog",
+        "//model_debugger/server/capture:capture_index",
+        "//model_debugger/server/graph:architecture",
+        "//model_debugger/server/graph:counterparts",
+        "//model_debugger/server/graph:layer_ops",
+        "//model_debugger/server/graph:pytorch_binding",
+        "//model_debugger/server/tap:tap_model",
+        "//model_debugger/server/tap:tap_scan",
+        "//model_debugger/server/util:clock",
+        "//model_debugger/server/util:errors",
+        "//model_debugger/server/util:json_file",
+        requirement("absl-py"),
+    ],
+)
+
+# A Session exported as one file, and imported on another computer.
+py_library(
+    name = "session_archive",
+    srcs = [
+        "__init__.py",
+        "session_archive.py",
+    ],
+    deps = [
+        ":capture_store",
+        ":mappings",
+        ":model_graphs",
+        ":model_server",
+        ":model_servers",
+        ":model_store",
+        ":session_store",
+        ":tap_scans",
+        ":workspace",
+        "//model_debugger/server/capture:capture_index",
+        "//model_debugger/server/util:clock",
+        "//model_debugger/server/util:errors",
+        "//model_debugger/server/util:json_file",
+        requirement("absl-py"),
+    ],
+)
+
+py_test(
+    name = "workspace_test",
+    srcs = ["workspace_test.py"],
+    deps = [
+        ":workspace",
+        "//model_debugger/server/testing:test_main",
+        requirement("absl-py"),
+    ],
+)
+
+py_test(
+    name = "jobs_test",
+    srcs = ["jobs_test.py"],
+    deps = [
+        ":jobs",
+        "//model_debugger/server/testing:test_main",
+        "//model_debugger/server/util:errors",
+        requirement("absl-py"),
+    ],
+)
+
+py_test(
+    name = "hf_models_test",
+    srcs = ["hf_models_test.py"],
+    deps = [
+        ":hf_models",
+        ":jobs",
+        ":model_store",
+        ":workspace",
+        "//model_debugger/server/testing:test_main",
+        requirement("absl-py"),
+        requirement("httpx"),
+        requirement("huggingface-hub"),
+    ],
+)
+
+py_test(
+    name = "model_store_test",
+    srcs = ["model_store_test.py"],
+    deps = [
+        ":model_store",
+        ":workspace",
+        "//model_debugger/server/testing:test_main",
+        "//model_debugger/server/util:errors",
+        "@protocol//model_debugger/protocol:runner_py_pb2",
+        requirement("absl-py"),
+    ],
+)
+
+py_test(
+    name = "options_test",
+    srcs = ["options_test.py"],
+    deps = [
+        ":model_store",
+        ":options",
+        "//model_debugger/server/testing:fake_runner",
+        "//model_debugger/server/testing:test_main",
+        "@protocol//model_debugger/protocol:runner_py_pb2",
+        requirement("absl-py"),
+        requirement("protobuf"),
+    ],
+)
+
+py_test(
+    name = "session_store_test",
+    srcs = ["session_store_test.py"],
+    deps = [
+        ":model_store",
+        ":options",
+        ":session_store",
+        ":tap_scans",
+        ":workspace",
+        "//model_debugger/server/testing:tap_fixtures",
+        "//model_debugger/server/testing:test_main",
+        "//model_debugger/server/util:errors",
+        "//model_debugger/server/util:json_file",
+        requirement("absl-py"),
+    ],
+)
+
+py_test(
+    name = "mappings_test",
+    srcs = ["mappings_test.py"],
+    deps = [
+        ":mappings",
+        ":workspace",
+        "//model_debugger/server/testing:test_main",
+        "//model_debugger/server/util:errors",
+        "//model_debugger/server/util:json_file",
+        requirement("absl-py"),
+    ],
+)
+
+py_test(
+    name = "capture_store_test",
+    srcs = ["capture_store_test.py"],
+    deps = [
+        ":capture_store",
+        ":model_store",
+        ":session_store",
+        ":tap_scans",
+        ":workspace",
+        "//model_debugger/server/testing:capture_fixtures",
+        "//model_debugger/server/testing:test_main",
+        "//model_debugger/server/util:errors",
+        requirement("absl-py"),
+    ],
+)
+
+py_test(
+    name = "side_test",
+    srcs = ["side_test.py"],
+    deps = [
+        ":side",
+        "//model_debugger/server/runner:launcher",
+        "//model_debugger/server/runner:runner_builds",
+        "//model_debugger/server/runner:runner_client",
+        "//model_debugger/server/testing:capture_fixtures",
+        "//model_debugger/server/testing:fake_builds",
+        "//model_debugger/server/testing:fake_launchers",
+        "//model_debugger/server/testing:fake_runner",
+        "//model_debugger/server/testing:test_main",
+        "@protocol//model_debugger/protocol:runner_py_pb2",
+        requirement("absl-py"),
+    ],
+)
+
+py_test(
+    name = "model_server_test",
+    srcs = ["model_server_test.py"],
+    deps = [
+        ":jobs",
+        ":model_server",
+        ":options",
+        "//model_debugger/server/capture:capture_index",
+        "//model_debugger/server/runner:launcher",
+        "//model_debugger/server/testing:capture_fixtures",
+        "//model_debugger/server/testing:fake_builds",
+        "//model_debugger/server/testing:fake_launchers",
+        "//model_debugger/server/testing:fake_runner",
+        "//model_debugger/server/testing:test_main",
+        "//model_debugger/server/testing:world",
+        "//model_debugger/server/util:errors",
+        "@protocol//model_debugger/protocol:runner_py_pb2",
+        requirement("absl-py"),
+        requirement("grpcio"),
+    ],
+)
+
+py_test(
+    name = "model_servers_test",
+    srcs = ["model_servers_test.py"],
+    deps = [
+        ":model_graphs",
+        ":model_server",
+        ":prepared_models",
+        "//model_debugger/server/analysis:kv_analysis",
+        "//model_debugger/server/runner:runner_builds",
+        "//model_debugger/server/testing:fake_launchers",
+        "//model_debugger/server/testing:fake_runner",
+        "//model_debugger/server/testing:pytorch_graph_fixtures",
+        "//model_debugger/server/testing:test_main",
+        "//model_debugger/server/testing:world",
+        "//model_debugger/server/util:errors",
+        requirement("absl-py"),
+    ],
+)
+
+py_test(
+    name = "anchor_points_test",
+    srcs = ["anchor_points_test.py"],
+    deps = [
+        ":anchor_points",
+        ":model_graphs",
+        ":model_store",
+        ":tap_scans",
+        ":workspace",
+        "//model_debugger/server/testing:anchor_fixtures",
+        "//model_debugger/server/testing:tap_fixtures",
+        "//model_debugger/server/testing:test_main",
+        requirement("absl-py"),
+    ],
+)
+
+py_test(
+    name = "prepared_models_test",
+    srcs = ["prepared_models_test.py"],
+    deps = [
+        ":anchor_points",
+        ":op_menu",
+        ":prepared_models",
+        ":session_store",
+        ":side",
+        ":tap_scans",
+        ":workspace",
+        "//model_debugger/server/analysis:tensor_analysis",
+        "//model_debugger/server/architectures:catalog",
+        "//model_debugger/server/graph:architecture",
+        "//model_debugger/server/runner:runner_builds",
+        "//model_debugger/server/tap:tap_model",
+        "//model_debugger/server/testing:anchor_fixtures",
+        "//model_debugger/server/testing:fake_launchers",
+        "//model_debugger/server/testing:tap_fixtures",
+        "//model_debugger/server/testing:test_main",
+        "//model_debugger/server/testing:world",
+        "//model_debugger/server/util:errors",
+        requirement("absl-py"),
+        requirement("protobuf"),
+    ],
+)
+
+py_test(
+    name = "model_comparison_test",
+    srcs = ["model_comparison_test.py"],
+    deps = [
+        ":model_comparison",
+        ":model_graphs",
+        "//model_debugger/server/analysis:comparability",
+        "//model_debugger/server/architectures:catalog",
+        "//model_debugger/server/tap:model_facts",
+        "//model_debugger/server/testing:anchor_fixtures",
+        "//model_debugger/server/testing:test_main",
+        "//model_debugger/server/testing:world",
+        "//model_debugger/server/util:errors",
+        requirement("absl-py"),
+    ],
+)
+
+py_test(
+    name = "model_graphs_test",
+    srcs = ["model_graphs_test.py"],
+    deps = [
+        ":model_graphs",
+        ":model_server",
+        ":session_store",
+        "//model_debugger/server/analysis:tensor_analysis",
+        "//model_debugger/server/architectures:catalog",
+        "//model_debugger/server/graph:architecture",
+        "//model_debugger/server/graph:graph_converter",
+        "//model_debugger/server/graph:model_graph",
+        "//model_debugger/server/testing:fake_launchers",
+        "//model_debugger/server/testing:pytorch_graph_fixtures",
+        "//model_debugger/server/testing:tap_fixtures",
+        "//model_debugger/server/testing:test_main",
+        "//model_debugger/server/testing:world",
+        "//model_debugger/server/util:errors",
+        "//model_debugger/server/util:json_file",
+        requirement("absl-py"),
+    ],
+)
+
+py_test(
+    name = "session_archive_test",
+    srcs = ["session_archive_test.py"],
+    deps = [
+        ":model_store",
+        ":session_archive",
+        ":tap_scans",
+        "//model_debugger/server/testing:fake_launchers",
+        "//model_debugger/server/testing:tap_fixtures",
+        "//model_debugger/server/testing:test_main",
+        "//model_debugger/server/testing:world",
+        "//model_debugger/server/util:errors",
+        "//model_debugger/server/util:json_file",
+        requirement("absl-py"),
+    ],
+)
+
+py_test(
+    name = "tap_scans_test",
+    srcs = ["tap_scans_test.py"],
+    deps = [
+        ":model_store",
+        ":tap_scans",
+        ":workspace",
+        "//model_debugger/server/testing:tap_fixtures",
+        "//model_debugger/server/testing:test_main",
+        requirement("absl-py"),
+    ],
+)

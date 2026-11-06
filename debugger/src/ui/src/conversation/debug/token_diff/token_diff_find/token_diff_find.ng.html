@@ -1,0 +1,50 @@
+<!--
+ Copyright 2026 The AI Edge Model Explorer Authors.
+
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+ ==============================================================================
+-->
+<div class="debug-primary">
+  <div class="alignment-field">
+    <span>Alignment</span
+    ><config-picker
+      label="Comparison alignment"
+      plural="alignments"
+      [compact]="true"
+      [popupWidth]="300"
+      [value]="conversation.alignment() === 'content' ? 'Context' : 'Steps'"
+      [options]="alignmentChoices"
+      [descriptions]="alignmentDescriptions"
+      (valueChange)="analyses.setAlignment($event === 'Context' ? 'content' : 'steps')"
+    />
+  </div>
+  <div class="debug-find">
+    <token-query-control
+      #queryControl
+      [formula]="tokens.formula()"
+      (formulaChange)="tokens.formula.set($event)"
+    />
+    <find-navigator
+      [index]="tokens.resultIndex()"
+      [total]="tokens.mismatches().length"
+      [pending]="tokens.numericFindPending()"
+      [countAction]="true"
+      [countLabel]="tokens.findResultLabel()"
+      [countTooltip]="tokens.numericFindPending() ? tokens.findResultLabel() : ''"
+      (first)="dom.find(0)"
+      (previous)="dom.find(-1)"
+      (next)="dom.find(1)"
+      (count)="queryControl.show()"
+    />
+  </div>
+</div>

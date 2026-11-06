@@ -1,0 +1,173 @@
+{
+ "architecture": "gemma4",
+ "about": "How a LiteRT-LM Gemma 4 graph, as Model Explorer's converter writes it, binds to the Gemma 4 architecture (architectures/data/gemma4/architecture.json): how a model's graph is recognized as of the family (detect), which tensor of each layer is each anchor (anchors), the signature input the first layer's input is (signature_inputs), why a port is bound to nothing (ports), the operator each elementwise semantic operator is (operators), the stages each module outside the skeleton runs in (outside), and which tap point of each layer is the output of each semantic operator inside its blocks (ops), for a point chosen to be paired with the PyTorch runner's module of that operator (graph/counterparts.py): per semantic operator of a layer, as the skeleton names it (`<node>/<op>`, or a norm's node id), the tap point that is its output: the one point of the layer whose tensor's name (its first, before any `;`) is directly in the scope `scope` (the name without its last component ends with it; `{layer}` stands for the layer's scope component, layer_<N>), of operator `operator` (tap_scan.Point.operator). Verified against the scan of gemma-4-E2B-it.litertlm (decode, prefill_128, prefill_1024, verify): one point per layer and signature that computes the layer. RoPE and the attention itself (q_rope, k_rope, attend) are not mapped: their outputs are inside the PyTorch modules, no module's input or output. Runtime facts, all of them: none is the model's.",
+ "detect": {
+  "layer_stem": "layer",
+  "signature": "decode",
+  "signature_input": "per_layer_embeddings"
+ },
+ "anchors": {
+  "input": {
+   "read_by": "{layer}.pre_qkv/pre_attention_norm",
+   "evidence": "Gemma4TextDecoderLayer.forward: input_layernorm normalizes the layer's input first; LiteRT-LM's export names it pre_attention_norm."
+  },
+  "intermediate.1": {
+   "read_by": "{layer}.post_qkv/pre_ffw_norm",
+   "evidence": "pre_feedforward_layernorm consumes the attention residual sum; LiteRT-LM's export names it pre_ffw_norm."
+  },
+  "intermediate.2": {
+   "read_by": "{layer}.post_qkv/per_layer_embedding_gate",
+   "evidence": "per_layer_input_gate consumes the FFN residual sum; LiteRT-LM's export names it per_layer_embedding_gate."
+  },
+  "output": {
+   "written_by": "{layer}._maybe_apply_skip_scale",
+   "evidence": "The layer scalar multiplies last; LiteRT-LM's export names it _maybe_apply_skip_scale."
+  }
+ },
+ "signature_inputs": {
+  "input": "embeddings",
+  "evidence": "The first layer's input has no layer before it: it is the embeddings LiteRT-LM's embedder writes, each text signature's input embeddings."
+ },
+ "ports": {
+  "per_layer_input": "Not bound. It is an input port of the skeleton, not an anchor: ple reads it alone, once per layer. Nor is it the signature input per_layer_embeddings, which holds only the per-layer token embeddings: the graph adds the per-layer projection of the embeddings to them (LanguageModel.maybe_preprocess_per_layer_embeddings) and unpacks the sum, one slice per layer; that slice is the port."
+ },
+ "operators": {
+  "Add": "add",
+  "Mul": "mul"
+ },
+ "outside": {
+  "embedding": {
+   "stages": [
+    "prefill",
+    "decode"
+   ],
+   "stages_evidence": "Prefill and decode: every text signature (prefill_128, prefill_1024, decode, verify) reads the embeddings the embedder writes, its input embeddings."
+  },
+  "per_layer_embedding": {
+   "stages": [
+    "prefill",
+    "decode"
+   ],
+   "stages_evidence": "Prefill and decode: every text signature reads per_layer_embeddings and adds the per-layer projection of the embeddings to it (LanguageModel.maybe_preprocess_per_layer_embeddings) before the first layer."
+  },
+  "final_norm": {
+   "stages": [
+    "decode"
+   ],
+   "stages_evidence": "Decode only: the final norm feeds only the output head, which the prefill signatures do not have (see output_head)."
+  },
+  "output_head": {
+   "stages": [
+    "decode"
+   ],
+   "stages_evidence": "Decode only: the prefill signatures produce no logits. Their outputs are only the KV caches of the layers they compute (prefill_128: k and v of E2B's layers 0 to 14, of E4B's 0 to 23), and they have no LanguageModel.decode_softmax, which writes the logits of decode and verify."
+  }
+ },
+ "ops": {
+  "norm.attn.in": {
+   "scope": "{layer}.pre_qkv/pre_attention_norm",
+   "operator": "STABLEHLO_COMPOSITE odml.rms_norm",
+   "evidence": "input_layernorm: the layer's first RMSNorm, which LiteRT-LM's export names pre_attention_norm."
+  },
+  "attn/q_proj": {
+   "scope": "{layer}.pre_qkv/attn.pre_qkv/attn._pre_attention_fn/q_einsum",
+   "operator": "DEQUANTIZE",
+   "evidence": "q_proj: q_einsum, reshaped to [heads, head_dim] before it is dequantized. The projection runs quantized: QUANTIZE its input, FULLY_CONNECTED in int8, DEQUANTIZE; its float32 output, the projection's, is the DEQUANTIZE in its scope. The QUANTIZE and the int8 FULLY_CONNECTED (and RESHAPE) in the same scope are not its output."
+  },
+  "attn/k_proj": {
+   "scope": "{layer}.pre_qkv/attn.pre_qkv/attn._pre_attention_fn/k_einsum",
+   "operator": "DEQUANTIZE",
+   "evidence": "k_proj: k_einsum, reshaped to [kv_heads, head_dim]; none in a KV-shared layer. The projection runs quantized: QUANTIZE its input, FULLY_CONNECTED in int8, DEQUANTIZE; its float32 output, the projection's, is the DEQUANTIZE in its scope. The QUANTIZE and the int8 FULLY_CONNECTED (and RESHAPE) in the same scope are not its output."
+  },
+  "attn/v_proj": {
+   "scope": "{layer}.pre_qkv/attn.pre_qkv/attn._pre_attention_fn/v_einsum",
+   "operator": "DEQUANTIZE",
+   "evidence": "v_proj: v_einsum, reshaped to [kv_heads, head_dim]; none in a KV-shared layer. The projection runs quantized: QUANTIZE its input, FULLY_CONNECTED in int8, DEQUANTIZE; its float32 output, the projection's, is the DEQUANTIZE in its scope. The QUANTIZE and the int8 FULLY_CONNECTED (and RESHAPE) in the same scope are not its output."
+  },
+  "attn/q_norm": {
+   "scope": "{layer}.pre_qkv/attn.pre_qkv/attn._pre_attention_fn/query_norm",
+   "operator": "STABLEHLO_COMPOSITE odml.rms_norm",
+   "evidence": "q_norm: query_norm, an odml.rms_norm over head_dim."
+  },
+  "attn/k_norm": {
+   "scope": "{layer}.pre_qkv/attn.pre_qkv/attn._pre_attention_fn/key_norm",
+   "operator": "STABLEHLO_COMPOSITE odml.rms_norm",
+   "evidence": "k_norm: key_norm; none in a KV-shared layer."
+  },
+  "attn/v_norm": {
+   "scope": "{layer}.pre_qkv/attn.pre_qkv/attn._pre_attention_fn/value_norm",
+   "operator": "STABLEHLO_COMPOSITE odml.rms_norm",
+   "evidence": "v_norm: value_norm, without a learned scale; none in a KV-shared layer."
+  },
+  "attn/o_proj": {
+   "scope": "{layer}.post_qkv/attn.post_qkv/attn_vec_einsum",
+   "operator": "DEQUANTIZE",
+   "evidence": "o_proj: attn_vec_einsum, which reads the attention output reshaped to [heads * head_dim]. The projection runs quantized: QUANTIZE its input, FULLY_CONNECTED in int8, DEQUANTIZE; its float32 output, the projection's, is the DEQUANTIZE in its scope. The QUANTIZE and the int8 FULLY_CONNECTED (and RESHAPE) in the same scope are not its output."
+  },
+  "norm.attn.out": {
+   "scope": "{layer}.post_qkv/post_attention_norm",
+   "operator": "STABLEHLO_COMPOSITE odml.rms_norm",
+   "evidence": "post_attention_layernorm: post_attention_norm."
+  },
+  "norm.ffn.in": {
+   "scope": "{layer}.post_qkv/pre_ffw_norm",
+   "operator": "STABLEHLO_COMPOSITE odml.rms_norm",
+   "evidence": "pre_feedforward_layernorm: pre_ffw_norm."
+  },
+  "ffn/gate_proj": {
+   "scope": "{layer}.post_qkv/mlp/gating_einsum1",
+   "operator": "DEQUANTIZE",
+   "evidence": "gate_proj: gating_einsum1, whose output the activation reads (the GELU in mlp/activation_fn reads its DEQUANTIZE; the Mul then multiplies it by gating_einsum2's). The projection runs quantized: QUANTIZE its input, FULLY_CONNECTED in int8, DEQUANTIZE; its float32 output, the projection's, is the DEQUANTIZE in its scope. The QUANTIZE and the int8 FULLY_CONNECTED (and RESHAPE) in the same scope are not its output."
+  },
+  "ffn/up_proj": {
+   "scope": "{layer}.post_qkv/mlp/gating_einsum2",
+   "operator": "DEQUANTIZE",
+   "evidence": "up_proj: gating_einsum2, the Mul's other operand. The projection runs quantized: QUANTIZE its input, FULLY_CONNECTED in int8, DEQUANTIZE; its float32 output, the projection's, is the DEQUANTIZE in its scope. The QUANTIZE and the int8 FULLY_CONNECTED (and RESHAPE) in the same scope are not its output."
+  },
+  "ffn/act": {
+   "scope": "{layer}.post_qkv/mlp/activation_fn",
+   "operator": "GELU",
+   "evidence": "act_fn: the GELU (tanh) of gate_proj's output, mlp/activation_fn."
+  },
+  "ffn/gate": {
+   "scope": "{layer}.post_qkv/mlp",
+   "operator": "MUL",
+   "evidence": "The gate: act_fn(gate_proj(x)) * up_proj(x), the one MUL directly in mlp (mlp/mul; mlp/mul1 in prefill and verify, the converter numbering a name it has used), which down_proj reads."
+  },
+  "ffn/down_proj": {
+   "scope": "{layer}.post_qkv/mlp/linear",
+   "operator": "DEQUANTIZE",
+   "evidence": "down_proj: mlp/linear. The projection runs quantized: QUANTIZE its input, FULLY_CONNECTED in int8, DEQUANTIZE; its float32 output, the projection's, is the DEQUANTIZE in its scope. The QUANTIZE and the int8 FULLY_CONNECTED (and RESHAPE) in the same scope are not its output."
+  },
+  "norm.ffn.out": {
+   "scope": "{layer}.post_qkv/post_ffw_norm",
+   "operator": "STABLEHLO_COMPOSITE odml.rms_norm",
+   "evidence": "post_feedforward_layernorm: post_ffw_norm."
+  },
+  "ple/gate_proj": {
+   "scope": "{layer}.post_qkv/per_layer_embedding_gate",
+   "operator": "DEQUANTIZE",
+   "evidence": "per_layer_input_gate: per_layer_embedding_gate. The projection runs quantized: QUANTIZE its input, FULLY_CONNECTED in int8, DEQUANTIZE; its float32 output, the projection's, is the DEQUANTIZE in its scope. The QUANTIZE and the int8 FULLY_CONNECTED (and RESHAPE) in the same scope are not its output."
+  },
+  "ple/act": {
+   "scope": "{layer}.post_qkv/ple_gate_activation",
+   "operator": "GELU",
+   "evidence": "The per-layer input's act_fn: ple_gate_activation, the GELU (tanh) of per_layer_embedding_gate's output."
+  },
+  "ple/gate": {
+   "scope": "{layer}.post_qkv",
+   "operator": "MUL",
+   "evidence": "The per-layer gate: act_fn(per_layer_input_gate(x)) * per_layer_input, the one MUL directly in the layer's post_qkv (post_qkv/mul, or mul1), which per_layer_embedding_projection reads."
+  },
+  "ple/proj": {
+   "scope": "{layer}.post_qkv/per_layer_embedding_projection",
+   "operator": "DEQUANTIZE",
+   "evidence": "per_layer_projection: per_layer_embedding_projection. The projection runs quantized: QUANTIZE its input, FULLY_CONNECTED in int8, DEQUANTIZE; its float32 output, the projection's, is the DEQUANTIZE in its scope. The QUANTIZE and the int8 FULLY_CONNECTED (and RESHAPE) in the same scope are not its output."
+  },
+  "norm.ple.out": {
+   "scope": "{layer}.post_qkv/post_per_layer_input_norm",
+   "operator": "STABLEHLO_COMPOSITE odml.rms_norm",
+   "evidence": "post_per_layer_input_norm: post_per_layer_input_norm."
+  }
+ }
+}

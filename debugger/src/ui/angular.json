@@ -13,15 +13,18 @@
             "outputPath": "dist/model_debugger",
             "index": "src/index.html",
             "browser": "src/main.ts",
-            "polyfills": ["zone.js"],
+            "polyfills": [
+              "zone.js"
+            ],
             "tsConfig": "tsconfig.app.json",
             "inlineStyleLanguage": "scss",
-            "allowedCommonJsDependencies": ["@dagrejs/dagre", "@dagrejs/graphlib"],
             "assets": [
               {
                 "glob": "**/*",
                 "input": "public",
-                "ignore": ["**/README.md", "**/.gitignore", "**/VIEWPORT_BRIDGE.md"]
+                "ignore": [
+                  "**/README.md"
+                ]
               },
               {
                 "glob": "plotly.min.js",
@@ -29,7 +32,9 @@
                 "output": "assets"
               }
             ],
-            "styles": ["src/theme/styles.scss"]
+            "styles": [
+              "src/theme/styles.scss"
+            ]
           },
           "configurations": {
             "production": {

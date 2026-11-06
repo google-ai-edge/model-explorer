@@ -1,18 +1,11 @@
 .DS_Store
 .vscode/
-.venv/
 __pycache__/
 .ruff_cache/
 bazel-*
 *.profraw
 
-# Generated: the protocol compiled for the server, the UI's build and tests.
-src/server/src/model_debugger/
-*.egg-info/
+# Generated: the UI's build and tests.
 node_modules/
 dist/
-# The pinned Model Explorer visualizer bundle is source, not build output.
-!/src/ui/public/graph_execution/upstream/model_explorer/dist/
 .angular/
-test-results/
-playwright-report/

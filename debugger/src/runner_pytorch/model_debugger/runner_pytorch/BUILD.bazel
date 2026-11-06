@@ -1,0 +1,11 @@
+# The PyTorch runner: the package model_debugger.runner_pytorch.
+
+load("@rules_python//python:py_library.bzl", "py_library")
+
+package(default_visibility = ["//visibility:public"])
+
+# The package's own __init__.py, which every module under it needs.
+py_library(
+    name = "package",
+    srcs = ["__init__.py"],
+)

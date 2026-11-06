@@ -1,0 +1,34 @@
+# Dependencies come from MODULE.bazel and the Bazel Central Registry; what they
+# resolved to is committed in MODULE.bazel.lock.
+
+# The protocol's Python messages use the protobuf runtime from PyPI that
+# requirements_lock.txt pins, by the toolchain in BUILD.bazel, not protobuf's
+# own Python sources; with this, the messages' protoc is protobuf's prebuilt
+# binary too. (gRPC's rule builds its own protoc and Python plugin.)
+common --incompatible_enable_proto_toolchain_resolution
+
+# The protocol's gRPC stubs run on the grpcio pinned here, not on one built
+# from gRPC's sources.
+common --@protocol//model_debugger/protocol:grpcio=@runner_pytorch_pypi//grpcio
+
+# gRPC's Python plugin is C++: the C++ the Server builds it with.
+build --cxxopt=-std=c++17 --host_cxxopt=-std=c++17
+build --per_file_copt=external/.*@-w --host_per_file_copt=external/.*@-w
+build --enable_platform_specific_config
+build:macos --apple_platform_type=macos
+build:macos --platforms=@build_bazel_apple_support//platforms:darwin_arm64
+
+# The real model's test takes it from the environment and skips without it:
+# RUNNER_PYTORCH_MODEL, a Gemma 4 model directory; RUNNER_PYTORCH_DEVICE, CPU
+# or GPU; RUNNER_PYTORCH_DTYPE, a dtype option; RUNNER_PYTORCH_OBSERVE, an
+# observe option.
+test --test_env=RUNNER_PYTORCH_MODEL
+test --test_env=RUNNER_PYTORCH_DEVICE
+test --test_env=RUNNER_PYTORCH_DTYPE
+test --test_env=RUNNER_PYTORCH_OBSERVE
+test --test_output=errors
+
+# The runner command starts with a shell script that finds the fetched Python
+# in its runfiles, not with a Python script that needs one on PATH: the Server
+# launches it with a PATH of /bin alone, as a runner sees it.
+common --@rules_python//python/config_settings:bootstrap_impl=script

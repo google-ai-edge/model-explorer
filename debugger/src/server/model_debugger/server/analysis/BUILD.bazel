@@ -1,0 +1,237 @@
+# Comparisons of a chat's ref and target captures.
+
+load("@rules_python//python:py_library.bzl", "py_library")
+load("@rules_python//python:py_test.bzl", "py_test")
+load("@server_pypi//:requirements.bzl", "requirement")
+
+package(default_visibility = ["//visibility:public"])
+
+py_library(
+    name = "metrics",
+    srcs = [
+        "__init__.py",
+        "metrics.py",
+    ],
+    deps = [
+        "//model_debugger/server:package",
+        requirement("numpy"),
+    ],
+)
+
+py_library(
+    name = "statistics",
+    srcs = [
+        "__init__.py",
+        "statistics.py",
+    ],
+    deps = [
+        "//model_debugger/server:package",
+        requirement("numpy"),
+    ],
+)
+
+py_library(
+    name = "vector_drawing",
+    srcs = [
+        "__init__.py",
+        "vector_drawing.py",
+    ],
+    deps = [
+        "//model_debugger/server:package",
+        requirement("numpy"),
+    ],
+)
+
+py_library(
+    name = "comparability",
+    srcs = [
+        "__init__.py",
+        "comparability.py",
+    ],
+    deps = [
+        "//model_debugger/server:package",
+    ],
+)
+
+py_library(
+    name = "token_analysis",
+    srcs = [
+        "__init__.py",
+        "token_analysis.py",
+    ],
+    deps = [
+        ":comparability",
+        ":metrics",
+        ":statistics",
+        ":vector_drawing",
+        "//model_debugger/server/capture:capture_index",
+        "//model_debugger/server/capture:tensor_file",
+        requirement("numpy"),
+    ],
+)
+
+py_library(
+    name = "alignment",
+    srcs = [
+        "__init__.py",
+        "alignment.py",
+    ],
+    deps = [
+        ":token_analysis",
+        "//model_debugger/server/capture:capture_index",
+    ],
+)
+
+py_library(
+    name = "tensor_analysis",
+    srcs = [
+        "__init__.py",
+        "tensor_analysis.py",
+    ],
+    deps = [
+        ":comparability",
+        ":kv_analysis",
+        ":metrics",
+        ":statistics",
+        "//model_debugger/server/architectures:skeleton",
+        "//model_debugger/server/capture:capture_index",
+        "//model_debugger/server/capture:tensor_file",
+        "//model_debugger/server/graph:counterparts",
+        "//model_debugger/server/graph:pytorch_binding",
+        "//model_debugger/server/tap:tap_model",
+        "//model_debugger/server/tap:tap_scan",
+        requirement("numpy"),
+    ],
+)
+
+py_library(
+    name = "kv_analysis",
+    srcs = [
+        "__init__.py",
+        "kv_analysis.py",
+    ],
+    deps = [
+        ":comparability",
+        ":metrics",
+        ":statistics",
+        "//model_debugger/server/capture:capture_index",
+        "//model_debugger/server/capture:tensor_file",
+        "//model_debugger/server/util:errors",
+        requirement("numpy"),
+    ],
+)
+
+py_test(
+    name = "comparability_test",
+    srcs = ["comparability_test.py"],
+    deps = [
+        ":comparability",
+        "//model_debugger/server/testing:test_main",
+        requirement("absl-py"),
+    ],
+)
+
+py_test(
+    name = "metrics_test",
+    srcs = ["metrics_test.py"],
+    deps = [
+        ":metrics",
+        "//model_debugger/server/testing:test_main",
+        requirement("absl-py"),
+        requirement("numpy"),
+    ],
+)
+
+py_test(
+    name = "statistics_test",
+    srcs = ["statistics_test.py"],
+    deps = [
+        ":statistics",
+        "//model_debugger/server/testing:test_main",
+        requirement("absl-py"),
+        requirement("numpy"),
+    ],
+)
+
+py_test(
+    name = "vector_drawing_test",
+    srcs = ["vector_drawing_test.py"],
+    deps = [
+        ":vector_drawing",
+        "//model_debugger/server/testing:test_main",
+        requirement("absl-py"),
+        requirement("numpy"),
+    ],
+)
+
+py_test(
+    name = "alignment_test",
+    srcs = ["alignment_test.py"],
+    deps = [
+        ":alignment",
+        "//model_debugger/server/capture:capture_index",
+        "//model_debugger/server/testing:capture_fixtures",
+        "//model_debugger/server/testing:test_main",
+        requirement("absl-py"),
+    ],
+)
+
+# Compares a real turn too, that the real runner captures from RUNNER_MODEL
+# when both are there; they are outside Bazel's view, so the test is
+# "external": Bazel runs it every time.
+py_test(
+    name = "token_analysis_test",
+    srcs = ["token_analysis_test.py"],
+    tags = ["external"],
+    deps = [
+        ":metrics",
+        ":token_analysis",
+        "//model_debugger/server/capture:capture_index",
+        "//model_debugger/server/testing:capture_fixtures",
+        "//model_debugger/server/testing:real_capture",
+        "//model_debugger/server/testing:test_main",
+        "//model_debugger/server/util:errors",
+        requirement("absl-py"),
+        requirement("numpy"),
+        requirement("safetensors"),
+    ],
+)
+
+# Compares a real turn too, that the real runner captures from RUNNER_MODEL
+# when both are there; they are outside Bazel's view, so the test is
+# "external": Bazel runs it every time.
+py_test(
+    name = "tensor_analysis_test",
+    srcs = ["tensor_analysis_test.py"],
+    deps = [
+        ":kv_analysis",
+        ":metrics",
+        ":tensor_analysis",
+        "//model_debugger/server/capture:capture_index",
+        "//model_debugger/server/capture:tensor_file",
+        "//model_debugger/server/graph:counterparts",
+        "//model_debugger/server/graph:pytorch_binding",
+        "//model_debugger/server/testing:capture_fixtures",
+        "//model_debugger/server/testing:test_main",
+        requirement("absl-py"),
+        requirement("numpy"),
+    ],
+)
+
+py_test(
+    name = "kv_analysis_test",
+    srcs = ["kv_analysis_test.py"],
+    tags = ["external"],
+    deps = [
+        ":kv_analysis",
+        ":metrics",
+        "//model_debugger/server/capture:capture_index",
+        "//model_debugger/server/testing:capture_fixtures",
+        "//model_debugger/server/testing:real_capture",
+        "//model_debugger/server/testing:test_main",
+        "//model_debugger/server/util:errors",
+        requirement("absl-py"),
+        requirement("numpy"),
+        requirement("safetensors"),
+    ],
+)

@@ -1,0 +1,28 @@
+# Dependencies come from MODULE.bazel and the Bazel Central Registry; what they
+# resolved to is committed in MODULE.bazel.lock.
+
+# The protocol's Python messages use the protobuf runtime from PyPI that
+# requirements_lock.txt pins, by the toolchain in BUILD.bazel, not protobuf's
+# own Python sources; with this, the messages' protoc is protobuf's prebuilt
+# binary too. (gRPC's rule builds its own protoc and Python plugin.)
+common --incompatible_enable_proto_toolchain_resolution
+
+# The protocol's gRPC stubs run on the grpcio pinned here, not on one built
+# from gRPC's sources.
+common --@protocol//model_debugger/protocol:grpcio=@server_pypi//grpcio
+
+# gRPC's Python plugin is C++: the C++ the Runner builds with.
+build --cxxopt=-std=c++17 --host_cxxopt=-std=c++17
+build --per_file_copt=external/.*@-w --host_per_file_copt=external/.*@-w
+build --enable_platform_specific_config
+build:macos --apple_platform_type=macos
+build:macos --platforms=@build_bazel_apple_support//platforms:darwin_arm64
+
+# The tests that run the real runner or read what it recorded take it from
+# the environment and skip without it: RUNNER_MODEL, a .litertlm model;
+# RUNNER_BINARY, a runner other than the runner's own Bazel build;
+# REAL_SESSIONS, a directory of the sessions it recorded.
+test --test_env=RUNNER_MODEL
+test --test_env=RUNNER_BINARY
+test --test_env=REAL_SESSIONS
+test --test_output=errors

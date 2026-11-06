@@ -1,0 +1,75 @@
+# A chat's capture on disk: its tensor files and its index.
+
+load("@rules_python//python:py_library.bzl", "py_library")
+load("@rules_python//python:py_test.bzl", "py_test")
+load("@server_pypi//:requirements.bzl", "requirement")
+
+package(default_visibility = ["//visibility:public"])
+
+py_library(
+    name = "tensor_file",
+    srcs = [
+        "__init__.py",
+        "tensor_file.py",
+    ],
+    deps = [
+        "//model_debugger/server:package",
+        requirement("numpy"),
+        requirement("safetensors"),
+    ],
+)
+
+py_library(
+    name = "capture_index",
+    srcs = [
+        "__init__.py",
+        "capture_index.py",
+    ],
+    deps = [
+        ":tensor_file",
+        "//model_debugger/server/tap:tap_model",
+        "//model_debugger/server/util:errors",
+        "//model_debugger/server/util:json_file",
+        "@protocol//model_debugger/protocol:runner_py_pb2",
+        requirement("numpy"),
+        requirement("protobuf"),
+        requirement("safetensors"),
+    ],
+)
+
+py_test(
+    name = "tensor_file_test",
+    srcs = ["tensor_file_test.py"],
+    deps = [
+        ":capture_index",
+        ":tensor_file",
+        "//model_debugger/server/testing:capture_fixtures",
+        "//model_debugger/server/testing:test_main",
+        requirement("absl-py"),
+        requirement("numpy"),
+        requirement("safetensors"),
+    ],
+)
+
+# Indexes a real turn too, on the CPU and on the GPU, that the real runner
+# captures from RUNNER_MODEL when both are there, and real sessions from
+# REAL_SESSIONS, when it names them. They are outside Bazel's view, so the
+# test is "external": Bazel runs it every time rather than reuse a result
+# from before they changed.
+py_test(
+    name = "capture_index_test",
+    srcs = ["capture_index_test.py"],
+    tags = ["external"],
+    deps = [
+        ":capture_index",
+        "//model_debugger/server/testing:capture_fixtures",
+        "//model_debugger/server/testing:real_capture",
+        "//model_debugger/server/testing:test_main",
+        "//model_debugger/server/util:errors",
+        "@protocol//model_debugger/protocol:runner_py_pb2",
+        requirement("absl-py"),
+        requirement("numpy"),
+        requirement("protobuf"),
+        requirement("safetensors"),
+    ],
+)

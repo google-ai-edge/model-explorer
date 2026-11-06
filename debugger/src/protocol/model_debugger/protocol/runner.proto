@@ -1,0 +1,406 @@
+// Copyright 2026 The AI Edge Model Explorer Authors.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+// The Model Debugger Protocol: what the server asks of a runner.
+// Version 1.0.0
+//
+// A runner hosts one runtime. The server loads one model on it, holds a chat
+// with that model, one at a time, and reads the tensor files the runtime
+// captures in each turn. Any connection may call any RPC.
+//
+// Errors are gRPC statuses with the canonical codes:
+// - INVALID_ARGUMENT: the request itself is wrong, and nothing changed; but
+//   for Load it is a failure, and final, and CreateChat has closed the chat.
+// - FAILED_PRECONDITION: the runner's state refuses the call, and nothing
+//   changed: what it needs is not there yet, it runs only once and did, the
+//   chat is over, or another Load, CreateChat or Send is in progress.
+// - NOT_FOUND: the model or the turn is not there.
+// - CANCELLED: the client cancelled the call, or its deadline passed.
+// - INTERNAL: the runner or its runtime failed.
+// A failed Load is final: every later one is refused. Each RPC below names
+// only what differs from this.
+
+syntax = "proto3";
+
+package model_debugger.protocol;
+
+option java_multiple_files = true;
+
+import "google/protobuf/struct.proto";
+import "google/protobuf/descriptor.proto";
+
+extend google.protobuf.FileOptions {
+  // The version of this protocol, which a runner reports as
+  // RunnerInfo.protocol_version. The number is from protobuf's in-house range.
+  string protocol_version = 51787;
+}
+
+option (protocol_version) = "1.0.0";
+
+service Runner {
+  // Who this runner is. The server calls it first and goes on only if
+  // protocol_version is its own. Never fails.
+  rpc GetInfo(GetInfoRequest) returns (RunnerInfo);
+
+  // Puts a model file in the runner's store under its sha256; if it is
+  // there already, succeeds at once with the stream unread. A failure keeps
+  // nothing. The store keeps one model: this call and Load first delete every
+  // other one but those a live runner uses, the one it loaded or else was
+  // last given or asked for. Runners may share a store, so upload a model to
+  // one runner at a time. INVALID_ARGUMENT: the stream does not start with a
+  // valid header, or has a second header or more bytes than announced.
+  // DATA_LOSS: fewer bytes, or bytes of another sha256. RESOURCE_EXHAUSTED: no
+  // room.
+  rpc UploadModel(stream UploadModelRequest) returns (UploadModelResponse);
+
+  // Loads the runner's one model. NOT_FOUND: the store has no file of this
+  // sha256; nothing changed but the store (see UploadModel), so upload it and
+  // Load again. A device the runner
+  // cannot use, such as GPU while HostInfo.gpu is unset, is a final failure
+  // (FAILED_PRECONDITION or INTERNAL); it and a wrong request fail before
+  // the store is looked in, so no upload comes first. Cancelling discards
+  // the model once loaded but does not stop the loading.
+  rpc Load(LoadRequest) returns (LoadResponse);
+
+  // Creates the runner's chat, once the model is loaded. A runner has one
+  // chat at a time: if it has one, live or ended by a failed or cancelled
+  // Send, it closes that chat first, freeing its context before the new one
+  // takes any memory, and deletes its captures not yet released; the new
+  // chat's turns count from 1 again. Any failure but FAILED_PRECONDITION
+  // leaves the runner with no chat, the old one closed all the same; a later
+  // CreateChat may still succeed. INVALID_ARGUMENT also covers a system
+  // message that is not first and an unspecified or unknown role.
+  // RESOURCE_EXHAUSTED refuses starting messages that need more tokens than
+  // the context has, counted as the first turn's prompt for an empty user
+  // message, chat template included; its trailing metadata "turn-tokens" and
+  // "tokens-left" give the two counts, as for Send. Cancelling discards the
+  // chat once created but does not stop it early.
+  rpc CreateChat(CreateChatRequest) returns (CreateChatResponse);
+
+  // Sends the next turn, a user's message; the stream is the reply's chunks,
+  // then its completion. Every failure but INVALID_ARGUMENT,
+  // FAILED_PRECONDITION and RESOURCE_EXHAUSTED ends the chat, CANCELLED
+  // included, since the model may hold a turn the client never got; a
+  // CreateChat starts another. RESOURCE_EXHAUSTED, before any
+  // chunk, refuses a turn whose prompt needs more tokens than the context has
+  // left (including "tokens-left": "0" after a reply ended with
+  // FINISH_REASON_LENGTH), changing nothing: its trailing metadata
+  // "turn-tokens" and "tokens-left" give the two counts, in decimal. A turn
+  // whose prompt fits tokens-left (including turn_tokens == tokens_left) but
+  // leaves no room for prefill padding or the first decode step is INTERNAL,
+  // before any chunk. A cancel may
+  // wait until the prompt is read; one that comes after the completion was
+  // sent may find the turn done, and then the turn counts and the chat goes
+  // on, though the client may see CANCELLED.
+  rpc Send(SendRequest) returns (stream SendResponse);
+
+  // Streams one completed turn's capture, file by file (see CaptureChunk).
+  // NOT_FOUND: the turn has no capture: not completed, cancelled, released,
+  // or of a chat a CreateChat closed, even while it streams. INTERNAL: a file
+  // cannot be read, after the files sent so far; or the turn's directory
+  // holds something that is not a regular file, which the message names,
+  // before any file is sent.
+  rpc ReadCaptures(ReadCapturesRequest) returns (stream CaptureChunk);
+
+  // Deletes one turn's capture once the server holds all of it; a runner
+  // keeps the unreleased ones until it exits or a CreateChat closes their
+  // chat. NOT_FOUND: as for ReadCaptures, a second release included.
+  rpc ReleaseCaptures(ReleaseCapturesRequest)
+      returns (ReleaseCapturesResponse);
+}
+
+// ---- GetInfo
+
+message GetInfoRequest {}
+
+message RunnerInfo {
+  // The protocol version the runner was built against, MAJOR.MINOR.PATCH.
+  string protocol_version = 1;
+  HostInfo host = 2;
+  RuntimeInfo runtime = 3;
+}
+
+// The machine the runner runs on, as its system reports it: nothing is
+// guessed, and what the platform does not report is unset. On the iOS
+// simulator the OS fields and model are the simulated device's, the hardware
+// fields the Mac's, and gpu is unset.
+message HostInfo {
+  enum Platform {
+    PLATFORM_UNSPECIFIED = 0;
+    MACOS = 1;
+    IOS = 2;
+    LINUX = 3;
+    ANDROID = 4;
+  }
+  Platform platform = 1;
+  string os_version = 2;   // Such as "27.2".
+  string os_build = 3;     // Tells a beta or a vendor build apart.
+  string architecture = 4; // "arm64" or "x86_64".
+  string model = 5;        // The machine's model identifier, such as "Mac14,6".
+  optional string chip = 6;  // Such as "Apple M2 Max".
+  int32 cpu_count = 7;     // Logical processors.
+  int64 memory_bytes = 8;  // Physical memory.
+  optional Gpu gpu = 9;    // Unset when the runner can only run on the CPU.
+
+  message Gpu {
+    string name = 1;  // The chip's, as chip has it; empty where chip is unset.
+    // driver_version, which no runner set.
+    reserved 2;
+    reserved "driver_version";
+    optional int64 memory_bytes = 3;  // Dedicated memory; unset if unified.
+  }
+}
+
+// The runtime a runner hosts, known before any model is loaded.
+message RuntimeInfo {
+  enum Name {
+    NAME_UNSPECIFIED = 0;
+    LITERT_LM = 1;
+    PYTORCH = 2;
+  }
+  Name name = 1;
+  // The full commit the runtime was built from, or its release number.
+  string version = 2;
+  // A JSON Schema (draft 2020-12) for LoadRequest.runtime_options.
+  string load_options_schema = 3;
+  // The same for ChatOptions.runtime_options.
+  string chat_options_schema = 4;
+}
+
+// ---- UploadModel
+
+// The first message is the header; every later one is data, in order.
+message UploadModelRequest {
+  oneof request {
+    ModelHeader header = 1;
+    bytes data = 2;  // At most 1 MiB per message.
+  }
+}
+
+message ModelHeader {
+  string sha256 = 1;  // Of the whole file, lower-case hex; Load names it so.
+  int64 size = 2;     // Bytes to follow.
+}
+
+message UploadModelResponse {}
+
+// ---- Load
+
+enum Device {
+  DEVICE_UNSPECIFIED = 0;
+  CPU = 1;
+  GPU = 2;
+}
+
+message LoadRequest {
+  string sha256 = 1;  // The model file's, as ModelHeader.sha256.
+  Device device = 2;
+  // Most tokens the model holds, prompt and reply together.
+  int32 context_length = 3;
+  // The runtime's own options, as RuntimeInfo.load_options_schema says.
+  // Never a path on the runner's machine.
+  google.protobuf.Struct runtime_options = 4;
+}
+
+// What the model's own metadata says, known once it is loaded.
+message LoadResponse {
+  // The id the runtime puts before the first prompt; unset if none.
+  optional int32 start_token = 1;
+  repeated StopToken stop_tokens = 2;
+  // The sampling the model sets for a chat that sets none; unset if none.
+  SamplerDefaults sampler_defaults = 3;
+}
+
+// A model's own sampling, as the runtime reports it; a field is unset where
+// the runtime reports none.
+message SamplerDefaults {
+  enum Type {
+    TYPE_UNSPECIFIED = 0;  // The runtime reports none.
+    GREEDY = 1;
+    TOP_K = 2;
+    TOP_P = 3;
+  }
+  Type type = 1;
+  optional float temperature = 2;
+  optional int32 top_k = 3;
+  optional float top_p = 4;
+}
+
+// A token that ends a reply, as the model names it.
+message StopToken {
+  oneof token {
+    TokenIds ids = 1;
+    string text = 2;  // When the text does not tokenize back to one id.
+  }
+}
+
+message TokenIds {
+  repeated int32 ids = 1;
+}
+
+// ---- CreateChat
+
+message CreateChatRequest {
+  // What the chat starts with: a system message first if any, then earlier
+  // turns, which the model does not generate again.
+  repeated ChatMessage messages = 1;
+  ChatOptions options = 2;
+}
+
+message CreateChatResponse {}
+
+// A chat message, as OpenAI's Chat Completions API names it.
+message ChatMessage {
+  enum Role {
+    ROLE_UNSPECIFIED = 0;
+    SYSTEM = 1;
+    USER = 2;
+    ASSISTANT = 3;
+    // TOOL, a tool's response: tool calling is postponed.
+    reserved 4;
+    reserved "TOOL";
+  }
+  Role role = 1;
+  string content = 2;
+  // name, the tool that responded to a TOOL message.
+  reserved 3;
+  reserved "name";
+}
+
+// The chat's settings: the named ones every runtime takes, by OpenAI's names
+// and in ranges every runtime accepts; the runtime's own in runtime_options.
+message ChatOptions {
+  // Most tokens a reply may have, reasoning included; at least 1, required. A
+  // reply that reaches it ends with FINISH_REASON_LENGTH.
+  int32 max_completion_tokens = 1;
+  optional float temperature = 2;  // At least 0.
+  optional float top_p = 3;        // From 0 to 1.
+  optional int32 seed = 4;         // Any value.
+  optional int32 top_k = 5;        // At least 1; 1 is greedy.
+  // As RuntimeInfo.chat_options_schema says.
+  google.protobuf.Struct runtime_options = 6;
+}
+
+// ---- Send
+
+message SendRequest {
+  ChatMessage message = 1;  // Role USER.
+}
+
+message SendResponse {
+  oneof response {
+    Chunk chunk = 1;
+    Completion completion = 2;
+  }
+}
+
+// One piece of the reply, as the model produces it.
+message Chunk {
+  oneof delta {
+    string content = 1;
+    string reasoning_content = 2;
+  }
+}
+
+// The whole reply; content and reasoning_content are its chunks, joined.
+message Completion {
+  string content = 1;
+  string reasoning_content = 2;
+  FinishReason finish_reason = 3;
+  Usage usage = 4;
+  ModelDebugger model_debugger = 5;
+}
+
+enum FinishReason {
+  FINISH_REASON_UNSPECIFIED = 0;
+  FINISH_REASON_STOP = 1;    // The model finished.
+  // max_completion_tokens was reached, or the context is full: total_tokens
+  // is then context_length, and the next Send fails with RESOURCE_EXHAUSTED
+  // ("tokens-left": "0").
+  FINISH_REASON_LENGTH = 2;
+}
+
+// Tokens the turn took, as OpenAI counts them.
+message Usage {
+  // The positions up to and including the one the first decode step fed.
+  int32 prompt_tokens = 1;
+  // One per decode step, reasoning and a final stop token included.
+  int32 completion_tokens = 2;
+  // prompt_tokens + completion_tokens: the context when the reply ended,
+  // before any rewrite (see ModelDebugger.fed_tokens).
+  int32 total_tokens = 3;
+}
+
+// What the Model Debugger needs of the turn beyond the reply: with it, the
+// capture's files line up with the tokens without anything else.
+message ModelDebugger {
+  // The turn this reply ends, the n-th of the chat from 1. A refused Send is
+  // no turn.
+  int32 turn = 1;
+  // prompt_tokens, which fed_tokens replaced.
+  reserved 2;
+  reserved "prompt_tokens";
+  // The positions the context holds after the turn, and one more: the token
+  // held back to feed first next turn, at context_token_count - 1.
+  int32 context_token_count = 3;
+  // Every row of input the turn fed, in order: the prefill, the decode steps,
+  // then any prefill after them, which rewrites the context from its first
+  // position on. The first is the token held back by the turn before, or in
+  // the first turn the start token, if any. Never empty.
+  repeated FedToken fed_tokens = 4;
+}
+
+// One row of input, as the model was fed it.
+message FedToken {
+  enum Phase {
+    PHASE_UNSPECIFIED = 0;
+    PREFILL = 1;
+    DECODE = 2;
+  }
+  int32 position = 1;  // In the context, from 0; measured.
+  Phase phase = 2;     // The forward pass that took the row; measured.
+  // The token fed. Where the runtime does not report it, the runner infers
+  // it and checks it against the capture; an id it cannot confirm is unset.
+  optional int32 id = 3;
+  // The id's text, as the runtime detokenizes it; empty where id is unset.
+  string text = 4;
+}
+
+// ---- Captures
+
+message ReadCapturesRequest {
+  int32 turn = 1;
+}
+
+// One message of a capture's stream. A capture is the tensor files the
+// runtime wrote in the turn, under its names, and generated_tokens.jsonl,
+// flat: no subdirectories. Each file is a file message, its data, its sha256.
+message CaptureChunk {
+  oneof part {
+    CaptureFile file = 1;  // Starts a file.
+    bytes data = 2;        // At most 1 MiB per message.
+    string sha256 = 3;     // Of the file's bytes, lower-case hex; ends it.
+  }
+}
+
+message CaptureFile {
+  string path = 1;  // A file name, in the turn's directory.
+  int64 size = 2;   // Bytes to follow.
+}
+
+message ReleaseCapturesRequest {
+  int32 turn = 1;
+}
+
+message ReleaseCapturesResponse {}

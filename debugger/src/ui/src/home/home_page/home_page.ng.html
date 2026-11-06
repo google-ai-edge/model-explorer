@@ -1,0 +1,300 @@
+<!--
+ Copyright 2026 The AI Edge Model Explorer Authors.
+
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+ ==============================================================================
+-->
+<main class="session-home">
+  @if (preferences.showWelcome()) {
+    <welcome-card />
+  }
+  @if (editor()) {
+    @defer (on immediate) {
+      <session-editor (finished)="finishEditor()" (created)="sessionCreated()" />
+    } @error {
+      <section class="sessions">
+        <div class="load-state" role="alert">
+          <h2>Session editor unavailable</h2>
+          <p>Reload the page to try again.</p>
+          <button mat-button (click)="reloadPage()">Reload</button>
+        </div>
+      </section>
+    }
+  } @else {
+    <section class="sessions" aria-labelledby="sessions-title">
+      <header>
+        <div>
+          <h2 id="sessions-title">Debug Sessions</h2>
+          <p>Create and manage comparison sessions.</p>
+        </div>
+        <div class="header-actions">
+          <button
+            mat-stroked-button
+            class="import-session"
+            matTooltip="Import a Session another computer exported (.mdsession)"
+            [disabled]="sessions.loading() || !!sessions.importing()"
+            (click)="chooseImport(importInput)"
+          >
+            <mat-icon>upload</mat-icon>Import
+          </button>
+          <input
+            #importInput
+            class="import-input"
+            type="file"
+            accept=".mdsession"
+            tabindex="-1"
+            aria-hidden="true"
+            (change)="importFile(importInput)"
+          />
+          <button
+            mat-flat-button
+            class="new-session"
+            [disabled]="sessions.loading()"
+            (click)="newSession()"
+          >
+            <mat-icon>add</mat-icon>New session
+          </button>
+        </div>
+      </header>
+      @if (sessions.listing()?.unavailable_reason) {
+        <p class="capability-note" role="status">{{ sessions.listing()?.unavailable_reason }}</p>
+      }
+      @if (renameError()) {
+        <p role="alert">{{ renameError() }}</p>
+      }
+      @if (sessions.refreshError()) {
+        <p class="capability-note" role="status">
+          Status refresh unavailable. Showing the last known state.
+          <button mat-button (click)="sessions.load(true)">Retry</button>
+        </p>
+      }
+      @if (sessions.error()) {
+        <div class="load-state" role="alert">
+          <h3>Sessions unavailable</h3>
+          <p>{{ sessions.error() }}</p>
+          <button mat-button (click)="sessions.load()">Retry</button>
+        </div>
+      } @else if (sessions.loading()) {
+        <div class="load-state" role="status">
+          <mat-spinner diameter="24" /><span>Loading sessions…</span>
+        </div>
+      } @else if (sessions.items().length || sessions.importing()) {
+        <div class="table-scroll">
+          <table>
+            <colgroup>
+              <col class="id-col" />
+              <col class="name-col" />
+              <col class="created-col" />
+              <col class="model-col" />
+              <col class="server-col" />
+              <col class="open-col" />
+              <col class="more-col" />
+            </colgroup>
+            <thead>
+              <tr>
+                <th scope="col">ID</th>
+                <th scope="col">Name</th>
+                <th scope="col">Created</th>
+                <th scope="col">Model</th>
+                <th scope="col">Model Server</th>
+                <th scope="col" class="center">Open</th>
+                <th scope="col"><span class="sr-only">More actions</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              @if (sessions.importing(); as importing) {
+                <tr class="import-row">
+                  <td colspan="7" role="status">
+                    <div class="import-progress">
+                      <mat-icon>upload_file</mat-icon>
+                      <span class="import-name" [matTooltip]="importing.name">{{
+                        importing.name
+                      }}</span>
+                      <span class="import-text">{{ importText(importing) }}</span>
+                      <mat-progress-bar
+                        [mode]="
+                          importing.loaded < importing.total ? 'determinate' : 'indeterminate'
+                        "
+                        [value]="importPercent(importing)"
+                        [attr.aria-label]="'Importing ' + importing.name"
+                      />
+                    </div>
+                  </td>
+                </tr>
+              }
+              @for (session of sessions.items(); track session.id) {
+                <tr [attr.data-session-id]="session.id">
+                  <td>
+                    <button
+                      mat-button
+                      class="id-button"
+                      aria-label="Copy session ID"
+                      [matTooltip]="session.id"
+                      (click)="copy(session)"
+                    >
+                      {{ session.id.slice(0, 8) }}
+                    </button>
+                  </td>
+                  <td>
+                    <div class="session-name-cell">
+                      @if (editing() === session.id) {
+                        <input
+                          class="session-name-input"
+                          aria-label="Session name"
+                          maxlength="80"
+                          #nameInput
+                          [value]="session.name"
+                          [readOnly]="saving()"
+                          (input)="nameInput.setCustomValidity('')"
+                          (keydown)="renameKey($event, session, nameInput)"
+                          (blur)="finishRename(session, nameInput, true)"
+                        />
+                      }
+                      <span [hidden]="editing() === session.id" [matTooltip]="session.name">{{
+                        session.name
+                      }}</span
+                      ><button
+                        mat-icon-button
+                        class="rename"
+                        [style.display]="editing() === session.id ? 'none' : null"
+                        #renameButton
+                        [attr.aria-label]="'Rename ' + session.name"
+                        matTooltip="Rename session"
+                        [disabled]="saving()"
+                        (click)="startRename(session, renameButton)"
+                      >
+                        <mat-icon>edit</mat-icon>
+                      </button>
+                    </div>
+                  </td>
+                  <td
+                    class="created"
+                    [matTooltip]="
+                      session.created_at || 'Creation time was not recorded in this capture.'
+                    "
+                  >
+                    {{
+                      session.created_at
+                        ? (session.created_at | date: 'yyyy-MM-dd HH:mm')
+                        : 'Not captured'
+                    }}
+                  </td>
+                  <td class="model" [matTooltip]="session.model">{{ session.model }}</td>
+                  <td class="server-cell">
+                    <model-server-switch [session]="session" />
+                    @if (preparation(session); as text) {
+                      <p class="tap-preparation" role="status">{{ text }}</p>
+                    }
+                    @if (exporting(session)) {
+                      <p class="tap-preparation exporting" role="status">Exporting…</p>
+                    }
+                    @if (sides(session); as sides) {
+                      @if (sides.length) {
+                        <ul class="side-progress" [attr.aria-label]="session.name + ' sides'">
+                          @for (side of sides; track side.role) {
+                            <li role="status">
+                              <strong>{{ side.side }}</strong> {{ side.text }}
+                            </li>
+                          }
+                        </ul>
+                      }
+                    }
+                  </td>
+                  <td class="center">
+                    <!-- The hint sits on a wrapper: a disabled button shows no tooltip. -->
+                    <span [matTooltip]="openHint(session)"
+                      ><button
+                        mat-icon-button
+                        class="row-action"
+                        data-session-action="open"
+                        [disabled]="!session.actions.enter.allowed || exporting(session)"
+                        [attr.aria-label]="'Open ' + session.name"
+                        [attr.aria-description]="
+                          session.actions.enter.allowed && !exporting(session)
+                            ? null
+                            : openHint(session)
+                        "
+                        (click)="openSession(session)"
+                      >
+                        <mat-icon>login</mat-icon>
+                      </button></span
+                    >
+                  </td>
+                  <td class="more">
+                    <button
+                      mat-icon-button
+                      class="row-action"
+                      data-session-action="more"
+                      #moreButton
+                      [attr.aria-label]="'More actions for ' + session.name"
+                      matTooltip="More actions"
+                      [matMenuTriggerFor]="actions"
+                    >
+                      <mat-icon>more_vert</mat-icon>
+                    </button>
+                    <mat-menu #actions="matMenu" xPosition="before" class="session-actions-menu"
+                      ><button mat-menu-item (click)="showConfiguration(session, moreButton)">
+                        <mat-icon>settings</mat-icon>Configuration
+                      </button>
+                      <!-- The hint sits on a wrapper: a disabled item shows no tooltip. -->
+                      <span
+                        class="menu-item-hint"
+                        matTooltipPosition="left"
+                        [matTooltip]="exportHint(session)"
+                        ><button
+                          mat-menu-item
+                          data-session-action="export"
+                          [disabled]="!!exportHint(session)"
+                          [attr.aria-description]="exportHint(session) || null"
+                          (click)="exportSession(session)"
+                        >
+                          <mat-icon>download</mat-icon>Export
+                        </button></span
+                      >
+                      <div class="menu-divider" role="separator"></div>
+                      <button
+                        mat-menu-item
+                        [disabled]="!session.actions.delete.allowed"
+                        [attr.aria-description]="session.actions.delete.reason || null"
+                        (click)="deleteSession(session, moreButton)"
+                      >
+                        <mat-icon>delete_outline</mat-icon
+                        ><span
+                          >Delete
+                          @if (!session.actions.delete.allowed) {
+                            <small class="action-reason">{{ session.actions.delete.reason }}</small>
+                          }
+                        </span>
+                      </button></mat-menu
+                    >
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+        <footer>
+          <span
+            >{{ sessions.items().length }}
+            {{ sessions.items().length === 1 ? 'session' : 'sessions' }}</span
+          >
+        </footer>
+      } @else {
+        <div class="load-state">
+          <mat-icon>folder_open</mat-icon>
+          <h3>No debug sessions yet</h3>
+        </div>
+      }
+    </section>
+  }
+</main>

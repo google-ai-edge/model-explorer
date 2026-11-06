@@ -1,0 +1,122 @@
+# Copyright 2026 The AI Edge Model Explorer Authors.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# The Server's own dependencies: a Python of its own, the PyPI packages it
+# pins in requirements_lock.txt, and the protocol's Python messages and stubs,
+# generated from ../protocol by the protobuf and gRPC the Runner builds with.
+module(name = "model_debugger_server")
+
+bazel_dep(name = "rules_python", version = "2.4.2")
+
+# The platforms the packages with wheels for some only are selected by
+# (graph/BUILD.bazel: Model Explorer's converter); the version the other
+# modules already bring.
+bazel_dep(name = "platforms", version = "1.0.0")
+
+# model_debugger is a namespace package that two repositories share: this
+# one's model_debugger/server and @protocol's model_debugger/protocol. So no
+# py_test or py_binary here may write an __init__.py into the runfiles: one in
+# either model_debugger directory would hide the other. Each package lists its
+# own.
+rules_python_config = use_extension("@rules_python//python/extensions:config.bzl", "config")
+rules_python_config.explicit_init_py(default = True)
+
+# One Python for building, testing and running, fetched, so that the
+# machine's own Python plays no part. The wheel asks only for 3.11 or later.
+python = use_extension("@rules_python//python/extensions:python.bzl", "python")
+python.toolchain(
+    is_default = True,
+    python_version = "3.12",
+)
+
+# Every PyPI package, at the version and hash requirements_lock.txt pins:
+# bazel run //:requirements.update
+pip = use_extension("@rules_python//python/extensions:pip.bzl", "pip")
+pip.parse(
+    hub_name = "server_pypi",
+    python_version = "3.12",
+    requirements_lock = "//:requirements_lock.txt",
+)
+use_repo(pip, "server_pypi")
+
+# The protocol: the proto itself from ../protocol, the repository's protocol
+# directory, and the protoc and gRPC Python plugin the Runner's versions build.
+bazel_dep(name = "grpc", version = "1.84.0")
+bazel_dep(name = "protobuf", version = "35.1")
+
+local_repository = use_repo_rule(
+    "@bazel_tools//tools/build_defs/repo:local.bzl",
+    "local_repository",
+)
+
+local_repository(
+    name = "protocol",
+    path = "../protocol",
+)
+
+# The built UI the wheel carries, which npm builds in src/ui (built_ui.bzl):
+# //:wheel alone needs it, and fails, saying how to build it, without it.
+built_ui = use_repo_rule("//:built_ui.bzl", "built_ui")
+
+built_ui(
+    name = "built_ui",
+    path = "../ui/dist/model_debugger/browser",
+)
+
+# The schemas tap/ reads models with, at the commits the Runner's LiteRT-LM
+# builds with: the TFLite schema of its LiteRT (LITERT_REF in LiteRT-LM's
+# WORKSPACE) and the .litertlm header schema of LiteRT-LM itself. flatc
+# writes their Python bindings at build time (tap/BUILD.bazel); the bindings
+# run on the flatbuffers from PyPI, at flatc's version. LiteRT-LM's WORKSPACE
+# at that commit is fetched too, for ci/check_schema_pins.py, which checks
+# that both commits are the Runner's (src/runner/MODULE.bazel's
+# LITERT_LM_COMMIT); move all three URLs together.
+bazel_dep(name = "flatbuffers", version = "25.12.19.bcr.1")
+
+http_file = use_repo_rule("@bazel_tools//tools/build_defs/repo:http.bzl", "http_file")
+
+http_file(
+    name = "tflite_schema",
+    downloaded_file_path = "schema.fbs",
+    sha256 = "e4739320658d85923286a2dedf1dd0c77387170c470ad7da2f3c22082edd9c4f",
+    urls = ["https://raw.githubusercontent.com/google-ai-edge/LiteRT/9b8c7f77e7a29e6073e614a05e1e38be7b761229/tflite/converter/schema/schema.fbs"],
+)
+
+http_file(
+    name = "litertlm_workspace",
+    downloaded_file_path = "WORKSPACE",
+    sha256 = "5467da1df96674c0efee7daea8431971aa823620cc5decd2499966306b469793",
+    urls = ["https://raw.githubusercontent.com/google-ai-edge/LiteRT-LM/61dcfc77225019e067580dceb3ea268483d1938c/WORKSPACE"],
+)
+
+http_file(
+    name = "litertlm_header_schema",
+    downloaded_file_path = "litertlm_header_schema.fbs",
+    sha256 = "2c414c95de2835094b2a9ec903c39e71d2fd26e46e162c85231b6d45db73d8b5",
+    urls = ["https://raw.githubusercontent.com/google-ai-edge/LiteRT-LM/61dcfc77225019e067580dceb3ea268483d1938c/schema/core/litertlm_header_schema.fbs"],
+)
+
+# protoc's Python output runs on the protobuf from PyPI (BUILD.bazel).
+register_toolchains("//:python_proto_toolchain")
+
+# gRPC's Python plugin is C++, and apple_support's toolchain compiles it, as
+# the Runner's: Bazel's own does not accept the Xcode 26+ SDK.
+bazel_dep(name = "apple_support", version = "2.9.1", repo_name = "build_bazel_apple_support")
+
+# The Python linter and formatter: ruff, the binary its PyPI wheel carries,
+# run by Bazel (BUILD.bazel).
+bazel_dep(name = "bazel_skylib", version = "1.9.2", dev_dependency = True)
+
+# The Starlark formatter and linter: buildifier, prebuilt.
+bazel_dep(name = "buildifier_prebuilt", version = "10.1.0", dev_dependency = True)

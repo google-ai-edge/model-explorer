@@ -1,0 +1,412 @@
+/**
+ * @license
+ * Copyright 2026 The AI Edge Model Explorer Authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ==============================================================================
+ */
+
+@use '../../../../theme/token_diff' as token;
+@use './gap_hatch' as *;
+
+// The rest of the Token Diff reading's rules, after token_diff_reading.scss in the cascade: the
+// collapsed nodes' previews, the turn boundaries, the turn grid and the linked-token marks.
+/* Compact node contract inherited from candidates nodeContextPreview. */
+.nodeTitleMain {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.nodeTitleLabel {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.debug-node.node-compact {
+  box-sizing: border-box;
+  height: 84px;
+  min-height: 84px;
+  overflow: hidden;
+  padding-top: 84px;
+}
+.debug-node.node-compact > .node-reveal {
+  display: none;
+}
+.debug-node.node-compact .nodeTitle {
+  position: absolute !important;
+  top: 12px !important;
+  left: 16px !important;
+  right: 16px !important;
+  height: 28px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  background: transparent !important;
+}
+.nodeContextPreview {
+  position: absolute;
+  left: 16px;
+  right: 48px;
+  top: 40px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  height: 28px;
+  color: var(--on2);
+  font: 400 14px/24px var(--me-font-family);
+}
+.nodeContextPreview > mat-icon {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  font-size: 16px;
+}
+.nodeContextText,
+.nodePreviewTokens {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+}
+.nodePreviewToken,
+.nodePreviewReadonly {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  height: 24px;
+  padding: 0 1px;
+  border: 0;
+  border-radius: 2px;
+  background: var(--token-node-surface, transparent);
+  font: 400 14px/24px var(--me-font-family);
+  color: var(--on2);
+  white-space: pre;
+}
+.nodePreviewToken:hover {
+  background: var(--token-node-surface, var(--me-surface-container-high));
+  color: var(--on1);
+}
+.nodePreviewToken.changed {
+  color: var(--pri);
+}
+.nodePreviewEllipsis {
+  padding: 0 3px;
+}
+.nodeContextCount {
+  flex: none;
+  padding-left: 8px;
+  border-left: 1px solid var(--outline);
+  font: 400 12px/20px var(--me-font-family);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+/* The demo's paired Turn boundary uses the same two-column reading grid. */
+.turn-boundary {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  margin: 8px 0 16px;
+  pointer-events: none;
+}
+.turn-boundary-lane {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  margin: 0 24px;
+  color: light-dark(
+    color-mix(in srgb, var(--on2) 70%, transparent),
+    var(--me-on-surface-low-color)
+  );
+  font: 400 11px/18px var(--me-font-family);
+  white-space: nowrap;
+}
+.turn-boundary-lane::before,
+.turn-boundary-lane::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(
+    to right,
+    transparent,
+    color-mix(in srgb, var(--on2) 30%, transparent)
+  );
+}
+.turn-boundary-lane::after {
+  transform: scaleX(-1);
+}
+.turn-boundary-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+}
+.turn-boundary-label mat-icon {
+  width: 13px;
+  height: 13px;
+  font-size: 13px;
+  line-height: 13px;
+  opacity: 0.78;
+  flex: none;
+}
+.turn-boundary-destination {
+  color: color-mix(in srgb, var(--on1) 58%, var(--on2));
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* Exact stage action order and elbow geometry from the candidates flow. */
+.debug-turn {
+  grid-template-rows: repeat(5, auto);
+}
+.debug-turn > article {
+  grid-row: span 5;
+}
+.phase-actions {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 4px 0 0;
+  padding: 0 0 0 26px;
+  min-height: 30px;
+  box-sizing: border-box;
+  flex-wrap: wrap;
+}
+.phase-actions[data-stage='start'] {
+  margin: 0 0 4px;
+}
+.phase-actions[data-stage='prefill'] {
+  margin: 4px 0 24px;
+}
+.phase-actions .graph-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  padding: 6px 8px;
+  min-height: 30px;
+  box-sizing: border-box;
+  border: 0;
+  border-radius: 4px;
+  font: 500 12px/18px var(--me-font-family);
+  white-space: nowrap;
+}
+.phase-actions.stageActions::before {
+  content: '';
+  position: absolute;
+  left: 16px;
+  top: -4px;
+  width: 10px;
+  height: 19px;
+  border-left: 1px solid var(--pri);
+  border-bottom: 1px solid var(--pri);
+  border-bottom-left-radius: 3px;
+  pointer-events: none;
+}
+.phase-actions.stageActions[data-stage='start']::before {
+  top: 15px;
+  height: 19px;
+  border-bottom: 0;
+  border-top: 1px solid var(--pri);
+  border-radius: 3px 0 0 0;
+}
+@media (max-width: 1200px) {
+  .phase-actions .graph-link {
+    padding-left: 6px;
+    padding-right: 6px;
+    gap: 4px;
+  }
+}
+@include token.numeric-tokens;
+// Runtime column headings must occlude node title tracks and in-flow charts.
+.column-headings {
+  z-index: 3;
+}
+// Preserve the original runtime column boxes and subgrid. Analysis occupies the
+// shared stage-action rows without flattening the Prefill/Decode containers.
+.debug-turn > article {
+  grid-row: 1 / span 5;
+}
+.debug-turn > article[data-runtime='ref'] {
+  grid-column: 1;
+}
+.debug-turn > article[data-runtime='target'] {
+  grid-column: 2;
+}
+.debug-turn > article > .phase-actions {
+  grid-row: 1;
+}
+.debug-turn > article > .inputNode {
+  grid-row: 2;
+}
+.debug-turn > article > .decodeNode {
+  grid-row: 4;
+}
+// Analysis covers the lane divider without covering the Debug composer or sticky headings.
+.target-frame {
+  z-index: 1;
+}
+.column-headings {
+  z-index: 3;
+}
+// Continue the Target frame over the opaque sticky heading without raising the
+// full-height frame above the cross-lane analysis panels.
+.reading:not(.chat-reading) .column-headings header:last-child::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border: 1px solid var(--debug-target-border, light-dark(#d8d5cd, #4a4741));
+  border-bottom: 0;
+  border-radius: 5px 5px 0 0;
+  pointer-events: none;
+}
+// Hover lightly tints the data color; selection retains the stronger blue overlay.
+:is(.tokens button, .input-token, .nodePreviewToken).linked-token-hover:not(.selected-token):not(
+    .linked-token-selected
+  ),
+:is(.tokens button, .input-token, .nodePreviewToken).pair-hover:not(.hover-origin):not(
+    .selected-token
+  ):not(.linked-token-selected) {
+  @include token.token-pair-hover;
+}
+:is(.tokens button, .input-token, .nodePreviewToken).hover-origin:not(.selection-origin):not(
+    .selected-token
+  ) {
+  @include token.token-pair-hover;
+}
+:is(.tokens button, .input-token, .nodePreviewToken).linked-token-selected {
+  @include token.token-selection;
+  outline-offset: -2px;
+}
+:is(.tokens button, .input-token, .nodePreviewToken).selection-origin {
+  @include token.token-selection;
+  outline-offset: -2px;
+}
+.reading:not(.chat-reading)
+  :is(.tokens button, .input-token, .nodePreviewToken).linked-token-focus:not(.selected-token) {
+  @include token.token-selection;
+}
+.stage-mismatch-badge {
+  color: var(--me-error-text-color);
+  font: 400 12px/18px var(--me-font-family);
+  white-space: nowrap;
+}
+.nodeTitleMain {
+  flex: 1;
+  container-type: inline-size;
+  container-name: stage-title;
+}
+.nodeContextText {
+  flex: 1;
+}
+.nodePreviewTokens {
+  gap: 3px;
+}
+.nodePreviewToken {
+  flex: 0 1 auto;
+  min-width: 14px;
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  border: 1px solid var(--me-outline-variant-color);
+  padding: 0 3px;
+  cursor: pointer;
+}
+.nodePreviewEllipsis {
+  flex: none;
+}
+.nodePreviewToken:focus-visible {
+  outline: 2px solid var(--me-primary-color);
+  outline-offset: -2px;
+}
+// Compact previews use the same aligned slots and interaction-origin states as full tokens.
+.nodePreviewTokens {
+  display: grid;
+  width: 100%;
+  justify-content: start;
+  gap: 4px;
+}
+.nodePreviewToken {
+  min-width: 0;
+  max-width: none;
+  width: 100%;
+  box-sizing: border-box;
+  justify-content: flex-start;
+}
+.nodePreviewToken.missing {
+  background: $gap-hatch;
+  color: var(--on2);
+}
+.nodeContextCount {
+  box-sizing: border-box;
+  width: 160px;
+  text-align: right;
+}
+// Preserve complete token labels; extremely wide individual tokens remain scrollable.
+.nodeContextText:has(.nodePreviewTokens) {
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+.nodePreviewTokens {
+  overflow: visible;
+}
+.nodePreviewToken {
+  overflow: visible;
+  text-overflow: clip;
+}
+// Compact and expanded tokens share the global Display settings.
+.nodePreviewToken {
+  border: 0;
+  color: var(--on1);
+}
+.nodePreviewTokens.boundaries .nodePreviewToken {
+  @include token.token-outline;
+  margin: 0;
+}
+.nodePreviewToken.mismatch {
+  background: var(--b0);
+}
+.target .nodePreviewToken.mismatch {
+  background: var(--b4);
+}
+.nodePreviewToken.template-token {
+  color: var(--token-detail-color, light-dark(#8293a8, #9aaec5));
+}
+.nodePreviewToken.missing,
+.target .nodePreviewToken.missing {
+  background: $gap-hatch;
+  color: var(--on2);
+}
+// Alignment gaps retain their hatch over the selected Display color.
+.reading[data-token-color='token_match']
+  :is(.nodePreviewToken, .input-token, .tokens button).missing {
+  background-color: var(--b0);
+}
+.reading[data-token-color='token_match']
+  .target
+  :is(.nodePreviewToken, .input-token, .tokens button).missing {
+  background-color: var(--b4);
+}
+.reading[data-gap-palette='activation'] {
+  --gap-worst: var(--heat-activation-high);
+}
+.reading[data-gap-palette='logits'] {
+  --gap-worst: var(--heat-semantic-high);
+}
+.reading:not([data-token-color='none']):not([data-token-color='token_match'])
+  :is(.nodePreviewToken, .input-token, .tokens button).missing {
+  background-color: var(--gap-worst);
+}

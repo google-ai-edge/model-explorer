@@ -15,16 +15,17 @@
 #ifndef MODEL_DEBUGGER_RUNNER_SERVICE_HOST_INFO_H_
 #define MODEL_DEBUGGER_RUNNER_SERVICE_HOST_INFO_H_
 
-#include "model_debugger/v1/runner.pb.h"
+#include "model_debugger/protocol/runner.pb.h"
 
 namespace model_debugger::runner::service {
 
 // Returns the machine this process runs on, as the system reports it:
 // nothing is guessed, and a value the platform does not report is left
-// unset. The GPU is set when `can_run_on_gpu`, what the runtime says of
-// itself, named as the system names it, by its chip. Measured once, at
-// startup; GetInfo reports it.
-v1::HostInfo MeasureHost(bool can_run_on_gpu);
+// unset. On the iOS simulator the OS version, build and model are the
+// simulated device's, the rest the Mac's. The GPU is set when
+// `can_run_on_gpu`, what the runtime says of itself, and named by the chip,
+// as the system names it. Measured once, at startup; GetInfo reports it.
+protocol::HostInfo MeasureHost(bool can_run_on_gpu);
 
 }  // namespace model_debugger::runner::service
 

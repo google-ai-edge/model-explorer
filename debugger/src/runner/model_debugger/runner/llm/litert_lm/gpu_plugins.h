@@ -27,8 +27,9 @@ namespace model_debugger::runner::llm {
 // unloaded, because LiteRT keeps their code beyond the life of any engine, so
 // calling this again is harmless.
 //
-// Returns FailedPrecondition if a plugin is missing: this build cannot run on
-// the GPU. Returns Internal with the loader's reason if one does not load.
+// Returns FailedPrecondition, with the loader's reason, if a plugin does not
+// load, a missing one included: this build cannot run on this machine's GPU.
+// HasLiteRtGpuPlugins tells a missing one first, with no loading.
 absl::Status LoadLiteRtGpuPlugins(std::string_view directory);
 
 // Returns whether every GPU plugin is in `directory`: what

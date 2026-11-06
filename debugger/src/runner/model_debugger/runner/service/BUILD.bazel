@@ -22,6 +22,33 @@ cc_test(
     ],
 )
 
+# The model files a Runner keeps, which Runners on one machine share.
+cc_library(
+    name = "model_store",
+    srcs = ["model_store.cc"],
+    hdrs = ["model_store.h"],
+    deps = [
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status:statusor",
+        "@com_google_absl//absl/strings",
+    ],
+)
+
+cc_test(
+    name = "model_store_test",
+    srcs = ["model_store_test.cc"],
+    deps = [
+        ":model_store",
+        "//model_debugger/runner/testing:test_utils",
+        "@com_google_absl//absl/base:log_severity",
+        "@com_google_absl//absl/log:scoped_mock_log",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status:statusor",
+        "@com_google_googletest//:gtest_main",
+    ],
+)
+
 cc_library(
     name = "host_info",
     # One source per platform family; a platform without one does not build.
@@ -32,7 +59,35 @@ cc_library(
     }),
     hdrs = ["host_info.h"],
     deps = [
-        "@protocol//model_debugger/v1:runner_cc_proto",
+        "@protocol//model_debugger/protocol:runner_cc_proto",
+    ],
+)
+
+# A runtime's options against the JSON Schema it reports for them.
+cc_library(
+    name = "options_schema",
+    srcs = ["options_schema.cc"],
+    hdrs = ["options_schema.h"],
+    # LiteRT-LM's test checks that its schemas use only the keywords
+    # understood.
+    visibility = ["//model_debugger/runner/llm/litert_lm:__pkg__"],
+    deps = [
+        "//model_debugger/runner/util:json",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status:statusor",
+        "@com_google_absl//absl/strings",
+        "@protobuf",
+    ],
+)
+
+cc_test(
+    name = "options_schema_test",
+    srcs = ["options_schema_test.cc"],
+    deps = [
+        ":options_schema",
+        "@com_google_absl//absl/status",
+        "@com_google_googletest//:gtest_main",
+        "@protobuf",
     ],
 )
 
@@ -44,17 +99,39 @@ cc_library(
     deps = [
         ":cache_directory",
         ":host_info",
+        ":model_store",
+        ":options_schema",
         "//model_debugger/runner/llm:runtime",
+        "//model_debugger/runner/util:disk_space",
         "@boringssl//:crypto",
-        "@com_google_absl//absl/base:core_headers",
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/status:statusor",
         "@com_google_absl//absl/strings",
-        "@com_google_absl//absl/synchronization",
-        "@com_google_absl//absl/time",
+        "@com_google_absl//absl/strings:cord",
         "@grpc//:grpc++",
-        "@protocol//model_debugger/v1:runner_cc_grpc",
-        "@protocol//model_debugger/v1:runner_cc_proto",
+        "@protocol//model_debugger/protocol:runner_cc_grpc",
+        "@protocol//model_debugger/protocol:runner_cc_proto",
+    ],
+)
+
+# The service's own rules, on a runtime the test scripts: needs no model.
+cc_test(
+    name = "runner_service_rules_test",
+    srcs = ["runner_service_rules_test.cc"],
+    deps = [
+        ":model_store",
+        ":runner_service",
+        "//model_debugger/runner/llm:runtime",
+        "//model_debugger/runner/testing:test_utils",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status:statusor",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/strings:cord",
+        "@com_google_googletest//:gtest_main",
+        "@grpc//:grpc++",
+        "@protobuf",
+        "@protocol//model_debugger/protocol:runner_cc_grpc",
+        "@protocol//model_debugger/protocol:runner_cc_proto",
     ],
 )
 
@@ -70,10 +147,9 @@ model_test(
         "@boringssl//:crypto",
         "@com_google_absl//absl/status:statusor",
         "@com_google_absl//absl/strings",
-        "@com_google_absl//absl/time",
         "@com_google_googletest//:gtest_main",
         "@grpc//:grpc++",
-        "@protocol//model_debugger/v1:runner_cc_grpc",
-        "@protocol//model_debugger/v1:runner_cc_proto",
+        "@protocol//model_debugger/protocol:runner_cc_grpc",
+        "@protocol//model_debugger/protocol:runner_cc_proto",
     ],
 )

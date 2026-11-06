@@ -1,3 +1,4 @@
+/* stylelint-disable */
 /**
  * @license
  * Copyright 2026 The AI Edge Model Explorer Authors.
@@ -201,6 +202,15 @@ html[data-theme='dark'] {
 .mat-mdc-menu-panel.session-actions-menu {
   min-width: 224px;
   max-width: 224px;
+}
+
+// A chat's summary is cut with an ellipsis, not clipped; its item's tooltip says it whole.
+.mat-mdc-menu-panel.chat-switcher-menu {
+  max-width: 400px;
+}
+.mat-mdc-menu-panel.chat-switcher-menu .mat-mdc-menu-item-text {
+  min-width: 0;
+  overflow: hidden;
 }
 
 .session-configuration-dialog {

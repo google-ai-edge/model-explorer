@@ -14,14 +14,12 @@ for macOS and iOS (SwiftUI) and Android (Kotlin, Jetpack Compose).
 
 ## Platform support
 
-<!-- mdformat off(preserve GFM table layout) -->
 | Platform | Runs as | Status | Backends |
 |---|---|---|---|
 | macOS (Apple silicon) | command line, App | supported | CPU, GPU (Metal) |
 | iOS Simulator | App | supported | CPU |
 | iOS device | App | supported | CPU, GPU (Metal) |
 | Android (arm64-v8a) | App | supported | CPU, GPU (OpenCL) |
-<!-- mdformat on -->
 
 ## Prerequisites
 
@@ -39,17 +37,10 @@ To build the Android App, you also need:
 
 To run the iOS App on a device, you also need:
 
-- The device paired with this Mac, with Developer Mode on (**Settings >
-  Privacy & Security > Developer Mode**)
-- A provisioning profile for `com.google.ai.edge.modeldebugger.runner` under
-  `~/Library/MobileDevice/Provisioning Profiles/`. To generate one:
-  1. Sign in to **Xcode > Settings > Accounts** (`⌘,`) with your Apple ID (a
-     free Personal Team works and lasts 7 days).
-  2. Create a temporary iOS App project in Xcode with Bundle Identifier
-     `com.google.ai.edge.modeldebugger.runner`, enable **Automatically manage
-     signing**, select your Team, and select your **connected iPhone/iPad** as
-     the run destination so Xcode provisions the device and writes `iOS Team
-     Provisioning Profile: com.google.ai.edge.modeldebugger.runner`.
+- The device paired with this Mac, with Developer Mode on
+- A provisioning profile for `com.google.ai.edge.modeldebugger.runner`. Xcode
+  creates it when you sign any project with this bundle ID for your team, with
+  the device connected. A profile of a free personal team lasts 7 days.
 
 ## Usage
 
@@ -64,16 +55,56 @@ listens on `127.0.0.1:8769` by default.
 bazel run //model_debugger/runner/cli:runner -- --listen 127.0.0.1:8769
 ```
 
+#### Keeping a build per LiteRT-LM commit
+
+A Runner is built against one LiteRT-LM commit, `LITERT_LM_COMMIT` in
+`MODULE.bazel`; `bazel-bin` holds only the last build. `keep` builds the
+command-line Runner and keeps it, so that the server can launch any kept
+commit:
+
+```shell
+bazel run //model_debugger/runner/cli:keep               # the pinned commit
+bazel run --repo_env=LITERT_LM_COMMIT_MACOS_ARM64=COMMIT \
+    //model_debugger/runner/cli:keep                     # another commit
+```
+
+Each commit gets a directory of its own:
+
+```
+~/Library/Application Support/model_debugger/runners/macos_arm64/COMMIT/
+├── runner                         finds the libraries beside it
+├── liblitert-lm.dylib, libLiteRt.dylib, libGemmaModelConstraintProvider.dylib
+├── libwebgpu_dawn.dylib, libLiteRtWebGpuAccelerator.dylib, libLiteRtTopKWebGpuSampler.dylib
+└── build.json                     commit, commit_date, cl, built_at, sha256
+```
+
+- `COMMIT` is the whole 40-digit commit. `LITERT_LM_COMMIT_<PLATFORM>`
+  overrides the pinned commit for any build of that platform.
+- Before a build is kept, it is started from its directory with a HOME of its
+  own and must report the commit in `GetInfo`. Keeping a commit again replaces
+  its directory in one atomic swap. To forget a commit, delete its directory.
+- Each commit LiteRT-LM is built from also takes about 6.5 GB under
+  `~/Library/Caches/model_debugger/litert_lm/COMMIT/`; delete it once the
+  commit is kept and no longer built.
+- The Runner builds only against LiteRT-LM commits made after its C API
+  change of 2026-10-01; older ones do not compile with it.
+
 #### App
 
 ```shell
 bazel run //model_debugger/runner/app/apple:macos -- --listen 127.0.0.1:8769
 ```
 
-Note: The server's automatic device launcher (`launchers.py`) starts the macOS
-command-line runner (`//model_debugger/runner/cli:runner`), the Android App
-over `adb`, the iOS device App over `devicectl`, and the iOS Simulator App.
-The macOS App is launched manually as shown here.
+### Phone Apps' versions
+
+Each phone App carries the LiteRT-LM commit it is built against, read from
+its LiteRT-LM repository's `commit.json`, in its own version, where the
+server reads it without launching the App: Android's `versionName` is
+`<commit> (<commit date>)`, its `versionCode` 1; iOS takes numbers alone, so
+`CFBundleShortVersionString` is the commit's date, `YYYY.MM.DD`, and
+`CFBundleVersion` the commit's first 12 hex digits in decimal, with the
+whole commit as `LiteRTLMCommit`. `aapt2 dump badging runner.apk` and
+`plutil -p "Model Debugger Runner.app/Info.plist"` show them.
 
 ### iOS
 
@@ -108,13 +139,11 @@ The server connects to `[$ADDRESS]:8769`, the device's address on the tunnel
 Xcode keeps to a paired device.
 
 - `DEVICE` is the device's name in `xcrun devicectl list devices`.
-- Once installed and trusted on the device (in Settings > General > VPN &
-  Device Management), the server's `launchers.py` automatically discovers a
-  paired device and launches the App on a free port when the device is
-  unlocked.
 - The App listens on the tunnel address alone, so only this Mac reaches it.
 - Use the address, not `<device>.coredevice.local`: gRPC does not resolve
   `.local` names.
+- The first launch needs the developer to be trusted on the device, in
+  Settings > General > VPN & Device Management.
 
 ### Android
 
@@ -155,9 +184,9 @@ model_debugger/runner/
 ├── cli/                   the command line
 ├── app/apple/             the macOS and iOS App (SwiftUI)
 ├── app/android/           the Android App (Kotlin, Jetpack Compose)
-├── service/               the protocol's gRPC service, cache directory, host info
+├── service/               the gRPC service, model store, cache directory, host info
 ├── llm/                   the runtime interface
 │   └── litert_lm/         LiteRT-LM behind it, and the rule that builds LiteRT-LM
-├── util/                  JSON helpers
+├── util/                  JSON helpers; the exit for a disk with no room
 └── testing/               test utilities and the CPU/GPU test macro
 ```

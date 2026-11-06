@@ -1,0 +1,25 @@
+# pytorch-collector's capture library, the package pytorch_collector: scoped
+# tensor snapshots and operator data flow for PyTorch eager inference, which
+# the runner captures with (collect(), to_model_explorer()). Moved here from
+# the user's repository; see README.md. Its equivalence checks stayed there.
+
+load("@rules_python//python:py_library.bzl", "py_library")
+load("@runner_pytorch_pypi//:requirements.bzl", "requirement")
+
+package(default_visibility = ["//visibility:public"])
+
+# It needs torch alone; Transformers' cache types are read only when a
+# capture meets one, without importing Transformers.
+py_library(
+    name = "pytorch_collector",
+    srcs = [
+        "__init__.py",
+        "_cache.py",
+        "_dispatch.py",
+        "_provenance.py",
+        "_snapshots.py",
+        "collector.py",
+        "graph.py",
+    ],
+    deps = [requirement("torch")],
+)

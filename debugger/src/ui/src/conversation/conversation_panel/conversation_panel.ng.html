@@ -1,0 +1,44 @@
+<!--
+ Copyright 2026 The AI Edge Model Explorer Authors.
+
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+ ==============================================================================
+-->
+@if (workspace.mode() === 'Debug') {
+  <token-diff-reading />
+  <details-panel />
+} @else {
+  <chat-reading [tokenColor]="tokens.color()" [gapPalette]="tokens.heatPalette(tokens.color())" />
+}
+<span class="view-notice" role="status">{{ views.viewNotice() }}</span>
+@if (composer.promptError() || workspace.storageError() || address.notice()) {
+  <div class="chat-warnings">
+    @if (composer.promptError()) {
+      <p class="chat-warning" role="alert">{{ composer.promptError() }}</p>
+    }
+    @if (workspace.storageError()) {
+      <p class="chat-warning" role="alert">{{ workspace.storageError() }}</p>
+    }
+    @if (address.notice()) {
+      <p class="chat-warning" role="alert">{{ address.notice() }}</p>
+    }
+  </div>
+}
+<message-composer [inspectorWidth]="tokens.details() ? tokens.panelWidth() : 0">
+  @if (workspace.mode() === 'Debug') {
+    <token-diff-find composer-tools />
+  }
+  @if (workspace.mode() === 'Debug') {
+    <token-diff-display composer-status />
+  }
+</message-composer>

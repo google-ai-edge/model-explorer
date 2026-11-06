@@ -12,19 +12,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// macOS and iOS: every fact from sysctl.
-
-#include "model_debugger/runner/service/host_info.h"
+// macOS and iOS: every fact from sysctl, but on the iOS simulator, which runs
+// on the Mac and reads the Mac's: there, what the simulated device is comes
+// from the environment CoreSimulator gives each process it runs.
 
 #include <TargetConditionals.h>
 #include <sys/sysctl.h>
 #include <sys/types.h>
 
 #include <cstdint>
+#include <cstdlib>
 #include <optional>
 #include <string>
 
-#include "model_debugger/v1/runner.pb.h"
+#include "model_debugger/protocol/runner.pb.h"
+#include "model_debugger/runner/service/host_info.h"
 
 namespace model_debugger::runner::service {
 namespace {
@@ -56,42 +58,56 @@ std::optional<T> SysctlNumber(const char* name) {
   return value;
 }
 
+#if TARGET_OS_SIMULATOR
+// Returns environment variable `name`, or nullopt if it is unset or empty.
+std::optional<std::string> Environment(const char* name) {
+  const char* value = std::getenv(name);
+  if (value == nullptr || *value == '\0') return std::nullopt;
+  return std::string(value);
+}
+#endif
+
 }  // namespace
 
-v1::HostInfo MeasureHost(bool can_run_on_gpu) {
-  v1::HostInfo host;
+protocol::HostInfo MeasureHost(bool can_run_on_gpu) {
+  protocol::HostInfo host;
 #if TARGET_OS_IPHONE
-  host.set_platform(v1::HostInfo::IOS);
+  host.set_platform(protocol::HostInfo::IOS);
 #else
-  host.set_platform(v1::HostInfo::MACOS);
+  host.set_platform(protocol::HostInfo::MACOS);
 #endif
-  if (const auto version = SysctlText("kern.osproductversion")) {
-    host.set_os_version(*version);
-  }
-  if (const auto build = SysctlText("kern.osversion")) {
-    host.set_os_build(*build);
-  }
+#if TARGET_OS_SIMULATOR
+  // The simulated device's: its iOS version and build, and its model
+  // identifier, such as "iPhone18,3".
+  const auto version = Environment("SIMULATOR_RUNTIME_VERSION");
+  const auto build = Environment("SIMULATOR_RUNTIME_BUILD_VERSION");
+  const auto model = Environment("SIMULATOR_MODEL_IDENTIFIER");
+#else
+  const auto version = SysctlText("kern.osproductversion");
+  const auto build = SysctlText("kern.osversion");
+#if TARGET_OS_IPHONE
+  // On an iOS device hw.model is the board, such as "D83AP"; the model
+  // identifier, such as "iPhone16,1", is hw.machine.
+  const auto model = SysctlText("hw.machine");
+#else
+  const auto model = SysctlText("hw.model");
+#endif
+#endif
+  if (version) host.set_os_version(*version);
+  if (build) host.set_os_build(*build);
 #if defined(__aarch64__)
   host.set_architecture("arm64");
 #else
   host.set_architecture("x86_64");
 #endif
-#if TARGET_OS_IPHONE && !TARGET_OS_SIMULATOR
-  // On an iOS device hw.model is the board, such as "D83AP"; the model
-  // identifier, such as "iPhone16,1", is hw.machine. A simulator runs on the
-  // Mac, and reports the Mac's.
-  const char* const model_name = "hw.machine";
-#else
-  const char* const model_name = "hw.model";
-#endif
-  if (const auto model = SysctlText(model_name)) {
-    host.set_model(*model);
-  }
+  if (model) host.set_model(*model);
+  // Below, on the simulator too, the machine's own: the Mac's chip,
+  // processors and memory are the ones the simulated device runs on.
   const auto chip = SysctlText("machdep.cpu.brand_string");
   if (chip) host.set_chip(*chip);
   if (can_run_on_gpu) {
     // On Apple silicon the GPU is the chip's; the system reports no other
-    // name for it.
+    // name for it, so the GPU is named by the chip, empty if it has none.
     host.mutable_gpu()->set_name(chip.value_or(""));
   }
   if (const auto cpus = SysctlNumber<int32_t>("hw.ncpu")) {

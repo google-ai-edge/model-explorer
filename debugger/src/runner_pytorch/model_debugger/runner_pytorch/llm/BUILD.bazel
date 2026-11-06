@@ -1,0 +1,106 @@
+# Gemma 4 on PyTorch: loading, feeding, sampling, the anchors observed, the
+# execution graph exported and the capture's files.
+
+load("@rules_python//python:py_library.bzl", "py_library")
+load("@rules_python//python:py_test.bzl", "py_test")
+load("@runner_pytorch_pypi//:requirements.bzl", "requirement")
+
+package(default_visibility = ["//visibility:public"])
+
+py_library(
+    name = "sampler",
+    srcs = [
+        "__init__.py",
+        "sampler.py",
+    ],
+    deps = [
+        "//model_debugger/runner_pytorch:package",
+        "@protocol//model_debugger/protocol:runner_py_pb2",
+        requirement("torch"),
+    ],
+)
+
+py_library(
+    name = "execution_graph",
+    srcs = [
+        "__init__.py",
+        "execution_graph.py",
+    ],
+    deps = [
+        "//model_debugger/runner_pytorch:package",
+        "//pytorch_collector",
+        requirement("torch"),
+    ],
+)
+
+py_library(
+    name = "anchor_observer",
+    srcs = [
+        "__init__.py",
+        "anchor_observer.py",
+    ],
+    deps = [
+        ":execution_graph",
+        "//model_debugger/runner_pytorch:package",
+        "//pytorch_collector",
+        requirement("torch"),
+    ],
+)
+
+py_library(
+    name = "capture_writer",
+    srcs = [
+        "__init__.py",
+        "capture_writer.py",
+    ],
+    deps = [
+        ":anchor_observer",
+        ":execution_graph",
+        "//model_debugger/runner_pytorch:package",
+        requirement("safetensors"),
+        requirement("torch"),
+    ],
+)
+
+py_library(
+    name = "gemma4_runtime",
+    srcs = [
+        "__init__.py",
+        "gemma4_runtime.py",
+    ],
+    deps = [
+        ":anchor_observer",
+        ":capture_writer",
+        ":sampler",
+        "//model_debugger/runner_pytorch:package",
+        "@protocol//model_debugger/protocol:runner_py_pb2",
+        requirement("protobuf"),
+        requirement("torch"),
+        requirement("transformers"),
+    ],
+)
+
+py_test(
+    name = "sampler_test",
+    srcs = ["sampler_test.py"],
+    deps = [
+        ":sampler",
+        "//model_debugger/runner_pytorch/testing:test_main",
+        "@protocol//model_debugger/protocol:runner_py_pb2",
+        requirement("pytest"),
+        requirement("torch"),
+    ],
+)
+
+py_test(
+    name = "anchor_observer_test",
+    srcs = ["anchor_observer_test.py"],
+    deps = [
+        ":anchor_observer",
+        "//model_debugger/runner_pytorch/testing:test_main",
+        "//model_debugger/runner_pytorch/testing:tiny_gemma4",
+        requirement("pytest"),
+        requirement("torch"),
+        requirement("transformers"),
+    ],
+)

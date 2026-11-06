@@ -15,12 +15,13 @@
 #ifndef MODEL_DEBUGGER_RUNNER_LLM_LITERT_LM_LITERT_LM_RUNTIME_H_
 #define MODEL_DEBUGGER_RUNNER_LLM_LITERT_LM_LITERT_LM_RUNTIME_H_
 
-#include <filesystem>
+#include <filesystem>  // NOLINT(build/c++17)
 #include <memory>
 
-#include "absl/status/statusor.h"
+#include "model_debugger/protocol/runner.pb.h"
 #include "model_debugger/runner/llm/runtime.h"
-#include "model_debugger/v1/runner.pb.h"
+#include "absl/status/status.h"
+#include "absl/status/statusor.h"
 
 namespace model_debugger::runner::llm {
 
@@ -39,18 +40,19 @@ class LiteRtLmRuntime final : public Runtime {
  public:
   LiteRtLmRuntime();
 
-  const v1::RuntimeInfo& Info() const override { return info_; }
+  const protocol::RuntimeInfo& Info() const override { return info_; }
 
-  // Whether the GPU plugins of this platform are beside the LiteRT-LM
-  // library, where Load looks for them.
-  bool CanRunOnGpu() const override;
+  // OK if the GPU plugins of this platform are beside the LiteRT-LM library,
+  // where Load looks for them; FailedPrecondition if not, and always on the
+  // iOS simulator, whose Metal cannot run LiteRT-LM's GPU backend.
+  absl::Status CanRunOnGpu() const override;
 
   absl::StatusOr<std::unique_ptr<Model>> Load(
       const std::filesystem::path& model, const std::filesystem::path& data_dir,
-      const v1::LoadRequest& request) override;
+      const protocol::LoadRequest& request) override;
 
  private:
-  const v1::RuntimeInfo info_;
+  const protocol::RuntimeInfo info_;
 };
 
 }  // namespace model_debugger::runner::llm

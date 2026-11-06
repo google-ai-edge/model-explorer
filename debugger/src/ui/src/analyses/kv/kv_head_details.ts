@@ -1,0 +1,431 @@
+/**
+ * @license
+ * Copyright 2026 The AI Edge Model Explorer Authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ==============================================================================
+ */
+
+import {
+  ChangeDetectionStrategy,
+  Component,
+  ElementRef,
+  computed,
+  effect,
+  inject,
+  input,
+  linkedSignal,
+  model,
+  output,
+  signal,
+  viewChild,
+} from '@angular/core';
+import {MatIconModule} from '@angular/material/icon';
+import {ExplorerInfoSection} from '../../widgets/explorer_info_section/explorer_info_section';
+import {ExplorerInfoValue} from '../../widgets/explorer_info_value/explorer_info_value';
+import type {KvHeadChannel, KvHeadEvidence} from '../../server/contracts/kv';
+import {KvMetricValues} from './kv_metric_values';
+import {formatMetric} from '../../widgets/format/format';
+import {REASON_CODES, reasonText} from '../../server/reasons';
+import {MetricCatalogStore} from '../../server/metric_catalog';
+
+import {ChannelChart} from '../../widgets/charts/channel_chart';
+import {channelBins, type ChannelReduction} from '../../widgets/charts/channel_bins';
+import type {KvRangeBin} from '../../server/contracts/kv';
+
+type Side = 'ref' | 'target';
+interface Domain {
+  low: number;
+  high: number;
+  scale: number;
+}
+const PAGE_SIZE = 256;
+
+/** Exact head evidence only. Its wrapper owns fetching; its parent owns persistent UI choices. */
+@Component({
+  selector: 'kv-head-details',
+  standalone: true,
+  imports: [ChannelChart, MatIconModule, ExplorerInfoSection, ExplorerInfoValue, KvMetricValues],
+  templateUrl: './kv_head_details.ng.html',
+  styleUrl: './kv_head_details.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+export class KvHeadDetails {
+  /** The server's text of the head's reasons. */
+  readonly reasonText = reasonText;
+  /** The head's status when it needs a batch named: no head dimension values are read. */
+  readonly batchSelectionRequired = REASON_CODES.batchSelectionRequired;
+  private readonly catalog = inject(MetricCatalogStore);
+  readonly channelRange = input<KvRangeBin | null>(null);
+  readonly channelFull = input<KvRangeBin | null>(null);
+  readonly channelReduction = input<ChannelReduction>('mean');
+  readonly channelCapacity = input(128);
+  readonly channelZoom = output<KvRangeBin>();
+  readonly channelCapacityChange = output<number>();
+  readonly plotOnly = input(false);
+  readonly hidePlot = input(false);
+  readonly evidence = input<KvHeadEvidence | null>(null);
+  readonly loading = input(false);
+  readonly error = input('');
+  readonly retry = output<void>();
+  readonly view = model<'index' | 'scatter'>('index');
+  readonly selectedBin = input<KvRangeBin | null>(null);
+  readonly aggregateSelection = computed(() => {
+    const selection = this.selectedBin();
+    return selection && selection.end - selection.start > 1 ? selection : null;
+  });
+  readonly channelInput = input<number | null>(null, {alias: 'channel'});
+  readonly channelChange = output<number | null>();
+  readonly channel = linkedSignal<number | null>(() => {
+    const data = this.evidence();
+    const external = this.channelInput();
+    if (this.plotOnly()) {
+      return external;
+    }
+    const rows = this.channels();
+    const largest = data?.largest_channel;
+    return largest != null && rows.some((c) => c.channel === largest)
+      ? largest
+      : (rows[0]?.channel ?? 0);
+  });
+  readonly windowStart = linkedSignal<number>(() => {
+    const data = this.evidence();
+    if (this.plotOnly()) {
+      return 0;
+    }
+    const rows = this.channels();
+    const largest = data?.largest_channel;
+    const first =
+      largest != null && rows.some((c) => c.channel === largest)
+        ? largest
+        : (rows[0]?.channel ?? 0);
+    const index = Math.max(
+      0,
+      rows.findIndex((c) => c.channel === first),
+    );
+    return Math.floor(index / PAGE_SIZE) * PAGE_SIZE;
+  });
+  readonly copyStatus = linkedSignal<string>(() => {
+    this.evidence();
+    this.plotOnly();
+    return '';
+  });
+  readonly numericalExpanded = model(true);
+  readonly channelsExpanded = model(true);
+  private readonly plotContainer = viewChild<ElementRef<HTMLElement>>('plotContainer');
+  readonly plotWidth = signal(290);
+  readonly plotHeight = 230;
+  readonly plotViewBox = computed(() => `0 0 ${this.plotWidth()} ${this.plotHeight}`);
+  readonly sides = ['ref', 'target'] as const;
+  readonly channels = computed(() =>
+    [...(this.evidence()?.channels ?? [])].sort((a, b) => a.channel - b.channel),
+  );
+  readonly selectedIndex = computed(() =>
+    this.channel() === null
+      ? -1
+      : Math.max(
+          0,
+          this.channels().findIndex((c) => c.channel === this.channel()),
+        ),
+  );
+  readonly selected = computed<KvHeadChannel | undefined>(
+    () => this.channels()[this.selectedIndex()],
+  );
+  readonly plotChannels = computed(() => {
+    const range = this.channelRange();
+    return this.plotOnly() && range
+      ? this.channels().filter((c) => c.channel >= range.start && c.channel < range.end)
+      : this.channels().slice(this.windowStart(), this.windowStart() + PAGE_SIZE);
+  });
+  readonly canNextPage = computed(() => this.windowStart() + PAGE_SIZE < this.channels().length);
+  readonly lastChannel = computed(() => this.channels().at(-1)?.channel ?? 0);
+  readonly firstChannel = computed(() => this.channels()[0]?.channel ?? 0);
+  readonly largest = computed(() => {
+    const value = this.evidence()?.largest_channel;
+    return value != null &&
+      this.channels().some((c) => c.channel === value && this.finite(c.abs_delta))
+      ? value
+      : null;
+  });
+  readonly selectionLabel = computed(() => {
+    const bin = this.aggregateSelection();
+    return bin
+      ? `Head dimensions ${bin.start}–${bin.end - 1}`
+      : `Head dimension ${this.selected()?.channel ?? '—'}`;
+  });
+  readonly selectionOutsideRange = computed(() => {
+    const range = this.channelRange();
+    const channel = this.selected()?.channel;
+    return (
+      this.plotOnly() &&
+      !this.aggregateSelection() &&
+      range &&
+      channel !== undefined &&
+      (channel < range.start || channel >= range.end)
+    );
+  });
+  readonly scalarRows = computed(() => {
+    const selection = this.aggregateSelection();
+    if (selection) {
+      const bin = channelBins(this.channels(), selection, 1, this.channelReduction())[0];
+      return [
+        {label: 'Ref', value: bin?.ref ?? null, signed: false},
+        {label: 'Target', value: bin?.target ?? null, signed: false},
+      ];
+    }
+    const point = this.selected();
+    return [
+      {label: 'Ref', value: point?.ref ?? null, signed: false},
+      {label: 'Target', value: point?.target ?? null, signed: false},
+      {label: 'Signed Δ', value: point?.delta ?? null, signed: true},
+      {label: '|Δ|', value: point?.abs_delta ?? null, signed: false},
+    ];
+  });
+  readonly finitePairs = computed(() =>
+    ['ok', 'partial'].includes(this.evidence()?.status ?? '')
+      ? this.plotChannels().filter((c) => this.finite(c.ref) && this.finite(c.target))
+      : [],
+  );
+  readonly hasValues = computed(() =>
+    this.plotChannels().some((c) => this.finite(c.ref) || this.finite(c.target)),
+  );
+  readonly domain = computed<Domain>(() => {
+    // A channel-page change must not change the head's value scale.
+    const rows =
+      this.view() === 'scatter'
+        ? this.channels().filter((c) => this.finite(c.ref) && this.finite(c.target))
+        : this.channels();
+    return this.valueDomain(
+      rows.flatMap((c) => [c.ref, c.target]).filter((v): v is number => this.finite(v)),
+    );
+  });
+  readonly box = computed(() => {
+    const left = this.view() === 'scatter' ? 64 : 52;
+    return {
+      left,
+      right: Math.max(left + 1, this.plotWidth() - 12),
+      top: 30,
+      bottom: this.plotHeight - 42,
+    };
+  });
+  readonly axisDomains = computed(() => {
+    const base = this.domain();
+    const box = this.box();
+    const width = box.right - box.left;
+    const height = box.bottom - box.top;
+    const expanded = (factor: number): Domain => {
+      const center = (base.low + base.high) / 2;
+      const span = (base.high - base.low) * factor;
+      return {low: center - span / 2, high: center + span / 2, scale: base.scale};
+    };
+    // Scatter uses equal value units on both axes, including in tall/narrow panels.
+    return this.view() === 'scatter'
+      ? {x: expanded(Math.max(1, width / height)), y: expanded(Math.max(1, height / width))}
+      : {x: base, y: base};
+  });
+  readonly xTickCount = computed(() =>
+    Math.max(2, Math.min(7, Math.floor((this.box().right - this.box().left) / 65) + 1)),
+  );
+  readonly tickValues = computed(() => this.domainTicks(this.axisDomains().y, 5));
+  readonly scatterTicks = computed(() => this.domainTicks(this.axisDomains().x, this.xTickCount()));
+  readonly channelTicks = computed(() => {
+    const rows = this.plotChannels();
+    if (!rows.length) {
+      return [];
+    }
+    return [
+      ...new Set(
+        Array.from(
+          {length: this.xTickCount()},
+          (_, i) => rows[Math.round(((rows.length - 1) * i) / (this.xTickCount() - 1))].channel,
+        ),
+      ),
+    ];
+  });
+  readonly paths = computed(() => this.sides.map((side) => ({side, d: this.channelPath(side)})));
+
+  constructor() {
+    effect((onCleanup) => {
+      const element = this.plotContainer()?.nativeElement;
+      if (!element) {
+        return;
+      }
+      const observer = new ResizeObserver(([entry]) => {
+        if (entry.contentRect.width > 0) {
+          this.plotWidth.set(entry.contentRect.width);
+        }
+      });
+      observer.observe(element);
+      onCleanup(() => observer.disconnect());
+    });
+  }
+
+  finite(value: unknown): value is number {
+    return typeof value === 'number' && Number.isFinite(value);
+  }
+  /**
+   * The catalog's words for a head dimension's status, a code the head gives alone; '' for
+   * none.
+   */
+  statusWords(status: string | undefined): string {
+    return status ? this.catalog.lookup().reason(status) : '';
+  }
+  readonly shortNumber = formatMetric;
+  valueText(value: number | string | null | undefined, signed = false): string {
+    if (value == null) {
+      return 'Unavailable';
+    }
+    if (typeof value === 'string') {
+      return value;
+    }
+    if (Object.is(value, -0)) {
+      return '-0';
+    }
+    return (signed && value > 0 ? '+' : '') + String(value);
+  }
+  private valueDomain(values: number[]): Domain {
+    if (!values.length) {
+      return {low: -1, high: 1, scale: 1};
+    }
+    let min = values[0];
+    let max = values[0];
+    for (const value of values) {
+      min = Math.min(min, value);
+      max = Math.max(max, value);
+    }
+    const scale = Math.max(Math.abs(min), Math.abs(max)) || 1;
+    const low = min / scale;
+    const high = max / scale;
+    const pad = Math.max((high - low) * 0.08, 0.08);
+    const limit = Number.MAX_VALUE / scale;
+    return {low: Math.max(-limit, low - pad), high: Math.min(limit, high + pad), scale};
+  }
+  private domainTicks(domain: Domain, count: number): number[] {
+    return Array.from(
+      {length: count},
+      (_, i) => (domain.low + ((domain.high - domain.low) * i) / (count - 1)) * domain.scale,
+    ).filter(Number.isFinite);
+  }
+  x(channel: number): number {
+    const rows = this.plotChannels();
+    const first = rows[0]?.channel ?? 0;
+    const last = rows.at(-1)?.channel ?? first;
+    const box = this.box();
+    return (
+      box.left + ((channel - first + 0.5) / Math.max(1, last - first + 1)) * (box.right - box.left)
+    );
+  }
+  valueY(value: number): number {
+    const d = this.axisDomains().y;
+    const b = this.box();
+    return b.bottom - ((value / d.scale - d.low) / (d.high - d.low)) * (b.bottom - b.top);
+  }
+  scatterX(value: number): number {
+    const d = this.axisDomains().x;
+    const b = this.box();
+    return b.left + ((value / d.scale - d.low) / (d.high - d.low)) * (b.right - b.left);
+  }
+  private channelPath(side: Side): string {
+    let path = '';
+    let connected = false;
+    let previous = -2;
+    for (const row of this.plotChannels()) {
+      const value = row[side];
+      if (!this.finite(value)) {
+        connected = false;
+        continue;
+      }
+      path +=
+        (connected && row.channel === previous + 1 ? 'L' : 'M') +
+        this.x(row.channel) +
+        ',' +
+        this.valueY(value) +
+        ' ';
+      connected = true;
+      previous = row.channel;
+    }
+    return path;
+  }
+  pointTitle(row: KvHeadChannel): string {
+    return `Head dimension ${row.channel}\nRef ${this.valueText(row.ref)}\nTarget ${this.valueText(row.target)}\nSigned Δ ${this.valueText(row.delta, true)}\n|Δ| ${this.valueText(row.abs_delta)}`;
+  }
+  selectChannel(value: number): void {
+    const rows = this.channels();
+    if (!rows.length || !Number.isFinite(value)) {
+      return;
+    }
+    const nearest = rows.reduce((best, row) =>
+      Math.abs(row.channel - value) < Math.abs(best.channel - value) ? row : best,
+    );
+    this.channel.set(nearest.channel);
+    this.channelChange.emit(nearest.channel);
+    const index = rows.indexOf(nearest);
+    this.windowStart.set(Math.floor(index / PAGE_SIZE) * PAGE_SIZE);
+    this.copyStatus.set('');
+  }
+  moveChannel(delta: number): void {
+    const rows = this.channels();
+    const next = rows[Math.max(0, Math.min(rows.length - 1, this.selectedIndex() + delta))];
+    if (next) {
+      this.selectChannel(next.channel);
+    }
+  }
+  movePage(delta: number): void {
+    const rows = this.channels();
+    const index = Math.max(0, Math.min(rows.length - 1, this.windowStart() + delta * PAGE_SIZE));
+    if (rows[index]) {
+      this.selectChannel(rows[index].channel);
+    }
+  }
+  commitChannel(event: Event): void {
+    const field = event.target as HTMLInputElement;
+    if (field.value.trim() !== '' && Number.isInteger(Number(field.value))) {
+      this.selectChannel(Number(field.value));
+    }
+    field.value = String(this.selected()?.channel ?? 0);
+  }
+  channelInputKey(event: KeyboardEvent): void {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      this.commitChannel(event);
+    } else if (event.key === 'Escape') {
+      event.stopPropagation();
+      (event.target as HTMLInputElement).value = String(this.selected()?.channel ?? 0);
+    }
+  }
+  chartKey(event: KeyboardEvent): void {
+    if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) {
+      return;
+    }
+    event.preventDefault();
+    event.stopPropagation();
+    if (event.key === 'Home') {
+      this.selectChannel(this.firstChannel());
+    } else if (event.key === 'End') {
+      this.selectChannel(this.lastChannel());
+    } else {
+      this.moveChannel(event.key === 'ArrowLeft' ? -1 : 1);
+    }
+  }
+  async copyValue(label: string, value: number | string | null, signed = false): Promise<void> {
+    if (value === null) {
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(this.valueText(value, signed));
+      this.copyStatus.set(`Copied ${label}.`);
+    } catch {
+      this.copyStatus.set('Copy unavailable. Select the value to copy it.');
+    }
+  }
+}

@@ -14,29 +14,31 @@
 
 #include "model_debugger/runner/llm/litert_lm/ml_drift_kv_cache.h"
 
+#include <algorithm>
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
-#include <filesystem>
+#include <filesystem>  // NOLINT(build/c++17)
 #include <fstream>
-#include <ios>
 #include <iterator>
 #include <optional>
+#include <set>
 #include <string>
-#include <system_error>
+#include <string_view>
+#include <system_error>  // NOLINT(build/c++11)
 
+#include "model_debugger/runner/util/disk_space.h"
+#include "model_debugger/runner/util/json.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/match.h"
 #include "absl/strings/str_cat.h"
-#include "absl/strings/string_view.h"
-#include "model_debugger/runner/util/json.h"
 
 namespace model_debugger::runner::llm {
 namespace {
 
 // Bytes per element of the dtypes a KV cache is captured in.
-std::optional<size_t> ElementSize(absl::string_view dtype) {
+std::optional<size_t> ElementSize(std::string_view dtype) {
   if (dtype == "I8") return 1;
   if (dtype == "F16") return 2;
   if (dtype == "F32") return 4;
@@ -67,7 +69,8 @@ size_t HostIndex(size_t i, size_t heads, size_t width, size_t depth) {
   return (h * width + w) * depth + slice * 4 + c4;
 }
 
-// Writes `contents` to `file` whole or not at all.
+// Writes `contents` to `file` whole or not at all; a write its disk has no
+// room for ends the Runner (ExitIfOutOfRoom).
 absl::Status Replace(const std::filesystem::path& file,
                      const std::string& contents) {
   std::filesystem::path part = file;
@@ -77,6 +80,12 @@ absl::Status Replace(const std::filesystem::path& file,
   out.close();
   std::error_code error;
   if (out.fail()) {
+    // What did not fit: the part holds what did.
+    const std::uintmax_t held = std::min<std::uintmax_t>(
+        std::filesystem::file_size(part, error), contents.size());
+    ExitIfOutOfRoom(
+        part.string(),
+        error ? 1 : std::max<std::uintmax_t>(contents.size() - held, 1));
     std::filesystem::remove(part, error);
     return absl::InternalError(absl::StrCat("Cannot write ", part.string()));
   }
@@ -98,7 +107,7 @@ absl::Status UnpackMlDriftKvCache(const std::filesystem::path& file) {
   if (!in.is_open() || in.bad()) {
     return absl::InternalError(absl::StrCat("Cannot read ", file.string()));
   }
-  const auto refuse = [&file](absl::string_view why) {
+  const auto refuse = [&file](std::string_view why) {
     return absl::InvalidArgumentError(
         absl::StrCat(file.filename().string(), " ", why));
   };
@@ -113,7 +122,7 @@ absl::Status UnpackMlDriftKvCache(const std::filesystem::path& file) {
   }
   const size_t data_start = sizeof(header_size) + header_size;
   absl::StatusOr<Json> header = ParseJson(
-      absl::string_view(bytes).substr(sizeof(header_size), header_size));
+      std::string_view(bytes).substr(sizeof(header_size), header_size));
   if (!header.ok() || !header->is_object()) {
     return refuse("has no safetensors header.");
   }
@@ -192,6 +201,26 @@ absl::Status UnpackMlDriftKvCache(const std::filesystem::path& file) {
   }
   bytes.replace(data_start + begin, size, unpacked);
   return Replace(file, bytes);
+}
+
+absl::Status UnpackMlDriftKvCaches(const std::filesystem::path& dir,
+                                   const std::set<std::string>& names) {
+  bool param_tensor = false;
+  for (const std::string& name : names) {
+    param_tensor = param_tensor || absl::StrContains(name, "_param_tensor_");
+  }
+  if (!param_tensor) return absl::OkStatus();
+  for (const std::string& name : names) {
+    if ((absl::StrContains(name, "_kv_cache_k_") ||
+         absl::StrContains(name, "_kv_cache_v_")) &&
+        absl::EndsWith(name, ".safetensors")) {
+      if (absl::Status status = UnpackMlDriftKvCache(dir / name);
+          !status.ok()) {
+        return status;
+      }
+    }
+  }
+  return absl::OkStatus();
 }
 
 }  // namespace model_debugger::runner::llm

@@ -1,3 +1,4 @@
+/* stylelint-disable */
 /**
  * @license
  * Copyright 2026 The AI Edge Model Explorer Authors.
@@ -17,7 +18,7 @@
  */
 
 // Conversation actions. Preserve the accepted shell interaction specificity.
-report-app .debugger-shell {
+app-shell .debugger-shell {
   button.graph-link {
     display: inline-flex;
     align-items: center;
@@ -44,11 +45,7 @@ report-app .debugger-shell {
     height: 16px;
   }
   button.graph-link:not(:disabled):hover {
-    background: color-mix(
-      in srgb,
-      var(--button-stage-bg),
-      var(--button-stage-ink) 12%
-    );
+    background: color-mix(in srgb, var(--button-stage-bg), var(--button-stage-ink) 12%);
     color: var(--button-stage-ink);
   }
   button.graph-link:disabled {
@@ -56,13 +53,13 @@ report-app .debugger-shell {
   }
 }
 
-report-app .debugger-shell {
+app-shell .debugger-shell {
   button.graph-link:focus-visible {
     outline-offset: 3px;
   }
 }
 
-report-app .debugger-shell {
+app-shell .debugger-shell {
   button.graph-link.add-analysis {
     justify-content: flex-start;
     background: transparent;

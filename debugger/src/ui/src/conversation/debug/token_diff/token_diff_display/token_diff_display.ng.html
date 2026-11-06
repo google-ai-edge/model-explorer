@@ -1,0 +1,39 @@
+<!--
+ Copyright 2026 The AI Edge Model Explorer Authors.
+
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+ ==============================================================================
+-->
+<div class="applied-color" role="status">Color by: {{ tokens.colorLabel(tokens.color()) }}</div>
+@if (tokens.color() === 'token_match') {
+  <div class="mismatch-legend" aria-label="Mismatch colors">
+    <span>Mismatch:</span><span class="legend-ref">Ref</span
+    ><span class="legend-target">Target</span>
+  </div>
+}
+<div
+  class="numeric-legend"
+  [attr.data-palette]="tokens.heatPalette(tokens.color())"
+  [hidden]="!tokens.numericColor()"
+>
+  <span>{{ tokens.colorLegend()?.none }}</span
+  ><i class="heat-scale" aria-hidden="true"></i><span>{{ tokens.colorLegend()?.full }}</span>
+</div>
+<div class="display-group">
+  <token-display
+    [available]="tokens.metricAvailability()"
+    [preview]="tokens.displayPreview()"
+    [settings]="{color: tokens.color(), boundaries: tokens.boundaries()}"
+    (settingsChange)="tokens.color.set($event.color); tokens.boundaries.set($event.boundaries)"
+  />
+</div>

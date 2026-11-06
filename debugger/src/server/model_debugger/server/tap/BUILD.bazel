@@ -1,0 +1,188 @@
+# Observing tensors of a model: which of its tensors can be observed, and a
+# copy of the model that observes the ones chosen.
+
+load("@rules_python//python:py_library.bzl", "py_library")
+load("@rules_python//python:py_test.bzl", "py_test")
+load("@server_pypi//:requirements.bzl", "requirement")
+
+package(default_visibility = ["//visibility:public"])
+
+# The Python bindings of a FlatBuffers schema, with its object API, as one
+# module: flatc writes <schema>_generated.py, renamed to `out`.
+[
+    genrule(
+        name = name + "_py",
+        srcs = [schema],
+        outs = [out],
+        cmd = " && ".join([
+            "out=$$(mktemp -d)",
+            "$(execpath @flatbuffers//:flatc) --python --gen-object-api " +
+            "--gen-onefile -o $$out $<",
+            "mv $$out/{}_generated.py $@".format(stem),
+            "rm -rf $$out",
+        ]),
+        tools = ["@flatbuffers//:flatc"],
+    )
+    for name, schema, stem, out in [
+        (
+            "tflite_schema",
+            "@tflite_schema//file",
+            "schema",
+            "tflite_schema_generated.py",
+        ),
+        (
+            "litertlm_schema",
+            "@litertlm_header_schema//file",
+            "litertlm_header_schema",
+            "litertlm_schema_generated.py",
+        ),
+    ]
+]
+
+py_library(
+    name = "schemas",
+    srcs = [
+        "__init__.py",
+        ":litertlm_schema_py",
+        ":tflite_schema_py",
+    ],
+    deps = [
+        "//model_debugger/server:package",
+        requirement("flatbuffers"),
+    ],
+)
+
+py_library(
+    name = "litertlm_file",
+    srcs = [
+        "__init__.py",
+        "litertlm_file.py",
+    ],
+    deps = [
+        ":schemas",
+        requirement("flatbuffers"),
+    ],
+)
+
+py_library(
+    name = "tap_scan",
+    srcs = [
+        "__init__.py",
+        "tap_scan.py",
+    ],
+    deps = [
+        ":litertlm_file",
+        ":schemas",
+    ],
+)
+
+py_library(
+    name = "tap_model",
+    srcs = [
+        "__init__.py",
+        "tap_model.py",
+    ],
+    deps = [
+        ":litertlm_file",
+        ":schemas",
+        ":tap_scan",
+        requirement("flatbuffers"),
+        requirement("numpy"),
+    ],
+)
+
+# What a model's files say that two runtimes are compared by: its
+# vocabulary and how its KV cache is quantized.
+py_library(
+    name = "model_facts",
+    srcs = [
+        "__init__.py",
+        "model_facts.py",
+    ],
+    deps = [
+        ":litertlm_file",
+        ":schemas",
+        requirement("absl-py"),
+    ],
+)
+
+# A model's structure without its weights, which its graph is converted from.
+py_library(
+    name = "structure_copy",
+    srcs = [
+        "__init__.py",
+        "structure_copy.py",
+    ],
+    deps = [
+        ":schemas",
+        ":tap_model",
+    ],
+)
+
+py_test(
+    name = "litertlm_file_test",
+    srcs = ["litertlm_file_test.py"],
+    deps = [
+        ":litertlm_file",
+        ":schemas",
+        "//model_debugger/server/testing:tap_fixtures",
+        "//model_debugger/server/testing:test_main",
+        requirement("absl-py"),
+        requirement("flatbuffers"),
+    ],
+)
+
+py_test(
+    name = "model_facts_test",
+    srcs = ["model_facts_test.py"],
+    deps = [
+        ":model_facts",
+        ":schemas",
+        "//model_debugger/server/testing:tap_fixtures",
+        "//model_debugger/server/testing:test_main",
+        requirement("absl-py"),
+        requirement("flatbuffers"),
+    ],
+)
+
+# Scans the real model too, when RUNNER_MODEL names it; it is outside
+# Bazel's view, so the test is "external": Bazel runs it every time.
+py_test(
+    name = "tap_scan_test",
+    srcs = ["tap_scan_test.py"],
+    tags = ["external"],
+    deps = [
+        ":schemas",
+        ":tap_scan",
+        "//model_debugger/server/testing:tap_fixtures",
+        "//model_debugger/server/testing:test_main",
+        requirement("absl-py"),
+        requirement("flatbuffers"),
+    ],
+)
+
+py_test(
+    name = "tap_model_test",
+    srcs = ["tap_model_test.py"],
+    deps = [
+        ":litertlm_file",
+        ":schemas",
+        ":tap_model",
+        ":tap_scan",
+        "//model_debugger/server/testing:tap_fixtures",
+        "//model_debugger/server/testing:test_main",
+        requirement("absl-py"),
+    ],
+)
+
+py_test(
+    name = "structure_copy_test",
+    srcs = ["structure_copy_test.py"],
+    deps = [
+        ":schemas",
+        ":structure_copy",
+        "//model_debugger/server/testing:tap_fixtures",
+        "//model_debugger/server/testing:test_main",
+        requirement("absl-py"),
+    ],
+)

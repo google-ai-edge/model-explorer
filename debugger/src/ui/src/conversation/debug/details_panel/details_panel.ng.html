@@ -1,0 +1,319 @@
+<!--
+ Copyright 2026 The AI Edge Model Explorer Authors.
+
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+ ==============================================================================
+-->
+<button
+  mat-icon-button
+  class="panel-toggle"
+  [style.right.px]="tokens.details() ? tokens.panelWidth() : 0"
+  [attr.aria-label]="tokens.details() ? 'Hide details panel' : 'Show details panel'"
+  [attr.aria-expanded]="tokens.details()"
+  (click)="tokens.details.set(!tokens.details())"
+>
+  <mat-icon>{{ tokens.details() ? 'chevron_right' : 'chevron_left' }}</mat-icon>
+</button>
+@if (tokens.details()) {
+  <div
+    class="resize-handle"
+    resizeHandle
+    aria-label="Resize details panel"
+    [style.right.px]="tokens.panelWidth() - 6"
+    [size]="tokens.panelWidth()"
+    [min]="tokens.panelBounds.min"
+    [max]="tokens.panelBounds.max"
+    [reverse]="true"
+    (sizeChange)="tokens.panelWidth.set($event)"
+  ></div>
+  <aside
+    class="token-inspector"
+    [style.width.px]="tokens.panelWidth()"
+    aria-label="Comparison details"
+  >
+    @if (panels.overviewPanel(); as panel) {
+      <stage-state-info
+        [panel]="panel"
+        [label]="analysisInfo.analysisInstanceLabel(panel)"
+        [range]="panels.analysisRange(panel)"
+        [alignment]="conversation.alignment()"
+        [graphSelection]="panels.graphDetailSelection(panel)"
+        [graph]="panels.overviewGraph(panel)"
+        [kv]="panels.overviewKv(panel)"
+        [finalLogits]="panels.overviewFinalLogits(panel)"
+        [kvSelection]="panel.kind === 'kv' ? panels.kvDetailSelection() : null"
+        [points]="analysisInfo.stagePoints(panel)"
+        [inspectedRow]="panels.inspectedRow(panel)"
+        (locateAnalysis)="analysisInfo.locateAnalysisArea(panel)"
+        (locateCache)="analysisInfo.locateKvCache(panel, $event)"
+        (locateAggregation)="analysisInfo.locateAggregation(panel)"
+        (locateMetric)="analysisInfo.locateMetric(panel)"
+        (locateView)="analysisInfo.locateTokenView(panel)"
+        (locateScope)="analysisInfo.locateScopeControl(panel, $event)"
+        (locateGraph)="analysisInfo.locateGraphChart(panel)"
+        (locateFinal)="analysisInfo.locateFinalChart(panel, $event)"
+        (locateLogitElement)="panels.overviewFinalLogits(panel)?.locateElement($event)"
+        (locateTensorPosition)="analysisInfo.locateScopeControl(panel, 'positions')"
+        (location)="analysisInfo.locateStatePosition(panel, $event)"
+      />
+    } @else {
+      @if (!tokens.selection()) {
+        <explorer-info-section label="Conversation Info" [(expanded)]="tokens.infoExpanded">
+          <table>
+            <tbody>
+              <tr>
+                <th>Turns</th>
+                <td>{{ conversation.turns().length }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </explorer-info-section>
+        <explorer-info-section
+          label="Stages"
+          [count]="detailsInfo.conversationStages().length"
+          [expanded]="tokens.groupOpen('conversation-stages')"
+          (expandedChange)="tokens.setGroup('conversation-stages', $event)"
+        >
+          <div class="conversation-stage-list" role="list">
+            @for (item of detailsInfo.conversationStages(); track item.title; let index = $index) {
+              <div class="conversation-stage-item" role="listitem" [attr.aria-label]="item.title">
+                <div class="conversation-stage-title">
+                  <span class="item-index">{{ index }}</span>
+                  <button
+                    explorer-locator
+                    [label]="item.title"
+                    [attr.aria-label]="'Locate ' + item.title"
+                    [title]="'Locate ' + item.title"
+                    (click)="dom.locateConversationStage(item.turn, item.stage)"
+                  ></button>
+                </div>
+                <table
+                  class="conversation-stage-properties"
+                  [attr.aria-label]="item.title + ' token comparison'"
+                >
+                  <tbody>
+                    @for (property of item.properties; track property.label) {
+                      <tr>
+                        <th scope="row" [matTooltip]="property.description">
+                          <div class="key-container">
+                            <mat-icon class="bullet" aria-hidden="true">circle</mat-icon
+                            >{{ property.label }}
+                          </div>
+                        </th>
+                        <td>
+                          <explorer-info-value
+                            [value]="property.value"
+                            [label]="item.title + ' ' + property.label"
+                            [inline]="true"
+                          />
+                        </td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            }
+          </div>
+        </explorer-info-section>
+      }
+      @if (detailsInfo.selectionInfo(); as stage) {
+        <explorer-info-section
+          label="Selected Tokens Info"
+          class="token-info-root"
+          [expanded]="tokens.groupOpen('token')"
+          (expandedChange)="tokens.setGroup('token', $event)"
+        >
+          <table class="stage-info-table token-summary-table">
+            <tbody>
+              <tr>
+                <th>Stage</th>
+                <td>
+                  <button
+                    explorer-locator
+                    [label]="
+                      'Turn ' +
+                      stage.turn +
+                      ' · ' +
+                      (stage.stage === 'prefill' ? 'Prefill' : 'Decode')
+                    "
+                    [attr.aria-label]="
+                      'Locate Turn ' +
+                      stage.turn +
+                      ' · ' +
+                      (stage.stage === 'prefill' ? 'Prefill' : 'Decode')
+                    "
+                    title="Locate stage"
+                    (click)="dom.locateConversationStage(stage.turn, stage.stage)"
+                  ></button>
+                </td>
+              </tr>
+              @for (property of detailsInfo.stageAnalysisProperties(); track property.label) {
+                <tr>
+                  <th scope="row">{{ property.label }}</th>
+                  <td>{{ property.value }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </explorer-info-section>
+        <explorer-info-section
+          class="token-info-list"
+          label="Selected Token Pairs"
+          [count]="detailsInfo.infoTokenPairs().length"
+          [expanded]="tokens.groupOpen('tokens')"
+          (expandedChange)="tokens.setGroup('tokens', $event)"
+        >
+          <explorer-pagination
+            section-action
+            label="Token pair pages"
+            previousLabel="Previous token pair page"
+            nextLabel="Next token pair page"
+            [index]="detailsInfo.infoTokenPage().index"
+            [pages]="detailsInfo.infoTokenPage().pages"
+            (change)="detailsInfo.changeTokenInfoPage($event)"
+          />
+          <div
+            class="token-pair-list"
+            role="list"
+            [style.--position-digits]="detailsInfo.infoTokenIndexDigits()"
+          >
+            @for (pair of detailsInfo.infoTokenPage().pairs; track pair.index) {
+              <div
+                class="token-pair-item"
+                role="listitem"
+                [attr.aria-label]="'Position ' + detailsInfo.infoPairPosition(pair)"
+              >
+                <ng-template #pairText>
+                  @for (side of ['target', 'ref']; track side; let last = $last) {
+                    <span
+                      class="info-token"
+                      [class.ref]="side === 'ref'"
+                      [class.target]="side === 'target'"
+                      [class.mismatch]="tokens.color() === 'token_match' && pair.match === false"
+                      [class.missing]="!tokens.pairToken(pair, side)"
+                      [attr.title]="detailsInfo.infoTokenTitle(pair, side)"
+                      [innerHTML]="detailsInfo.infoTokenHtml(pair, side)"
+                    ></span>
+                    @if (!last) {
+                      <span> / </span>
+                    }
+                  }
+                </ng-template>
+                <div class="token-pair-name">
+                  <span class="token-pair-position" title="Aligned position">{{
+                    detailsInfo.infoPairPosition(pair)
+                  }}</span>
+                  <div
+                    explorer-locator
+                    [row]="true"
+                    role="button"
+                    tabindex="0"
+                    [attr.aria-label]="'Locate token pair ' + detailsInfo.infoPairPosition(pair)"
+                    (click)="locateInfoToken(pair)"
+                    (keydown)="activateTokenLocator($event, pair)"
+                  >
+                    <explorer-info-value
+                      class="token-pair-value"
+                      [value]="detailsInfo.infoPairText(pair)"
+                      [contentTemplate]="pairText"
+                      [label]="
+                        'Position ' +
+                        detailsInfo.infoPairPosition(pair) +
+                        ' tokens (Target / Reference)'
+                      "
+                      [inline]="true"
+                    />
+                  </div>
+                </div>
+                <explorer-info-list
+                  class="token-pair-properties"
+                  [bullets]="true"
+                  [items]="[
+                    {
+                      label: 'Token ID (Ref / Target)',
+                      value:
+                        (tokens.pairToken(pair, 'ref')?.id ?? '∅') +
+                        ' / ' +
+                        (tokens.pairToken(pair, 'target')?.id ?? '∅'),
+                    },
+                  ]"
+                />
+              </div>
+            } @empty {
+              <p>No captured tokens in this selection.</p>
+            }
+          </div>
+        </explorer-info-section>
+        <ng-container
+          [ngTemplateOutlet]="infoAnalyses"
+          [ngTemplateOutletContext]="{turn: stage.turn, stage: stage.stage}"
+        />
+      }
+    }
+  </aside>
+}
+
+<ng-template #infoAnalyses let-turn="turn" let-stage="stage">
+  <explorer-info-section
+    class="analysis-views-info"
+    label="Analysis Views"
+    [count]="panels.panelsFor(turn, stage).length"
+    [expanded]="tokens.groupOpen('analyses')"
+    (expandedChange)="tokens.setGroup('analyses', $event)"
+  >
+    <button
+      section-action
+      type="button"
+      class="info-add-analysis"
+      aria-label="Add analysis view"
+      matTooltip="Add analysis view"
+      (click)="analyses.openAnalysisPicker(turn, stage)"
+    >
+      <mat-icon>add</mat-icon>
+    </button>
+    <ng-container
+      [ngTemplateOutlet]="analysisPanelItems"
+      [ngTemplateOutletContext]="{turn, stage, indexed: true}"
+    />
+  </explorer-info-section>
+</ng-template>
+<ng-template #analysisPanelItems let-turn="turn" let-stage="stage" let-indexed="indexed">
+  <div class="info-locator-list" [class.indexed-panel-list]="indexed" role="list">
+    @for (panel of panels.panelsFor(turn, stage); track panel.id; let i = $index) {
+      <div role="listitem" class="analysis-view-item">
+        <div class="analysis-view-heading">
+          @if (indexed) {
+            <span class="panel-index">{{ i }}</span>
+          }
+          <button
+            explorer-locator
+            class="analysis-view-locator"
+            [row]="true"
+            [label]="analysisInfo.analysisInstanceLabel(panel)"
+            [attr.aria-label]="'Locate ' + analysisInfo.analysisInstanceLabel(panel)"
+            (click)="analyses.locateAnalysis(panel)"
+          >
+            @if (!indexed) {
+              <small class="analysis-config">{{ analysisInfo.analysisConfig(panel) }}</small>
+            }
+          </button>
+        </div>
+        <explorer-info-list
+          class="analysis-view-properties"
+          [bullets]="true"
+          [items]="analysisInfo.analysisViewProperties(panel)"
+        />
+      </div>
+    }
+  </div>
+</ng-template>

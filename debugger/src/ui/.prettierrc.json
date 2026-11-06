@@ -1,0 +1,14 @@
+{
+  "singleQuote": true,
+  "bracketSpacing": false,
+  "printWidth": 100,
+  "trailingComma": "all",
+  "overrides": [
+    {
+      "files": "*.ng.html",
+      "options": {
+        "parser": "angular"
+      }
+    }
+  ]
+}

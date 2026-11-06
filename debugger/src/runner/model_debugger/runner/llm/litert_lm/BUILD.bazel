@@ -37,8 +37,6 @@ config_setting(
         "@build_bazel_apple_support//constraints:simulator",
         "@platforms//os:ios",
     ],
-    # The iOS App bundles its GPU plugins.
-    visibility = ["//model_debugger/runner/app/apple:__pkg__"],
 )
 
 config_setting(
@@ -60,17 +58,18 @@ cc_library(
         "//model_debugger/runner/service:__pkg__",
     ],
     deps = [
+        ":capture_files",
+        ":fed_tokens",
         ":gpu_plugins",
         ":ml_drift_kv_cache",
         "//model_debugger/runner/llm:runtime",
         "//model_debugger/runner/util:json",
-        "@com_google_absl//absl/base:core_headers",
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/status:statusor",
         "@com_google_absl//absl/strings",
-        "@com_google_absl//absl/synchronization",
+        "@com_google_absl//absl/strings:cord",
         "@protobuf",
-        "@protocol//model_debugger/v1:runner_cc_proto",
+        "@protocol//model_debugger/protocol:runner_cc_proto",
     ] + select({
         setting: [
             repository + "//:c_api",
@@ -78,6 +77,57 @@ cc_library(
         ]
         for setting, repository in _REPOSITORIES.items()
     }),
+)
+
+cc_library(
+    name = "capture_files",
+    srcs = ["capture_files.cc"],
+    hdrs = ["capture_files.h"],
+    deps = [
+        "//model_debugger/runner/util:disk_space",
+        "//model_debugger/runner/util:json",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status:statusor",
+        "@com_google_absl//absl/strings",
+    ],
+)
+
+cc_test(
+    name = "capture_files_test",
+    srcs = ["capture_files_test.cc"],
+    deps = [
+        ":capture_files",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/strings",
+        "@com_google_googletest//:gtest_main",
+    ],
+)
+
+cc_library(
+    name = "fed_tokens",
+    srcs = ["fed_tokens.cc"],
+    hdrs = ["fed_tokens.h"],
+    deps = [
+        "//model_debugger/runner/util:json",
+        "@com_google_absl//absl/hash",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status:statusor",
+        "@com_google_absl//absl/strings",
+        "@protocol//model_debugger/protocol:runner_cc_proto",
+    ],
+)
+
+cc_test(
+    name = "fed_tokens_test",
+    srcs = ["fed_tokens_test.cc"],
+    deps = [
+        ":fed_tokens",
+        "//model_debugger/runner/util:json",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status:statusor",
+        "@com_google_googletest//:gtest_main",
+        "@protocol//model_debugger/protocol:runner_cc_proto",
+    ],
 )
 
 cc_library(
@@ -93,11 +143,25 @@ cc_library(
     }),
 )
 
+cc_test(
+    name = "gpu_plugins_test",
+    srcs = ["gpu_plugins_test.cc"],
+    deps = [
+        ":gpu_plugins",
+        "@com_google_absl//absl/status",
+        "@com_google_googletest//:gtest_main",
+    ] + select({
+        setting: [repository + "//:plugins"]
+        for setting, repository in _REPOSITORIES.items()
+    }),
+)
+
 cc_library(
     name = "ml_drift_kv_cache",
     srcs = ["ml_drift_kv_cache.cc"],
     hdrs = ["ml_drift_kv_cache.h"],
     deps = [
+        "//model_debugger/runner/util:disk_space",
         "//model_debugger/runner/util:json",
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/status:statusor",
@@ -122,11 +186,56 @@ cc_test(
     srcs = ["litert_lm_runtime_test.cc"],
     deps = [
         ":litert_lm",
+        "//model_debugger/runner/service:options_schema",
         "@com_google_absl//absl/status",
         "@com_google_googletest//:gtest_main",
         "@protobuf",
-        "@protocol//model_debugger/v1:runner_cc_proto",
+        "@protocol//model_debugger/protocol:runner_cc_proto",
     ],
+)
+
+# What a command-line Runner needs beside its binary to run on its own, and
+# the facts of the LiteRT-LM commit (commit.json): what cli:keep keeps. Only
+# macOS has a command-line Runner.
+filegroup(
+    name = "runtime_files",
+    srcs = select({
+        ":macos": ["@litert_lm_macos_arm64//:runtime_files"],
+    }),
+    visibility = ["//model_debugger/runner/cli:__pkg__"],
+)
+
+# A phone App's version: "<commit> (<commit date>)", of the LiteRT-LM it is
+# built against, as its repository's commit.json says; the date as
+# YYYY-MM-DD, left out if unknown. The App writes it into its own version
+# info (app/), where the server reads it without launching the App.
+_APP_VERSION = " && ".join([
+    "commit=$$(sed -n 's/.*\"commit\": *\"\\([0-9a-f]\\{40\\}\\)\".*/\\1/p' $<)",
+    "date=$$(sed -n 's/.*\"commit_date\": *\"\\([0-9]\\{4\\}-[0-9][0-9]-[0-9][0-9]\\).*/\\1/p' $<)",
+    "test -n \"$$commit\"",
+    "printf '%s%s\\n' \"$$commit\" \"$${date:+ ($$date)}\" > $@",
+])
+
+# Manual, as the Apps are: //... is built for this computer, not a phone.
+genrule(
+    name = "android_app_version",
+    srcs = ["@litert_lm_android_arm64//:commit.json"],
+    outs = ["android_app_version.txt"],
+    cmd = _APP_VERSION,
+    tags = ["manual"],
+    visibility = ["//model_debugger/runner/app/android:__pkg__"],
+)
+
+genrule(
+    name = "ios_app_version",
+    srcs = select({
+        ":ios_device": ["@litert_lm_ios_arm64//:commit.json"],
+        ":ios_simulator": ["@litert_lm_ios_sim_arm64//:commit.json"],
+    }),
+    outs = ["ios_app_version.txt"],
+    cmd = _APP_VERSION,
+    tags = ["manual"],
+    visibility = ["//model_debugger/runner/app/apple:__pkg__"],
 )
 
 # What litert_lm_library instantiates the @litert_lm repositories from.

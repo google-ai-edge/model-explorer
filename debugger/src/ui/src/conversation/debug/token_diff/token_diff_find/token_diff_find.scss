@@ -1,0 +1,147 @@
+/**
+ * @license
+ * Copyright 2026 The AI Edge Model Explorer Authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ==============================================================================
+ */
+
+:host {
+  display: contents;
+}
+:host-context(.composer) span {
+  font-size: 12px;
+  color: var(--on2);
+}
+@media (max-width: 650px) {
+  :host-context(.composer) span {
+    font-size: 11px;
+  }
+}
+.find-tools {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .debug-primary {
+    animation: chat-appear 140ms ease-out;
+  }
+  @keyframes chat-appear {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+}
+:host-context(.debug-composer) button {
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+:host-context(.debug-composer) token-query-control {
+  flex: none;
+}
+:host-context(.debug-composer) .find-tools {
+  min-width: 0;
+  flex-wrap: wrap;
+}
+@media (max-width: 650px) {
+  :host-context(.debug-composer) .find-tools {
+    width: 100%;
+  }
+  :host-context(.debug-composer) .find-tools token-query-control {
+    flex-basis: 100%;
+  }
+}
+.debug-primary {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 50px;
+  padding: 0 12px;
+  box-sizing: border-box;
+}
+.alignment-field {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: none;
+  padding-right: 8px;
+  border-right: 1px solid var(--debug-dock-divider);
+  font: 12px/20px var(--me-font-family);
+}
+.alignment-field > span {
+  font: 700 12px/20px var(--me-font-family);
+}
+.alignment-field config-picker {
+  width: 82px;
+}
+.alignment-field config-picker ::ng-deep :host > button,
+.alignment-field config-picker ::ng-deep button[aria-label='Comparison alignment'] {
+  font: 12px/14px var(--me-font-family);
+  padding: 2px 4px;
+}
+.debug-primary token-query-control {
+  flex: 1;
+  min-width: 0;
+}
+.debug-find {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+}
+.debug-primary .find-tools {
+  flex: none;
+  flex-wrap: nowrap;
+  gap: 0;
+}
+.debug-primary .debug-layer-graph {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 32px;
+  height: 32px;
+  padding: 6px;
+}
+.debug-layer-graph img {
+  display: block;
+  width: 20px;
+  height: 20px;
+}
+.debug-layer-graph:disabled img {
+  opacity: 0.38;
+}
+@media (max-width: 1000px) {
+  .debug-primary {
+    flex-wrap: wrap;
+    padding: 8px 12px;
+    row-gap: 8px;
+  }
+  .debug-find {
+    flex-basis: 310px;
+  }
+}
+@media (max-width: 650px) {
+  .debug-primary .find-tools {
+    width: auto;
+  }
+}
+.alignment-field config-picker ::ng-deep button[aria-label='Comparison alignment'] {
+  background: transparent;
+  border-color: var(--me-outline-variant-color);
+}

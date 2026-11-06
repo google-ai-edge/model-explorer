@@ -1,0 +1,87 @@
+# The ways to start the Server: the command line.
+
+load("@rules_python//python:py_binary.bzl", "py_binary")
+load("@rules_python//python:py_library.bzl", "py_library")
+load("@rules_python//python:py_test.bzl", "py_test")
+load("@server_pypi//:requirements.bzl", "requirement")
+
+package(default_visibility = ["//visibility:public"])
+
+py_library(
+    name = "server_main",
+    srcs = [
+        "__init__.py",
+        "server_main.py",
+    ],
+    deps = [
+        "//model_debugger/server",
+        requirement("absl-py"),
+    ],
+)
+
+# The Server as a command, as the wheel's model-debugger-server is:
+#   bazel run //model_debugger/server/cli:server -- --help
+py_binary(
+    name = "server",
+    main_module = "model_debugger.server.cli.server_main",
+    deps = [":server_main"],
+)
+
+# The command, run as `python -m` of server_main, with a --port in use.
+py_test(
+    name = "server_main_port_test",
+    srcs = ["server_main_port_test.py"],
+    deps = [
+        ":server_main",
+        "//model_debugger/server/testing:test_main",
+        requirement("absl-py"),
+    ],
+)
+
+# The whole Server, run as `python -m` of server_main, with two real runners
+# and a real model: skipped unless the runner is built (RUNNER_BINARY, or the
+# runner's own Bazel build) and RUNNER_MODEL names a model, which takes
+# minutes to hash and load. The runner and the model are outside Bazel's
+# view, so the test is "external": Bazel runs it every time rather than reuse
+# a result from before the runner was rebuilt.
+py_test(
+    name = "server_main_exit_test",
+    srcs = ["server_main_exit_test.py"],
+    deps = [
+        ":server_main",
+        "//model_debugger/server",
+        "//model_debugger/server/runner:android_launcher",
+        "//model_debugger/server/runner:launcher",
+        "//model_debugger/server/runner:launchers",
+        "//model_debugger/server/runner:tool",
+        "//model_debugger/server/testing:fake_runner",
+        "//model_debugger/server/testing:fake_tools",
+        "//model_debugger/server/testing:test_main",
+        requirement("absl-py"),
+    ],
+)
+
+py_test(
+    name = "server_main_flags_test",
+    srcs = ["server_main_flags_test.py"],
+    deps = [
+        ":server_main",
+        "//model_debugger/server/session:workspace",
+        "//model_debugger/server/testing:test_main",
+        requirement("absl-py"),
+    ],
+)
+
+py_test(
+    name = "server_main_test",
+    timeout = "long",
+    srcs = ["server_main_test.py"],
+    tags = ["external"],
+    deps = [
+        ":server_main",
+        "//model_debugger/server/testing:real_runner",
+        "//model_debugger/server/testing:test_main",
+        requirement("absl-py"),
+        requirement("httpx"),
+    ],
+)

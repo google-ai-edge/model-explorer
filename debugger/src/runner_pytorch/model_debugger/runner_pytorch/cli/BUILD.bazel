@@ -1,0 +1,57 @@
+# The way to start the runner: the command line.
+
+load("@rules_python//python:py_binary.bzl", "py_binary")
+load("@rules_python//python:py_library.bzl", "py_library")
+load("@rules_python//python:py_test.bzl", "py_test")
+load("@runner_pytorch_pypi//:requirements.bzl", "requirement")
+
+package(default_visibility = ["//visibility:public"])
+
+py_library(
+    name = "runner_main",
+    srcs = [
+        "__init__.py",
+        "runner_main.py",
+    ],
+    deps = [
+        "//model_debugger/runner_pytorch:package",
+        "//model_debugger/runner_pytorch/service:model_id",
+        "//model_debugger/runner_pytorch/service:runner_service",
+        "@protocol//model_debugger/protocol:runner_py_pb2_grpc",
+        requirement("grpcio"),
+    ],
+)
+
+# The runner as a command, which the Server's local launcher runs:
+#   bazel build //model_debugger/runner_pytorch/cli:runner
+#   bazel-bin/model_debugger/runner_pytorch/cli/runner --model_dir <dir>
+py_binary(
+    name = "runner",
+    main_module = "model_debugger.runner_pytorch.cli.runner_main",
+    deps = [":runner_main"],
+)
+
+# The command, run as `python -m` of runner_main, with a real Gemma 4:
+# skipped unless RUNNER_PYTORCH_MODEL names its directory, which takes minutes
+# to hash and load. The model, and the Server's capture index it is checked
+# by (testing/server_capture.py), are outside Bazel's view, so the test is
+# "external": Bazel runs it every time rather than reuse a result from before
+# either changed.
+py_test(
+    name = "runner_main_test",
+    timeout = "eternal",
+    srcs = ["runner_main_test.py"],
+    tags = ["external"],
+    deps = [
+        ":runner_main",
+        "//model_debugger/runner_pytorch/service:model_id",
+        "//model_debugger/runner_pytorch/testing:runner_client",
+        "//model_debugger/runner_pytorch/testing:server_capture",
+        "//model_debugger/runner_pytorch/testing:test_main",
+        "@protocol//model_debugger/protocol:runner_py_pb2",
+        "@protocol//model_debugger/protocol:runner_py_pb2_grpc",
+        requirement("grpcio"),
+        requirement("protobuf"),
+        requirement("pytest"),
+    ],
+)

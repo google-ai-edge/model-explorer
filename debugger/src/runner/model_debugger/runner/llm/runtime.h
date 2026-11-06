@@ -13,32 +13,43 @@
 // limitations under the License.
 
 // What the Runner needs of an LLM runtime, in the protocol's own types: a
-// runtime loads a model, a model creates the chat, the chat takes turns.
+// runtime loads a model, a model creates a chat, the chat takes turns.
 // LiteRT-LM is one implementation (litert_lm/litert_lm_runtime.h).
 
 #ifndef MODEL_DEBUGGER_RUNNER_LLM_RUNTIME_H_
 #define MODEL_DEBUGGER_RUNNER_LLM_RUNTIME_H_
 
-#include <filesystem>
+#include <filesystem>  // NOLINT(build/c++17)
 #include <functional>
 #include <memory>
+#include <string_view>
 
+#include "model_debugger/protocol/runner.pb.h"
+#include "absl/status/status.h"
 #include "absl/status/statusor.h"
-#include "model_debugger/v1/runner.pb.h"
 
 namespace model_debugger::runner::llm {
 
 // Receives each piece of a reply as the model produces it, before Send
 // returns, on a thread of the runtime's choosing, which may be the caller's. It
 // may call Cancel on the chat and nothing else of it.
-using ChunkCallback = std::function<void(const v1::Chunk& chunk)>;
+using ChunkCallback = std::function<void(const protocol::Chunk& chunk)>;
 
 // What a turn leaves behind: the reply, and where the runtime wrote the turn's
 // tensors. The directory is the Runner's to read and never leaves its machine.
 struct Turn {
-  v1::Completion completion;
+  protocol::Completion completion;
   std::filesystem::path capture_dir;
 };
+
+// The payloads of the ResourceExhausted a Send returns for a turn the context
+// has no room for, and CreateChat for starting messages it has no room for,
+// by type URL, each a decimal number: the tokens the turn, or the start of
+// the chat, needs, and the tokens the context has left.
+inline constexpr std::string_view kTurnTokensPayload =
+    "model_debugger.runner/turn_tokens";
+inline constexpr std::string_view kTokensLeftPayload =
+    "model_debugger.runner/tokens_left";
 
 // A chat on a model: a prompt template, a context, and the messages so far.
 //
@@ -48,7 +59,7 @@ class Chat {
  public:
   virtual ~Chat() = default;
 
-  // Sends `message` as the user's next turn and returns the whole reply, after
+  // Sends `message`, the user's next turn, and returns the whole reply, after
   // giving each piece of it to `on_chunk` as it was produced. Returns when the
   // model has finished, and not before. The completion's model_debugger.turn
   // counts the turns completed on this chat, this one included, from 1. Its
@@ -58,10 +69,14 @@ class Chat {
   // Returns Cancelled if Cancel was called while this Send was in progress:
   // what `on_chunk` received stays received. The chat is then over, and only
   // its destructor may follow. Returns InvalidArgument if `message` is not a
-  // user message in UTF-8, FailedPrecondition if the chat is over, and
-  // Internal if the runtime fails or its reply cannot be read: never
-  // InvalidArgument for what the model produced.
-  virtual absl::StatusOr<Turn> Send(const v1::ChatMessage& message,
+  // user message in UTF-8; ResourceExhausted if the turn needs more tokens
+  // than the context has left, its payloads kTurnTokensPayload and
+  // kTokensLeftPayload saying how many; FailedPrecondition if the chat is
+  // over; and Internal if the runtime fails or its reply cannot be read: never
+  // InvalidArgument for what the model produced. InvalidArgument and
+  // ResourceExhausted change nothing: the chat takes the next turn as if this
+  // one had not been sent.
+  virtual absl::StatusOr<Turn> Send(const protocol::ChatMessage& message,
                                     const ChunkCallback& on_chunk) = 0;
 
   // Stops the Send in progress, if there is one, which ends the chat; does
@@ -69,24 +84,32 @@ class Chat {
   virtual void Cancel() = 0;
 };
 
-// A loaded model.
+// A loaded model, with one chat at a time.
 //
 // Not thread-safe. A Model must not outlive its Runtime, and must outlive its
-// Chat.
+// Chats.
 class Model {
  public:
   virtual ~Model() = default;
 
-  // What is known only once the model is loaded: its start and stop tokens.
-  virtual const v1::LoadResponse& Info() const = 0;
+  // What is known only once the model is loaded: its start and stop tokens,
+  // and the sampling it sets for a chat that sets none.
+  virtual const protocol::LoadResponse& Info() const = 0;
 
-  // Creates the chat with `request`'s starting messages and options.
+  // Creates a chat with `request`'s starting messages and options, from an
+  // empty context. The caller has deleted the chat before, if any, so that
+  // two contexts never take memory at once, and has checked the fixed
+  // options against the protocol's ranges (ChatOptions),
+  // max_completion_tokens at least 1 among them.
   //
-  // Returns InvalidArgument if a system message is not first or a text is not
-  // UTF-8, Unimplemented if `request` asks for what this runtime does not do,
-  // and Internal if the runtime refuses.
+  // Returns InvalidArgument if a system message is not first, a role is
+  // unspecified or unknown, a text is not UTF-8, or a runtime option is
+  // missing, unknown or of the wrong type; ResourceExhausted if the starting
+  // messages, rendered as the first turn's prompt with an empty user message,
+  // need more tokens than the context has, its payloads kTurnTokensPayload
+  // and kTokensLeftPayload saying how many; Internal if the runtime refuses.
   virtual absl::StatusOr<std::unique_ptr<Chat>> CreateChat(
-      const v1::CreateChatRequest& request) = 0;
+      const protocol::CreateChatRequest& request) = 0;
 };
 
 // An LLM runtime. Every runtime here captures tensors: the Runner exists to
@@ -100,26 +123,29 @@ class Runtime {
   // What this runtime is, known before any model: its name and version, and
   // the JSON Schemas of the options its Load and its chats take beyond the
   // fixed ones.
-  virtual const v1::RuntimeInfo& Info() const = 0;
+  virtual const protocol::RuntimeInfo& Info() const = 0;
 
-  // Whether this build of the runtime can run a model on the GPU: what Load
-  // needs for it is where Load looks.
-  virtual bool CanRunOnGpu() const = 0;
+  // OK if this build of the runtime can run a model on the GPU here, as far
+  // as can be told without loading one: what Load needs for it is where Load
+  // looks. Otherwise FailedPrecondition saying why, or Internal if the
+  // runtime cannot tell. A Load on the GPU then fails the same way.
+  virtual absl::Status CanRunOnGpu() const = 0;
 
   // Loads the model at `model` with `request`'s device, context length and
-  // runtime options. The runtime may write under `data_dir`, and nowhere
-  // else; captures land somewhere beneath it.
+  // runtime options. The caller has checked that the context length is
+  // positive and the device is CPU or GPU. The runtime may write under
+  // `data_dir`, and nowhere else; captures land somewhere beneath it.
   //
-  // Returns InvalidArgument if `request.context_length` is not positive or a
-  // runtime option is missing, unknown or of the wrong type; NotFound if
-  // `model` is missing, and for nothing else; FailedPrecondition if
-  // `data_dir` is missing or this build lacks what `request.device` needs,
-  // such as its GPU plugins; Unimplemented if this runtime does not run on
-  // `request.device`; Unavailable if the device is not there to use;
-  // Internal if the runtime refuses, in which case its log says why.
+  // Returns InvalidArgument if a runtime option is missing, unknown or of the
+  // wrong type; NotFound if `model` is missing, and for nothing else;
+  // FailedPrecondition if `data_dir` is missing or this build cannot run on
+  // the GPU here, as CanRunOnGpu says, or its GPU plugins do not load;
+  // Internal if the runtime refuses, in which case its log says why. Never
+  // Unavailable: the protocol keeps that for a runner that cannot be
+  // reached.
   virtual absl::StatusOr<std::unique_ptr<Model>> Load(
       const std::filesystem::path& model, const std::filesystem::path& data_dir,
-      const v1::LoadRequest& request) = 0;
+      const protocol::LoadRequest& request) = 0;
 };
 
 }  // namespace model_debugger::runner::llm

@@ -1,0 +1,320 @@
+/**
+ * @license
+ * Copyright 2026 The AI Edge Model Explorer Authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ==============================================================================
+ */
+
+@use '../../../theme/token_diff' as token;
+@use '../../../theme/explorer_controls' as controls;
+
+:host {
+  display: contents;
+}
+.composer {
+  position: absolute;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(720px, calc(100% - 48px));
+  box-sizing: border-box;
+  padding: 14px;
+  background: var(--surface);
+  border: 1px solid var(--outline);
+  border-radius: 12px;
+  box-shadow: 0 4px 16px #0002;
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+.composer span {
+  font-size: 12px;
+  color: var(--on2);
+}
+@media (max-width: 650px) {
+  .composer {
+    bottom: 12px;
+    gap: 8px;
+  }
+  .composer span {
+    font-size: 11px;
+  }
+}
+.composer {
+  flex-wrap: wrap;
+}
+.composer > span {
+  flex-basis: 100%;
+}
+.composer {
+  width: max-content;
+  max-width: calc(100% - 48px);
+  gap: 8px;
+  z-index: 4;
+}
+.composer > span {
+  flex-basis: auto;
+}
+// The demo changes reading geometry immediately; its mode transition only
+// fades the newly visible composer controls, avoiding reflow while scrolling.
+@media (max-width: 1000px) {
+  .composer {
+    width: calc(100% - 24px);
+    max-width: none;
+  }
+}
+.composer.chat-composer {
+  width: min(760px, calc(100% - 48px));
+  padding: 11px 12px 9px;
+  gap: 8px;
+  border: 0;
+  box-shadow:
+    0 10px 30px #23283029,
+    0 3px 8px #2328301a;
+}
+.chat-composer textarea {
+  box-sizing: border-box;
+  display: block;
+  flex: 0 0 100%;
+  width: 100%;
+  min-height: 46px;
+  max-height: 120px;
+  resize: none;
+  overflow: auto;
+  background: transparent;
+  color: var(--on1);
+  border: 0;
+  outline: 0;
+  padding: 2px;
+  font: 14px/24px var(--me-font-family);
+}
+.chat-composer textarea::placeholder {
+  color: var(--on2);
+}
+.chat-composer .send-notice {
+  margin-left: auto;
+  min-width: 0;
+  font: 11px/16px var(--me-font-family);
+}
+.chat-send.mat-mdc-button-base {
+  height: 32px;
+  padding: 5px 12px;
+  border: 1px solid var(--me-surface-variant-color);
+  border-radius: 5px;
+  font: 500 12px/20px var(--me-font-family);
+  background: var(--me-secondary-container-color);
+  color: var(--me-on-secondary-container-color);
+  cursor: pointer;
+}
+.chat-send.mat-mdc-button-base:disabled {
+  background: var(--me-surface-container-low-color);
+  color: var(--on2);
+  cursor: default;
+  opacity: 0.65;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .chat-composer textarea {
+    animation: chat-appear 140ms ease-out;
+  }
+  @keyframes chat-appear {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+}
+.composer.chat-composer {
+  min-height: 100px;
+}
+.chat-composer textarea {
+  min-height: 28px;
+  margin: 4px 0 8px;
+}
+.chat-composer .send-notice {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+// Why the server refuses a turn now is shown, not only read out: the Send button is disabled and
+// shows no tooltip.
+.chat-composer .send-notice.refused {
+  position: static;
+  width: auto;
+  height: auto;
+  overflow: visible;
+  clip-path: none;
+  white-space: normal;
+  text-align: right;
+  color: var(--me-on-surface-variant-color);
+}
+// Why the last turn did not happen: its text, kept in the box above, does not fit the chat.
+.chat-composer .does-not-fit {
+  flex: 0 0 100%;
+  margin: -6px 0 2px;
+  padding: 0 2px;
+  color: var(--me-error-text-color);
+  font: 12px/18px var(--me-font-family);
+}
+.chat-send {
+  min-width: 76px;
+  margin-left: auto;
+}
+.debug-composer button {
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+@media (max-width: 650px) {
+  .debug-composer {
+    box-sizing: border-box;
+  }
+}
+.composer.chat-composer {
+  bottom: 24px;
+  max-width: calc(100% - 48px);
+}
+.chat-composer {
+  @include controls.text-actions;
+}
+.chat-send.mat-mdc-button-base {
+  letter-spacing: normal;
+  box-shadow: none;
+}
+.chat-send ::ng-deep .mat-mdc-button-touch-target {
+  height: 32px;
+}
+.debug-toggle-hint {
+  display: inline-flex;
+  flex: none;
+}
+.debug-toggle {
+  flex: none;
+  --mat-slide-toggle-track-width: 28px;
+  --mat-slide-toggle-track-height: 14px;
+  --mat-slide-toggle-handle-width: 14px;
+  --mat-slide-toggle-handle-height: 12px;
+  --mat-slide-toggle-selected-handle-size: 12px;
+  --mat-slide-toggle-unselected-handle-size: 12px;
+  --mat-slide-toggle-pressed-handle-size: 12px;
+  --mat-slide-toggle-selected-handle-horizontal-margin: 0 1px;
+  --mat-slide-toggle-unselected-handle-horizontal-margin: 0 1px;
+  --mat-slide-toggle-selected-pressed-handle-horizontal-margin: 0 1px;
+  --mat-slide-toggle-unselected-pressed-handle-horizontal-margin: 0 1px;
+  --mat-slide-toggle-state-layer-size: 28px;
+  --mat-slide-toggle-label-text-size: 12px;
+  --mat-slide-toggle-label-text-line-height: 20px;
+  --mat-slide-toggle-label-text-font: var(--me-font-family);
+  --mat-slide-toggle-label-text-color: var(--on1);
+}
+.composer .debug-toggle-label {
+  display: flex;
+  align-items: center;
+  color: inherit;
+  font: inherit;
+}
+.debug-toggle-label mat-icon {
+  width: 20px;
+  height: 20px;
+  font-size: 20px;
+  line-height: 20px;
+  color: inherit;
+}
+.composer-bottom {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-width: 0;
+}
+.composer.debug-composer {
+  width: 760px;
+  max-width: calc(100% - var(--inspector-width) - 48px);
+  left: calc((100% - var(--inspector-width)) / 2);
+  min-height: 100px;
+  display: block;
+  padding: 0;
+  background: var(--debug-dock-bg);
+  border-color: var(--debug-dock-border);
+  box-shadow:
+    0 10px 30px #23283029,
+    0 3px 8px #2328301a;
+}
+.debug-composer .composer-bottom {
+  position: relative;
+  height: 50px;
+  padding: 7px 12px 8px;
+  box-sizing: border-box;
+  border-top: 1px solid transparent;
+}
+.debug-composer .composer-bottom::before {
+  content: '';
+  position: absolute;
+  top: -1px;
+  left: 12px;
+  right: 12px;
+  height: 1px;
+  background: var(--debug-dock-divider);
+  pointer-events: none;
+}
+@media (max-width: 1000px) {
+  .composer.debug-composer {
+    left: 50%;
+    max-width: calc(100% - 24px);
+  }
+  .debug-composer .composer-bottom {
+    height: auto;
+    min-height: 50px;
+    flex-wrap: wrap;
+  }
+}
+@media (max-width: 650px) {
+  .debug-composer .composer-bottom {
+    gap: 8px;
+  }
+}
+:host-context(.demoRunning) textarea::placeholder {
+  color: transparent;
+}
+.chat-composer .composer-bottom {
+  flex-wrap: wrap;
+}
+.debug-composer {
+  @include token.semantic-colors;
+}
+.composer.debug-composer {
+  @include controls.debug-dock-surface;
+  border: 0;
+}
+// Keep the Model Explorer side-by-side inspector through tablet widths.
+@media (min-width: 651px) and (max-width: 1000px) {
+  .composer.debug-composer {
+    left: calc((100% - var(--inspector-width)) / 2);
+    max-width: calc(100% - var(--inspector-width) - 48px);
+  }
+}
+// In Debug the bar is docked under the reading, not floated over it: no stage token ever scrolls
+// beneath it. It stays centred in the width the inspector leaves.
+.composer.debug-composer {
+  position: relative;
+  bottom: auto;
+  left: auto;
+  flex: none;
+  align-self: center;
+  margin: 8px 0 12px;
+  transform: translateX(calc(var(--inspector-width) / -2));
+}

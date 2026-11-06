@@ -1,0 +1,331 @@
+# The interface to the UI: the Server's HTTP API and what it lists.
+
+load("@rules_python//python:py_library.bzl", "py_library")
+load("@rules_python//python:py_test.bzl", "py_test")
+load("@server_pypi//:requirements.bzl", "requirement")
+
+package(default_visibility = ["//visibility:public"])
+
+py_library(
+    name = "pair_values",
+    srcs = [
+        "__init__.py",
+        "pair_values.py",
+    ],
+    deps = [
+        "//model_debugger/server/analysis:token_analysis",
+        "//model_debugger/server/capture:capture_index",
+        requirement("numpy"),
+    ],
+)
+
+py_library(
+    name = "session_view",
+    srcs = [
+        "__init__.py",
+        "session_view.py",
+    ],
+    deps = [
+        ":pair_values",
+        "//model_debugger/server/analysis:alignment",
+        "//model_debugger/server/analysis:kv_analysis",
+        "//model_debugger/server/analysis:metrics",
+        "//model_debugger/server/analysis:tensor_analysis",
+        "//model_debugger/server/analysis:token_analysis",
+        "//model_debugger/server/capture:capture_index",
+        "//model_debugger/server/session:model_server",
+    ],
+)
+
+py_library(
+    name = "analysis_requests",
+    srcs = [
+        "__init__.py",
+        "analysis_requests.py",
+    ],
+    deps = [
+        ":pair_values",
+        ":session_view",
+        "//model_debugger/server/analysis:alignment",
+        "//model_debugger/server/analysis:kv_analysis",
+        "//model_debugger/server/analysis:tensor_analysis",
+        "//model_debugger/server/analysis:token_analysis",
+        "//model_debugger/server/analysis:vector_drawing",
+        "//model_debugger/server/capture:capture_index",
+        "//model_debugger/server/util:errors",
+    ],
+)
+
+py_library(
+    name = "option_catalog",
+    srcs = [
+        "__init__.py",
+        "option_catalog.py",
+    ],
+    deps = [
+        "//model_debugger/server/session:options",
+        "@protocol//model_debugger/protocol:runner_py_pb2",
+    ],
+)
+
+py_library(
+    name = "device_catalog",
+    srcs = [
+        "__init__.py",
+        "device_catalog.py",
+    ],
+    deps = [
+        ":option_catalog",
+        ":tap_view",
+        "//model_debugger/server/runner:app_version",
+        "//model_debugger/server/runner:launcher",
+        "//model_debugger/server/runner:runner_builds",
+        "//model_debugger/server/session:hf_models",
+        "//model_debugger/server/session:model_server",
+        "//model_debugger/server/session:model_servers",
+        "//model_debugger/server/session:model_store",
+        "//model_debugger/server/session:options",
+        "//model_debugger/server/session:session_store",
+        "//model_debugger/server/util:clock",
+        "//model_debugger/server/util:errors",
+        "@protocol//model_debugger/protocol:runner_py_pb2",
+        requirement("absl-py"),
+    ],
+)
+
+py_library(
+    name = "metric_catalog",
+    srcs = [
+        "__init__.py",
+        "metric_catalog.py",
+    ],
+    deps = [
+        ":session_view",
+        "//model_debugger/server/analysis:kv_analysis",
+        "//model_debugger/server/analysis:metrics",
+        "//model_debugger/server/analysis:tensor_analysis",
+        "//model_debugger/server/analysis:token_analysis",
+    ],
+)
+
+py_library(
+    name = "session_listing",
+    srcs = [
+        "__init__.py",
+        "session_listing.py",
+    ],
+    deps = [
+        "//model_debugger/server/capture:capture_index",
+        "//model_debugger/server/runner:launcher",
+        "//model_debugger/server/session:capture_store",
+        "//model_debugger/server/session:jobs",
+        "//model_debugger/server/session:model_server",
+        "//model_debugger/server/session:model_servers",
+        "//model_debugger/server/session:prepared_models",
+        "//model_debugger/server/session:session_archive",
+        "//model_debugger/server/session:session_store",
+        "//model_debugger/server/util:errors",
+        requirement("absl-py"),
+    ],
+)
+
+py_library(
+    name = "tap_view",
+    srcs = [
+        "__init__.py",
+        "tap_view.py",
+    ],
+    deps = [
+        "//model_debugger/server/session:anchor_points",
+        "//model_debugger/server/session:session_store",
+        "//model_debugger/server/session:tap_scans",
+        "//model_debugger/server/tap:tap_model",
+        "//model_debugger/server/tap:tap_scan",
+    ],
+)
+
+py_library(
+    name = "graph_view",
+    srcs = [
+        "__init__.py",
+        "graph_view.py",
+    ],
+    deps = [
+        "//model_debugger/server/graph:model_graph",
+        "//model_debugger/server/session:model_graphs",
+        "//model_debugger/server/session:model_store",
+        "//model_debugger/server/tap:structure_copy",
+    ],
+)
+
+py_library(
+    name = "server_service",
+    srcs = [
+        "__init__.py",
+        "server_service.py",
+    ],
+    deps = [
+        ":analysis_requests",
+        ":device_catalog",
+        ":graph_view",
+        ":metric_catalog",
+        ":pair_values",
+        ":session_listing",
+        ":session_view",
+        ":tap_view",
+        "//model_debugger/server/analysis:tensor_analysis",
+        "//model_debugger/server/runner:launcher",
+        "//model_debugger/server/session:anchor_points",
+        "//model_debugger/server/session:capture_store",
+        "//model_debugger/server/session:hf_models",
+        "//model_debugger/server/session:jobs",
+        "//model_debugger/server/session:mappings",
+        "//model_debugger/server/session:model_comparison",
+        "//model_debugger/server/session:model_graphs",
+        "//model_debugger/server/session:model_server",
+        "//model_debugger/server/session:model_servers",
+        "//model_debugger/server/session:model_store",
+        "//model_debugger/server/session:op_menu",
+        "//model_debugger/server/session:prepared_models",
+        "//model_debugger/server/session:session_archive",
+        "//model_debugger/server/session:session_store",
+        "//model_debugger/server/session:tap_scans",
+        "//model_debugger/server/session:workspace",
+        "//model_debugger/server/util:errors",
+        requirement("absl-py"),
+        requirement("starlette"),
+    ],
+)
+
+py_test(
+    name = "pair_values_test",
+    srcs = ["pair_values_test.py"],
+    deps = [
+        ":pair_values",
+        "//model_debugger/server/analysis:token_analysis",
+        "//model_debugger/server/testing:capture_fixtures",
+        "//model_debugger/server/testing:test_main",
+        requirement("absl-py"),
+    ],
+)
+
+py_test(
+    name = "session_view_test",
+    srcs = ["session_view_test.py"],
+    deps = [
+        ":session_view",
+        "//model_debugger/server/analysis:kv_analysis",
+        "//model_debugger/server/analysis:metrics",
+        "//model_debugger/server/analysis:token_analysis",
+        "//model_debugger/server/capture:capture_index",
+        "//model_debugger/server/testing:capture_fixtures",
+        "//model_debugger/server/testing:test_main",
+        requirement("absl-py"),
+    ],
+)
+
+py_test(
+    name = "analysis_requests_test",
+    srcs = ["analysis_requests_test.py"],
+    deps = [
+        ":analysis_requests",
+        ":pair_values",
+        ":session_view",
+        "//model_debugger/server/analysis:kv_analysis",
+        "//model_debugger/server/analysis:token_analysis",
+        "//model_debugger/server/capture:capture_index",
+        "//model_debugger/server/testing:capture_fixtures",
+        "//model_debugger/server/testing:test_main",
+        "//model_debugger/server/util:errors",
+        requirement("absl-py"),
+    ],
+)
+
+py_test(
+    name = "option_catalog_test",
+    srcs = ["option_catalog_test.py"],
+    deps = [
+        ":option_catalog",
+        "//model_debugger/server/session:options",
+        "//model_debugger/server/testing:fake_runner",
+        "//model_debugger/server/testing:test_main",
+        "@protocol//model_debugger/protocol:runner_py_pb2",
+        requirement("absl-py"),
+    ],
+)
+
+py_test(
+    name = "device_catalog_test",
+    srcs = ["device_catalog_test.py"],
+    deps = [
+        ":device_catalog",
+        ":option_catalog",
+        ":tap_view",
+        "//model_debugger/server/runner:app_version",
+        "//model_debugger/server/runner:launcher",
+        "//model_debugger/server/runner:runner_builds",
+        "//model_debugger/server/testing:fake_builds",
+        "//model_debugger/server/testing:fake_launchers",
+        "//model_debugger/server/testing:fake_runner",
+        "//model_debugger/server/testing:test_main",
+        "//model_debugger/server/testing:world",
+        "//model_debugger/server/util:errors",
+        "@protocol//model_debugger/protocol:runner_py_pb2",
+        requirement("absl-py"),
+    ],
+)
+
+py_test(
+    name = "metric_catalog_test",
+    srcs = ["metric_catalog_test.py"],
+    deps = [
+        ":metric_catalog",
+        ":session_view",
+        "//model_debugger/server/analysis:kv_analysis",
+        "//model_debugger/server/analysis:metrics",
+        "//model_debugger/server/analysis:token_analysis",
+        "//model_debugger/server/testing:test_main",
+        requirement("absl-py"),
+    ],
+)
+
+py_test(
+    name = "session_listing_test",
+    srcs = ["session_listing_test.py"],
+    deps = [
+        ":session_listing",
+        "//model_debugger/server/runner:launcher",
+        "//model_debugger/server/testing:fake_launchers",
+        "//model_debugger/server/testing:test_main",
+        "//model_debugger/server/testing:world",
+        "//model_debugger/server/util:errors",
+        requirement("absl-py"),
+    ],
+)
+
+py_test(
+    name = "server_service_test",
+    srcs = ["server_service_test.py"],
+    deps = [
+        ":server_service",
+        "//model_debugger/server/architectures:catalog",
+        "//model_debugger/server/session:jobs",
+        "//model_debugger/server/session:mappings",
+        "//model_debugger/server/session:model_comparison",
+        "//model_debugger/server/session:model_graphs",
+        "//model_debugger/server/session:model_store",
+        "//model_debugger/server/session:prepared_models",
+        "//model_debugger/server/session:session_archive",
+        "//model_debugger/server/session:session_store",
+        "//model_debugger/server/testing:anchor_fixtures",
+        "//model_debugger/server/testing:fake_launchers",
+        "//model_debugger/server/testing:pytorch_graph_fixtures",
+        "//model_debugger/server/testing:tap_fixtures",
+        "//model_debugger/server/testing:test_main",
+        "//model_debugger/server/testing:world",
+        "//model_debugger/server/util:errors",
+        "//model_debugger/server/util:json_file",
+        requirement("absl-py"),
+        requirement("httpx"),
+    ],
+)

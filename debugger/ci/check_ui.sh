@@ -13,9 +13,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# The UI's check: install its packages once, then the production build, the
-# node regression scripts and the Angular unit tests. The Playwright specs
-# need a running server and are not part of it.
+# The UI's check: install its packages once, then Prettier's format over
+# everything it formats in src/ui (all but what src/ui/.prettierignore names),
+# the UI's rules (src/ui/scripts/check_layering.mjs: the layers and what each
+# may import, that only src/server/ sends requests, that details bodies draw
+# no chart, where CSS custom properties are set), the production build, the
+# unit tests (ng test: every src/**/*.spec.ts, vitest over jsdom), and the
+# structure-graph prototype's checks, which test public/graph-arch-preview/
+# with node itself. Each fails the check.
 #
 # Usage: ci/check_ui.sh
 
@@ -33,9 +38,16 @@ main() {
   if [[ ! -d node_modules ]]; then
     npm ci --no-audit --no-fund
   fi
+  npm run format:check
+  npm run check:layering
   npm run build
   npm test
-  npm run test:unit
+  local check
+  for check in graph_pairs mapping_pair_edit model_tree_metrics; do
+    if [[ -f "scripts/check_${check}.mjs" ]]; then
+      node "scripts/check_${check}.mjs"
+    fi
+  done
 }
 
 main "$@"

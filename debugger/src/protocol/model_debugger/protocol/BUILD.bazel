@@ -1,0 +1,54 @@
+# The protocol as code: the proto, and the C++ and Python messages and gRPC
+# service it generates.
+
+load("@grpc//bazel:cc_grpc_library.bzl", "cc_grpc_library")
+load("@grpc//bazel:python_rules.bzl", "py_grpc_library")
+load("@protobuf//bazel:cc_proto_library.bzl", "cc_proto_library")
+load("@protobuf//bazel:proto_library.bzl", "proto_library")
+load("@protobuf//bazel:py_proto_library.bzl", "py_proto_library")
+
+package(default_visibility = ["//visibility:public"])
+
+proto_library(
+    name = "runner_proto",
+    srcs = ["runner.proto"],
+    deps = [
+        "@protobuf//:descriptor_proto",
+        "@protobuf//:struct_proto",
+    ],
+)
+
+cc_proto_library(
+    name = "runner_cc_proto",
+    deps = [":runner_proto"],
+)
+
+cc_grpc_library(
+    name = "runner_cc_grpc",
+    srcs = [":runner_proto"],
+    grpc_only = True,
+    deps = [":runner_cc_proto"],
+)
+
+# model_debugger.protocol.runner_pb2, on the protobuf runtime of the
+# workspace's Python proto toolchain.
+py_proto_library(
+    name = "runner_py_pb2",
+    deps = [":runner_proto"],
+)
+
+# The grpcio library the Python stubs run on: the workspace that builds them
+# names its own, e.g.
+# --@protocol//model_debugger/protocol:grpcio=<its grpcio>.
+label_flag(
+    name = "grpcio",
+    build_setting_default = "@grpc//src/python/grpcio/grpc:grpcio",
+)
+
+# model_debugger.protocol.runner_pb2_grpc.
+py_grpc_library(
+    name = "runner_py_pb2_grpc",
+    srcs = [":runner_proto"],
+    grpc_library = ":grpcio",
+    deps = [":runner_py_pb2"],
+)

@@ -1,0 +1,21 @@
+# What the Server needs at run time; also the wheel's requirements. protobuf
+# at least that of the protoc that generates the protocol's messages
+# (MODULE.bazel), which they check when imported.
+absl-py>=2.1,<3
+# Model Explorer's converter, prebuilt, which graph/graph_converter runs in a
+# child process; pinned, since the graphs kept are named by its version. It
+# has wheels for these platforms only; elsewhere the server runs without it,
+# and a model's graph says the converter is not available.
+ai-edge-model-explorer-adapter==0.2.0 ; (sys_platform == "darwin" and platform_machine == "arm64") or (sys_platform == "linux" and (platform_machine == "x86_64" or platform_machine == "aarch64"))
+# The runtime of the schema bindings flatc 25.12.19 writes (MODULE.bazel).
+flatbuffers>=25.12.19,<26
+grpcio>=1.84,<2
+# Resolves and fetches the models a Session names on Hugging Face, into its
+# cache (session/hf_models); the PyTorch runner's lock pins the same.
+huggingface-hub>=1.33,<2
+jsonschema>=4.23,<5
+numpy>=2,<3
+protobuf>=7.35.1,<8
+safetensors>=0.6,<1
+starlette>=0.47,<1
+uvicorn>=0.35,<1

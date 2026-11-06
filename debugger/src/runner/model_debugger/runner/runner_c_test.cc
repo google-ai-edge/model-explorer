@@ -19,13 +19,19 @@
 #include <cstddef>
 #include <string>
 
-#include "absl/status/statusor.h"
-#include "gtest/gtest.h"
 #include "model_debugger/runner/testing/test_utils.h"
 #include "model_debugger/runner/util/json.h"
+#include "gtest/gtest.h"
+#include "absl/status/statusor.h"
 
 namespace model_debugger::runner {
 namespace {
+
+// A Runner keeps everything under HOME: never the real one in a test.
+class TestHome : public testing::Environment {
+ public:
+  void SetUp() override { UseTestCacheDirectory(); }
+};
 
 const testing::Environment* const kTestHome =
     testing::AddGlobalTestEnvironment(new TestHome);

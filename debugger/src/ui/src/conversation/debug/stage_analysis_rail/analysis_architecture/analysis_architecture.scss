@@ -1,0 +1,225 @@
+/**
+ * @license
+ * Copyright 2026 The AI Edge Model Explorer Authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ==============================================================================
+ */
+
+:host {
+  display: block;
+  --object-fill: light-dark(#fff, #1e1f20);
+  --object-border: light-dark(#9b8155, #b7a17c);
+  --object-ink: var(--button-focus);
+  --active-fill: var(--button-debug);
+  --active-ink: light-dark(#fff, #f3e5c3);
+  --module-fill: light-dark(#f0f4f9, #282a2c);
+  --module-border: light-dark(#c4c7c5, #5f6368);
+  --module-ink: light-dark(#6b7075, #bdc1c6);
+  --wire: light-dark(#aaa, #8e918f);
+  --related: #009e73;
+  font-family: var(--me-font-family);
+  letter-spacing: normal;
+  color: var(--me-on-surface-color);
+}
+.context {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  line-height: 18px;
+  margin: 0 4px 8px;
+  white-space: nowrap;
+  overflow: hidden;
+}
+.context .model-name {
+  font-weight: 400;
+  flex-shrink: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.context > span {
+  flex-shrink: 0;
+}
+.context .selected-label {
+  font-weight: 600;
+  min-width: 0;
+  flex-shrink: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--object-ink);
+}
+.canvas {
+  user-select: none;
+  cursor: default;
+}
+.architecture {
+  display: block;
+  width: 100%;
+  max-width: 430px;
+  margin: auto;
+  height: auto;
+  max-height: calc(100dvh - 285px);
+  min-height: 170px;
+  overflow: visible;
+}
+.wires path {
+  fill: none;
+  stroke: var(--wire);
+  stroke-width: 1;
+}
+.wires .arrow {
+  fill: var(--wire);
+  stroke: none;
+}
+.wires .observation {
+  stroke: var(--object-border);
+  stroke-dasharray: 5 3;
+}
+.wires g:not(.related) .arrow {
+  fill: var(--object-border);
+}
+.wires .related path {
+  stroke: var(--related);
+  stroke-width: 1.5;
+}
+.wires .related .arrow {
+  fill: var(--related);
+  stroke: none;
+}
+.module rect {
+  fill: var(--module-fill);
+  stroke: var(--module-border);
+}
+.module text {
+  fill: var(--module-ink);
+  font-size: 12px;
+}
+.module .fold {
+  fill: none;
+  stroke: var(--module-ink);
+  stroke-width: 1;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.module.related .module-face {
+  stroke: var(--related);
+  stroke-width: 1.5;
+}
+.token rect {
+  fill: light-dark(#e8f0fe, #22364a);
+  stroke: light-dark(#8ab4f8, #7397c6);
+}
+.token text {
+  fill: light-dark(#041e49, #d3e3fd);
+  font-size: 11px;
+}
+.token .caption {
+  fill: var(--me-on-surface-variant-color);
+  font-size: 10px;
+}
+.analysis-object {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  height: 100%;
+  padding: 6px 7px;
+  border: 1px dashed var(--object-border);
+  border-radius: 4px;
+  background: var(--object-fill);
+  color: var(--object-ink);
+  font: 500 11px/18px var(--me-font-family);
+  white-space: nowrap;
+  cursor: pointer;
+}
+.analysis-object.selected {
+  border: 2px dashed var(--object-ink);
+  padding: 5px 6px;
+  background: var(--active-fill);
+  color: var(--active-ink);
+}
+.analysis-object:hover {
+  border-color: var(--object-ink);
+}
+.analysis-object:focus-visible {
+  outline: 2px solid var(--object-ink);
+  outline-offset: -3px;
+}
+.check {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+}
+.has-selection .module:not(.related),
+.has-selection .token,
+.has-selection .analysis-object:not(.selected) {
+  opacity: 0.65;
+}
+.analysis-object.unavailable:not(.selected) {
+  opacity: 0.5;
+}
+.legend {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  width: max-content;
+  max-width: 100%;
+  box-sizing: border-box;
+  margin: 8px auto 0;
+  padding: 8px;
+  font-size: 10px;
+  line-height: 16px;
+  color: var(--me-on-surface-variant-color);
+}
+.legend > span {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+}
+.legend i {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 14px;
+  flex: none;
+  box-sizing: border-box;
+  border: 1px dashed var(--object-border);
+  border-radius: 4px;
+  background: var(--object-fill);
+  color: var(--object-ink);
+}
+.legend i.selected {
+  background: var(--active-fill);
+  border-color: var(--object-ink);
+  color: var(--active-ink);
+}
+.legend svg {
+  width: 12px;
+  height: 12px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+}
+.availability {
+  margin: 8px 4px 0;
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--me-on-surface-variant-color);
+}

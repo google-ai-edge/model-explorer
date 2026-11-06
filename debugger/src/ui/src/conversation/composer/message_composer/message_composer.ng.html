@@ -1,0 +1,96 @@
+<!--
+ Copyright 2026 The AI Edge Model Explorer Authors.
+
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+ ==============================================================================
+-->
+<footer
+  [style.--inspector-width.px]="inspectorWidth()"
+  class="composer"
+  [class.chat-composer]="workspace.mode() === 'Chat'"
+  [class.debug-composer]="workspace.mode() === 'Debug'"
+  aria-label="Message composer"
+>
+  @if (workspace.mode() === 'Chat') {
+    <textarea
+      aria-label="Message to both runtimes"
+      placeholder="Message both runtimes…"
+      rows="1"
+      [value]="workspace.chatDraft()"
+      (input)="composer.draftInput($event)"
+      (keydown)="composer.draftKey($event)"
+      [disabled]="composer.inputDisabled()"
+      [title]="composer.inputDisabled() ? composer.sendNotice() : ''"
+      aria-describedby="chat-send-status chat-does-not-fit"
+    ></textarea>
+    @if (composer.doesNotFit(); as reason) {
+      <p id="chat-does-not-fit" class="does-not-fit" role="alert">{{ reason }}</p>
+    }
+  }
+  <ng-content select="[composer-tools]" />
+  <div class="composer-bottom">
+    <!-- The hint sits on a wrapper: a disabled switch shows no tooltip. -->
+    <span class="debug-toggle-hint" [matTooltip]="switchTo().reason"
+      ><mat-slide-toggle
+        class="debug-toggle"
+        aria-label="Debug"
+        labelPosition="before"
+        [hideIcon]="true"
+        [checked]="workspace.mode() === 'Debug'"
+        [disabled]="!switchTo().allowed"
+        [attr.aria-description]="switchTo().reason || null"
+        (change)="workspace.setMode($event.checked ? 'Debug' : 'Chat')"
+      >
+        <span class="debug-toggle-label"><mat-icon aria-hidden="true">bug_report</mat-icon></span>
+      </mat-slide-toggle></span
+    >
+    <ng-content select="[composer-status]" />
+    @if (workspace.mode() === 'Chat') {
+      <!-- No Stop once the reply ended: its capture is arriving, and the composer waits for it. -->
+      @if (
+        workspace.jobs.generating() &&
+        !workspace.jobs.retrieving() &&
+        workspace.runtime.execution()?.phase === 'active'
+      ) {
+        <button
+          mat-button
+          [attr.aria-label]="composer.stopLabel + '. ' + composer.stopHint"
+          [matTooltip]="composer.stopHint"
+          (click)="composer.stop()"
+        >
+          <mat-icon aria-hidden="true">stop</mat-icon>{{ composer.stopLabel }}
+        </button>
+      }
+      <span
+        id="chat-send-status"
+        class="send-notice"
+        role="status"
+        [class.refused]="!!composer.refusal()"
+        >{{ composer.sendNotice() }}</span
+      ><button
+        mat-flat-button
+        type="button"
+        class="chat-send"
+        aria-label="Send to both runtimes"
+        aria-describedby="chat-send-status"
+        [title]="composer.sendNotice()"
+        [matTooltip]="composer.sendNotice()"
+        [disabled]="!composer.canSend()"
+        (click)="composer.send()"
+      >
+        {{ workspace.runtime.busy() ? 'Sending…' : 'Send' }}
+        <span aria-hidden="true">↑</span>
+      </button>
+    }
+  </div>
+</footer>

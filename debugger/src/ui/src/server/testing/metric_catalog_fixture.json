@@ -1,0 +1,759 @@
+{
+  "metrics": [
+    {
+      "id": "cosine_similarity",
+      "label": "Cosine similarity",
+      "unit": "unitless",
+      "unit_label": "",
+      "measures": "Direction similarity of the Reference and Target vectors",
+      "formula": "Reference · Target / (‖Reference‖₂ ‖Target‖₂)",
+      "range": "−1 to 1",
+      "reading": "1: same direction · 0: orthogonal · −1: opposite",
+      "larger_is_better": true,
+      "ideal": 1,
+      "bounds": [
+        -1,
+        1
+      ],
+      "format": {
+        "style": "fixed",
+        "decimals": 6
+      },
+      "color": {
+        "thresholds": null,
+        "heat_full": 0.98,
+        "heat_labels": {
+          "none": "1",
+          "full": "0.98"
+        }
+      },
+      "inputs": null,
+      "analyses": [
+        "kv",
+        "kv_head",
+        "token_diff",
+        "intermediate_tensors"
+      ]
+    },
+    {
+      "id": "cosine_distance",
+      "label": "Cosine distance",
+      "unit": "unitless",
+      "unit_label": "",
+      "measures": "How far the Reference and Target directions are apart",
+      "formula": "1 − cosine similarity",
+      "range": "0 to 2",
+      "reading": "0: same direction · 1: orthogonal · 2: opposite",
+      "larger_is_better": false,
+      "ideal": 0,
+      "bounds": [
+        0,
+        2
+      ],
+      "format": {
+        "style": "significant",
+        "digits": 6
+      },
+      "color": {
+        "thresholds": null,
+        "heat_full": 0.02,
+        "heat_labels": {
+          "none": "0",
+          "full": "0.02"
+        }
+      },
+      "inputs": null,
+      "analyses": []
+    },
+    {
+      "id": "relative_l2",
+      "label": "Relative L2",
+      "unit": "percent",
+      "unit_label": "%",
+      "measures": "L2 error relative to the Reference L2 norm",
+      "formula": "100 · ‖Target − Reference‖₂ / ‖Reference‖₂",
+      "range": "0% and above",
+      "reading": "0%: identical values",
+      "larger_is_better": false,
+      "ideal": 0,
+      "bounds": [
+        0,
+        null
+      ],
+      "format": {
+        "style": "fixed",
+        "decimals": 2,
+        "suffix": "%"
+      },
+      "color": {
+        "thresholds": [
+          0.01,
+          0.1,
+          1,
+          10
+        ],
+        "heat_full": 1,
+        "heat_labels": {
+          "none": "0",
+          "full": "1 %"
+        }
+      },
+      "inputs": null,
+      "analyses": [
+        "kv",
+        "kv_head",
+        "token_diff",
+        "intermediate_tensors"
+      ]
+    },
+    {
+      "id": "norm_ratio",
+      "label": "Norm ratio",
+      "unit": "ratio",
+      "unit_label": "×",
+      "measures": "Target L2 norm divided by the Reference L2 norm",
+      "formula": "‖Target‖₂ / ‖Reference‖₂",
+      "range": "0 and above",
+      "reading": "1: equal norms",
+      "larger_is_better": false,
+      "ideal": 1,
+      "bounds": [
+        0,
+        null
+      ],
+      "format": {
+        "style": "significant",
+        "digits": 6
+      },
+      "color": {
+        "thresholds": null,
+        "heat_full": 1.2,
+        "heat_labels": {
+          "none": "1",
+          "full": "1 ± 20%"
+        }
+      },
+      "inputs": null,
+      "analyses": [
+        "token_diff"
+      ]
+    },
+    {
+      "id": "max_abs",
+      "label": "Max absolute error",
+      "unit": "same as the compared values",
+      "unit_label": "",
+      "measures": "Largest absolute element difference",
+      "formula": "max |Target − Reference|",
+      "range": "0 and above",
+      "reading": "0: identical values",
+      "larger_is_better": false,
+      "ideal": 0,
+      "bounds": [
+        0,
+        null
+      ],
+      "format": {
+        "style": "significant",
+        "digits": 6
+      },
+      "color": {
+        "thresholds": [
+          1e-05,
+          0.0001,
+          0.001,
+          0.01
+        ],
+        "heat_full": 0.1,
+        "heat_labels": {
+          "none": "0",
+          "full": "0.1"
+        }
+      },
+      "inputs": null,
+      "analyses": [
+        "kv",
+        "kv_head",
+        "token_diff",
+        "final_logits",
+        "intermediate_tensors"
+      ]
+    },
+    {
+      "id": "mean_abs",
+      "label": "Mean absolute error",
+      "unit": "same as the compared values",
+      "unit_label": "",
+      "measures": "Mean absolute element difference",
+      "formula": "mean |Target − Reference|",
+      "range": "0 and above",
+      "reading": "0: identical values",
+      "larger_is_better": false,
+      "ideal": 0,
+      "bounds": [
+        0,
+        null
+      ],
+      "format": {
+        "style": "significant",
+        "digits": 6
+      },
+      "color": {
+        "thresholds": [
+          1e-05,
+          0.0001,
+          0.001,
+          0.01
+        ],
+        "heat_full": 0.1,
+        "heat_labels": {
+          "none": "0",
+          "full": "0.1"
+        }
+      },
+      "inputs": null,
+      "analyses": []
+    },
+    {
+      "id": "rmse",
+      "label": "RMSE",
+      "unit": "same as the compared values",
+      "unit_label": "",
+      "measures": "Root mean square error across all elements",
+      "formula": "√mean((Target − Reference)²)",
+      "range": "0 and above",
+      "reading": "0: identical values; larger errors weigh more",
+      "larger_is_better": false,
+      "ideal": 0,
+      "bounds": [
+        0,
+        null
+      ],
+      "format": {
+        "style": "significant",
+        "digits": 6
+      },
+      "color": {
+        "thresholds": [
+          1e-05,
+          0.0001,
+          0.001,
+          0.01
+        ],
+        "heat_full": 0.1,
+        "heat_labels": {
+          "none": "0",
+          "full": "0.1"
+        }
+      },
+      "inputs": null,
+      "analyses": [
+        "kv_head",
+        "final_logits"
+      ]
+    },
+    {
+      "id": "kl",
+      "label": "Kullback–Leibler divergence",
+      "unit": "nats",
+      "unit_label": "nats",
+      "measures": "Kullback–Leibler divergence from Reference to Target",
+      "formula": "Σ p log(p / q), p Reference, q Target",
+      "range": "0 and above",
+      "reading": "0: identical distributions; direction Reference → Target",
+      "larger_is_better": false,
+      "ideal": 0,
+      "bounds": [
+        0,
+        null
+      ],
+      "format": {
+        "style": "significant",
+        "digits": 6
+      },
+      "color": {
+        "thresholds": null,
+        "heat_full": 0.01,
+        "heat_labels": {
+          "none": "0",
+          "full": "0.01 nats"
+        }
+      },
+      "inputs": "Full captured vocabulary logits of the token; softmax (T=1), independent of the generation settings; no top-k, top-p or sampling constraints",
+      "analyses": [
+        "token_diff",
+        "final_logits"
+      ]
+    },
+    {
+      "id": "js",
+      "label": "Jensen–Shannon divergence",
+      "unit": "bits",
+      "unit_label": "bits",
+      "measures": "Symmetric difference of the Reference and Target distributions",
+      "formula": "½ KL(p ‖ m) + ½ KL(q ‖ m), m = (p + q) / 2, base 2",
+      "range": "0 to 1 bit",
+      "reading": "0: identical · 1: disjoint support",
+      "larger_is_better": false,
+      "ideal": 0,
+      "bounds": [
+        0,
+        1
+      ],
+      "format": {
+        "style": "significant",
+        "digits": 6
+      },
+      "color": {
+        "thresholds": null,
+        "heat_full": 1,
+        "heat_labels": {
+          "none": "0",
+          "full": "1 bits"
+        }
+      },
+      "inputs": "Full captured vocabulary logits of the token; softmax (T=1), independent of the generation settings; no top-k, top-p or sampling constraints",
+      "analyses": [
+        "token_diff",
+        "final_logits"
+      ]
+    },
+    {
+      "id": "entropy",
+      "label": "Entropy",
+      "unit": "bits",
+      "unit_label": "bits",
+      "measures": "Average information of one runtime’s distribution; fractional bits are valid",
+      "formula": "H = −Σ p(token) log₂ p(token)",
+      "range": "0 to log₂(vocabulary size)",
+      "reading": "0 bits: one token has all the probability · 1 bit: two tokens of 50% each · higher: more spread across tokens",
+      "larger_is_better": null,
+      "ideal": null,
+      "bounds": [
+        0,
+        null
+      ],
+      "format": {
+        "style": "significant",
+        "digits": 6
+      },
+      "color": {
+        "thresholds": null,
+        "heat_full": null,
+        "heat_labels": null
+      },
+      "inputs": null,
+      "analyses": [
+        "sampling"
+      ]
+    },
+    {
+      "id": "selected_probability",
+      "label": "Selected probability",
+      "unit": "probability",
+      "unit_label": "%",
+      "measures": "Probability of the selected token in one runtime’s distribution",
+      "formula": "p(selected token)",
+      "range": "0% to 100%",
+      "reading": "100%: the runtime was certain of its token",
+      "larger_is_better": null,
+      "ideal": null,
+      "bounds": [
+        0,
+        1
+      ],
+      "format": {
+        "style": "fixed",
+        "decimals": 2,
+        "suffix": "%",
+        "scale": 100
+      },
+      "color": {
+        "thresholds": null,
+        "heat_full": null,
+        "heat_labels": null
+      },
+      "inputs": null,
+      "analyses": [
+        "sampling"
+      ]
+    },
+    {
+      "id": "margin",
+      "label": "Top-2 margin",
+      "unit": "probability",
+      "unit_label": "pp",
+      "measures": "Highest minus second-highest token probability of one runtime",
+      "formula": "p(first) − p(second)",
+      "range": "0 to 100 percentage points",
+      "reading": "Higher: larger separation between the top two tokens",
+      "larger_is_better": null,
+      "ideal": null,
+      "bounds": [
+        0,
+        1
+      ],
+      "format": {
+        "style": "fixed",
+        "decimals": 2,
+        "scale": 100,
+        "suffix": " pp"
+      },
+      "color": {
+        "thresholds": null,
+        "heat_full": null,
+        "heat_labels": null
+      },
+      "inputs": null,
+      "analyses": [
+        "sampling"
+      ]
+    }
+  ],
+  "analyses": [
+    {
+      "id": "kv",
+      "label": "KV cache",
+      "metrics": [
+        "cosine_similarity",
+        "relative_l2",
+        "max_abs"
+      ],
+      "default_metric": "cosine_similarity",
+      "default_head": "min",
+      "groups": {},
+      "inputs": "Stored KV values of each position and KV head, compared over the batch and channel (head_dim) axes in float64; for two models of one KV architecture (one model in two runtimes), each side read through its own layout, an int8 side dequantized by the scale its model gives the cache"
+    },
+    {
+      "id": "kv_head",
+      "label": "KV head",
+      "metrics": [
+        "cosine_similarity",
+        "relative_l2",
+        "rmse",
+        "max_abs"
+      ],
+      "default_metric": "cosine_similarity",
+      "groups": {},
+      "inputs": "One KV head’s stored channels at one position, compared in float64; for two models, an int8 side dequantized by its model’s scale"
+    },
+    {
+      "id": "token_diff",
+      "label": "Token Diff",
+      "metrics": [
+        "kl",
+        "js",
+        "relative_l2",
+        "cosine_similarity",
+        "norm_ratio",
+        "max_abs"
+      ],
+      "default_metric": "kl",
+      "groups": {
+        "kl": "Logits",
+        "js": "Logits",
+        "relative_l2": "Layer Activation",
+        "cosine_similarity": "Layer Activation",
+        "cosine_distance": "Layer Activation",
+        "norm_ratio": "Layer Activation",
+        "max_abs": "Layer Activation"
+      },
+      "inputs": "The captured activations of the forward that produced the token, compared in float64"
+    },
+    {
+      "id": "final_logits",
+      "label": "Final Logits",
+      "metrics": [
+        "rmse",
+        "max_abs",
+        "kl",
+        "js"
+      ],
+      "default_metric": "rmse",
+      "groups": {},
+      "inputs": "Raw captured final logits, before softmax; no centering"
+    },
+    {
+      "id": "sampling",
+      "label": "Sampling",
+      "metrics": [
+        "selected_probability",
+        "entropy",
+        "margin"
+      ],
+      "default_metric": "entropy",
+      "groups": {
+        "entropy": "Per runtime",
+        "selected_probability": "Per runtime",
+        "margin": "Per runtime"
+      },
+      "inputs": "The capture holds the logits before sampling, not the sampler’s probabilities: each runtime’s distribution is the softmax of its full captured vocabulary logits divided by its sampler temperature (1 when none is set), before top-k, top-p or any other constraint; a greedy sampler’s too. Each runtime uses its own temperature and selected token."
+    },
+    {
+      "id": "intermediate_tensors",
+      "label": "Intermediate tensors",
+      "metrics": [
+        "cosine_similarity",
+        "relative_l2",
+        "max_abs"
+      ],
+      "default_metric": "cosine_similarity",
+      "groups": {},
+      "inputs": "Captured intermediate tensors of each position and sync point, compared in float64"
+    }
+  ],
+  "reasons": [
+    {
+      "code": "non_finite_tensor",
+      "text": "Unavailable because the values include NaN or infinity."
+    },
+    {
+      "code": "undefined_zero_norm",
+      "text": "Undefined because a required vector norm is zero."
+    },
+    {
+      "code": "numeric_overflow",
+      "text": "The comparison exceeds the supported numerical range."
+    },
+    {
+      "code": "shape_mismatch",
+      "text": "The two sides have different shapes."
+    },
+    {
+      "code": "unreadable",
+      "text": "A captured tensor file cannot be read as the index lists it."
+    },
+    {
+      "code": "context_different",
+      "text": "After the divergence the two sides read different tokens; the values still compare."
+    },
+    {
+      "code": "context_unknown",
+      "text": "The runner did not name a token a side fed, so the two sides may read different tokens; the values still compare."
+    },
+    {
+      "code": "vocabulary_mismatch",
+      "text": "Matching captured vocabulary IDs and sizes are required"
+    },
+    {
+      "code": "logits_not_paired",
+      "text": "Paired full-vocabulary logits not captured"
+    },
+    {
+      "code": "token_not_captured",
+      "text": "Token not captured on this side"
+    },
+    {
+      "code": "logits_not_captured",
+      "text": "Full-vocabulary logits not captured"
+    },
+    {
+      "code": "activations_not_captured",
+      "text": "Last hidden-state activation not captured"
+    },
+    {
+      "code": "layout_unsupported",
+      "text": "Token output layout is not a single causal-LM position"
+    },
+    {
+      "code": "not_numeric",
+      "text": "Token output is not a numeric vector"
+    },
+    {
+      "code": "logits_invalid",
+      "text": "Logits contain invalid values"
+    },
+    {
+      "code": "selected_outside_vocabulary",
+      "text": "Selected token ID is outside captured vocabulary"
+    },
+    {
+      "code": "stop_token_unnamed",
+      "text": "The runner does not name the sampled stop token"
+    },
+    {
+      "code": "greedy_unconfirmed",
+      "text": "Cannot confirm greedy decoding"
+    },
+    {
+      "code": "forwards_not_paired",
+      "text": "Paired source forwards not captured"
+    },
+    {
+      "code": "activation_space_mismatch",
+      "text": "Matching activation coordinate spaces are not established"
+    },
+    {
+      "code": "divergence_infinite",
+      "text": "Divergence is infinite: target assigns zero probability"
+    },
+    {
+      "code": "not_decode",
+      "text": "Only Decode rows name generated tokens, whose logits produced them; a Prefill samples none"
+    },
+    {
+      "code": "unavailable",
+      "text": "Unavailable for this selection."
+    },
+    {
+      "code": "tensor_missing",
+      "text": "A stored tensor is required on both sides at this observation."
+    },
+    {
+      "code": "layout_unavailable",
+      "text": "The stored tensor does not have a batch, KV head, sequence and head dimension layout."
+    },
+    {
+      "code": "logical_range_mismatch",
+      "text": "The processed positions exceed the stored sequence axis, or differ between the sides without a position alignment."
+    },
+    {
+      "code": "empty",
+      "text": "This snapshot holds no processed positions."
+    },
+    {
+      "code": "sliding_window",
+      "text": "The layer keeps a sliding window of positions that does not start at position 0; it is not compared yet."
+    },
+    {
+      "code": "model_mismatch",
+      "text": "Ref and Target ran different models whose KV caches differ in batch, KV heads or head dimension; they are not comparable."
+    },
+    {
+      "code": "kv_scale_unknown",
+      "text": "Ref and Target ran different models, and a side stores integer KV values whose quantization scale its model does not give; they cannot be compared with the other model’s values."
+    },
+    {
+      "code": "dtype_mismatch",
+      "text": "Ref and Target store different dtypes."
+    },
+    {
+      "code": "layout_mismatch",
+      "text": "Ref and Target store different layouts."
+    },
+    {
+      "code": "head_unavailable",
+      "text": "The KV head is not in this layer’s stored tensor."
+    },
+    {
+      "code": "position_unavailable",
+      "text": "The position was not captured in this layer and kind."
+    },
+    {
+      "code": "partial",
+      "text": "Some metrics are undefined (zero norm, non-finite values or numeric overflow); finite counts are reported per metric."
+    },
+    {
+      "code": "analysis_limit",
+      "text": "A KV head may have at most 16384 channels."
+    },
+    {
+      "code": "batch_selection_required",
+      "text": "The cache holds several batches; batches are not combined."
+    },
+    {
+      "code": "vector_missing",
+      "text": "The vector is unavailable on one side."
+    },
+    {
+      "code": "tensors_not_observed",
+      "text": "This Session observes no tensors."
+    },
+    {
+      "code": "tensor_model_unreadable",
+      "text": "The points a model observes cannot be read from it."
+    },
+    {
+      "code": "tensors_not_paired",
+      "text": "Ref and Target load different models; their tensors are not paired."
+    },
+    {
+      "code": "tensor_no_layer",
+      "text": "No point observed is in a transformer layer."
+    },
+    {
+      "code": "tensor_graph_not_run",
+      "text": "The graph of the point did not run in this turn."
+    },
+    {
+      "code": "tensor_not_in_stage",
+      "text": "The graph of the point produced no position of this stage."
+    },
+    {
+      "code": "tensor_not_captured",
+      "text": "The capture holds no tensor of the point at this step."
+    },
+    {
+      "code": "tensor_position_missing",
+      "text": "The side has no token at this column."
+    },
+    {
+      "code": "tensor_position_not_produced",
+      "text": "No forward pass of this turn produced the token at the position."
+    },
+    {
+      "code": "tensor_other_graph",
+      "text": "Another graph produced the position; it holds no such tensor."
+    },
+    {
+      "code": "tensor_shape_unexpected",
+      "text": "The captured tensor is not of the shape the model gives it."
+    },
+    {
+      "code": "tensor_no_token_axis",
+      "text": "The tensor has no one axis of the prefill chunk’s tokens; it is not split by position."
+    },
+    {
+      "code": "tensor_place_missing",
+      "text": "The layer has none of the sync points chosen."
+    },
+    {
+      "code": "tensor_too_large",
+      "text": "A tensor of more than 262144 elements is not listed."
+    },
+    {
+      "code": "tensor_point_not_observed",
+      "text": "This Session does not observe the point; choose it in the Session editor to compare it."
+    },
+    {
+      "code": "tensor_side_not_observed",
+      "text": "One side observes no tensors."
+    },
+    {
+      "code": "tensor_no_anchor",
+      "text": "No point the side observes is an anchor of its architecture; the two runtimes are paired by anchor alone."
+    },
+    {
+      "code": "tensor_other_architecture",
+      "text": "The two runtimes run models of different or unknown architectures; their tensors are not paired."
+    },
+    {
+      "code": "tensor_no_counterpart",
+      "text": "PyTorch has no counterpart for a LiteRT-LM point chosen; only the anchors are captured there."
+    },
+    {
+      "code": "tensor_manual_not_observed",
+      "text": "A tensor pair made by hand names a tensor this Session does not capture."
+    },
+    {
+      "code": "tensor_layers_one_side",
+      "text": "Only one side computed these layers in this stage; there is nothing to compare, and they are not shown."
+    },
+    {
+      "code": "kv_not_captured",
+      "text": "Comparable KV positions not captured"
+    },
+    {
+      "code": "kv_position_not_written",
+      "text": "The KV snapshot of the stage holds no such position: no step had written it yet."
+    },
+    {
+      "code": "turn_rejected",
+      "text": "The capture index rejected the turn as it was added."
+    },
+    {
+      "code": "turn_unreadable",
+      "text": "The turn could not be read."
+    }
+  ]
+}

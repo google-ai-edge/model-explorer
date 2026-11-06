@@ -1,64 +1,168 @@
-# AI Edge Debugger UI
+# Model Debugger UI
 
-Angular + TypeScript + SCSS. Start the [Python server](../server/README.md) with `--port 8080`, then run `npm ci` and `npm start` here. Open http://127.0.0.1:4201/; the development server proxies `/api/**` to port 8080. Use `npm run verify` for the format check, contract type checks, all regression scripts, unit tests and a production build. Output: `dist/model_debugger/browser/`, which the server serves by default. Verified with Node 26.5.0 and npm 11.17.0; regression scripts require native Node TypeScript support.
+The web UI of the Model Debugger: Angular, TypeScript and SCSS, with Plotly
+for the charts. The Python server (`src/server/README.md`) serves it and its
+`/api`.
 
-## Source ownership
+## Run
 
-<!-- mdformat off(preserve GFM table layout) -->
-| Directory                    | Responsibility                                                                     |
-| ---------------------------- | ---------------------------------------------------------------------------------- |
-| `src/app/`                   | Thin ReportPage shell, toolbar, workspace navigation and application preferences   |
-| `src/data/`                  | HTTP requests, current capture loading and runtime request lifecycle               |
-| `src/data/contracts/`        | Explicit wire types; independent of components and demo fixtures                   |
-| `src/features/sessions/`     | Session list, create/edit/configuration, Runner options and model pickers          |
-| `src/features/conversation/` | Chat and Token Diff, alignment, search, bookmarks and reading state                |
-| `src/features/graph/`        | Architecture layout, batch/layer metrics, mapping and node inspector               |
-| `src/features/kv/`           | KV range, selection and head evidence                                              |
-| `src/shared/`                | Controls and presentation primitives with multiple real callers                    |
-| `src/theme/`                 | Semantic tokens, Material theme, typography and application-wide interaction rules |
-| `src/fixtures/`              | Frozen example data validated against the explicit contracts                       |
-<!-- mdformat on -->
+Node 26 (`.nvmrc`). Start the server on port 8080, then, here:
 
-Keep business state and component layout with their feature. Add a shared abstraction only when existing callers need the same behavior. Component files use `.ts`, `.ng.html`, and `.scss`, following Model Explorer. `npm run format` uses the pinned formatter and Angular template parser.
+```shell
+npm ci
+# http://127.0.0.1:4201/, /api/** proxied to 127.0.0.1:8080
+# (src/proxy.conf.json)
+npm start
+npm run build
+```
 
-Production styles are owned by their current components. All runtime assets and verification dependencies are included in this repository.
+`npm run build` writes `dist/model_debugger/browser/`, which the server
+serves by default, and appends the licenses of everything served from
+`public/` to its `3rdpartylicenses.txt`, which the About dialog links to.
 
-## Capture identity
+## Layout
 
-`WorkspaceStateService.context()` distinguishes the parent Session, active Chat, and actual capture record. Capture-scoped API methods receive that record ID explicitly; missing IDs fail before a request. Runtime and report state attach to the same resolved context, and async completion must still belong to the current attachment. Management requests such as listing or creating Sessions do not use a capture ID.
+- `src/server/`: The only door to the Python server: `ServerClient`, one
+  request file per `/api` topic, the stores.
+- `src/server/contracts/`: The wire types, by `/api` topic.
+- `src/state/`: Where the page is and what is attached there
+  (`WorkspaceStateService`), page addresses, drafts, preferences.
+- `src/theme/`: Tokens, the Material theme, typography, global stylesheets
+  and partials, `ThemeService`.
+- `src/widgets/`: Controls and presentation with several callers; `charts/`
+  holds the Plotly charts and their models.
+- `src/analyses/`: One folder per analysis (`kv`, `final_logits`, `sampling`,
+  `intermediate_tensors`), `shared/`, `registry.ts`, `panel_state.ts`.
+- `src/home/`: The home page: Session list, editor, configuration, Runner
+  options, the model, HuggingFace and tap pickers.
+- `src/conversation/`: The conversation page; what its parts share sits in
+  the folder itself.
+- `src/conversation/conversation_panel/`: The page that puts the parts
+  together.
+- `src/conversation/chat/`: The Chat reading.
+- `src/conversation/debug/`: The Debug reading: Token Diff, stage analysis
+  rails, details panel, find, saved views.
+- `src/conversation/composer/`: The message box, Send and Stop, the Debug
+  switch.
+- `src/app/`: The top: the shell, routes, Session page, toolbar, settings,
+  About.
+- `scripts/`: The rule check, the structure-graph prototype's checks and
+  preview builder, the license step.
+- `public/`: Served as is: fonts, Plotly, the Model Explorer visualizer files
+  and their licenses.
 
-## Loading and returning to a view
+Component files are `.ts`, `.ng.html` and `.scss`, as in Model Explorer. A
+module with one caller lives beside it, not in `widgets/`. Components in
+`widgets/` are named for what they are, with no page or analysis prefix, and
+a selector is its class name in kebab case (`RangeChart` is `range-chart`).
 
-Session loading publishes the original capture independently of Graph. Graph enrichment is a separate projection: entering Graph loads its semantic model, overview and current comparison. Leaving cancels unfinished Graph requests; completed results remain cached for the current capture. Late responses cannot replace newer capture or observation data.
+In `widgets/charts/`, `channel-chart` and `scatter-chart` either reduce the
+rows they are given (KV, intermediate tensors) or draw what the server
+reduced (bins, view); `waiting` keeps the last drawing until the next answer
+arrives (Final Logits Inspection).
 
-The shared capture, Turn and phase remain the navigation authority. Ordinary view restoration never replays an old Turn. Conversation v3 snapshots preserve display, selection and independent Chat/Debug reading anchors; Graph v1 snapshots preserve filters, panels and architecture viewport by capture and batch; KV v1 snapshots preserve display, Find, selection, zoom and head panels by capture and Turn. Each feature validates saved identifiers against current captured metadata before rendering. Explicit bookmarks and Token-to-KV jumps are navigation actions and take precedence over ordinary restoration.
+## Rules
 
-`ConversationReadingController` owns rendered reading positions and virtualizer cleanup. `KvDataController` owns cancellation, loading/error states and identity validation for metadata, range, selection and Find requests. View snapshots store UI choices, not tensor values or comparison results. Missing evidence remains unavailable.
+`scripts/check_layering.mjs` checks these, and `ci/check_ui.sh` fails when
+one breaks:
 
-`npm test` discovers all `scripts/check_*.mjs` regressions and feature `*.test.mjs`/`*.test.cjs` suites. `npm run test:e2e` runs the Playwright specs in `e2e/`: it starts the Python Server (`python -m model_debugger_server`) on the workspace `E2E_WORKSPACE` (a new empty one by default) with `dist/`, so build first and run `npm run e2e:browsers` once; `SERVER_PYTHON` overrides the interpreter. Specs that open a captured session need a workspace that holds one. `npm run test:graph` runs the Graph subset.
+- Layers, lowest first: `server/`, `widgets/`, `analyses/`, the pages `home/`
+  and `conversation/`, then `app/`. A layer imports only from layers below
+  it.
+- Only `src/server/` sends requests: no other file uses `fetch`,
+  `EventSource` or `XMLHttpRequest`.
+- `widgets/` imports no `state/`, analysis, page or `app/`.
+- `home/` and `conversation/` import nothing of each other.
+- No module outside `app/` but `main.ts` imports `app/`.
+- `state/` imports only `server/`; `widgets/` and `analyses/` import none of
+  it.
+- `theme/` imports only `state/` (`ThemeService` keeps its choice with
+  `PreferencesService`). `widgets/` and `analyses/` use only its stylesheets;
+  `server/` and `state/` none of it.
+- No analysis imports another. What several share is in `analyses/shared/`,
+  which imports none of them, or in `widgets/`.
+- The pages and `app/` reach `analyses/` only through `analyses/registry.ts`
+  or `analyses/panel_state.ts`, and what `panel_state.ts` runs declares no
+  component or directive.
+- In the conversation page, `chat/`, `debug/` and `composer/` import nothing
+  of each other, and `conversation/` itself imports none of them nor
+  `conversation_panel/`.
+- A details body (`analyses/<name>/<name>_details.ts`) and `analyses/shared/`
+  import no chart, directly or through the modules of `analyses/` they
+  import. A chart is `widgets/plotly_loader.ts` or a module of
+  `widgets/charts/` that declares a component or directive or imports a
+  chart.
+- A CSS custom property that `server/`, `widgets/`, `analyses/` or a low
+  module (`LOW_MODULES` in the check) reads without a fallback is set on the
+  root element in `theme/`, or at or below the reader: an analysis reads no
+  property only the page around it sets.
+- Every folder and file directly under `src/` is in the check's `LAYOUT`; a
+  new one fails until it is given its place and its rules.
 
-The execution iframe and its dependencies use content versions. After editing `public/graph_execution/`, run `npm run version:graph` (`node scripts/version_graph_execution.mjs`). `npm run build` only checks the chain in its prebuild step and fails while it is stale; tests reject a stale chain too. When publishing, copy nested iframe HTML with the other assets and publish only the root application `index.html` last. Keep `public/graph_execution/upstream/model_explorer/dist/`: it contains the pinned renderer runtime and is included in Git despite the general build-cache exclusions.
+An import is any reference the check can read: tests, `.mjs` and `.cjs`
+modules, side-effect imports, `import(...)` with a literal specifier (one
+built at run time fails the check), `require(...)`,
+`new URL(..., import.meta.url)`, `styleUrl`, `templateUrl` and `styleUrls`,
+and Sass's `@use`, `@forward` and `@import`.
 
-## Fonts and third-party notices
+## Checks and tests
 
-`public/fonts/` ships Material Icons (Apache-2.0); text uses Roboto when the system provides it or the platform system font, and no
-external font requests are made. `npm run build` appends the licenses of everything served
-from `public/` (Plotly.js, the modified Model Explorer visualizer and graph_arch_preview runtime with their provenance, and the bundled icon font) to `3rdpartylicenses.txt`, which the About dialog links to.
+From the repository root, `ci/check_ui.sh` runs, in order, each step failing
+the check:
 
-## Theme
+1. `npm ci`, when `node_modules/` is missing;
+2. `npm run format:check`: Prettier over everything it formats here, all but
+   the generated and third-party files `.prettierignore` names
+   (`npm run format` writes it);
+3. `npm run check:layering`: the rules above;
+4. `npm run build`;
+5. `npm test`: the unit tests, `ng test` (vitest and jsdom): every
+   `*.spec.ts` under `src/`, each beside the file it tests, with the
+   providers of `src/test_providers.ts`; specs of services and components
+   build them with `TestBed`, the server and the browser's transport replaced
+   by fakes (`src/server/testing/` holds the shared ones);
+6. the structure-graph prototype's checks, each run with `node` on its own:
+   `scripts/check_graph_pairs.mjs`, `check_mapping_pair_edit.mjs` and
+   `check_model_tree_metrics.mjs`. They test the plain scripts of
+   `public/graph-arch-preview/`, which `ng test` does not build.
 
-`src/theme/_tokens.scss` writes every token once with `light-dark()`; the only switch is the
-`data-theme` attribute that `ThemeService` sets, which selects `color-scheme` there. Material's
-dark mode re-emits only its color layer. Global stylesheets live under `src/theme/` and
-`src/shared/styles/`; feature directories hold component styles only. The heat palette is a set
-of root tokens that the Token Diff mixins and the trend chart both read.
+`npm test -- --include <path>` runs the specs of one folder or one file, such
+as `npm test -- --include src/analyses/kv/` or
+`npm test -- --include src/conversation/token_query.spec.ts`.
+`npm run verify` runs `ci/check_ui.sh`.
 
-## Tests
+`src/server/testing/metric_catalog_fixture.json`, the catalog the specs use,
+is the server's answer to GET /api/metrics: `ci/check_server.sh` checks that
+it is, and, from the repository root, running
+`python3 -I ci/check_metric_catalog.py --write` with
+`src/ui/src/server/testing/metric_catalog_fixture.json` writes it.
 
-`npm test` runs the esbuild-bundled node checks (`scripts/check_*.mjs`) and the `*.test.mjs`
-files next to the code. Scripts that exercise services import real Angular through
-`scripts/angular_harness.mjs` (signals, effects, dependency injection, a flushable effect
-scheduler) and replace only browser transport and time. `npm run test:unit` (`ng test`, vitest +
-jsdom) renders components with TestBed; `src/test_providers.ts` supplies the providers every spec
-gets. `npm run verify` runs all of it plus the build; `npm run verify:e2e` adds the Playwright
-smoke against the served production build.
+## How the UI works
+
+- **The server decides.** Metrics, their labels, formats and thresholds come
+  from GET /api/metrics (`MetricCatalogStore`); comparisons, alignments, what
+  each stage offers and every reason (`{code, side, text}`) come from GET
+  /api/session. The UI aligns, measures and decides nothing of its own; an
+  analysis request names rows of the server's comparison. Which step a column
+  of an analysis is, each token of the Session says in the server's words:
+  `produced_text` for Final Logits and the intermediate tensors,
+  `written_text` for the KV cache.
+- **The address is the navigation state.** `/` is home, `/sessions/{id}` a
+  Session's live chat (else the New chat form, or its latest chat with a
+  turn), `.../new` the New chat form, `.../chats/{c}` chat c, `.../debug`
+  Debug mode, `.../debug/turns/{n}` a turn and
+  `.../debug/turns/{n}/{stage}/{analysis}` an analysis open. A Session holds
+  several chats, one live at a time; each has its own capture, which every
+  capture-scoped request names (`session_id`, `chat`;
+  `server/capture_id.ts`). `state/page_address/page_address.ts` reads and
+  writes the addresses, `app/routes.ts` maps them to pages, and navigation
+  keeps the query (`?debugPalette`). Which modes a chat is read in is the
+  server's (its `debug` action): every chat is read in Chat, one with a turn
+  kept in Debug too; `WorkspaceStateService` replaces the address of a mode
+  the server refuses, however the page arrived there.
+- **Theme.** `src/theme/_tokens.scss` writes every token once with
+  `light-dark()`; `ThemeService` sets `data-theme`, which picks the scheme.
+  The charts read the `--chart-*` tokens and the heat palettes
+  (`--heat-semantic-*`, `--heat-activation-*`).
+- **Fonts.** `public/fonts/` ships Material Icons; the UI makes no external
+  font requests.

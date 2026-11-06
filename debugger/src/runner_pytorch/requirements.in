@@ -1,0 +1,9 @@
+# What the PyTorch runner needs at run time. protobuf at least that of the
+# protoc that generates the protocol's messages (MODULE.bazel), which they
+# check when imported.
+grpcio>=1.84,<2
+numpy>=2,<3
+protobuf>=7.35.1,<8
+safetensors>=0.6,<1
+torch==2.9.0
+transformers==5.17.0

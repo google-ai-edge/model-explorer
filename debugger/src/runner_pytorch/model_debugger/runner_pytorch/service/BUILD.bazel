@@ -1,0 +1,95 @@
+# The protocol's rules around the runtime: the service, its options, the
+# host and the model's id.
+
+load("@rules_python//python:py_library.bzl", "py_library")
+load("@rules_python//python:py_test.bzl", "py_test")
+load("@runner_pytorch_pypi//:requirements.bzl", "requirement")
+
+package(default_visibility = ["//visibility:public"])
+
+py_library(
+    name = "model_id",
+    srcs = [
+        "__init__.py",
+        "model_id.py",
+    ],
+    deps = ["//model_debugger/runner_pytorch:package"],
+)
+
+py_library(
+    name = "options_schema",
+    srcs = [
+        "__init__.py",
+        "options_schema.py",
+    ],
+    deps = [
+        "//model_debugger/runner_pytorch:package",
+        requirement("grpcio"),
+        requirement("protobuf"),
+    ],
+)
+
+py_library(
+    name = "host_info",
+    srcs = [
+        "__init__.py",
+        "host_info.py",
+    ],
+    deps = [
+        "//model_debugger/runner_pytorch:package",
+        "@protocol//model_debugger/protocol:runner_py_pb2",
+        requirement("torch"),
+    ],
+)
+
+py_library(
+    name = "runner_service",
+    srcs = [
+        "__init__.py",
+        "runner_service.py",
+    ],
+    deps = [
+        ":host_info",
+        ":options_schema",
+        "//model_debugger/runner_pytorch:package",
+        "//model_debugger/runner_pytorch/llm:gemma4_runtime",
+        "@protocol//model_debugger/protocol:runner_py_pb2",
+        "@protocol//model_debugger/protocol:runner_py_pb2_grpc",
+        requirement("grpcio"),
+    ],
+)
+
+py_test(
+    name = "model_id_test",
+    srcs = ["model_id_test.py"],
+    deps = [
+        ":model_id",
+        "//model_debugger/runner_pytorch/testing:test_main",
+        requirement("pytest"),
+    ],
+)
+
+# The runner over gRPC with a tiny random Gemma 4, its captures checked by
+# the Server's capture index (testing/server_capture.py), which is outside
+# Bazel's view; so the test is "external": Bazel runs it every time rather
+# than reuse a result from before the index changed.
+py_test(
+    name = "runner_service_test",
+    timeout = "long",
+    srcs = ["runner_service_test.py"],
+    tags = ["external"],
+    deps = [
+        ":model_id",
+        "//model_debugger/runner_pytorch/cli:runner_main",
+        "//model_debugger/runner_pytorch/testing:runner_client",
+        "//model_debugger/runner_pytorch/testing:server_capture",
+        "//model_debugger/runner_pytorch/testing:test_main",
+        "//model_debugger/runner_pytorch/testing:tiny_gemma4",
+        "@protocol//model_debugger/protocol:runner_py_pb2",
+        "@protocol//model_debugger/protocol:runner_py_pb2_grpc",
+        requirement("grpcio"),
+        requirement("protobuf"),
+        requirement("pytest"),
+        requirement("safetensors"),
+    ],
+)

@@ -15,6 +15,6 @@ cc_library(
     deps = [
         "//model_debugger/runner/service:cache_directory",
         "@com_google_googletest//:gtest",
-        "@protocol//model_debugger/v1:runner_cc_proto",
+        "@protocol//model_debugger/protocol:runner_cc_proto",
     ],
 )

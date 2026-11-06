@@ -25,16 +25,22 @@
 #include <memory>
 #include <string>
 
+#include "grpcpp/grpcpp.h"
+#include "model_debugger/protocol/runner.grpc.pb.h"
+#include "model_debugger/protocol/runner.pb.h"
+#include "model_debugger/runner/testing/test_utils.h"
+#include "gtest/gtest.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
-#include "grpcpp/grpcpp.h"
-#include "gtest/gtest.h"
-#include "model_debugger/runner/testing/test_utils.h"
-#include "model_debugger/v1/runner.grpc.pb.h"
-#include "model_debugger/v1/runner.pb.h"
 
 namespace model_debugger::runner {
 namespace {
+
+// A Runner keeps everything under HOME: never the real one in a test.
+class TestHome : public testing::Environment {
+ public:
+  void SetUp() override { UseTestCacheDirectory(); }
+};
 
 const testing::Environment* const kTestHome =
     testing::AddGlobalTestEnvironment(new TestHome);
@@ -81,14 +87,16 @@ TEST(RunnerTest, StartsOnAFreePortAndReportsIt) {
 TEST(RunnerTest, ServesTheProtocolAndSeesItsClient) {
   absl::StatusOr<std::unique_ptr<Runner>> runner = Runner::Start(kLoopback);
   ASSERT_TRUE(runner.ok()) << runner.status();
-  std::unique_ptr<v1::Runner::Stub> stub =
-      v1::Runner::NewStub(grpc::CreateChannel(
+  std::unique_ptr<protocol::Runner::Stub> stub =
+      protocol::Runner::NewStub(grpc::CreateChannel(
           "127.0.0.1:" + std::to_string((*runner)->GetState().port),
           grpc::InsecureChannelCredentials()));
   grpc::ClientContext context;
-  v1::RunnerInfo info;
-  ASSERT_TRUE(stub->GetInfo(&context, v1::GetInfoRequest(), &info).ok());
-  EXPECT_EQ(info.protocol_version(), "1.0.0");
+  protocol::RunnerInfo info;
+  ASSERT_TRUE(stub->GetInfo(&context, protocol::GetInfoRequest(), &info).ok());
+  EXPECT_EQ(info.protocol_version(),
+            protocol::RunnerInfo::descriptor()->file()->options().GetExtension(
+                protocol::protocol_version));
   EXPECT_EQ(info.runtime().version().size(), 40u) << "the LiteRT-LM commit";
   EXPECT_FALSE((*runner)->GetState().service.client.empty());
 }

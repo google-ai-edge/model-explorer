@@ -1,15 +1,56 @@
-# The Runner as a command: for a machine without a window, and for CI.
+# The Runner as a command: for a machine without a window, and for CI; and how
+# a build of it is kept, per LiteRT-LM commit, for the server to launch.
 
 load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
+load("@rules_shell//shell:sh_binary.bzl", "sh_binary")
 
 cc_binary(
     name = "runner",
     srcs = ["runner_main.cc"],
+    # Its libraries beside it too: where a kept Runner has them (keep.sh).
+    linkopts = select({
+        "@platforms//os:macos": ["-Wl,-rpath,@loader_path"],
+        "//conditions:default": [],
+    }),
     deps = [
         "//model_debugger/runner:runner_lib",
         "@com_google_absl//absl/flags:flag",
         "@com_google_absl//absl/flags:parse",
         "@com_google_absl//absl/flags:usage",
         "@com_google_absl//absl/status:statusor",
+    ],
+)
+
+# Prints a Runner's GetInfo: keep.sh checks with it what a new Runner reports.
+cc_binary(
+    name = "get_info",
+    srcs = ["get_info.cc"],
+    deps = [
+        "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/flags:parse",
+        "@com_google_absl//absl/flags:usage",
+        "@com_google_absl//absl/status",
+        "@grpc//:grpc++",
+        "@protobuf//:json",
+        "@protocol//model_debugger/protocol:runner_cc_grpc",
+        "@protocol//model_debugger/protocol:runner_cc_proto",
+    ],
+)
+
+# bazel run //model_debugger/runner/cli:keep keeps the Runner, with what it
+# needs beside it, under ~/Library/Application Support/model_debugger/runners/
+# for the LiteRT-LM commit it is built against; see keep.sh.
+sh_binary(
+    name = "keep",
+    srcs = ["keep.sh"],
+    args = [
+        "$(rootpath :runner)",
+        "$(rootpath :get_info)",
+        "$(rootpaths //model_debugger/runner/llm/litert_lm:runtime_files)",
+    ],
+    data = [
+        ":get_info",
+        ":runner",
+        "//model_debugger/runner/llm/litert_lm:runtime_files",
     ],
 )

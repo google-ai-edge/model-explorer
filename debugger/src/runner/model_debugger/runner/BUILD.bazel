@@ -16,7 +16,6 @@ cc_library(
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/status:statusor",
         "@com_google_absl//absl/strings",
-        "@com_google_absl//absl/time",
         "@grpc//:grpc++",
     ],
 )
@@ -36,7 +35,7 @@ cc_library(
         ":runner_lib",
         "//model_debugger/runner/util:json",
         "@com_google_absl//absl/status:statusor",
-        "@protocol//model_debugger/v1:runner_cc_proto",
+        "@protocol//model_debugger/protocol:runner_cc_proto",
     ],
 )
 
@@ -56,8 +55,8 @@ cc_test(
         "@com_google_absl//absl/status:statusor",
         "@com_google_googletest//:gtest_main",
         "@grpc//:grpc++",
-        "@protocol//model_debugger/v1:runner_cc_grpc",
-        "@protocol//model_debugger/v1:runner_cc_proto",
+        "@protocol//model_debugger/protocol:runner_cc_grpc",
+        "@protocol//model_debugger/protocol:runner_cc_proto",
     ],
 )
 

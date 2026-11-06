@@ -16,28 +16,25 @@
 
 #include <dlfcn.h>
 
-#include <filesystem>
+#include <filesystem>  // NOLINT(build/c++17)
 #include <string_view>
-#include <system_error>
+#include <system_error>  // NOLINT(build/c++11)
 
-#include "absl/strings/str_cat.h"
 #include "litert_lm/plugins.h"
+#include "absl/strings/str_cat.h"
 
 namespace model_debugger::runner::llm {
 
 absl::Status LoadLiteRtGpuPlugins(std::string_view directory) {
-  std::error_code error;  // The overload without throw; nothing catches.
   // In the order the platform's LiteRT-LM names them: a plugin's own
   // dependencies first.
   for (const char* name : litert_lm::kGpuPlugins) {
     const std::filesystem::path file = std::filesystem::path(directory) / name;
-    if (!std::filesystem::exists(file, error)) {
-      return absl::FailedPreconditionError(
-          absl::StrCat("Missing GPU library: ", file.string(), "."));
-    }
     if (dlopen(file.c_str(), RTLD_NOW | RTLD_LOCAL) == nullptr) {
       const char* detail = dlerror();
-      return absl::InternalError(
+      // Missing or not loadable: this machine cannot run the build on the
+      // GPU.
+      return absl::FailedPreconditionError(
           absl::StrCat("Could not load GPU library ", name, ": ",
                        detail != nullptr ? detail : "unknown error", "."));
     }

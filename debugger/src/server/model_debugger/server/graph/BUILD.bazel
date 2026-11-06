@@ -1,0 +1,239 @@
+# A model's graph: Model Explorer's converter, run in a child process, its
+# graphs slimmed and annotated with the tap points, and the architectures the
+# server knows (architectures/) bound to a model's graphs by anchor, by each
+# architecture's LiteRT-LM binding; a PyTorch model's execution graph, as its
+# runner exports it, folded and bound by the architecture's PyTorch binding.
+
+load("@rules_python//python:py_library.bzl", "py_library")
+load("@rules_python//python:py_test.bzl", "py_test")
+load("@server_pypi//:requirements.bzl", "requirement")
+
+package(default_visibility = ["//visibility:public"])
+
+py_library(
+    name = "model_graph",
+    srcs = [
+        "__init__.py",
+        "model_graph.py",
+    ],
+    deps = [
+        "//model_debugger/server:package",
+        "//model_debugger/server/tap:tap_scan",
+    ],
+)
+
+# The platforms PyPI's ai-edge-model-explorer-adapter has a wheel for
+# (MODULE.bazel.lock, requirements.in's marker).
+config_setting(
+    name = "macos_arm64",
+    constraint_values = [
+        "@platforms//os:macos",
+        "@platforms//cpu:arm64",
+    ],
+)
+
+config_setting(
+    name = "linux_x86_64",
+    constraint_values = [
+        "@platforms//os:linux",
+        "@platforms//cpu:x86_64",
+    ],
+)
+
+config_setting(
+    name = "linux_aarch64",
+    constraint_values = [
+        "@platforms//os:linux",
+        "@platforms//cpu:aarch64",
+    ],
+)
+
+# The child it runs imports the converter, the prebuilt library of PyPI's
+# ai-edge-model-explorer-adapter, from this process's path; on a platform it
+# has no wheel for, the child says the converter is not available.
+py_library(
+    name = "graph_converter",
+    srcs = [
+        "__init__.py",
+        "graph_converter.py",
+    ],
+    deps = [
+        ":model_graph",
+        "//model_debugger/server/tap:litertlm_file",
+        "//model_debugger/server/tap:structure_copy",
+    ] + select({
+        ":linux_aarch64": [requirement("ai-edge-model-explorer-adapter")],
+        ":linux_x86_64": [requirement("ai-edge-model-explorer-adapter")],
+        ":macos_arm64": [requirement("ai-edge-model-explorer-adapter")],
+        "//conditions:default": [],
+    }),
+)
+
+# The architectures' LiteRT-LM bindings are JSON beside the module.
+py_library(
+    name = "architecture",
+    srcs = [
+        "__init__.py",
+        "architecture.py",
+    ],
+    data = glob(["bindings/*.json"]),
+    deps = [
+        ":model_graph",
+        "//model_debugger/server/architectures:catalog",
+        "//model_debugger/server/architectures:skeleton",
+        "//model_debugger/server/tap:tap_scan",
+    ],
+)
+
+# The PyTorch runner's binding of each architecture: no graph, its anchors'
+# module positions alone.
+py_library(
+    name = "pytorch_binding",
+    srcs = [
+        "__init__.py",
+        "pytorch_binding.py",
+    ],
+    data = glob(["bindings/*_pytorch.json"]),
+    deps = [
+        "//model_debugger/server/architectures:catalog",
+        "//model_debugger/server/architectures:skeleton",
+    ],
+)
+
+# The PyTorch module each LiteRT-LM point chosen is, by both bindings' ops.
+py_library(
+    name = "counterparts",
+    srcs = [
+        "__init__.py",
+        "counterparts.py",
+    ],
+    deps = [
+        ":model_graph",
+        "//model_debugger/server/architectures:skeleton",
+        "//model_debugger/server/tap:tap_scan",
+    ],
+)
+
+# The semantic operators inside a decoder layer, captured in every layer.
+py_library(
+    name = "layer_ops",
+    srcs = [
+        "__init__.py",
+        "layer_ops.py",
+    ],
+    deps = [
+        ":architecture",
+        ":counterparts",
+        ":pytorch_binding",
+        "//model_debugger/server/tap:tap_scan",
+    ],
+)
+
+py_test(
+    name = "layer_ops_test",
+    srcs = ["layer_ops_test.py"],
+    deps = [
+        ":architecture",
+        ":layer_ops",
+        ":pytorch_binding",
+        "//model_debugger/server/architectures:catalog",
+        "//model_debugger/server/tap:tap_scan",
+        "//model_debugger/server/testing:test_main",
+    ],
+)
+
+# A PyTorch model's execution graph, as its runner exports it, folded as the
+# Graph Diff draws it.
+py_library(
+    name = "pytorch_graph",
+    srcs = [
+        "__init__.py",
+        "pytorch_graph.py",
+    ],
+    deps = [
+        "//model_debugger/server:package",
+    ],
+)
+
+py_test(
+    name = "pytorch_graph_test",
+    srcs = ["pytorch_graph_test.py"],
+    deps = [
+        ":architecture",
+        ":model_graph",
+        ":pytorch_binding",
+        ":pytorch_graph",
+        "//model_debugger/server/architectures:catalog",
+        "//model_debugger/server/testing:pytorch_graph_fixtures",
+        "//model_debugger/server/testing:test_main",
+        requirement("absl-py"),
+    ],
+)
+
+py_test(
+    name = "counterparts_test",
+    srcs = ["counterparts_test.py"],
+    deps = [
+        ":architecture",
+        ":counterparts",
+        ":pytorch_binding",
+        "//model_debugger/server/architectures:catalog",
+        "//model_debugger/server/tap:tap_scan",
+        "//model_debugger/server/testing:test_main",
+    ],
+)
+
+py_test(
+    name = "pytorch_binding_test",
+    srcs = ["pytorch_binding_test.py"],
+    deps = [
+        ":architecture",
+        ":pytorch_binding",
+        "//model_debugger/server/architectures:catalog",
+        "//model_debugger/server/testing:test_main",
+    ],
+)
+
+py_test(
+    name = "model_graph_test",
+    srcs = ["model_graph_test.py"],
+    deps = [
+        ":model_graph",
+        "//model_debugger/server/tap:tap_scan",
+        "//model_debugger/server/testing:fake_converter",
+        "//model_debugger/server/testing:tap_fixtures",
+        "//model_debugger/server/testing:test_main",
+        requirement("absl-py"),
+    ],
+)
+
+py_test(
+    name = "architecture_test",
+    srcs = ["architecture_test.py"],
+    deps = [
+        ":architecture",
+        ":model_graph",
+        "//model_debugger/server/tap:tap_scan",
+        "//model_debugger/server/testing:test_main",
+        requirement("absl-py"),
+    ],
+)
+
+# Runs the real converter, in its child process, on the fixture model and,
+# when RUNNER_MODEL names it, on the real one: that is outside Bazel's view,
+# so the test is "external": Bazel runs it every time.
+py_test(
+    name = "graph_converter_test",
+    timeout = "moderate",
+    srcs = ["graph_converter_test.py"],
+    tags = ["external"],
+    deps = [
+        ":architecture",
+        ":graph_converter",
+        ":model_graph",
+        "//model_debugger/server/tap:tap_scan",
+        "//model_debugger/server/testing:tap_fixtures",
+        "//model_debugger/server/testing:test_main",
+        requirement("absl-py"),
+    ],
+)

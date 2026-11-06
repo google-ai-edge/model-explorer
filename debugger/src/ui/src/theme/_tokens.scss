@@ -1,3 +1,4 @@
+/* stylelint-disable */
 /**
  * @license
  * Copyright 2026 The AI Edge Model Explorer Authors.
@@ -54,11 +55,8 @@
   --b3: light-dark(#feefe3, #36261a);
   --c4: light-dark(#d93025, #f28b82);
   --b4: light-dark(#fce8e6, #3b2320);
-  --sans:
-    Roboto, system-ui, -apple-system, 'Segoe UI', 'Helvetica Neue', Arial,
-    sans-serif;
-  --mono:
-    'Roboto Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --sans: Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --mono: 'Roboto Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 }
 :root {
   --button-text: light-dark(#1f1f1f, #e3e3e3);
@@ -85,15 +83,13 @@
     color-mix(in srgb, #85621b 40%, #dadce0),
     color-mix(in srgb, #d6b66c 40%, #444746)
   );
-  --debug-dock-shadow:
-    0 10px 30px rgba(35, 40, 48, 0.16), 0 3px 8px rgba(35, 40, 48, 0.1);
+  --debug-dock-shadow: 0 10px 30px rgba(35, 40, 48, 0.16), 0 3px 8px rgba(35, 40, 48, 0.1);
   --button-stage-bg: light-dark(#eaf2ff, #293b56);
   --button-stage-ink: light-dark(#1a73e8, #8ab4f8);
 }
 :root[data-theme='dark'] {
   // Shadows are not colors; light-dark() cannot express the two shadow stacks.
-  --debug-dock-shadow:
-    0 12px 32px rgba(0, 0, 0, 0.45), 0 3px 8px rgba(0, 0, 0, 0.3);
+  --debug-dock-shadow: 0 12px 32px rgba(0, 0, 0, 0.45), 0 3px 8px rgba(0, 0, 0, 0.3);
 }
 :root {
   --a-ink: var(--on1);
@@ -106,6 +102,19 @@
   --a-line: light-dark(#b8bec6, #5f6368);
   --a-band: var(--surface);
   --a-sel: var(--pri);
+}
+:root {
+  // Chart surfaces for src/widgets/charts. A panel may set its own on its host,
+  // as the KV panel does for the canvas.
+  --chart-canvas: var(--me-surface-container-color);
+  --chart-panel: var(--me-surface-color);
+  --chart-muted: var(--me-on-surface-variant-color);
+  --chart-line: var(--me-outline-hairline-color);
+  --chart-accent: var(--me-primary-color);
+  // The Reference and Target surfaces the intermediate tensors' structure graph paints its two
+  // sides with: the conversation page's own (conversation_panel.scss).
+  --chart-reference-surface: light-dark(#fafbfd, #26292e);
+  --chart-target-surface: var(--debug-target-surface, light-dark(#fffefa, #292824));
 }
 
 // Opt-in palette review. No stored preference and no change to data colors.

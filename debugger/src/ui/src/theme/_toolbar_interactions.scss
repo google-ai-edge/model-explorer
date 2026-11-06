@@ -1,3 +1,4 @@
+/* stylelint-disable */
 /**
  * @license
  * Copyright 2026 The AI Edge Model Explorer Authors.
@@ -17,7 +18,7 @@
  */
 
 // Toolbar interaction layers. Keep global shell specificity when moving between views.
-report-app .debugger-shell {
+app-shell .debugger-shell {
   .theme-button::before,
   .session-name::before {
     content: '';
@@ -109,7 +110,7 @@ report-app .debugger-shell {
   }
 }
 
-report-app .debugger-shell {
+app-shell .debugger-shell {
   .topbar .brand {
     gap: 6px;
     line-height: normal;
@@ -145,7 +146,7 @@ report-app .debugger-shell {
   }
 }
 
-:root[data-theme='dark'] report-app .debugger-shell {
+:root[data-theme='dark'] app-shell .debugger-shell {
   .theme-button::before,
   .session-name::before,
   .theme-button:active::before,
@@ -158,6 +159,6 @@ report-app .debugger-shell {
   }
 }
 
-:root:not([data-theme='dark']) report-app .debugger-shell app-toolbar .brand {
+:root:not([data-theme='dark']) app-shell .debugger-shell app-toolbar .brand {
   color: #202124;
 }

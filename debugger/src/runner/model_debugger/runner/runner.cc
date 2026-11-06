@@ -14,25 +14,24 @@
 
 #include "model_debugger/runner/runner.h"
 
+#include <chrono>  // NOLINT(build/c++11)
 #include <memory>
 #include <string>
 #include <utility>
 
-#include "absl/status/status.h"
-#include "absl/status/statusor.h"
-#include "absl/strings/str_cat.h"
-#include "absl/time/clock.h"
-#include "absl/time/time.h"
 #include "grpcpp/grpcpp.h"
 #include "model_debugger/runner/llm/litert_lm/litert_lm_runtime.h"
 #include "model_debugger/runner/service/runner_service.h"
+#include "absl/status/status.h"
+#include "absl/status/statusor.h"
+#include "absl/strings/str_cat.h"
 
 namespace model_debugger::runner {
 namespace {
 
 // How long the destructor lets the calls in flight finish before it cancels
 // them: a Send notices within tens of milliseconds, a Load not before it ends.
-constexpr absl::Duration kShutdownGrace = absl::Seconds(3);
+constexpr std::chrono::seconds kShutdownGrace(3);
 
 }  // namespace
 
@@ -64,7 +63,7 @@ Runner::Runner(std::string listen,
       server_(std::move(server)) {}
 
 Runner::~Runner() {
-  server_->Shutdown(absl::ToChronoTime(absl::Now() + kShutdownGrace));
+  server_->Shutdown(std::chrono::system_clock::now() + kShutdownGrace);
   server_.reset();  // Before the service it calls.
 }
 

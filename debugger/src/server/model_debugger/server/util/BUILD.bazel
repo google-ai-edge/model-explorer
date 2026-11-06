@@ -1,0 +1,54 @@
+# The clock, errors and JSON files, for every layer above it.
+
+load("@rules_python//python:py_library.bzl", "py_library")
+load("@rules_python//python:py_test.bzl", "py_test")
+load("@server_pypi//:requirements.bzl", "requirement")
+
+package(default_visibility = ["//visibility:public"])
+
+py_library(
+    name = "clock",
+    srcs = [
+        "__init__.py",
+        "clock.py",
+    ],
+    deps = ["//model_debugger/server:package"],
+)
+
+py_library(
+    name = "errors",
+    srcs = [
+        "__init__.py",
+        "errors.py",
+    ],
+    deps = ["//model_debugger/server:package"],
+)
+
+py_library(
+    name = "json_file",
+    srcs = [
+        "__init__.py",
+        "json_file.py",
+    ],
+    deps = ["//model_debugger/server:package"],
+)
+
+py_test(
+    name = "clock_test",
+    srcs = ["clock_test.py"],
+    deps = [
+        ":clock",
+        "//model_debugger/server/testing:test_main",
+        requirement("absl-py"),
+    ],
+)
+
+py_test(
+    name = "json_file_test",
+    srcs = ["json_file_test.py"],
+    deps = [
+        ":json_file",
+        "//model_debugger/server/testing:test_main",
+        requirement("absl-py"),
+    ],
+)

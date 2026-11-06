@@ -1,0 +1,5 @@
+# What the Server's tests and checks need besides; requirements_lock.txt pins
+# both: bazel run //:requirements.update
+-r requirements.in
+httpx>=0.28,<1
+ruff>=0.6,<1

@@ -17,17 +17,17 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
-#include <filesystem>
+#include <filesystem>  // NOLINT(build/c++17)
 #include <fstream>
-#include <ios>
 #include <iterator>
+#include <set>
 #include <string>
 #include <vector>
 
+#include "model_debugger/runner/util/json.h"
+#include "gtest/gtest.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
-#include "gtest/gtest.h"
-#include "model_debugger/runner/util/json.h"
 
 namespace model_debugger::runner::llm {
 namespace {
@@ -132,19 +132,18 @@ std::string Captured(const Case& test) {
 }
 
 // Writes `data` as a safetensors file holding the tensor `name`.
-absl::StatusOr<std::filesystem::path> Write(const std::string& file_name,
-                                            const std::string& name,
-                                            const std::string& dtype,
-                                            const std::vector<size_t>& shape,
-                                            const std::string& data) {
+std::filesystem::path Write(const std::string& file_name,
+                            const std::string& name, const std::string& dtype,
+                            const std::vector<size_t>& shape,
+                            const std::string& data) {
   Json header = {{name,
                   {{"dtype", dtype},
                    {"shape", shape},
                    {"data_offsets", {0, data.size()}}}},
                  {"__metadata__", {{"signature", "decode"}, {"step", "9"}}}};
   const absl::StatusOr<std::string> dumped = Dump(header);
-  if (!dumped.ok()) return dumped.status();
-  const std::string& text = *dumped;
+  EXPECT_TRUE(dumped.ok());
+  const std::string text = dumped.value_or("");
   const uint64_t size = text.size();
   const std::filesystem::path path =
       std::filesystem::path(::testing::TempDir()) / file_name;
@@ -172,12 +171,11 @@ class UnpackMlDriftKvCacheTest : public ::testing::TestWithParam<Case> {};
 
 TEST_P(UnpackMlDriftKvCacheTest, GivesBackTheCacheTheKernelWrote) {
   const Case& test = GetParam();
-  const absl::StatusOr<std::filesystem::path> path = Write(
+  const std::filesystem::path path = Write(
       "cache.safetensors", test.key ? "post_kv_cache_k_3" : "post_kv_cache_v_3",
       test.int8 ? "I8" : "F32", Shape(test), Captured(test));
-  ASSERT_TRUE(path.ok()) << path.status();
-  ASSERT_TRUE(UnpackMlDriftKvCache(*path).ok());
-  EXPECT_EQ(Data(*path), Logical(test));
+  ASSERT_TRUE(UnpackMlDriftKvCache(path).ok());
+  EXPECT_EQ(Data(path), Logical(test));
 }
 
 INSTANTIATE_TEST_SUITE_P(
@@ -190,31 +188,74 @@ INSTANTIATE_TEST_SUITE_P(
 
 TEST(UnpackMlDriftKvCache, RefusesDimensionsThatAreNotMultiplesOfFour) {
   const std::string data(1 * 1 * 6 * 8, '\x01');
-  const absl::StatusOr<std::filesystem::path> path =
+  const std::filesystem::path path =
       Write("odd.safetensors", "post_kv_cache_k_0", "I8", {1, 1, 6, 8}, data);
-  ASSERT_TRUE(path.ok()) << path.status();
-  const std::string before = Read(*path);
-  EXPECT_EQ(UnpackMlDriftKvCache(*path).code(),
+  const std::string before = Read(path);
+  EXPECT_EQ(UnpackMlDriftKvCache(path).code(),
             absl::StatusCode::kInvalidArgument);
-  EXPECT_EQ(Read(*path), before);
+  EXPECT_EQ(Read(path), before);
 }
 
 TEST(UnpackMlDriftKvCache, RefusesASizeBeyondTheFile) {
-  const absl::StatusOr<std::filesystem::path> path =
+  const std::filesystem::path path =
       Write("huge.safetensors", "post_kv_cache_k_0", "I8",
             {1, size_t{1} << 62, 4, 4}, std::string());
-  ASSERT_TRUE(path.ok()) << path.status();
-  EXPECT_EQ(UnpackMlDriftKvCache(*path).code(),
+  EXPECT_EQ(UnpackMlDriftKvCache(path).code(),
             absl::StatusCode::kInvalidArgument);
 }
 
 TEST(UnpackMlDriftKvCache, RefusesATensorThatIsNotAKvCache) {
   const std::string data(1 * 1 * 4 * 8, '\x01');
-  const absl::StatusOr<std::filesystem::path> path =
+  const std::filesystem::path path =
       Write("logits.safetensors", "post_logits", "I8", {1, 1, 4, 8}, data);
-  ASSERT_TRUE(path.ok()) << path.status();
-  EXPECT_EQ(UnpackMlDriftKvCache(*path).code(),
+  EXPECT_EQ(UnpackMlDriftKvCache(path).code(),
             absl::StatusCode::kInvalidArgument);
+}
+
+// Writes, in the directory `name`, what a GPU call captures: its param
+// tensor, and the K cache of `test` as the kernel left it. Returns the
+// directory.
+std::filesystem::path WriteGpuCall(const std::string& name, const Case& test) {
+  std::filesystem::create_directories(
+      std::filesystem::path(::testing::TempDir()) / name);
+  Write(name + "/decode_pre_param_tensor_step_9.safetensors",
+        "pre_param_tensor", "I8", {1, 1, 4, 4}, std::string(16, '\0'));
+  return Write(name + "/decode_post_kv_cache_k_0_step_9.safetensors",
+               "post_kv_cache_k_0", "I8", Shape(test), Captured(test))
+      .parent_path();
+}
+
+TEST(UnpackMlDriftKvCaches, UnpacksAFileWrittenAgainUnderAnEarlierName) {
+  const Case test = {true, 1, 16, 8, true};
+  const std::string cache = "decode_post_kv_cache_k_0_step_9.safetensors";
+  const std::set<std::string> names = {
+      "decode_pre_param_tensor_step_9.safetensors", cache};
+  const std::filesystem::path dir = WriteGpuCall("again", test);
+  ASSERT_TRUE(UnpackMlDriftKvCaches(dir, names).ok());
+  ASSERT_EQ(Data(dir / cache), Logical(test));
+
+  // A later turn's call of the same step writes the file again, packed.
+  WriteGpuCall("again", test);
+  ASSERT_TRUE(UnpackMlDriftKvCaches(dir, names).ok());
+  EXPECT_EQ(Data(dir / cache), Logical(test));
+}
+
+TEST(UnpackMlDriftKvCaches, LeavesFilesNotNamed) {
+  const Case test = {true, 1, 16, 8, true};
+  const std::filesystem::path dir = WriteGpuCall("unnamed", test);
+  ASSERT_TRUE(
+      UnpackMlDriftKvCaches(dir, {"decode_pre_param_tensor_step_9.safetensors"})
+          .ok());
+  EXPECT_EQ(Data(dir / "decode_post_kv_cache_k_0_step_9.safetensors"),
+            Captured(test));
+}
+
+TEST(UnpackMlDriftKvCaches, LeavesACacheWithoutAParamTensor) {
+  const Case test = {true, 1, 16, 8, true};
+  const std::filesystem::path dir = WriteGpuCall("cpu", test);
+  const std::string cache = "decode_post_kv_cache_k_0_step_9.safetensors";
+  ASSERT_TRUE(UnpackMlDriftKvCaches(dir, {cache}).ok());
+  EXPECT_EQ(Data(dir / cache), Captured(test));
 }
 
 }  // namespace

@@ -64,3 +64,6 @@ cc_library(
 # A placeholder for the framework import of each GPU plugin.
 # buildifier: disable=no-effect
 {plugin_framework_imports}
+
+# The commit's facts, for the iOS App's version (app/apple).
+exports_files(["commit.json"])

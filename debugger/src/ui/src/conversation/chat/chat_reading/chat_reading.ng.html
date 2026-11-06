@@ -1,0 +1,273 @@
+<!--
+ Copyright 2026 The AI Edge Model Explorer Authors.
+
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+ ==============================================================================
+-->
+<div
+  class="reading chat-reading"
+  [attr.data-token-color]="tokenColor()"
+  [attr.data-gap-palette]="gapPalette()"
+  [style.--token-line-height.px]="26"
+  (wheel)="conversation.trackReadingIntent($event)"
+  (keydown)="conversation.trackReadingIntent($event)"
+  (pointerdown)="conversation.trackReadingIntent($event)"
+  (scroll)="conversation.readingScrolled()"
+  [class.virtual-reading]="conversation.usesVirtual()"
+>
+  <div class="column-headings">
+    @for (run of conversation.runs(); track run.id) {
+      <header>
+        <div class="runtime-name">
+          <runner-status [run]="run" />
+        </div>
+        <span
+          [matTooltip]="
+            (run.runtime || 'Runtime not captured') +
+            ' · ' +
+            (run.backend || 'Backend not captured')
+          "
+          >{{ run.id === 'ref' ? 'Baseline conversation' : 'Comparison conversation' }}</span
+        >
+      </header>
+    }
+  </div>
+  @if (!workspace.chatHasCapture() && !conversation.liveGeneration() && canSend()) {
+    <empty-chat-demo />
+  }
+  <div class="turns">
+    @for (turn of conversation.turns(); track turn.n) {
+      <section class="turn" [attr.data-turn]="turn.n" [attr.aria-label]="'Turn ' + turn.n">
+        @for (run of conversation.runs(); track run.id) {
+          <article
+            class="conversation-side"
+            [attr.data-runtime]="run.id"
+            [class.target]="run.id === 'target'"
+          >
+            @let capture = conversation.captured(turn.n, run.id);
+            <section
+              class="phase-node inputNode"
+              [attr.aria-label]="
+                'Turn ' + turn.n + ' / Prefill · ' + (run.id === 'ref' ? 'Reference' : 'Target')
+              "
+              [attr.data-node-turn]="turn.n"
+              data-node-stage="prefill"
+              [attr.data-node-side]="run.id"
+            >
+              <div class="node-reveal">
+                <div>
+                  <div class="user-message">
+                    <strong>User</strong>
+                    @if (conversation.virtualInput(turn.n)) {
+                      <button
+                        mat-button
+                        class="read-full"
+                        [attr.aria-label]="'Read full input · ' + run.id + ' · Turn ' + turn.n"
+                        (click)="conversation.readFullText(turn.n, run.id, 'input')"
+                      >
+                        Read full text
+                      </button>
+                      <div
+                        class="virtualTextHost virtual-input"
+                        [attr.data-v-side]="run.id"
+                        [attr.data-v-turn]="turn.n"
+                        data-v-stage="Prefill"
+                        data-v-kind="input"
+                      ></div>
+                    } @else {
+                      <p>{{ capture?.input ?? 'Input text not captured' }}</p>
+                    }
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <section
+              class="phase-node decodeNode"
+              [attr.aria-label]="
+                'Turn ' + turn.n + ' / Decode · ' + (run.id === 'ref' ? 'Reference' : 'Target')
+              "
+              [attr.data-node-turn]="turn.n"
+              data-node-stage="decode"
+              [attr.data-node-side]="run.id"
+            >
+              <div class="node-reveal">
+                <div class="response">
+                  <strong>Model</strong>
+                  @if (capture?.thinking; as thinking) {
+                    <div class="chat-thinking">
+                      <button
+                        type="button"
+                        class="thinking-toggle"
+                        [attr.aria-label]="'Thinking · ' + run.id + ' · Turn ' + turn.n"
+                        [attr.aria-expanded]="conversation.thinkingOpen(turn.n, run.id)"
+                        (click)="conversation.toggleThinking(turn.n, run.id)"
+                      >
+                        <mat-icon>{{
+                          conversation.thinkingOpen(turn.n, run.id)
+                            ? 'expand_more'
+                            : 'chevron_right'
+                        }}</mat-icon
+                        >Thinking
+                      </button>
+                      <div
+                        class="thinking-reveal"
+                        [class.expanded]="conversation.thinkingOpen(turn.n, run.id)"
+                        [attr.inert]="conversation.thinkingOpen(turn.n, run.id) ? null : ''"
+                      >
+                        <div>
+                          <p>{{ thinking }}</p>
+                        </div>
+                      </div>
+                    </div>
+                  }
+                  @if (conversation.virtualOutput(turn.n)) {
+                    <button
+                      mat-button
+                      class="read-full"
+                      [attr.aria-label]="'Read full response · ' + run.id + ' · Turn ' + turn.n"
+                      (click)="conversation.readFullText(turn.n, run.id, 'output')"
+                    >
+                      Read full text
+                    </button>
+                    <div
+                      class="virtualTextHost virtual-output"
+                      [attr.data-v-side]="run.id"
+                      [attr.data-v-turn]="turn.n"
+                      data-v-stage="Output"
+                      data-v-kind="output"
+                    ></div>
+                  } @else {
+                    <p>
+                      @if (chatTokens(turn.n, run.id).length) {
+                        @for (token of chatTokens(turn.n, run.id); track $index) {
+                          <span [class.chat-mismatch]="token.mismatch">{{ token.text }}</span>
+                        }
+                      } @else {
+                        {{ capture?.output ?? 'Response text not captured' }}
+                      }
+                    </p>
+                  }
+                  @if (conversation.stageEnding(turn.n, run.id); as ending) {
+                    <p class="reply-end">{{ ending }}</p>
+                  }
+                </div>
+              </div>
+            </section>
+          </article>
+        }
+      </section>
+    }
+    @for (turn of conversation.rejectedTurns(); track turn.n) {
+      <rejected-turn [turn]="turn" [sides]="conversation.sideIds()" [debug]="false" />
+    }
+    @if (conversation.chatNotice(); as notice) {
+      <p class="chat-over" role="status">{{ notice }}</p>
+    }
+    @if (workspace.runtime.error() && workspace.runtime.error() !== conversation.chatNotice()) {
+      <p class="runtime-error" role="alert">{{ workspace.runtime.error() }}</p>
+    }
+    @if (conversation.liveGeneration(); as job) {
+      <section class="turn live-turn" aria-label="Current generation">
+        @for (run of conversation.runs(); track run.id) {
+          <article
+            class="conversation-side"
+            [attr.data-runtime]="run.id"
+            [class.target]="run.id === 'target'"
+          >
+            <div class="user-message">
+              <strong>User</strong>
+              @if (conversation.virtualInput(job.turn)) {
+                <button
+                  mat-button
+                  class="read-full"
+                  [attr.aria-label]="'Read full current input · ' + run.id"
+                  (click)="conversation.readFullText(job.turn, run.id, 'input')"
+                >
+                  Read full text
+                </button>
+                <div
+                  class="virtualTextHost virtual-input"
+                  [attr.data-v-side]="run.id"
+                  [attr.data-v-turn]="job.turn"
+                  data-v-stage="Prefill"
+                  data-v-kind="input"
+                ></div>
+              } @else {
+                <p>{{ job.prompt ?? workspace.chatDraft() }}</p>
+              }
+            </div>
+            <div class="response">
+              <strong>Model</strong>
+              @if (job.reasoning[run.id]; as thinking) {
+                <div class="chat-thinking">
+                  <button
+                    type="button"
+                    class="thinking-toggle"
+                    [attr.aria-label]="'Thinking · ' + run.id + ' · Current generation'"
+                    [attr.aria-expanded]="conversation.thinkingOpen(job.turn, run.id)"
+                    (click)="conversation.toggleThinking(job.turn, run.id)"
+                  >
+                    <mat-icon>{{
+                      conversation.thinkingOpen(job.turn, run.id) ? 'expand_more' : 'chevron_right'
+                    }}</mat-icon
+                    >Thinking
+                  </button>
+                  <div
+                    class="thinking-reveal"
+                    [class.expanded]="conversation.thinkingOpen(job.turn, run.id)"
+                    [attr.inert]="conversation.thinkingOpen(job.turn, run.id) ? null : ''"
+                  >
+                    <div>
+                      <p>{{ thinking }}</p>
+                    </div>
+                  </div>
+                </div>
+              }
+              @if (conversation.virtualOutput(job.turn)) {
+                <button
+                  mat-button
+                  class="read-full"
+                  [attr.aria-label]="'Read full current response · ' + run.id"
+                  (click)="conversation.readFullText(job.turn, run.id, 'output')"
+                >
+                  Read full text
+                </button>
+                <div
+                  class="virtualTextHost virtual-output"
+                  [attr.data-v-side]="run.id"
+                  [attr.data-v-turn]="job.turn"
+                  data-v-stage="Output"
+                  data-v-kind="output"
+                ></div>
+              } @else {
+                <p [class.streaming]="workspace.runtime.busy()">
+                  {{
+                    job.output[run.id] ||
+                      (workspace.runtime.busy() ? 'Waiting for output…' : 'No output')
+                  }}
+                </p>
+              }
+              <span class="generation-status" role="status">{{
+                conversation.liveStatus(job, run.id)
+              }}</span>
+              @if (job.note) {
+                <span class="generation-note">{{ job.note }}</span>
+              }
+            </div>
+          </article>
+        }
+      </section>
+    }
+  </div>
+</div>

@@ -1,3 +1,4 @@
+/* stylelint-disable */
 /**
  * @license
  * Copyright 2026 The AI Edge Model Explorer Authors.
@@ -17,7 +18,7 @@
  */
 
 // Shared native button typography and focus.
-report-app .debugger-shell {
+app-shell .debugger-shell {
   span.button-icon {
     color: inherit;
     display: inline-block;
@@ -45,6 +46,6 @@ report-app .debugger-shell {
   }
 }
 
-report-app .debugger-shell :is(home-page, app-toolbar, welcome-card) button {
+app-shell .debugger-shell :is(home-page, app-toolbar, welcome-card) button {
   font-family: var(--me-font-family);
 }

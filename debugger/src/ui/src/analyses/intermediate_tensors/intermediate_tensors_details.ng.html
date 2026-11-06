@@ -1,0 +1,284 @@
+<!--
+ Copyright 2026 The AI Edge Model Explorer Authors.
+
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+ ==============================================================================
+-->
+@if (graph()?.view() === 'graph') {
+  <explorer-info-section label="Analysis Info">
+    <explorer-info-list
+      [items]="graphArchInfoItems()"
+      (locate)="locateGraphArchDefinition($event)"
+    />
+  </explorer-info-section>
+  <ng-container [ngTemplateOutlet]="graph()?.detailsTemplate() ?? null" />
+} @else if (activationInspectionMode()) {
+  @let source = activationInspection();
+  @let page = activationInspectionPage();
+  <explorer-info-section label="Analysis Info">
+    <explorer-info-list
+      [items]="activationInspectionInfoItems()"
+      (locate)="locateActivationInspection($event)"
+    />
+  </explorer-info-section>
+  <explorer-info-section label="Statistics" [count]="1">
+    <div class="analysis-items" role="list">
+      <div
+        class="analysis-item"
+        role="listitem"
+        aria-label="Intermediate Tensors tensor statistics"
+        [attr.aria-busy]="!source || source.loading()"
+      >
+        <div class="item-heading">
+          <span class="item-index">0</span>
+          <button
+            explorer-locator
+            label="Intermediate Tensors"
+            aria-label="Locate Intermediate Tensors tensor chart"
+            (click)="source?.locateTensor()"
+          ></button>
+        </div>
+        @if (!source || source.loading()) {
+          <p class="note statistic-table-note" role="status">Loading statistics…</p>
+        } @else if (source.error()) {
+          <p class="note statistic-table-note" role="alert">
+            {{ source.error() }} <button (click)="source.retry()">Retry</button>
+          </p>
+        } @else {
+          <element-statistics
+            [details]="this"
+            [label]="'Intermediate Tensors'"
+            [rows]="activationInspectionStatistics()"
+            [kind]="'activations'"
+          />
+          @for (notice of source.notices(); track notice) {
+            <p class="note statistic-table-note">{{ notice }}</p>
+          }
+        }
+      </div>
+    </div>
+  </explorer-info-section>
+  <explorer-info-section label="Tensor Metadata" [count]="tensorRuntimes.length">
+    <div class="analysis-items" role="list">
+      @for (runtime of tensorRuntimes; track runtime.side; let i = $index) {
+        <div
+          class="analysis-item"
+          role="listitem"
+          [attr.aria-label]="runtime.label + ' Intermediate Tensors tensor'"
+        >
+          <div class="item-heading">
+            <span class="item-index">{{ i }}</span
+            ><span class="item-name">{{ runtime.label }}</span>
+          </div>
+          <explorer-info-section
+            class="source-section"
+            label="Intermediate Tensors"
+            [compact]="true"
+          >
+            <explorer-info-list
+              [bullets]="true"
+              [items]="activationInspectionMetadata(runtime.side)"
+            />
+          </explorer-info-section>
+        </div>
+      }
+    </div>
+  </explorer-info-section>
+  <explorer-info-section label="Tensor Values" [count]="1">
+    <div class="analysis-items" role="list">
+      <div
+        class="analysis-item"
+        role="listitem"
+        aria-label="Intermediate Tensors tensor values"
+        [attr.aria-busy]="!source || source.loading()"
+      >
+        <div class="item-heading">
+          <span class="item-index">0</span>
+          <button
+            explorer-locator
+            label="Intermediate Tensors"
+            aria-label="Locate Intermediate Tensors tensor chart"
+            (click)="source?.locateTensor()"
+          ></button>
+          <explorer-pagination
+            class="tensor-pagination"
+            label="Intermediate Tensors value pages"
+            previousLabel="Previous Intermediate Tensors values page"
+            nextLabel="Next Intermediate Tensors values page"
+            [index]="page.index"
+            [pages]="page.pages"
+            (change)="changeActivationPage($event)"
+          />
+        </div>
+        @if (!source || source.loading()) {
+          <p class="note statistic-table-note" role="status">
+            Loading Intermediate Tensors values…
+          </p>
+        } @else if (source.error()) {
+          <p class="note statistic-table-note" role="alert">
+            {{ source.error() }} <button (click)="source.retry()">Retry</button>
+          </p>
+        } @else {
+          <table
+            explorer-statistic-table
+            class="inspector-table tensor-selection-table"
+            label="Intermediate Tensors tensor values"
+            [rows]="page.rows"
+            [header]="activationValuesHeader"
+            [row]="activationValuesRow"
+            [columnCount]="5"
+            emptyText="No captured activation elements."
+          ></table>
+        }
+        <ng-template #activationValuesHeader>
+          <tr class="layer-columns">
+            @for (column of tensorValueSortColumns; track column.key) {
+              <th
+                [title]="column.title"
+                [attr.aria-sort]="tensorValueSortDirection('activations', column.key)"
+              >
+                <button
+                  class="column-sort"
+                  type="button"
+                  [disabled]="activationInspectionRows().length < 2"
+                  [attr.aria-label]="
+                    'Sort Intermediate Tensors by ' +
+                    column.label +
+                    ' ' +
+                    (tensorValueSortDirection('activations', column.key) === 'ascending'
+                      ? 'descending'
+                      : 'ascending')
+                  "
+                  (click)="sortActivationValues(column.key)"
+                >
+                  <span class="sort-label">{{ column.label }}</span>
+                  <span class="sort-icon" aria-hidden="true"
+                    ><mat-icon>{{
+                      tensorValueSortDirection('activations', column.key) === 'none'
+                        ? 'swap_vert'
+                        : tensorValueSortDirection('activations', column.key) === 'ascending'
+                          ? 'arrow_upward'
+                          : 'arrow_downward'
+                    }}</mat-icon></span
+                  >
+                </button>
+              </th>
+            }
+          </tr>
+        </ng-template>
+        <ng-template #activationValuesRow let-row>
+          <tr
+            [class.tensor-element-selected]="activationElementSelected(row.index)"
+            [attr.aria-label]="
+              'Index ' + row.index + (activationElementSelected(row.index) ? ', selected' : '')
+            "
+          >
+            <td>{{ row.label }}</td>
+            @for (value of row.values; track $index) {
+              <td>
+                <ng-container
+                  [ngTemplateOutlet]="tensorNumericCell"
+                  [ngTemplateOutletContext]="{
+                    label: row.label + ' ' + tensorValueColumns[$index],
+                    value: formatTensorValue(value),
+                  }"
+                />
+              </td>
+            }
+          </tr>
+        </ng-template>
+      </div>
+    </div>
+  </explorer-info-section>
+} @else {
+  <explorer-info-section label="Analysis Info">
+    <explorer-info-list [items]="activationInfoItems()" (locate)="locateDefinition($event)" />
+  </explorer-info-section>
+  <explorer-info-section label="Statistics" [count]="sections().length">
+    <div class="analysis-items" role="list">
+      @for (section of sections(); track section.label; let i = $index) {
+        <div
+          class="analysis-item"
+          role="listitem"
+          [attr.aria-label]="section.label + ' metrics statistics'"
+          [attr.aria-busy]="section.loading"
+        >
+          <div class="item-heading">
+            <span class="item-index">{{ i }}</span>
+            <explorer-info-value
+              class="statistic-title"
+              [inline]="true"
+              [label]="section.label + ' statistics summary'"
+              [value]="section.label + ' metrics'"
+              [contentTemplate]="statisticTitle"
+            />
+            <ng-template #statisticTitle
+              ><span class="item-name">{{ section.label }} metrics</span
+              ><button
+                explorer-locator
+                [attr.aria-label]="'Locate ' + section.label + ' ' + statisticView()"
+                [title]="'Locate ' + section.label + ' ' + statisticView()"
+                (click)="$event.stopPropagation(); locateStatistic(section.label)"
+              ></button
+            ></ng-template>
+          </div>
+          <metric-statistics [details]="this" [section]="section" />
+        </div>
+      }
+    </div>
+  </explorer-info-section>
+  <explorer-info-section label="Metric Metadata" [count]="1">
+    <div class="analysis-items" role="list">
+      <div class="analysis-item" role="listitem" [attr.aria-label]="metricLabel() + ' output'">
+        <div class="item-heading">
+          <span class="item-index">0</span><span class="item-name">{{ metricLabel() }}</span>
+        </div>
+        <explorer-info-section class="source-section" label="Intermediate Tensors" [compact]="true">
+          <explorer-info-list [bullets]="true" [items]="activationMetricMetadata()" />
+        </explorer-info-section>
+      </div>
+    </div>
+  </explorer-info-section>
+}
+
+<ng-template
+  #tensorNumericCell
+  let-label="label"
+  let-value="value"
+  let-location="location"
+  let-color="color"
+>
+  <span class="stat-cell">
+    <explorer-info-value
+      class="stat-value"
+      [style.background-color]="color"
+      [inline]="true"
+      [label]="label"
+      [value]="value"
+    />
+    <span class="stat-locator">
+      @if (location) {
+        <button
+          explorer-locator
+          [title]="location.title"
+          [attr.aria-label]="location.label"
+          (click)="
+            location.row
+              ? goPosition(location.row, location.index, false)
+              : locateTensorStatistic(location.kind, location.index)
+          "
+        ></button>
+      }
+    </span>
+  </span>
+</ng-template>

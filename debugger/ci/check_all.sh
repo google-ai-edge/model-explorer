@@ -13,10 +13,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Every check: these scripts, the server, the UI, the runner. The protocol
-# has no check of its own; both parts compile its .proto.
+# Every check: these scripts, the runner, the PyTorch runner, the server, the
+# UI. The runner comes first: the server's tests run the runner it builds,
+# with RUNNER_MODEL. The protocol has no check of its own; every part
+# compiles its .proto.
 #
-# Usage: RUNNER_MODEL=/path/to/model.litertlm ci/check_all.sh [SANITIZER]
+# Usage: RUNNER_MODEL=/path/to/model.litertlm
+#   [RUNNER_PYTORCH_MODEL=/path/to/gemma-4-E2B-it] ci/check_all.sh [SANITIZER]
 
 set -euo pipefail
 
@@ -29,9 +32,10 @@ main() {
     exit 1
   fi
   shellcheck "${ROOT}"/ci/*.sh
+  "${ROOT}/ci/check_runner.sh" "$@"
+  "${ROOT}/ci/check_runner_pytorch.sh"
   "${ROOT}/ci/check_server.sh"
   "${ROOT}/ci/check_ui.sh"
-  "${ROOT}/ci/check_runner.sh" "$@"
 }
 
 main "$@"

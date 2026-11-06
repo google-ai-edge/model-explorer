@@ -1,0 +1,211 @@
+<!--
+ Copyright 2026 The AI Edge Model Explorer Authors.
+
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+ ==============================================================================
+-->
+<div class="stage-analysis-row" [attr.data-stage]="stage()">
+  <div
+    [style.height.px]="
+      panels.isExpandedStage(turn(), stage()) ? expanded.expandedPlaceholder() : null
+    "
+  >
+    <div
+      class="stage-analysis-list"
+      [class.expanded-analysis]="panels.isExpandedStage(turn(), stage())"
+      [style.--analysis-top.px]="expanded.expandedTop()"
+      [style.--analysis-right.px]="tokens.details() ? tokens.panelWidth() : 0"
+    >
+      @if (panels.isExpandedStage(turn(), stage())) {
+        <div class="expanded-analysis-context">
+          <header class="expanded-analysis-header">
+            <div class="expanded-stage">
+              <span>Turn {{ turn() }}</span
+              ><span>{{ stage() === 'prefill' ? 'Prefill' : 'Decode' }}</span>
+            </div>
+            <div role="tablist" aria-label="Stage analyses">
+              @for (tab of panels.panelsFor(turn(), stage()); track tab.id) {
+                <button
+                  role="tab"
+                  [attr.aria-selected]="panels.expandedAnalysis()?.id === tab.id"
+                  [attr.aria-controls]="tab.id"
+                  [attr.tabindex]="panels.expandedAnalysis()?.id === tab.id ? 0 : -1"
+                  (keydown)="expanded.expandedTabKey($event, tab)"
+                  (click)="analyses.selectExpandedAnalysis(tab)"
+                >
+                  {{ analysisInfo.analysisInstanceLabel(tab) }}
+                </button>
+              }
+            </div>
+            <button
+              class="add-expanded-analysis"
+              aria-label="Add analysis view"
+              matTooltip="Add analysis view"
+              (click)="analyses.openAnalysisPicker(turn(), stage())"
+            >
+              <mat-icon aria-hidden="true">add</mat-icon>
+            </button>
+            <button
+              class="exit-expanded"
+              aria-label="Exit expanded analysis"
+              matTooltip="Exit expanded analysis"
+              (click)="panels.exitExpandedAnalysis()"
+            >
+              <mat-icon aria-hidden="true">close_fullscreen</mat-icon>
+            </button>
+          </header>
+          <analysis-token-strip
+            [context]="expanded.expandedTokenContext()"
+            [tokens]="expanded.expandedTokens()"
+            [bins]="expanded.expandedTokenBins()"
+            [selected]="expanded.expandedTokenSelection()"
+            [disabled]="expanded.expandedTokenDisabled()"
+            (selectRange)="expanded.selectExpandedToken($event)"
+          />
+        </div>
+      }
+      @for (panel of panels.panelsFor(turn(), stage()); track panel.id) {
+        @let loading = panels.panelLoading(panel);
+        <section
+          class="stage-analysis"
+          [hidden]="
+            panels.isExpandedStage(turn(), stage()) && panels.expandedAnalysis()?.id !== panel.id
+          "
+          [class.open]="panel.open && !loading"
+          [class.loading]="loading"
+          [class.inspected]="
+            tokens.metricInspector()?.panelId() === panel.id ||
+            tokens.tokenMetricInspector()?.id === panel.id ||
+            tokens.analysisOverview()?.id === panel.id
+          "
+        >
+          <div class="analysis-location-frame" aria-hidden="true"></div>
+          <div class="analysis-entry-row">
+            <button
+              class="graph-link analysis-entry"
+              [matTooltip]="loading ? 'Loading…' : analysisInfo.analysisInstanceLabel(panel)"
+              [attr.aria-label]="
+                loading ? analysisInfo.analysisInstanceLabel(panel) + ', Loading…' : null
+              "
+              [attr.aria-disabled]="loading || null"
+              [attr.aria-expanded]="panel.open && !loading"
+              [attr.aria-controls]="panel.id"
+              (click)="loading || analyses.toggleAnalysis(panel)"
+            >
+              <mat-icon>{{ panel.open && !loading ? 'expand_more' : 'chevron_right' }}</mat-icon>
+              <span>{{ analysisInfo.analysisInstanceLabel(panel) }}</span>
+            </button>
+            @if (loading) {
+              <span
+                class="analysis-delete analysis-loading"
+                role="status"
+                aria-label="Loading…"
+                matTooltip="Loading…"
+              >
+                <mat-spinner diameter="16" aria-hidden="true" />
+              </span>
+            } @else {
+              <button
+                class="analysis-delete"
+                (click)="analyses.removeAnalysis(panel)"
+                [attr.aria-label]="'Remove ' + analysisInfo.analysisInstanceLabel(panel)"
+                matTooltip="Remove analysis"
+              >
+                <mat-icon>delete_outline</mat-icon>
+              </button>
+            }
+          </div>
+          <div
+            class="analysis-content"
+            [id]="panel.id"
+            [hidden]="!panel.open && panels.isExpandedStage(turn(), stage())"
+            [class.unseen]="(loading || !panel.open) && !panels.isExpandedStage(turn(), stage())"
+            (pointerdown)="analyses.analysisPointerDown($event, panel)"
+            (click)="analyses.analysisBackgroundClick($event, panel)"
+          >
+            @for (
+              note of tokens.analysisNotes(turn(), stage(), analysisOf(panel.kind));
+              track $index
+            ) {
+              <p class="analysis-note" role="note">{{ note }}</p>
+            }
+            @if (panel.kind === 'kv') {
+              <kv-panel
+                [expanded]="panels.expandedAnalysis()?.id === panel.id"
+                (expand)="expanded.toggleExpandedAnalysis(panel)"
+                [panelId]="panel.id"
+                [stageTurn]="turn()"
+                [positionAlignment]="tokens.kvAlignments().get(turn() + ':' + stage()) ?? null"
+                [stage]="tokens.turnStage(turn(), stage())"
+                [initialView]="panel.kv ?? null"
+                [chartSelection]="panels.analysisChartSelections().get(panel.id) ?? null"
+                (inspectStage)="analyses.inspectAnalysisStage(panel, $event)"
+                (inspectOverview)="analyses.inspectAnalysisOverview(panel)"
+                (inspect)="analyses.inspectMetric($event)"
+                (positionHover)="panels.hoverAnalysis(panel.id, $event)"
+              />
+            } @else if (panel.kind === 'activations') {
+              <stage-graph-metrics
+                [positionAlignment]="tokens.kvAlignments().get(turn() + ':' + stage()) ?? null"
+                [expanded]="panels.expandedAnalysis()?.id === panel.id"
+                (expand)="expanded.toggleExpandedAnalysis(panel)"
+                [initial]="panel.graph ?? null"
+                [panelId]="panel.id"
+                [turn]="turn()"
+                [stage]="stage()"
+                [chartSelection]="panels.analysisChartSelections().get(panel.id) ?? null"
+                (inspect)="analyses.inspectMetric($event)"
+                (backgroundClick)="analyses.inspectAnalysisStage(panel, $event)"
+                (positionHover)="panels.hoverAnalysis(panel.id, $event)"
+              />
+            } @else {
+              <logit-panel
+                [panelId]="panel.id"
+                [logitMode]="panel.kind === 'distribution' ? 'distribution' : 'comparison'"
+                [globalStart]="tokens.stageGlobalStart(turn())"
+                [expanded]="panels.expandedAnalysis()?.id === panel.id"
+                (expand)="expanded.toggleExpandedAnalysis(panel)"
+                (positionHover)="panels.hoverAnalysis(panel.id, $event)"
+                class="embedded"
+                [turn]="turn()"
+                [rows]="tokens.rows(turn())"
+                [columns]="
+                  tokens.analysisColumns(
+                    turn(),
+                    stage(),
+                    panel.kind === 'distribution' ? 'sampling' : 'final_logits'
+                  )
+                "
+                [alignment]="conversation.alignment()"
+                [analysis]="tokens.tokenAnalysis()"
+                [settings]="panel.logit!"
+                [selected]="panels.tokenPanelSelectedIndex(panel)"
+                [loading]="tokens.analysisLoading()"
+                (settingsChange)="panels.setPanelLogitState(panel, $event)"
+                [selectedRange]="panels.analysisChartSelections().get(panel.id) ?? null"
+                (selectRange)="analyses.inspectTokenMetric(panel, $event.index, $event.range)"
+                (backgroundClick)="analyses.inspectAnalysisStage(panel, $event)"
+              />
+            }
+          </div>
+        </section>
+      }
+      <button
+        class="graph-link add-analysis"
+        (click)="analyses.openAnalysisPicker(turn(), stage())"
+      >
+        <mat-icon>add</mat-icon>Add analysis view
+      </button>
+    </div>
+  </div>
+</div>

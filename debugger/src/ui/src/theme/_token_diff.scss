@@ -1,3 +1,4 @@
+/* stylelint-disable */
 /**
  * @license
  * Copyright 2026 The AI Edge Model Explorer Authors.
@@ -27,17 +28,13 @@
     min-width: 10px;
   }
 }
-// The one heat palette. Token Diff applies it through the mixins below; the
-// trend chart resolves the same tokens with getComputedStyle.
+// The one heat palette. Token Diff applies it through the mixins below.
 :root {
   --heat-semantic-low: light-dark(#fffaf3, #3f352b);
   --heat-semantic-high: light-dark(#df984f, #85603b);
-  --heat-semantic-point: light-dark(#df984f, #f6c581);
   --heat-activation-low: light-dark(#f7f5ff, #363044);
   --heat-activation-high: light-dark(#aa92dd, #705889);
-  --heat-activation-point: light-dark(#aa92dd, #cbb1fa);
   --heat-hatch: light-dark(#b6b0a6, #8e877b);
-  --trend-surface: light-dark(#eef1f5, #17181b);
 }
 @mixin semantic-colors {
   --b0: light-dark(#d2eada, #426e51);
@@ -51,30 +48,31 @@
   --heat-high: var(--heat-activation-high);
 }
 
-@mixin numeric-colors {
+// The heat palette a numeric Token Diff color names; with each of the two mixins below.
+@mixin numeric-palette {
   [data-palette='activation'] {
     @include activation-colors;
   }
+}
+// Tokens filled by their metric value, or hatched where it is missing.
+@mixin numeric-tokens {
+  @include numeric-palette;
   button.numeric-token.numeric-token,
   span.numeric-token.numeric-token {
-    background: color-mix(
-      in srgb,
-      var(--heat-high) var(--heat-level),
-      var(--heat-low)
-    );
+    background: color-mix(in srgb, var(--heat-high) var(--heat-level), var(--heat-low));
     color: var(--me-on-surface-color);
     box-shadow: var(--token-interaction-overlay, none);
   }
   button.numeric-missing.numeric-missing,
   span.numeric-missing.numeric-missing {
-    background: repeating-linear-gradient(
-      135deg,
-      transparent 0 4px,
-      var(--heat-hatch) 4px 5px
-    );
+    background: repeating-linear-gradient(135deg, transparent 0 4px, var(--heat-hatch) 4px 5px);
     color: var(--me-on-surface-color);
     box-shadow: var(--token-interaction-overlay, none);
   }
+}
+// The legend of a numeric color: its scale from low to high.
+@mixin numeric-legend {
+  @include numeric-palette;
   .heat-scale {
     display: inline-block;
     width: 64px;
@@ -96,10 +94,7 @@
 
 @mixin token-outline {
   border: var(--token-border-width, 1px) solid
-    var(
-      --token-border-color,
-      var(--token-detail-color, light-dark(#9aaabd, #65758b))
-    );
+    var(--token-border-color, var(--token-detail-color, light-dark(#9aaabd, #65758b)));
   padding: 0 2px;
   margin: var(--token-margin, 1px);
   border-radius: var(--token-radius, 2px);
@@ -123,16 +118,8 @@
   &:is(:hover, .linked-token-hover, .pair-hover, .hover-origin, .step-partner) {
     --token-interaction-overlay: inset 0 0 0 100vmax
       light-dark(
-        color-mix(
-          in srgb,
-          var(--me-node-selected-border-color) 22%,
-          transparent
-        ),
-        color-mix(
-          in srgb,
-          var(--me-node-selected-border-color) 30%,
-          transparent
-        )
+        color-mix(in srgb, var(--me-node-selected-border-color) 22%, transparent),
+        color-mix(in srgb, var(--me-node-selected-border-color) 30%, transparent)
       );
   }
 }

@@ -58,3 +58,15 @@ cc_library(
 # A placeholder for the cc_import of each GPU plugin.
 # buildifier: disable=no-effect
 {plugin_imports}
+
+# What a Runner's binary needs beside it to run anywhere: the runtime, what it
+# links and its GPU plugins; and the commit's facts. What cli:keep keeps.
+filegroup(
+    name = "runtime_files",
+    srcs = [
+        "{library}",
+        {linked_files},
+        {plugins},
+        "commit.json",
+    ],
+)

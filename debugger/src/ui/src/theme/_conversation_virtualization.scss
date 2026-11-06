@@ -1,3 +1,4 @@
+/* stylelint-disable */
 /**
  * @license
  * Copyright 2026 The AI Edge Model Explorer Authors.
@@ -102,8 +103,7 @@ conversation-panel .virtualTextLine .gapAnchor .missingOutput {
   background: repeating-linear-gradient(
     135deg,
     transparent 0 4px,
-    color-mix(in srgb, var(--me-on-surface-variant-color) 38%, transparent) 4px
-      5px
+    color-mix(in srgb, var(--me-on-surface-variant-color) 38%, transparent) 4px 5px
   );
 }
 .virtualTextWidthProbe {
@@ -168,10 +168,7 @@ conversation-panel .reading:not(.chat-reading) .virtualTextLine .token {
   @include token.token-type;
   height: 26px;
 }
-conversation-panel
-  .reading:not(.chat-reading)
-  .virtualTextLine
-  .token.selected-token {
+conversation-panel .reading:not(.chat-reading) .virtualTextLine .token.selected-token {
   @include token.token-selection;
 }
 
@@ -180,17 +177,14 @@ conversation-panel .virtualTextLine .vCell {
   height: var(--token-line-height, 26px);
   line-height: var(--token-line-height, 26px);
 }
-conversation-panel
-  .reading:not(.chat-reading)
-  .virtualTextLine
-  .token.boundaries {
+conversation-panel .reading:not(.chat-reading) .virtualTextLine .token.boundaries {
   @include token.token-outline;
   height: calc(24px + 2 * var(--token-border-width, 1px));
   line-height: 24px;
 }
 
 conversation-panel .virtualTextLine {
-  @include token.numeric-colors;
+  @include token.numeric-tokens;
 }
 conversation-panel
   .reading:not(.chat-reading)

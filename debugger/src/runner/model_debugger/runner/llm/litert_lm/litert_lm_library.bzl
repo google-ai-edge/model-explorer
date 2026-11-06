@@ -20,7 +20,11 @@ the runtime is built apart and joins the Runner as a library that exports its
 C API alone: its Abseil and protobuf stay inside it and never meet the Runner's.
 
 The repository is a function of the commit and the platform: fetched and
-built once, kept by Bazel's cache until either changes. LiteRT-LM's own
+built once, kept by Bazel's cache until either changes. The commit is the
+rule's attribute unless the repository environment overrides it for the
+platform, LITERT_LM_COMMIT_<PLATFORM> (such as
+--repo_env=LITERT_LM_COMMIT_MACOS_ARM64=<commit>), so that a Runner can be
+built against another LiteRT-LM without editing MODULE.bazel. LiteRT-LM's own
 Bazel keeps its outputs in a directory of the user's cache named after the
 two, so that a repository fetched again (its rule or templates edited, the
 Runner's checkout moved) links what is built rather than compiling LiteRT-LM
@@ -64,6 +68,8 @@ _PLATFORMS = {
         elf = False,
         linked = ["libLiteRt", "libGemmaModelConstraintProvider"],
         linkopts = ["--linkopt=prebuilt/ios_sim_arm64/libLiteRt.dylib"],
+        # Unused by the App, which bundles no GPU plugins on the simulator,
+        # but kept so the generated plugin list is not empty.
         plugins = ["libLiteRtMetalAccelerator", "libLiteRtTopKMetalSampler"],
         frameworks = True,
     ),
@@ -111,8 +117,16 @@ _FRAMEWORK_PLIST = """<?xml version="1.0" encoding="UTF-8"?>
 </plist>
 """
 
-# The C API headers the Runner includes, from LiteRT-LM's c/ directory.
-_HEADERS = ["conversation.h", "engine.h", "experimental.h", "model_info.h"]
+# The C API headers the Runner includes, and the two they include, from
+# LiteRT-LM's c/ directory.
+_HEADERS = [
+    "api_export.h",
+    "conversation.h",
+    "engine.h",
+    "error_reporter.h",
+    "experimental.h",
+    "model_info.h",
+]
 
 def _wrap_in_framework(ctx, name, linked, keep_id = False):
     """Turns <name>.dylib in the repository into <name>.framework.
@@ -161,7 +175,38 @@ def _run(ctx, arguments, cwd, what, timeout = 600, quiet = True):
         fail("litert_lm: {} failed:\n{}{}".format(what, result.stdout, result.stderr))
     return result.stdout
 
-def _fetch_source(ctx, platform):
+def _commit(ctx):
+    """Returns the commit to build: the platform's override, or the attribute.
+
+    getenv makes the repository depend on the variable, so that setting,
+    changing or clearing it fetches the repository again.
+    """
+    variable = "LITERT_LM_COMMIT_" + ctx.attr.platform.upper()
+    commit = ctx.getenv(variable) or ctx.attr.commit
+    if len(commit) != 40 or [c for c in commit.elems() if c not in "0123456789abcdef"]:
+        fail("litert_lm: the commit must be whole, 40 lower-case hex digits; got '{}' from {}".format(
+            commit,
+            variable if ctx.getenv(variable) else "the commit attribute",
+        ))
+    return commit
+
+def _commit_facts(ctx, source, commit):
+    """Returns what commit.json says of the commit: when, and its CL.
+
+    The CL is the number of the PiperOrigin-RevId line of the commit message,
+    as LiteRT-LM's exported commits carry it (some with a prefix, such as
+    LiteRT-LM-PiperOrigin-RevId); None when the message has none.
+    """
+    date = _run(ctx, ["git", "log", "-1", "--format=%cI", "HEAD"], str(source), "git log")
+    message = _run(ctx, ["git", "log", "-1", "--format=%B", "HEAD"], str(source), "git log")
+    cl = None
+    for line in message.splitlines():
+        key, _, value = line.partition(":")
+        if key.strip().endswith("PiperOrigin-RevId") and value.strip().isdigit():
+            cl = value.strip()
+    return {"commit": commit, "commit_date": date.strip(), "cl": cl}
+
+def _fetch_source(ctx, platform, commit):
     """Checks the commit out under source/ and returns that path.
 
     One commit, no history; then the prebuilt libraries of the platform, which
@@ -172,7 +217,7 @@ def _fetch_source(ctx, platform):
     _run(ctx, ["git", "remote", "add", "origin", ctx.attr.url], str(source), "git remote add")
     _run(
         ctx,
-        ["git", "fetch", "-q", "--depth=1", "origin", ctx.attr.commit],
+        ["git", "fetch", "-q", "--depth=1", "origin", commit],
         str(source),
         "git fetch (the LiteRT-LM commit)",
         timeout = 3600,
@@ -188,7 +233,7 @@ def _fetch_source(ctx, platform):
     )
     return source
 
-def _output_base(ctx):
+def _output_base(ctx, commit):
     """Returns the output base of LiteRT-LM's Bazel for this commit and platform.
 
     It lies in the user's cache, outside every repository: LiteRT-LM's Bazel
@@ -200,17 +245,17 @@ def _output_base(ctx):
         fail("litert_lm: HOME is not set; LiteRT-LM is built under ~/Library/Caches")
     return "{}/Library/Caches/model_debugger/litert_lm/{}/{}".format(
         home,
-        ctx.attr.commit,
+        commit,
         ctx.attr.platform,
     )
 
-def _build_library(ctx, bazel, source, platform):
+def _build_library(ctx, bazel, source, platform, commit):
     """Builds the C API library with the debugger on and returns its path.
 
     LiteRT-LM's Bazel server is shut down afterwards, whether or not the build
     succeeded: nothing else uses it, and it would hold gigabytes of memory.
     """
-    startup = [bazel, "--output_base=" + _output_base(ctx)]
+    startup = [bazel, "--output_base=" + _output_base(ctx, commit)]
 
     # --define turns the debugger on in runtime/core, whose BUILD selects on it;
     # --copt defines the same macro in every file, so that c/experimental.cc, a
@@ -302,7 +347,7 @@ def _check_library(ctx, library, platform):
             fail("litert_lm: the library looks a symbol up at run time: " + line)
 
 # The targets of a repository; one that cannot be built holds them all, failing.
-_TARGETS = ["c_api", "version", "plugins", "litert_lm", "gpu_libraries", "gpu_library_imports"]
+_TARGETS = ["c_api", "version", "plugins", "litert_lm", "gpu_libraries", "gpu_library_imports", "runtime_files"]
 
 def _write_unavailable(ctx, why):
     """Makes the repository's targets fail with `why` when they are built.
@@ -337,13 +382,13 @@ def _impl(ctx):
         fail("litert_lm: bazelisk is not installed (brew install bazelisk)")
     if ctx.which("git-lfs") == None:
         fail("litert_lm: git-lfs is not installed (brew install git-lfs)")
-    commit = ctx.attr.commit
+    commit = _commit(ctx)
     extension = "so" if platform.elf else "dylib"
-    source = _fetch_source(ctx, ctx.attr.platform)
+    source = _fetch_source(ctx, ctx.attr.platform, commit)
     prebuilt = "prebuilt/{}".format(ctx.attr.platform)
 
     library = "liblitert-lm." + extension
-    built = _build_library(ctx, bazel, source, platform)
+    built = _build_library(ctx, bazel, source, platform, commit)
     _run(ctx, ["cp", built, library], ".", "cp")
     _run(ctx, ["chmod", "u+w", library], ".", "chmod")
     if not platform.elf:
@@ -389,6 +434,9 @@ inline constexpr char kCommit[] = "{commit}";
 #endif  // LITERT_LM_VERSION_H_
 """.replace("{commit}", commit))
 
+    # The commit's facts, for a kept Runner to record (cli:keep).
+    ctx.file("commit.json", json.encode_indent(_commit_facts(ctx, source, commit)) + "\n")
+
     # The plugins, for the runtime to load in this order from its directory:
     # beside it, or, as frameworks, beside its own framework.
     ctx.file("plugins.h", """// The GPU plugins of this platform's LiteRT-LM, in load order. Generated.
@@ -408,6 +456,7 @@ inline constexpr const char* kGpuPlugins[] = {%s};
         "{headers}": ", ".join(['"c/{}"'.format(h) for h in _HEADERS]),
         "{library}": library,
         "{linked}": ", ".join(['":{}"'.format(n) for n in platform.linked]),
+        "{linked_files}": ", ".join(['"{}.{}"'.format(n, extension) for n in platform.linked]),
         "{imports}": "\n".join([
             'cc_import(\n    name = "{}",\n    shared_library = "{}.{}",\n)\n'.format(n, n, extension)
             for n in platform.linked
@@ -429,7 +478,8 @@ litert_lm_library = repository_rule(
     attrs = {
         "commit": attr.string(
             mandatory = True,
-            doc = "The LiteRT-LM commit to build, whole.",
+            doc = "The LiteRT-LM commit to build, whole, unless " +
+                  "LITERT_LM_COMMIT_<PLATFORM> in the repository environment overrides it.",
         ),
         "url": attr.string(
             default = "https://github.com/google-ai-edge/LiteRT-LM.git",

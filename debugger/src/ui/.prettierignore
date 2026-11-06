@@ -1,0 +1,12 @@
+# What Prettier leaves alone; it formats everything else here (npm run format).
+# Its own default ignores node_modules/.
+
+# Generated: the build, Angular's cache, npm's lock file and the server's
+# metric catalog, which ci/check_metric_catalog.py --write writes.
+dist/
+.angular/
+package-lock.json
+src/server/testing/metric_catalog_fixture.json
+
+# Third-party and packaged files, served as they are.
+public/

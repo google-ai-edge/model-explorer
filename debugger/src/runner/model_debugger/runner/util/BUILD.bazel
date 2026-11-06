@@ -11,7 +11,6 @@ cc_library(
     deps = [
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/status:statusor",
-        "@com_google_absl//absl/strings:string_view",
         "@nlohmann_json//:json",
     ],
 )
@@ -23,6 +22,25 @@ cc_test(
         ":json",
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/status:statusor",
+        "@com_google_googletest//:gtest_main",
+    ],
+)
+
+# A write its disk has no room for ends the Runner, saying so.
+cc_library(
+    name = "disk_space",
+    srcs = ["disk_space.cc"],
+    hdrs = ["disk_space.h"],
+    visibility = ["//model_debugger/runner:__subpackages__"],
+    deps = ["@com_google_absl//absl/strings"],
+)
+
+cc_test(
+    name = "disk_space_test",
+    srcs = ["disk_space_test.cc"],
+    deps = [
+        ":disk_space",
+        "@com_google_absl//absl/strings",
         "@com_google_googletest//:gtest_main",
     ],
 )

@@ -1,0 +1,82 @@
+# The PyTorch runner's workspace root: its pinned PyPI packages, the toolchain
+# that protoc's Python output runs on, ruff, and the wheel.
+
+load("@bazel_skylib//rules:native_binary.bzl", "native_binary")
+load("@protobuf//bazel/toolchains:proto_lang_toolchain.bzl", "proto_lang_toolchain")
+load("@rules_python//python:packaging.bzl", "py_package", "py_wheel")
+load("@rules_python//python/uv:lock.bzl", "lock")
+
+# Pins requirements_test.in, and so requirements.in, with hashes into
+# requirements_lock.txt, for every platform at once: bazel run
+# //:requirements.update. Not pip-compile, as the Server's: that pins for this
+# computer alone, and torch on Linux x86_64 needs packages it does not on a
+# Mac (CUDA's).
+lock(
+    name = "requirements",
+    srcs = [
+        "requirements.in",
+        "requirements_test.in",
+    ],
+    out = "requirements_lock.txt",
+    args = [
+        "--universal",
+        "requirements_test.in",
+    ],
+    python_version = "3.12",
+)
+
+# The Python messages run on the protobuf package from PyPI, as they do once
+# the wheel is installed. protobuf's py_proto_library also writes struct_pb2
+# for the proto's import, under @protobuf's _virtual_imports, whatever the
+# toolchain says; PyPI's google.protobuf is a regular package and so wins.
+proto_lang_toolchain(
+    name = "python_proto",
+    command_line = "--python_out=%s",
+    progress_message = "Generating Python proto_library %{label}",
+    runtime = "@runner_pytorch_pypi//protobuf",
+    toolchain_type = "@protobuf//bazel/private:python_toolchain_type",
+)
+
+# The Python linter and formatter, at the version requirements_lock.txt pins:
+#   bazel run //:ruff -- check "${PWD}/model_debugger"
+# Bazel runs it from elsewhere, so files go by absolute path.
+native_binary(
+    name = "ruff",
+    src = "@runner_pytorch_pypi//ruff:data",
+    out = "ruff",
+)
+
+# What the wheel holds: the package model_debugger, from this repository and
+# from @protocol, and pytorch-collector's package pytorch_collector, from
+# this repository too (//pytorch_collector), which is on no index to
+# require; none of the PyPI packages they depend on.
+py_package(
+    name = "wheel_files",
+    packages = [
+        "model_debugger",
+        "pytorch_collector",
+    ],
+    deps = ["//model_debugger/runner_pytorch/cli:runner_main"],
+)
+
+# The runner as a wheel, with the command model-debugger-runner-pytorch; it
+# requires what requirements.in lists:
+#   bazel build //:wheel
+py_wheel(
+    name = "wheel",
+    abi = "none",
+    description_file = "README.md",
+    distribution = "model-debugger-runner-pytorch",
+    entry_points = {
+        "console_scripts": [
+            "model-debugger-runner-pytorch = model_debugger.runner_pytorch.cli.runner_main:main",
+        ],
+    },
+    platform = "any",
+    python_requires = ">=3.11",
+    python_tag = "py3",
+    requires_file = "requirements.in",
+    summary = "A Model Debugger runner that hosts PyTorch.",
+    version = "0.0.0",
+    deps = [":wheel_files"],
+)

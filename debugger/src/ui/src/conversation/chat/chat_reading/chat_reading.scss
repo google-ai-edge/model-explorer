@@ -1,0 +1,190 @@
+/**
+ * @license
+ * Copyright 2026 The AI Edge Model Explorer Authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ==============================================================================
+ */
+
+@use '../../reading';
+
+@include reading.frame;
+.column-headings span {
+  font-size: 12px;
+  color: var(--on2);
+}
+@include reading.messages;
+@include reading.message-widths;
+@include reading.node-reveal;
+// Chat-specific composition from the candidates reference; Debug keeps its own controls.
+.chat-reading {
+  padding-bottom: max(180px, var(--composer-clearance, 180px));
+}
+.chat-reading .column-headings header {
+  box-sizing: border-box;
+  min-height: 60px;
+  padding: 8px 24px;
+  justify-content: center;
+}
+.chat-reading .column-headings strong {
+  font-size: 14px;
+  line-height: 20px;
+}
+.chat-reading .column-headings span {
+  font-size: 12px;
+  line-height: 20px;
+}
+.chat-reading .turn article {
+  padding: 12px 40px 20px;
+}
+.chat-reading .user-message {
+  padding: 14px 18px;
+  font: 14px/24px var(--me-font-family);
+}
+.chat-reading .user-message p {
+  margin-top: 6px;
+}
+.chat-reading .response {
+  padding: 8px 18px 12px;
+  font: 14px/24px var(--me-font-family);
+}
+.chat-reading .response > p {
+  margin-top: 10px;
+}
+.chat-thinking {
+  margin: 8px 0 12px;
+}
+.thinking-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  border-radius: 4px;
+  padding: 3px 0;
+  font: 500 12px/18px var(--me-font-family);
+  cursor: pointer;
+}
+.thinking-toggle mat-icon {
+  font-size: 14px;
+  width: 14px;
+  height: 14px;
+}
+.thinking-toggle:hover {
+  background: var(--me-surface-container-color);
+}
+.thinking-toggle:focus-visible {
+  outline: 2px solid var(--me-primary-color);
+  outline-offset: 2px;
+}
+.thinking-reveal {
+  display: grid;
+  grid-template-rows: 0fr;
+}
+.thinking-reveal.expanded {
+  grid-template-rows: 1fr;
+}
+.thinking-reveal > div {
+  overflow: hidden;
+  min-height: 0;
+}
+.thinking-reveal p {
+  font-size: 13px;
+  line-height: 24px;
+  color: var(--on2);
+  margin: 8px 0;
+}
+.chat-mismatch {
+  background: var(--b0);
+  border-radius: 2px;
+}
+.target .chat-mismatch {
+  background: var(--b4);
+}
+.chat-reading {
+  background-origin: padding-box;
+  background-clip: padding-box;
+}
+.generation-status {
+  font: 12px/20px var(--me-font-family);
+  color: var(--on2);
+}
+.generation-note {
+  display: block;
+  font: 12px/18px var(--me-font-family);
+  color: var(--on2);
+}
+.streaming::after {
+  content: '';
+  display: inline-block;
+  width: 2px;
+  height: 1em;
+  margin-left: 3px;
+  background: currentColor;
+  vertical-align: text-bottom;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .streaming::after {
+    animation: chat-caret 1s step-end infinite;
+  }
+  @keyframes chat-caret {
+    50% {
+      opacity: 0;
+    }
+  }
+}
+@include reading.endings;
+.runtime-error {
+  position: absolute;
+  bottom: var(--composer-clearance, 140px);
+  left: 24px;
+  right: 24px;
+  z-index: 5;
+  margin: 0;
+  padding: 8px 12px;
+  border-radius: 4px;
+  background: var(--me-error-container-color);
+  color: var(--me-error-text-color);
+  font: 13px/20px var(--me-font-family);
+}
+@include reading.narrow-columns;
+@media (max-width: 650px) {
+  .chat-reading .turn article {
+    padding: 12px 16px 20px;
+  }
+  .chat-reading .column-headings header {
+    padding: 8px 16px;
+  }
+}
+@include reading.controls;
+// Horizontal reading on narrow screens needs a separate scrollbar gutter:
+// the overlay track otherwise intercepts tokens at the visible right edge.
+@media (max-width: 650px) {
+  .reading {
+    margin-right: 12px;
+  }
+}
+// Runtime column headings must occlude node title tracks and in-flow charts.
+.column-headings {
+  z-index: 3;
+}
+.column-headings {
+  z-index: 3;
+}
+.reading[data-gap-palette='activation'] {
+  --gap-worst: var(--heat-activation-high);
+}
+.reading[data-gap-palette='logits'] {
+  --gap-worst: var(--heat-semantic-high);
+}

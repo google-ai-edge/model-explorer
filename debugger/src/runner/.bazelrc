@@ -13,7 +13,7 @@ build --cxxopt=--system-header-prefix=grpc/
 build --cxxopt=--system-header-prefix=grpcpp/
 build --cxxopt=--system-header-prefix=gtest/
 build --cxxopt=--system-header-prefix=gmock/
-build --cxxopt=--system-header-prefix=model_debugger/v1/
+build --cxxopt=--system-header-prefix=model_debugger/protocol/
 build --cxxopt=--system-header-prefix=nlohmann/
 build --cxxopt=--system-header-prefix=third_party/
 build --enable_platform_specific_config

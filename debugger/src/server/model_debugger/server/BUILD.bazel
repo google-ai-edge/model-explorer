@@ -1,0 +1,41 @@
+# The Server of the Model Debugger: the package model_debugger.server, and its
+# facade, server.py.
+
+load("@rules_python//python:py_library.bzl", "py_library")
+load("@rules_python//python:py_test.bzl", "py_test")
+load("@server_pypi//:requirements.bzl", "requirement")
+
+package(default_visibility = ["//visibility:public"])
+
+# The package's own __init__.py, which every module under it needs.
+py_library(
+    name = "package",
+    srcs = ["__init__.py"],
+)
+
+py_library(
+    name = "server",
+    srcs = ["server.py"],
+    deps = [
+        ":package",
+        "//model_debugger/server/runner:launchers",
+        "//model_debugger/server/runner:local_launcher",
+        "//model_debugger/server/runner:runner_builds",
+        "//model_debugger/server/service:server_service",
+        "//model_debugger/server/session:model_graphs",
+        "//model_debugger/server/session:model_store",
+        "//model_debugger/server/session:workspace",
+        requirement("uvicorn"),
+    ],
+)
+
+py_test(
+    name = "server_test",
+    srcs = ["server_test.py"],
+    deps = [
+        ":server",
+        "//model_debugger/server/runner:android_launcher",
+        "//model_debugger/server/testing:test_main",
+        requirement("absl-py"),
+    ],
+)

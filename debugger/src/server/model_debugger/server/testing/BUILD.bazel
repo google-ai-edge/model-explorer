@@ -1,0 +1,215 @@
+# What the tests share: absltest's main, test doubles and fixtures.
+
+load("@rules_python//python:py_library.bzl", "py_library")
+load("@rules_python//python:py_test.bzl", "py_test")
+load("@server_pypi//:requirements.bzl", "requirement")
+
+package(
+    default_testonly = True,
+    default_visibility = ["//model_debugger/server:__subpackages__"],
+)
+
+# What every test module runs as its main.
+py_library(
+    name = "test_main",
+    srcs = [
+        "__init__.py",
+        "test_main.py",
+    ],
+    deps = [
+        "//model_debugger/server:package",
+        requirement("absl-py"),
+    ],
+)
+
+py_library(
+    name = "fake_runner",
+    srcs = [
+        "__init__.py",
+        "fake_runner.py",
+    ],
+    deps = [
+        "//model_debugger/server:package",
+        "@protocol//model_debugger/protocol:runner_py_pb2",
+        "@protocol//model_debugger/protocol:runner_py_pb2_grpc",
+        requirement("grpcio"),
+        requirement("protobuf"),
+    ],
+)
+
+py_test(
+    name = "fake_runner_test",
+    srcs = ["fake_runner_test.py"],
+    deps = [
+        ":fake_runner",
+        ":test_main",
+        "@protocol//model_debugger/protocol:runner_py_pb2",
+        "@protocol//model_debugger/protocol:runner_py_pb2_grpc",
+        requirement("absl-py"),
+        requirement("grpcio"),
+        requirement("protobuf"),
+    ],
+)
+
+py_library(
+    name = "fake_tools",
+    srcs = [
+        "__init__.py",
+        "fake_tools.py",
+    ],
+    deps = [
+        "//model_debugger/server:package",
+        "//model_debugger/server/runner:launcher",
+    ],
+)
+
+py_library(
+    name = "capture_fixtures",
+    srcs = [
+        "__init__.py",
+        "capture_fixtures.py",
+    ],
+    deps = [
+        "//model_debugger/server/capture:capture_index",
+        "//model_debugger/server/tap:tap_scan",
+        "@protocol//model_debugger/protocol:runner_py_pb2",
+        requirement("numpy"),
+        requirement("safetensors"),
+    ],
+)
+
+py_library(
+    name = "fake_launchers",
+    srcs = [
+        "__init__.py",
+        "fake_launchers.py",
+    ],
+    deps = [
+        ":capture_fixtures",
+        ":fake_runner",
+        "//model_debugger/server/runner:launcher",
+        "//model_debugger/server/runner:runner_builds",
+        "//model_debugger/server/util:errors",
+        "@protocol//model_debugger/protocol:runner_py_pb2",
+        requirement("grpcio"),
+    ],
+)
+
+# Kept runner builds, as the runner's `cli:keep` writes them.
+py_library(
+    name = "fake_builds",
+    srcs = [
+        "__init__.py",
+        "fake_builds.py",
+    ],
+    deps = ["//model_debugger/server:package"],
+)
+
+py_library(
+    name = "anchor_fixtures",
+    srcs = [
+        "__init__.py",
+        "anchor_fixtures.py",
+    ],
+)
+
+py_library(
+    name = "tap_fixtures",
+    srcs = [
+        "__init__.py",
+        "tap_fixtures.py",
+    ],
+    deps = [
+        "//model_debugger/server/tap:schemas",
+        requirement("flatbuffers"),
+        requirement("numpy"),
+    ],
+)
+
+# Gemma 4's execution graph, as the PyTorch runner exports it.
+py_library(
+    name = "pytorch_graph_fixtures",
+    srcs = [
+        "__init__.py",
+        "pytorch_graph_fixtures.py",
+    ],
+    deps = [
+        "//model_debugger/server:package",
+    ],
+)
+
+py_library(
+    name = "fake_converter",
+    srcs = [
+        "__init__.py",
+        "fake_converter.py",
+    ],
+    deps = [
+        "//model_debugger/server/graph:graph_converter",
+        "//model_debugger/server/graph:model_graph",
+        "//model_debugger/server/tap:litertlm_file",
+        "//model_debugger/server/tap:schemas",
+        "//model_debugger/server/tap:tap_scan",
+    ],
+)
+
+py_library(
+    name = "world",
+    srcs = [
+        "__init__.py",
+        "world.py",
+    ],
+    deps = [
+        ":capture_fixtures",
+        ":fake_converter",
+        ":fake_launchers",
+        "//model_debugger/server/runner:launcher",
+        "//model_debugger/server/service:device_catalog",
+        "//model_debugger/server/service:session_listing",
+        "//model_debugger/server/session:capture_store",
+        "//model_debugger/server/session:jobs",
+        "//model_debugger/server/session:mappings",
+        "//model_debugger/server/session:model_graphs",
+        "//model_debugger/server/session:model_servers",
+        "//model_debugger/server/session:model_store",
+        "//model_debugger/server/session:options",
+        "//model_debugger/server/session:prepared_models",
+        "//model_debugger/server/session:session_archive",
+        "//model_debugger/server/session:session_store",
+        "//model_debugger/server/session:tap_scans",
+        "//model_debugger/server/session:workspace",
+        requirement("absl-py"),
+    ],
+)
+
+# The real command-line runner, which the tests run when it is built.
+py_library(
+    name = "real_runner",
+    srcs = [
+        "__init__.py",
+        "real_runner.py",
+    ],
+    deps = [
+        "//model_debugger/server/cli:server_main",
+        "//model_debugger/server/runner:local_launcher",
+        "//model_debugger/server/runner:runner_builds",
+    ],
+)
+
+# A real turn, captured by the real runner from RUNNER_MODEL when both are
+# there.
+py_library(
+    name = "real_capture",
+    srcs = [
+        "__init__.py",
+        "real_capture.py",
+    ],
+    deps = [
+        ":real_runner",
+        "//model_debugger/server/capture:capture_index",
+        "//model_debugger/server/runner:launcher",
+        "//model_debugger/server/runner:runner_client",
+        "@protocol//model_debugger/protocol:runner_py_pb2",
+        requirement("absl-py"),
+    ],
+)

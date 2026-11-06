@@ -1,3 +1,4 @@
+/* stylelint-disable */
 /**
  * @license
  * Copyright 2026 The AI Edge Model Explorer Authors.
@@ -25,11 +26,7 @@
 // The Display settings panel renders in the CDK overlay, outside its component element.
 $mark: var(
   --token-detail-color,
-  color-mix(
-    in srgb,
-    var(--on2, var(--me-on-surface-variant-color)) 70%,
-    transparent
-  )
+  color-mix(in srgb, var(--on2, var(--me-on-surface-variant-color)) 70%, transparent)
 );
 $stroke: 0.85px;
 

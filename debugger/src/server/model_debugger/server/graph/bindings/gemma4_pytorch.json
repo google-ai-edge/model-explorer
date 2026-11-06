@@ -1,0 +1,244 @@
+{
+ "architecture": "gemma4",
+ "runtime": "PyTorch",
+ "about": "How the PyTorch runner's Gemma 4 (src/runner_pytorch: Hugging Face transformers 5.17.0, Gemma4ForConditionalGeneration, eager attention) binds to the Gemma 4 architecture (architectures/data/gemma4/architecture.json): the module position each anchor of each decoder layer is taken at (anchors: the module, `{layer}` standing for the layer's index, whether it is what the module reads, `in`, or returns, `out`, and its path in pytorch-collector's record), and the stages each module outside the skeleton runs in (outside). The runner captures every anchor of every layer in every forward pass, as pytorch-collector's collect() snapshots it, and writes it under post_anchor_<layer>_<anchor>; its stages are the runner's signatures, prefill and decode. Verified against transformers 5.17.0, models/gemma4/modeling_gemma4.py, Gemma4TextDecoderLayer.forward (lines 1384-1441). How the PyTorch runner's execution graph of a forward pass (pytorch-collector's to_model_explorer(), each operator under its module path) binds to it: per anchor the module path whose first operator reads it (read_by) or the operator that writes it (written_by, `{layer}` standing for the layer's scope, layers/<N>); the operator each elementwise semantic operator is (operators); the modules LiteRT-LM runs as one operator, drawn as one node (fold); why a port is bound to nothing (ports). And per semantic operator inside a layer's blocks, as the skeleton names it (`<node>/<op>`, or a norm's node id; the LiteRT-LM binding's `ops` say which tap point is its output there), the module whose tensor it is (ops): the module, what of it (`out`, what it returns, or `in`, its argument 0) and its path in the collector's record, and its shape after [batch, rows] (`shape`: `width`, the layer's width; `<node>/<op>`, that operator's `out` in the skeleton, heads * head_dim flat as a Linear returns it; `<node>/<op>:heads`, [heads, head_dim]). The runner captures such a module only when the server asks for it (observeModules), for a LiteRT-LM point chosen of that operator (graph/counterparts.py). Verified against transformers 5.17.0, Gemma4TextAttention.forward, Gemma4TextMLP.forward and Gemma4TextDecoderLayer.forward. Runtime facts, all of them: none is the model's.",
+ "signatures": [
+  "prefill",
+  "decode"
+ ],
+ "anchors": {
+  "input": {
+   "module": "model.language_model.layers.{layer}",
+   "edge": "in",
+   "path": "args.0",
+   "evidence": "Gemma4TextModel.forward calls each decoder layer with hidden_states as its first argument; the layer's forward keeps it as the residual and normalizes it with input_layernorm first.",
+   "read_by": "{layer}/input_layernorm",
+   "graph_evidence": "The layer's argument 0 is what input_layernorm reads first (residual = hidden_states; hidden_states = self.input_layernorm(hidden_states)): in the execution graph, the one tensor its node reads."
+  },
+  "intermediate.1": {
+   "module": "model.language_model.layers.{layer}.pre_feedforward_layernorm",
+   "edge": "in",
+   "path": "args.0",
+   "evidence": "pre_feedforward_layernorm reads the residual after attention: hidden_states = residual + post_attention_layernorm(self_attn(...)), then pre_feedforward_layernorm(hidden_states).",
+   "read_by": "{layer}/pre_feedforward_layernorm",
+   "graph_evidence": "The one tensor pre_feedforward_layernorm's node reads: the residual sum after attention."
+  },
+  "intermediate.2": {
+   "module": "model.language_model.layers.{layer}.per_layer_input_gate",
+   "edge": "in",
+   "path": "args.0",
+   "evidence": "per_layer_input_gate reads the residual after the feed-forward network: hidden_states = residual + post_feedforward_layernorm(mlp(...)), then per_layer_input_gate(hidden_states).",
+   "read_by": "{layer}/per_layer_input_gate",
+   "graph_evidence": "The one tensor per_layer_input_gate's node reads (its weight is an attribute): the residual sum after the feed-forward network."
+  },
+  "output": {
+   "module": "model.language_model.layers.{layer}",
+   "edge": "out",
+   "path": "output",
+   "evidence": "The layer returns hidden_states after hidden_states *= layer_scalar, the last of its operations.",
+   "written_by": "{layer}",
+   "operator": "aten.mul_",
+   "graph_evidence": "hidden_states *= self.layer_scalar, the layer's last operation, runs in place (aten.mul_.Tensor, directly in the layer's scope): the tensor the layer returns is its output, which the collector makes its producer."
+  }
+ },
+ "operators": {
+  "Add": "aten.add",
+  "Mul": "aten.mul_"
+ },
+ "fold": {
+  "Gemma4RMSNorm": {
+   "runs_as": "odml.rms_norm",
+   "evidence": "LiteRT-LM's Gemma 4 graph runs each RMSNorm, the layers' four norms, q_norm, k_norm and v_norm among them, as one composite operator, odml.rms_norm, not expanded."
+  },
+  "Linear": {
+   "runs_as": "fully_connected",
+   "evidence": "LiteRT-LM's graph runs each projection (q_proj, k_proj, v_proj, o_proj, gate_proj, up_proj, down_proj, per_layer_input_gate, per_layer_projection) as one fully_connected operator."
+  },
+  "GELUTanh": {
+   "runs_as": "gelu",
+   "evidence": "LiteRT-LM's graph runs the activation, the MLP's act_fn and the per-layer input's, as one gelu operator."
+  }
+ },
+ "ports": {
+  "per_layer_input": "Not bound. It is an input port of the skeleton, not an anchor: ple reads it alone, once per layer, as the layer's argument per_layer_input; the runner observes the layer's anchors only."
+ },
+ "outside": {
+  "embedding": {
+   "stages": [
+    "prefill",
+    "decode"
+   ],
+   "stages_evidence": "Prefill and decode: every forward pass embeds its input_ids (embed_tokens) before the first layer."
+  },
+  "per_layer_embedding": {
+   "stages": [
+    "prefill",
+    "decode"
+   ],
+   "stages_evidence": "Prefill and decode: every forward pass looks up its per-layer embeddings and projects the embeddings onto them (get_per_layer_inputs, project_per_layer_inputs) before the first layer."
+  },
+  "final_norm": {
+   "stages": [
+    "prefill",
+    "decode"
+   ],
+   "stages_evidence": "Prefill and decode: every forward pass runs every layer and the final norm; the prefill's output is the hidden state of its last position too."
+  },
+  "output_head": {
+   "stages": [
+    "prefill",
+    "decode"
+   ],
+   "stages_evidence": "Prefill and decode: every forward pass computes logits (the runner keeps those of the last position, logits_to_keep=1); unlike LiteRT-LM's prefill signatures, a PyTorch prefill produces logits. The runner writes a decode step's only."
+  }
+ },
+ "ops": {
+  "norm.attn.in": {
+   "module": "model.language_model.layers.{layer}.input_layernorm",
+   "edge": "out",
+   "path": "output",
+   "shape": "width",
+   "evidence": "hidden_states = self.input_layernorm(hidden_states): its output."
+  },
+  "attn/q_proj": {
+   "module": "model.language_model.layers.{layer}.self_attn.q_proj",
+   "edge": "out",
+   "path": "output",
+   "shape": "attn/q_proj",
+   "evidence": "query_states = self.q_proj(hidden_states).view(hidden_shape): the Linear returns [batch, rows, heads * head_dim], which the attention then views as [heads, head_dim]."
+  },
+  "attn/k_proj": {
+   "module": "model.language_model.layers.{layer}.self_attn.k_proj",
+   "edge": "out",
+   "path": "output",
+   "shape": "attn/k_proj",
+   "evidence": "key_states = self.k_proj(hidden_states).view(hidden_shape); a KV-shared layer (is_kv_shared_layer) has no k_proj."
+  },
+  "attn/v_proj": {
+   "module": "model.language_model.layers.{layer}.self_attn.v_proj",
+   "edge": "out",
+   "path": "output",
+   "shape": "attn/v_proj",
+   "evidence": "value_states = self.v_proj(hidden_states).view(hidden_shape); a KV-shared layer has no v_proj."
+  },
+  "attn/q_norm": {
+   "module": "model.language_model.layers.{layer}.self_attn.q_norm",
+   "edge": "out",
+   "path": "output",
+   "shape": "attn/q_proj:heads",
+   "evidence": "query_states = self.q_norm(query_states), over [batch, rows, heads, head_dim]."
+  },
+  "attn/k_norm": {
+   "module": "model.language_model.layers.{layer}.self_attn.k_norm",
+   "edge": "out",
+   "path": "output",
+   "shape": "attn/k_proj:heads",
+   "evidence": "key_states = self.k_norm(key_states); a KV-shared layer has none."
+  },
+  "attn/v_norm": {
+   "module": "model.language_model.layers.{layer}.self_attn.v_norm",
+   "edge": "out",
+   "path": "output",
+   "shape": "attn/v_proj:heads",
+   "evidence": "value_states = self.v_norm(value_states), with_scale=False; a KV-shared layer has none."
+  },
+  "attn/o_proj": {
+   "module": "model.language_model.layers.{layer}.self_attn.o_proj",
+   "edge": "out",
+   "path": "output",
+   "shape": "width",
+   "evidence": "attn_output = self.o_proj(attn_output): its output."
+  },
+  "norm.attn.out": {
+   "module": "model.language_model.layers.{layer}.post_attention_layernorm",
+   "edge": "out",
+   "path": "output",
+   "shape": "width",
+   "evidence": "hidden_states = self.post_attention_layernorm(hidden_states): its output."
+  },
+  "norm.ffn.in": {
+   "module": "model.language_model.layers.{layer}.pre_feedforward_layernorm",
+   "edge": "out",
+   "path": "output",
+   "shape": "width",
+   "evidence": "hidden_states = self.pre_feedforward_layernorm(hidden_states): its output (the anchor intermediate.1 is what it reads)."
+  },
+  "ffn/gate_proj": {
+   "module": "model.language_model.layers.{layer}.mlp.gate_proj",
+   "edge": "out",
+   "path": "output",
+   "shape": "ffn/gate_proj",
+   "evidence": "down_proj(act_fn(gate_proj(x)) * up_proj(x)): gate_proj's output."
+  },
+  "ffn/up_proj": {
+   "module": "model.language_model.layers.{layer}.mlp.up_proj",
+   "edge": "out",
+   "path": "output",
+   "shape": "ffn/up_proj",
+   "evidence": "up_proj's output."
+  },
+  "ffn/act": {
+   "module": "model.language_model.layers.{layer}.mlp.act_fn",
+   "edge": "out",
+   "path": "output",
+   "shape": "ffn/gate_proj",
+   "evidence": "act_fn(gate_proj(x)), the MLP's own GELUTanh module: its output."
+  },
+  "ffn/gate": {
+   "module": "model.language_model.layers.{layer}.mlp.down_proj",
+   "edge": "in",
+   "path": "args.0",
+   "shape": "ffn/gate_proj",
+   "evidence": "act_fn(gate_proj(x)) * up_proj(x) is no module's output: it is what down_proj reads, its argument 0."
+  },
+  "ffn/down_proj": {
+   "module": "model.language_model.layers.{layer}.mlp.down_proj",
+   "edge": "out",
+   "path": "output",
+   "shape": "width",
+   "evidence": "down_proj's output, what the MLP returns."
+  },
+  "norm.ffn.out": {
+   "module": "model.language_model.layers.{layer}.post_feedforward_layernorm",
+   "edge": "out",
+   "path": "output",
+   "shape": "width",
+   "evidence": "hidden_states = self.post_feedforward_layernorm(hidden_states): its output."
+  },
+  "ple/gate_proj": {
+   "module": "model.language_model.layers.{layer}.per_layer_input_gate",
+   "edge": "out",
+   "path": "output",
+   "shape": "ple/gate_proj",
+   "evidence": "hidden_states = self.per_layer_input_gate(hidden_states): its output (the anchor intermediate.2 is what it reads)."
+  },
+  "ple/act": {
+   "module": "model.language_model.layers.{layer}.act_fn",
+   "edge": "out",
+   "path": "output",
+   "shape": "ple/gate_proj",
+   "evidence": "hidden_states = self.act_fn(hidden_states), the layer's own GELUTanh module: its output."
+  },
+  "ple/gate": {
+   "module": "model.language_model.layers.{layer}.per_layer_projection",
+   "edge": "in",
+   "path": "args.0",
+   "shape": "ple/gate_proj",
+   "evidence": "hidden_states * per_layer_input is no module's output: it is what per_layer_projection reads, its argument 0."
+  },
+  "ple/proj": {
+   "module": "model.language_model.layers.{layer}.per_layer_projection",
+   "edge": "out",
+   "path": "output",
+   "shape": "width",
+   "evidence": "hidden_states = self.per_layer_projection(hidden_states): its output."
+  },
+  "norm.ple.out": {
+   "module": "model.language_model.layers.{layer}.post_per_layer_input_norm",
+   "edge": "out",
+   "path": "output",
+   "shape": "width",
+   "evidence": "hidden_states = self.post_per_layer_input_norm(hidden_states): its output."
+  }
+ }
+}

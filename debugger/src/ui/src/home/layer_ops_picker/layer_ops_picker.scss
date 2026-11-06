@@ -1,0 +1,101 @@
+/**
+ * @license
+ * Copyright 2026 The AI Edge Model Explorer Authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ==============================================================================
+ */
+
+:host {
+  display: block;
+  min-width: 0;
+  margin-top: 16px;
+  font: 13px/20px var(--me-font-family);
+  color: var(--me-on-surface-color);
+}
+.layer-ops > summary {
+  width: fit-content;
+  cursor: pointer;
+  font: 500 13px/20px var(--me-font-family);
+}
+.summary-total {
+  font-weight: 400;
+  color: var(--me-on-surface-variant-color);
+}
+.layer-ops-text,
+.layer-ops-total {
+  margin: 6px 0 0;
+  max-width: 720px;
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--me-on-surface-variant-color);
+}
+.layer-ops-total {
+  color: var(--me-on-surface-color);
+}
+.blocks {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 12px;
+  margin-top: 8px;
+}
+.block {
+  min-width: 0;
+  margin: 0;
+  padding: 4px 12px 8px;
+  border: 1px solid var(--me-surface-variant-color);
+  border-radius: 8px;
+}
+.block legend {
+  padding: 0 4px;
+  font-weight: 500;
+}
+.op {
+  display: grid;
+  grid-template-columns: 16px minmax(0, 1fr) auto auto;
+  column-gap: 8px;
+  align-items: center;
+  padding: 2px 0;
+  cursor: pointer;
+}
+.op input {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  accent-color: var(--me-primary-color);
+}
+.op-kind,
+.op-size {
+  font-size: 12px;
+  color: var(--me-on-surface-variant-color);
+  white-space: nowrap;
+}
+.op-size {
+  min-width: 56px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.op-reason {
+  grid-column: 2 / -1;
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--me-on-surface-variant-color);
+}
+.op.unavailable {
+  cursor: default;
+  opacity: 0.6;
+}
+[role='alert'] {
+  margin: 6px 0 0;
+  color: var(--me-error-text-color);
+}

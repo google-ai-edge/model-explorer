@@ -1,0 +1,88 @@
+/**
+ * @license
+ * Copyright 2026 The AI Edge Model Explorer Authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ==============================================================================
+ */
+
+@use '../../../../theme/explorer_controls' as controls;
+
+p {
+  white-space: pre-wrap;
+  line-height: 24px;
+  margin: 10px 0 0;
+  overflow-wrap: anywhere;
+}
+.analysis-dialog {
+  @include controls.settings-dialog-shell;
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100dvh - 64px);
+  > header,
+  > mat-dialog-actions {
+    flex: none;
+  }
+  > mat-dialog-content {
+    min-height: 0;
+    max-height: none;
+  }
+  > mat-dialog-content analysis-architecture {
+    display: block;
+  }
+  button:disabled {
+    opacity: 0.38;
+  }
+}
+.analysis-preview-controls {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+.analysis-preview-controls config-picker {
+  width: 230px;
+}
+.tensor-preview {
+  height: 180px;
+  display: grid;
+  grid-template-rows: 18px 1fr 18px 1fr;
+  gap: 4px;
+  margin-top: 8px;
+}
+.tensor-preview-title {
+  font: 10px/18px var(--me-font-family);
+  color: var(--me-on-surface-variant-color);
+}
+.tensor-preview svg {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+}
+.tensor-preview path {
+  fill: none;
+  vector-effect: non-scaling-stroke;
+  stroke-width: 1;
+}
+.preview-axis {
+  stroke: var(--me-outline-hairline-color);
+}
+.preview-ref {
+  stroke: var(--me-primary-color);
+}
+.preview-target {
+  stroke: var(--me-on-surface-variant-color);
+  stroke-dasharray: 3 3;
+}
+.preview-point {
+  fill: var(--me-primary-color);
+}

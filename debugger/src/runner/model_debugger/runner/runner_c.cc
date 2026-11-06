@@ -20,10 +20,10 @@
 #include <string>
 #include <string_view>
 
-#include "absl/status/statusor.h"
+#include "model_debugger/protocol/runner.pb.h"
 #include "model_debugger/runner/runner.h"
 #include "model_debugger/runner/util/json.h"
-#include "model_debugger/v1/runner.pb.h"
+#include "absl/status/statusor.h"
 
 // The handle is the Runner itself.
 struct ModelDebuggerRunner {
@@ -43,15 +43,16 @@ size_t Copy(std::string_view text, char* buffer, size_t size) {
 }
 
 // The platform as a window names it.
-std::string PlatformName(model_debugger::v1::HostInfo::Platform platform) {
+std::string PlatformName(
+    model_debugger::protocol::HostInfo::Platform platform) {
   switch (platform) {
-    case model_debugger::v1::HostInfo::MACOS:
+    case model_debugger::protocol::HostInfo::MACOS:
       return "macOS";
-    case model_debugger::v1::HostInfo::IOS:
+    case model_debugger::protocol::HostInfo::IOS:
       return "iOS";
-    case model_debugger::v1::HostInfo::LINUX:
+    case model_debugger::protocol::HostInfo::LINUX:
       return "Linux";
-    case model_debugger::v1::HostInfo::ANDROID:
+    case model_debugger::protocol::HostInfo::ANDROID:
       return "Android";
     default:
       return "";

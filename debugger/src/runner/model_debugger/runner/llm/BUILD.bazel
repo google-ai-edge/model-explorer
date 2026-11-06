@@ -9,8 +9,9 @@ cc_library(
     hdrs = ["runtime.h"],
     visibility = ["//visibility:public"],
     deps = [
+        "@com_google_absl//absl/status",
         "@com_google_absl//absl/status:statusor",
-        "@protocol//model_debugger/v1:runner_cc_proto",
+        "@protocol//model_debugger/protocol:runner_cc_proto",
     ],
 )
 
@@ -23,11 +24,13 @@ model_test(
         ":runtime",
         "//model_debugger/runner/llm/litert_lm",
         "//model_debugger/runner/testing:test_utils",
-        "@com_google_absl//absl/base:no_destructor",
+        "//model_debugger/runner/util:json",
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/status:statusor",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/strings:cord",
         "@com_google_googletest//:gtest_main",
         "@protobuf",
-        "@protocol//model_debugger/v1:runner_cc_proto",
+        "@protocol//model_debugger/protocol:runner_cc_proto",
     ],
 )

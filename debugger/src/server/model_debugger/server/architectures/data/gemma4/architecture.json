@@ -1,0 +1,71 @@
+{
+ "id": "gemma4",
+ "name": "Gemma 4",
+ "about": "The decoder stack of dense Gemma 4 text models (Hugging Face model_type gemma4_text). Each skeleton is what gemma4.build() makes of its checkpoint's config.json, pinned here (pinned); the generate binary writes them and checks they are unchanged. `generator` names the definition (`definition`, a module of this package) and where it was ported from (`derived_from`), whose output the port reproduces byte for byte. What the model is, and nothing of how a runtime runs it: how a LiteRT-LM graph binds to it is graph/bindings/gemma4.json.",
+ "model_type": "gemma4_text",
+ "generator": {
+  "definition": "gemma4.py",
+  "derived_from": {
+   "repository": "~/model_arch_explore",
+   "head": "5830e01f8207881c2a50a90a03c0ccaf34df132d",
+   "path": "~/model_arch_explore/mkjson.py",
+   "sha256": "ca4581c40323dc1c020c51cdd733e42f259afba20703cfdfc5ca8eb7e6e9360f",
+   "commit": "7b4f6dba31a458e25223aa5136a06f3ac4ead162",
+   "command": "python3 mkjson.py CONFIG.json -o SKELETON.json",
+   "changes": "Uncommitted on that commit (2026-10-20): the decoder has two inputs, input and per_layer_input, which ple reads as its input 1, as the source review correction of 2026-09-06 has it (model-explorer tools/architecture_gallery_validation.py; Gemma4TextDecoderLayer.forward, hidden_states * per_layer_input); check() requires it.",
+   "text": "Ported on 2026-10-19: its definitions moved here (see README.md); the skeletons the port writes are byte for byte the ones mkjson.py, as its working tree held it, writes of both pinned configs."
+  }
+ },
+ "skeletons": [
+  {
+   "id": "gemma-4-E2B-it",
+   "file": "gemma-4-E2B-it.skeleton.json",
+   "sha256": "cc379976b654a1982fcdb1d3d965c448db4fcce104e5153ef4447721e14692da",
+   "pinned": {
+    "file": "gemma-4-E2B-it.config.json",
+    "model": "google/gemma-4-E2B-it",
+    "revision": "3e22461f65e89153144f8adb70e3b8c2cc9845a7",
+    "source": "https://huggingface.co/google/gemma-4-E2B-it/blob/3e22461f65e89153144f8adb70e3b8c2cc9845a7/config.json",
+    "git_blob": "923b5e9405e7d319572b0c1b1a89291512262aa3",
+    "sha256": "1b28f3d2c3100f6c594754b81107428bd7b822a7f48272ca681dae9d2ec38330",
+    "copied_from": "~/.cache/huggingface/hub/models--google--gemma-4-E2B-it/snapshots/3e22461f65e89153144f8adb70e3b8c2cc9845a7/config.json"
+   }
+  },
+  {
+   "id": "gemma-4-E4B-it",
+   "file": "gemma-4-E4B-it.skeleton.json",
+   "sha256": "4d46e8c059505aaffffca2187be0c4bac7ff8497688494ed8fd8d0baa3a4390c",
+   "pinned": {
+    "file": "gemma-4-E4B-it.config.json",
+    "model": "google/gemma-4-E4B-it",
+    "revision": "d6436b3d62967e1af08bbb046c6300b2a9ae8e85",
+    "source": "https://huggingface.co/google/gemma-4-E4B-it/blob/d6436b3d62967e1af08bbb046c6300b2a9ae8e85/config.json",
+    "git_blob": "d68960fdcce766f2bfe41436325a8a483a74d125",
+    "sha256": "33b10c02df3c2e8536cf323d29d53262aaa2f4d11dbe19bc729373fbe90295d4",
+    "copied_from": "~/Github/ai_edge_eval/models/gemma-4-E4B-it/config.json"
+   }
+  }
+ ],
+ "outside": [
+  {
+   "id": "embedding",
+   "name": "Embedding",
+   "text": "Not in the decoder skeleton: the token embedding is a graph of its own, not yet drawn."
+  },
+  {
+   "id": "per_layer_embedding",
+   "name": "Per-Layer Embedding",
+   "text": "Not in the decoder skeleton: the per-layer embeddings are looked up in a graph of their own and projected before the first layer, not yet drawn."
+  },
+  {
+   "id": "final_norm",
+   "name": "Final Norm",
+   "text": "Not in the decoder skeleton: the final norm follows the last layer, not yet drawn."
+  },
+  {
+   "id": "output_head",
+   "name": "Output Head",
+   "text": "Not in the decoder skeleton: the output head follows the final norm, not yet drawn."
+  }
+ ]
+}

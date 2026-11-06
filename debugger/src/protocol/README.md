@@ -1,13 +1,12 @@
 # Model Debugger Protocol 1.0.0
 
-This document specifies the protocol between the Model Debugger server and a
-runner. Over one gRPC connection, the server loads a model on the runner,
-conducts a single chat with it, and retrieves the tensors the runtime
-captures during generation.
+The protocol between the Model Debugger server and a runner: the server loads
+a model on the runner, holds a chat with it, one at a time, and reads the
+tensors the runtime captures while it generates.
 
-The RPCs and messages are defined in `model_debugger/v1/runner.proto`,
-with each field's rule in its comment. This file holds the terms and the
-rules that span RPCs.
+The RPCs, messages and error codes are defined in
+`model_debugger/protocol/runner.proto`, each with its rule in its comment.
+This file holds the terms and what spans RPCs.
 
 ## Terminology
 
@@ -15,32 +14,24 @@ rules that span RPCs.
 - **runner**: a process that hosts a runtime and serves the `Runner` service
 - **server**: the process that connects to runners and calls their RPCs
 - **model**: a model file, identified by its sha256
-- **chat**: the one conversation of a connection, whose context the runner keeps
-- **chat message**: an entry of a chat's `messages`, what a user or the model said
-- **turn**: one exchange of a chat, the user's chat message and the model's reply
+- **chat**: a conversation on a runner, whose context the runner keeps; a
+  runner has one at a time
+- **turn**: one exchange of a chat, the user's message and the model's reply
 - **capture**: the tensor files a runtime records while generating a turn
 
 ## Transport
 
-The protocol is a gRPC service, `model_debugger.v1.Runner`, over HTTP/2. The
-runner is the gRPC server, listening on a TCP port; the Model Debugger server
-is the gRPC client. How the client obtains the address is out of scope.
+The protocol is a gRPC service, `model_debugger.protocol.Runner`, over
+HTTP/2. The runner is the gRPC server, listening on a TCP port; the Model
+Debugger server is the client. How the client finds the address is out of
+scope.
 
-A runner serves only its first client, for its whole life: the connection
-of the first RPC is the session's, and an RPC on any other connection fails
-with `FAILED_PRECONDITION`, a reconnection of the same server included. The
-client therefore keeps that one connection for the whole session and must
-not let gRPC close it when idle (gRPC's `grpc.client_idle_timeout_ms`
-closes an idle channel after 30 minutes by default). Another session is
-another runner.
-
-Errors are gRPC statuses with the canonical codes; each RPC's comment names
-the codes it returns. `INVALID_ARGUMENT` is a request refused for what it
-holds; `FAILED_PRECONDITION` is a request the runner cannot serve in its
-state: another client's, a second `Load` or `CreateChat`, one while another
-is in progress, or a device this runner cannot run on; `INTERNAL` is a
-failure of the runner or its runtime. Cancelling an RPC is the only way to
-stop it.
+A runner keeps no client identity: any connection may call any RPC, and a
+client may reconnect. Losing the connection an RPC is on cancels that RPC,
+and a deadline that passes counts as a cancel: the client then sees
+`DEADLINE_EXCEEDED` or `CANCELLED`. `UNAVAILABLE` never comes from a runner;
+gRPC gives it for a runner that cannot be reached. Only stopping the runner
+process stops everything at once.
 
 ## Lifecycle
 
@@ -56,83 +47,110 @@ sequenceDiagram
   end
   S->>R: Load
   R-->>S: LoadResponse
-  S->>R: CreateChat
-  R-->>S: CreateChatResponse
-  loop each turn
-    S->>R: Send
-    R-->>S: Chunk …, Completion
-    S->>R: ListCaptures, ReadCapture …
-    R-->>S: files, bytes
-    S->>R: ReleaseCaptures
-    R-->>S: ReleaseCapturesResponse
-  end
-  opt the user cancels
-    S-xR: cancel Send
+  loop each chat
+    S->>R: CreateChat
+    R-->>S: CreateChatResponse
+    loop each turn
+      S->>R: Send
+      R-->>S: Chunk …, Completion
+      S->>R: ReadCaptures
+      R-->>S: file, data …, sha256 per file
+      S->>R: ReleaseCaptures
+      R-->>S: ReleaseCapturesResponse
+    end
+    opt the user cancels
+      S-xR: cancel Send
+    end
   end
 ```
 
-`GetInfo` comes first; the server goes on only if `protocol_version` is its
-own. A model is named by its sha256; a `Load` the runner answers with
-`NOT_FOUND`, which means only that its model store has no file of that
-sha256, is followed by `UploadModel` and tried again. A session holds one
-model and one chat: a second `Load` or `CreateChat`, or any `Load`,
-`CreateChat` or `Send` while one of its kind is in progress, fails with
-`FAILED_PRECONDITION`. Once the server holds every file of a turn's capture
-it releases it, and the runner deletes it: captures are large, and a runner
-keeps only those not yet released. Cancelling `Send` stops the model and ends
-the chat; so does any other failure of `Send` but `INVALID_ARGUMENT`, since
-the model may then hold a turn the server never got. Nothing more is
-generated in this session. Another model or another conversation is another
-session, on another runner.
+`GetInfo` comes first. A `Load` answered with `NOT_FOUND` is followed by
+`UploadModel` and tried again. A runner holds one model for its whole life
+and tries to load it once; another model is another runner. It holds one chat
+at a time: a `CreateChat` closes the chat there is, deleting its captures not
+yet released, before it creates the next, whose turns count from 1 again.
+Once the server holds every file of a turn's capture it releases it, since
+captures are large. A cancelled or failed `Send` ends the chat (`Send`'s
+comment says which failures do not), and after a reply that filled the
+context the next `Send` fails with `RESOURCE_EXHAUSTED` (`"tokens-left": "0"`);
+nothing more is generated in that chat, and a `CreateChat` starts another.
 
-Runners on one machine may share a model store, and the server uploads a
-model to one runner at a time: two uploads of one model may not overlap,
-since the runners they reach may share the store. Once an upload succeeds, a
-`Load` on any runner sharing the store finds the model.
+Runners on one machine may share a model store, so the server uploads a model
+to one runner at a time. The store keeps one model: an `UploadModel` or a
+`Load` first deletes every other one but those a live runner uses, the one it
+loaded or else was last given or asked for. Once an upload succeeds, a `Load`
+on any runner sharing the store finds the model, as long as the runner that
+received it lives and is given or asked for no other.
 
 ### Example
 
 The runner lacks the model and receives it, the model is loaded, the user asks
 two questions, the server reads the captures of each, the user cancels a
-third. Each line is one RPC; the fields shown are the ones that matter here.
+third and starts a new chat. Each line is one RPC; the fields shown are the
+ones that matter here.
 
 ```
-GetInfo      → RunnerInfo {protocol_version: "1.0.0", host: {platform: MACOS, …}, runtime: {name: LITERT_LM, …}}
+GetInfo      → RunnerInfo {protocol_version: "1.0.0",
+                           host: {platform: MACOS, …},
+                           runtime: {name: LITERT_LM, …}}
 Load         {sha256: "9f3a…", device: GPU, context_length: 4096}
-             ✕ NOT_FOUND                                               the runner's store lacks it
+             ✕ NOT_FOUND
+               (the runner's store lacks it)
 UploadModel  {header: {sha256: "9f3a…", size: 3100000000}}, {data: …} × n
              → UploadModelResponse {}
 Load         {sha256: "9f3a…", device: GPU, context_length: 4096}
-             → LoadResponse {start_token: 2, stop_tokens: [{ids: [1]}, {ids: [106]}]}
+             → LoadResponse {start_token: 2,
+                             stop_tokens: [{ids: {ids: [1]}},
+                                           {ids: {ids: [106]}}]}
 CreateChat   {options: {max_completion_tokens: 32, top_k: 1}}
              → CreateChatResponse {}
 Send         {message: {role: USER, content: "What is 2 + 2?"}}
              → Chunk {content: "It is"}
              → Chunk {content: " 4."}
-             → Completion {content: "It is 4.", finish_reason: STOP,
-                           usage: {prompt_tokens: 14, completion_tokens: 3, total_tokens: 17},
-                           model_debugger: {turn: 1, prompt_tokens: [{id: 2364, text: "<|turn>"}, …], context_token_count: 17}}
-ListCaptures {turn: 1}
-             → ListCapturesResponse {files: [{path: "decode_post_logits_step_0.safetensors", size: 1050000, sha256: "…"}, …]}
-ReadCapture  {turn: 1, path: "decode_post_logits_step_0.safetensors"}
-             → CaptureData {data: …} × n
-ReadCapture  … for every other file listed, generated_tokens.jsonl included
-ReleaseCaptures {turn: 1}                                             every file read and checked
+             → Completion {
+                 content: "It is 4.", finish_reason: FINISH_REASON_STOP,
+                 usage: {prompt_tokens: 14, completion_tokens: 3,
+                         total_tokens: 17},
+                 model_debugger: {
+                   turn: 1, context_token_count: 17,
+                   fed_tokens: [
+                     {position: 0, phase: PREFILL, id: 2, text: "<bos>"},
+                     {position: 1, phase: PREFILL, id: 105,
+                      text: "<|turn>"}, …,
+                     {position: 13, phase: DECODE, id: 107, text: "\n"}, …]}}
+ReadCaptures {turn: 1}
+             → CaptureChunk {file: {
+                 path: "decode_post_logits_step_0.safetensors",
+                 size: 1050000}}
+             → CaptureChunk {data: …} × n
+             → CaptureChunk {sha256: "…"}
+             → … the same for every other file, generated_tokens.jsonl
+               included
+ReleaseCaptures {turn: 1}
+             (every file received and checked)
              → ReleaseCapturesResponse {}
-Send         {message: {role: USER, content: "Times 3?"}}          the chat keeps the first turn
+Send         {message: {role: USER, content: "Times 3?"}}
+             (the chat keeps the first turn)
              → Chunk …, Completion {… model_debugger: {turn: 2, …}}
-ListCaptures {turn: 2} …, ReleaseCaptures {turn: 2}
+ReadCaptures {turn: 2} …, ReleaseCaptures {turn: 2}
 Send         {message: {role: USER, content: "Count from 1 to 100."}}
              → Chunk {content: "1, 2, 3"}
-             ✕ cancelled by the server                                the chat is over
+             ✕ cancelled by the server
+               (the chat is over)
+CreateChat   {messages: [{role: SYSTEM, content: "Be brief."}],
+              options: {max_completion_tokens: 32, top_k: 1}}
+             (closes the chat that is over)
+             → CreateChatResponse {}
+Send         {message: {role: USER, content: "Hi."}}
+             → Chunk …, Completion {… model_debugger: {turn: 1, …}}
+               (from an empty context again)
 ```
 
 ## Changing the protocol
 
-The package name carries the major version, `model_debugger.v1`. Within it,
-a change may only add fields, enum values or RPCs, never remove, rename or
-renumber; such a change raises MINOR. A change that breaks a client or a
-server is a new package, `v2`, and raises MAJOR. The version is written in
-the proto's header and in this file's title, and a runner reports it as
-`protocol_version`; the server accepts only its own. A released version is a
-git tag, `v1.0.0`.
+The package is `model_debugger.protocol`. The version is the file option
+`(protocol_version)` in `runner.proto`, now `1.0.0`. A runner reports it in
+`GetInfo` as `protocol_version`, and the server accepts only a runner of
+exactly its own version. A runner built before the package was renamed from
+`model_debugger.v1` answers `GetInfo` with `UNIMPLEMENTED`, and the server
+says the runner speaks another protocol.

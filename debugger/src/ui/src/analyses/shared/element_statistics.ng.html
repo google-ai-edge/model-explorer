@@ -1,0 +1,80 @@
+<!--
+ Copyright 2026 The AI Edge Model Explorer Authors.
+
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+ ==============================================================================
+-->
+
+@let details = this.details();
+<table
+  explorer-statistic-table
+  class="inspector-table"
+  [label]="label() + ' element statistics'"
+  [rows]="rows()"
+  [header]="tensorStatisticsHeader"
+  [row]="tensorStatisticsRow"
+  [columnCount]="5"
+></table>
+<ng-template #tensorStatisticsHeader>
+  <tr>
+    <th>Group</th>
+    @for (stat of details.statisticColumns; track stat) {
+      <th [attr.colspan]="$last ? 2 : 1">
+        <span class="stat-cell"
+          ><span>{{ details.statisticLabel(stat) }}</span
+          ><span class="stat-locator" aria-hidden="true"></span
+        ></span>
+      </th>
+    }
+  </tr>
+</ng-template>
+<ng-template #tensorStatisticsRow let-row>
+  <tr>
+    <td>{{ row.label === 'Reference' ? 'Ref' : row.label }}</td>
+    @for (stat of details.statisticColumns; track stat) {
+      <td [attr.colspan]="$last ? 2 : 1">
+        @let index =
+          stat === 'min' ? row.stats.min_position : stat === 'max' ? row.stats.max_position : null;
+        <tensor-numeric-cell
+          [details]="details"
+          [label]="label() + ' ' + row.label + ' ' + details.statisticLabel(stat)"
+          [value]="details.formatTensorValue(row.stats[stat])"
+          [location]="
+            index === null
+              ? null
+              : {
+                  kind: kind(),
+                  index: index,
+                  title:
+                    'Locate ' +
+                    details.statisticLabel(stat) +
+                    ' · ' +
+                    row.label +
+                    ' · Element ' +
+                    index,
+                  label:
+                    'Locate ' +
+                    label() +
+                    ' ' +
+                    row.label +
+                    ' ' +
+                    details.statisticLabel(stat) +
+                    ' element ' +
+                    index,
+                }
+          "
+        />
+      </td>
+    }
+  </tr>
+</ng-template>

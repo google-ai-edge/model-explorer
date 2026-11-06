@@ -16,14 +16,15 @@
 
 #include "model_debugger/runner/llm/litert_lm/litert_lm_runtime.h"
 
-#include <filesystem>
+#include <filesystem>  // NOLINT(build/c++17)
 #include <fstream>
 #include <string>
 
-#include "absl/status/status.h"
 #include "google/protobuf/struct.pb.h"
+#include "model_debugger/protocol/runner.pb.h"
+#include "model_debugger/runner/service/options_schema.h"
 #include "gtest/gtest.h"
-#include "model_debugger/v1/runner.pb.h"
+#include "absl/status/status.h"
 
 namespace model_debugger::runner::llm {
 namespace {
@@ -36,7 +37,7 @@ class LiteRtLmTest : public testing::Test {
     std::filesystem::create_directories(dir_);
     model_ = dir_ / "empty.litertlm";
     std::ofstream(model_) << "";
-    request_.set_device(v1::CPU);
+    request_.set_device(protocol::CPU);
     request_.set_context_length(1024);
   }
 
@@ -48,7 +49,7 @@ class LiteRtLmTest : public testing::Test {
 
   std::filesystem::path dir_;
   std::filesystem::path model_;
-  v1::LoadRequest request_;
+  protocol::LoadRequest request_;
   LiteRtLmRuntime runtime_;
 };
 
@@ -63,6 +64,14 @@ TEST_F(LiteRtLmTest, InfoDeclaresEveryLoadOption) {
   }
   EXPECT_EQ(schema.find("cacheDir"), std::string::npos)
       << "where the runtime writes is the Runner's, not an option";
+}
+
+TEST_F(LiteRtLmTest, InfoDeclaresEveryChatOption) {
+  const std::string& schema = runtime_.Info().chat_options_schema();
+  for (const char* name : {"thinking", "thinking_token_budget",
+                           "apply_prompt_template", "speculative_decoding"}) {
+    EXPECT_NE(schema.find(name), std::string::npos) << name;
+  }
 }
 
 TEST_F(LiteRtLmTest, AnOptionOfTheWrongTypeIsRefused) {
@@ -91,6 +100,19 @@ TEST_F(LiteRtLmTest, AnOptionTheRuntimeDoesNotHaveIsRefused) {
 TEST_F(LiteRtLmTest, AMissingDataDirectoryIsAPreconditionNotAMissingModel) {
   EXPECT_TRUE(absl::IsFailedPrecondition(
       runtime_.Load(model_, dir_ / "no_such_directory", request_).status()));
+}
+
+// Fails when a schema Info() reports uses a keyword the service's validator
+// does not check: the validator must grow before the schema does.
+TEST_F(LiteRtLmTest, TheSchemasUseOnlyKeywordsTheServiceChecks) {
+  const protocol::RuntimeInfo& info = runtime_.Info();
+  const google::protobuf::Struct none;
+  const absl::Status load = service::ValidateOptions(
+      info.load_options_schema(), none, "LoadRequest.runtime_options");
+  EXPECT_TRUE(load.ok()) << load;
+  const absl::Status chat = service::ValidateOptions(
+      info.chat_options_schema(), none, "ChatOptions.runtime_options");
+  EXPECT_TRUE(chat.ok()) << chat;
 }
 
 }  // namespace

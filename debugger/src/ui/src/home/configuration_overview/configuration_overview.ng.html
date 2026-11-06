@@ -1,0 +1,76 @@
+<!--
+ Copyright 2026 The AI Edge Model Explorer Authors.
+
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+ ==============================================================================
+-->
+<mat-tab-group [mat-stretch-tabs]="false" mat-align-tabs="start" animationDuration="0ms">
+  <mat-tab label="Session"
+    ><div class="context">{{ workspace.sessionName() }}</div>
+    @if (session) {
+      @defer (on immediate) {
+        <session-configuration [session]="session" [embedded]="true" />
+      } @placeholder {
+        <div role="status">Loading configuration…</div>
+      }
+    }
+  </mat-tab>
+  <mat-tab label="Chat">
+    @if (chat; as chat) {
+      <div class="context">
+        {{ chat.title }} of {{ workspace.sessionName() }} · {{ chat.summary }}
+      </div>
+    } @else {
+      <div class="context">No chat is shown: start one, or choose one, to see its settings.</div>
+    }
+    <header>
+      <strong>Generation</strong
+      ><button mat-button (click)="showPrompt()" [class.different]="differs('systemPrompt')">
+        System prompt
+      </button>
+    </header>
+    @if (differenceNote) {
+      <p class="difference-note" role="note">{{ differenceNote }}</p>
+    }
+    <div class="groups">
+      @for (group of groups; track group.name) {
+        <section [attr.aria-label]="group.name">
+          <div class="parameter-row group-head">
+            <h3>{{ group.name }}</h3>
+            <span>Reference</span><span>Target</span>
+          </div>
+          <dl>
+            @for (key of group.keys; track key) {
+              <div class="parameter-row">
+                <dt>{{ label(key) }}</dt>
+                <dd [class.different]="differs(key)">{{ value('ref', key) }}</dd>
+                <dd [class.different]="differs(key)">{{ value('target', key) }}</dd>
+              </div>
+            }
+          </dl>
+        </section>
+      }
+    </div></mat-tab
+  >
+</mat-tab-group>
+<ng-template #prompt
+  ><h2 mat-dialog-title class="prompt-title">System prompt</h2>
+  <mat-dialog-content class="prompt-content">
+    @for (side of sides; track side) {
+      <h3>{{ side === 'ref' ? 'Reference' : 'Target' }}</h3>
+      <p class="prompt-text">{{ value(side, 'systemPrompt') }}</p>
+    }</mat-dialog-content
+  ><mat-dialog-actions align="end" class="prompt-actions"
+    ><button mat-button mat-dialog-close>Close</button></mat-dialog-actions
+  ></ng-template
+>

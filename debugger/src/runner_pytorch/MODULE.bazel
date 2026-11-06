@@ -1,0 +1,85 @@
+# Copyright 2026 The AI Edge Model Explorer Authors.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# The PyTorch runner's dependencies: a Python of its own, the PyPI packages it
+# pins in requirements_lock.txt, and the protocol's Python messages and stubs,
+# generated from ../protocol by the protobuf and gRPC the Server builds with.
+module(name = "model_debugger_runner_pytorch")
+
+bazel_dep(name = "rules_python", version = "2.4.2")
+
+# The platforms the lock's rule selects by (BUILD.bazel); the version the
+# other modules already bring.
+bazel_dep(name = "platforms", version = "1.0.0")
+
+# model_debugger is a namespace package that two repositories share: this
+# one's model_debugger/runner_pytorch and @protocol's model_debugger/protocol.
+# So no py_test or py_binary here may write an __init__.py into the runfiles:
+# one in either model_debugger directory would hide the other. Each package
+# lists its own.
+rules_python_config = use_extension("@rules_python//python/extensions:config.bzl", "config")
+rules_python_config.explicit_init_py(default = True)
+
+# One Python for building, testing and running, fetched, so that the
+# machine's own Python plays no part: the Server's, which torch 2.9.0 has
+# wheels for.
+python = use_extension("@rules_python//python/extensions:python.bzl", "python")
+python.toolchain(
+    is_default = True,
+    python_version = "3.12",
+)
+
+# Every PyPI package, at the version and hash requirements_lock.txt pins:
+# bazel run //:requirements.update
+pip = use_extension("@rules_python//python/extensions:pip.bzl", "pip")
+pip.parse(
+    hub_name = "runner_pytorch_pypi",
+    python_version = "3.12",
+    requirements_lock = "//:requirements_lock.txt",
+)
+use_repo(pip, "runner_pytorch_pypi")
+
+# uv, which pins requirements_lock.txt for every platform at once
+# (BUILD.bazel), prebuilt; only for that.
+uv = use_extension("@rules_python//python/uv:uv.bzl", "uv", dev_dependency = True)
+uv.configure(version = "0.11.21")
+
+# The protocol: the proto itself from ../protocol, and the protoc and gRPC
+# Python plugin the Server's versions build.
+bazel_dep(name = "grpc", version = "1.84.0")
+bazel_dep(name = "protobuf", version = "35.1")
+
+local_repository = use_repo_rule(
+    "@bazel_tools//tools/build_defs/repo:local.bzl",
+    "local_repository",
+)
+
+local_repository(
+    name = "protocol",
+    path = "../protocol",
+)
+
+# protoc's Python output runs on the protobuf from PyPI (BUILD.bazel).
+register_toolchains("//:python_proto_toolchain")
+
+# gRPC's Python plugin is C++, and apple_support's toolchain compiles it, as
+# the Server's: Bazel's own does not accept the Xcode 26+ SDK.
+bazel_dep(name = "apple_support", version = "2.9.1", repo_name = "build_bazel_apple_support")
+
+# The Python linter and formatter: ruff, the binary its PyPI wheel carries,
+# run by Bazel (BUILD.bazel).
+bazel_dep(name = "bazel_skylib", version = "1.9.2", dev_dependency = True)
+
+# The Starlark formatter and linter: buildifier, prebuilt.
+bazel_dep(name = "buildifier_prebuilt", version = "10.1.0", dev_dependency = True)
