@@ -1,0 +1,56 @@
+<!--
+@license
+Copyright 2026 The Model Explorer Authors. All Rights Reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+==============================================================================
+-->
+
+<h2 mat-dialog-title>
+  <span class="title-row">
+    <mat-icon class="title-icon">key</mat-icon>
+    @if (invalidToken) {
+      Invalid access token
+    } @else {
+      Access token required
+    }
+  </span>
+</h2>
+<div mat-dialog-content class="dialog-content">
+  @if (invalidToken) {
+    <p>
+      The Model Explorer server rejected this page's access token. It is
+      likely from an earlier server run (the server creates a new token every
+      time it starts), or it was mistyped.
+    </p>
+  } @else {
+    <p>
+      The Model Explorer server rejected this page: the URL must have a
+      <code>token</code> parameter with the server's current access token
+      (e.g. <code>http://localhost:8080/?token=...</code>).
+    </p>
+  }
+  <p>
+    Copy the full URL printed by the server (in your terminal or Colab cell
+    output) and open it.
+  </p>
+  <p class="opt-out">
+    To keep using URLs without a token (e.g. old bookmarks), start the server
+    with <code>--disable_auth</code> (<code>disable_auth=True</code> in
+    Python). Only do this on a trusted, isolated machine: it lets any website
+    you visit, and anyone who can reach the server, read your files through it.
+  </p>
+</div>
+<div mat-dialog-actions align="end">
+  <button mat-button mat-dialog-close>Close</button>
+</div>

@@ -26,6 +26,7 @@ import {
 } from '@angular/core';
 import {toObservable} from '@angular/core/rxjs-interop';
 
+import {apiFetch} from '../../common/api_auth';
 import {IS_EXTERNAL} from '../../common/flags';
 
 import {AppService} from './app_service';
@@ -225,7 +226,7 @@ export class NodeDataProviderExtensionService {
     }
     const runId = genUid();
     this.addRun(runId, fileName, '', modelGraph, undefined, false, path);
-    const resp = await fetch(url);
+    const resp = await apiFetch(url);
     if (!resp.ok) {
       this.updateRunResults(
         runId,

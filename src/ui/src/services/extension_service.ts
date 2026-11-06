@@ -18,6 +18,7 @@
 
 import {Injectable, signal} from '@angular/core';
 
+import {apiFetch} from '../common/api_auth';
 import {
   ExtensionCommand,
   NdpGetConfigEditorsCommand,
@@ -59,7 +60,7 @@ export class ExtensionService {
       // In internal colab, use GET request.
       if (this.internalColab) {
         const url = `${EXTERNAL_SEND_CMD_GET_API_PATH}?json=${JSON.stringify(cmd)}`;
-        resp = await fetch(url);
+        resp = await apiFetch(url);
       }
       // In other environments, use POST request.
       else {
@@ -70,7 +71,7 @@ export class ExtensionService {
           },
         };
         requestData.body = JSON.stringify(cmd);
-        resp = await fetch(EXTERNAL_SEND_CMD_POST_API_PATH, requestData);
+        resp = await apiFetch(EXTERNAL_SEND_CMD_POST_API_PATH, requestData);
       }
       if (!resp.ok) {
         return {otherError: `Failed to run extension: ${resp.status}`};
@@ -144,7 +145,7 @@ export class ExtensionService {
 
   private async getExtensionsForExternal(): Promise<Extension[]> {
     try {
-      const resp = await fetch(EXTERNAL_GET_EXTENSIONS_API_PATH, {
+      const resp = await apiFetch(EXTERNAL_GET_EXTENSIONS_API_PATH, {
         credentials: 'include',
       });
       if (!resp.ok) {
