@@ -30,6 +30,7 @@ import time
 from time import sleep
 import traceback
 from typing import Any, Union
+import urllib.parse
 import webbrowser
 
 import portpicker
@@ -63,6 +64,7 @@ OSS_WEB_APP_DIR = os.path.join(os.path.dirname(__file__), 'web_app')
 
 _STRIP_CHARS = '. \t\r\n\v\f'
 _DEFAULT_UPLOAD_FILENAME = 'no_name'
+_VIRTUAL_PATH_PREFIXES = ('graphs://', 'node_data://')
 
 server_directive_dispatcher = ServerDirectiveDispatcher()
 
@@ -256,6 +258,128 @@ def _get_upload_file_path(upload_dir: str, file_name: Union[str, None]) -> str:
   return file_path
 
 
+def _canonicalize_read_path(path: str) -> str:
+  """Expands `~` and resolves symlinks for a file path."""
+  return os.path.realpath(os.path.expanduser(path))
+
+
+def _collect_configured_read_paths(
+    config: Union[ModelExplorerConfig, None],
+) -> set[str]:
+  """Returns canonicalized local file paths configured in `config`."""
+  if config is None:
+    return set()
+  paths: set[str] = set()
+  for source in config.model_sources:
+    url = source.get('url') or ''
+    if (
+        isinstance(url, str)
+        and url
+        and not url.startswith(_VIRTUAL_PATH_PREFIXES)
+    ):
+      paths.add(_canonicalize_read_path(url))
+  for node_data_source in config.node_data_sources:
+    if (
+        isinstance(node_data_source, str)
+        and node_data_source
+        and not node_data_source.startswith(_VIRTUAL_PATH_PREFIXES)
+    ):
+      paths.add(_canonicalize_read_path(node_data_source))
+  return paths
+
+
+def _is_graph_node_data(data: Any) -> bool:
+  """Returns whether `data` matches NodeDataProviderGraphData."""
+  if not isinstance(data, dict):
+    return False
+  results = data.get('results')
+  if not isinstance(results, dict) or 'results' in results:
+    return False
+  return all(
+      isinstance(item, dict) and 'value' in item for item in results.values()
+  )
+
+
+def _is_model_explorer_json_content(content: str) -> bool:
+  """Returns whether `content` parses as Model Explorer graph/node-data JSON."""
+  try:
+    data = json.loads(content)
+  except (TypeError, ValueError):
+    return False
+
+  if isinstance(data, list):
+    if not data:
+      return True
+    if all(
+        isinstance(item, dict) and isinstance(item.get('subgraphs'), list)
+        for item in data
+    ):
+      return True
+    return all(
+        isinstance(item, dict)
+        and 'id' in item
+        and isinstance(item.get('nodes'), list)
+        for item in data
+    )
+
+  if isinstance(data, dict):
+    if isinstance(data.get('modelTopology'), dict):
+      return True
+    graphs = data.get('graphs')
+    if (
+        isinstance(data.get('label'), str)
+        and isinstance(graphs, list)
+        and all(
+            isinstance(g, dict)
+            and 'id' in g
+            and isinstance(g.get('nodes'), list)
+            for g in graphs
+        )
+    ):
+      return True
+    if _is_graph_node_data(data):
+      return True
+    return bool(data) and all(
+        _is_graph_node_data(graph_data) for graph_data in data.values()
+    )
+
+  return False
+
+
+def _is_allowed_host(request_host: str, server_host: str) -> bool:
+  """Returns whether the HTTP Host header matches an allowed server host."""
+  if not server_host or server_host in ('0.0.0.0', '::'):
+    return True
+  if not request_host or '@' in request_host:
+    return False
+  try:
+    parsed = urllib.parse.urlsplit(f'//{request_host}')
+    parsed_port = parsed.port
+  except ValueError:
+    return False
+  if (
+      parsed.username is not None
+      or parsed.password is not None
+      or parsed.path
+      or parsed.query
+      or parsed.fragment
+  ):
+    return False
+  if parsed_port is not None and parsed_port < 1:
+    return False
+  hostname = (parsed.hostname or '').lower()
+  if not hostname:
+    return False
+  normalized_server_host = server_host.lower().strip('[]')
+  allowed_hostnames = {
+      'localhost',
+      '127.0.0.1',
+      '::1',
+      normalized_server_host,
+  }
+  return hostname in allowed_hostnames
+
+
 def _is_internal_colab() -> bool:
   return False
 
@@ -335,6 +459,14 @@ def start(
         sys.exit(1)
 
   app = flask.Flask(__name__)
+  allowed_read_paths = _collect_configured_read_paths(config)
+  _allowed_read_paths_lock = threading.Lock()
+
+  @app.before_request
+  def validate_host_header():
+    """Rejects unexpected Host headers to prevent DNS rebinding."""
+    if not colab and not _is_allowed_host(flask.request.host, host):
+      flask.abort(403)
 
   # Disable logging from werkzeug.
   #
@@ -396,6 +528,9 @@ def start(
     except Exception:
       shutil.rmtree(tmp_dir, ignore_errors=True)
       raise
+    extension_manager.register_uploaded_model_dir(tmp_dir)
+    with _allowed_read_paths_lock:
+      allowed_read_paths.add(_canonicalize_read_path(file_path))
     return _make_json_response({'path': file_path})
 
   @app.route('/api/v1/send_command')
@@ -453,13 +588,25 @@ def start(
   @app.route('/api/v1/read_text_file')
   def read_text_file():
     path = flask.request.args.get('path')
-    if path is None:
+    if not path:
       return _make_json_response({'error': 'no file path provided'})
     try:
-      content = _read_file_content(path)
-      return _make_json_response({'content': content})
+      real_path = _canonicalize_read_path(path)
+    except (TypeError, ValueError) as err:
+      return _make_json_response({'error': str(err)}), 400
+    with _allowed_read_paths_lock:
+      is_allowed = real_path in allowed_read_paths
+    if not is_allowed and not real_path.lower().endswith('.json'):
+      return _make_json_response({'error': 'path is not permitted'}), 403
+    try:
+      content = _read_file_content(real_path)
     except Exception as err:
+      if not is_allowed:
+        return _make_json_response({'error': 'path is not permitted'}), 403
       return _make_json_response({'error': str(err)})
+    if not is_allowed and not _is_model_explorer_json_content(content):
+      return _make_json_response({'error': 'path is not permitted'}), 403
+    return _make_json_response({'content': content})
 
   @app.route('/check_health')
   def check_health():

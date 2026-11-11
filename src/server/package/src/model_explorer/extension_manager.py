@@ -15,6 +15,7 @@
 
 import os
 import shutil
+import threading
 
 try:
   import torch
@@ -72,6 +73,8 @@ class ExtensionManager(object, metaclass=Singleton):
     self.extensions: list[RegisteredExtension] = []
     self.adapter_runner: AdapterRunner = AdapterRunner()
     self.ndp_runner: NdpRunner = NdpRunner()
+    self._uploaded_dirs_lock = threading.Lock()
+    self.uploaded_model_dirs: set[str] = set()
     self.uploaded_model_dirs_to_delete: list[str] = []
 
   def load_extensions(self) -> None:
@@ -114,24 +117,45 @@ class ExtensionManager(object, metaclass=Singleton):
 
     return {}
 
+  def register_uploaded_model_dir(self, model_dir: str) -> None:
+    """Records a server-created upload directory as eligible for cleanup."""
+    real_dir = os.path.realpath(model_dir)
+    with self._uploaded_dirs_lock:
+      self.uploaded_model_dirs.add(real_dir)
+
   def cleanup(self, cmd: Any):
+    if not isinstance(cmd, dict):
+      return
     # Get the extension.
-    extension_id = cmd['extensionId']
+    extension_id = cmd.get('extensionId')
+    if not isinstance(extension_id, str) or not extension_id:
+      return
     extension = self._get_extension_by_id(extension_id)
 
     if extension is not None:
       # Adapter
       if extension.type == 'adapter':
-        # Store the file marked to be deleted. We will delete them when the
-        # server is stopped.
-        adapter_cmd: AdapterCommand = cmd
-        if adapter_cmd['deleteAfterConversion']:
-          model_path = adapter_cmd['modelPath']
-          model_dir = os.path.dirname(model_path)
-          self.uploaded_model_dirs_to_delete.append(model_dir)
+        # Store the uploaded dir marked to be deleted. We will delete them when
+        # the server is stopped.
+        adapter_cmd: AdapterCommand = cmd  # type: ignore[assignment]
+        if adapter_cmd.get('deleteAfterConversion'):
+          model_path = adapter_cmd.get('modelPath')
+          if not isinstance(model_path, str) or not model_path:
+            return
+          model_dir = os.path.realpath(os.path.dirname(model_path))
+          with self._uploaded_dirs_lock:
+            if (
+                model_dir in self.uploaded_model_dirs
+                and model_dir not in self.uploaded_model_dirs_to_delete
+            ):
+              self.uploaded_model_dirs_to_delete.append(model_dir)
 
   def delete_uploaded_model_dirs(self):
-    for model_dir in self.uploaded_model_dirs_to_delete:
+    with self._uploaded_dirs_lock:
+      dirs_to_delete = list(self.uploaded_model_dirs_to_delete)
+      self.uploaded_model_dirs_to_delete.clear()
+      self.uploaded_model_dirs.difference_update(dirs_to_delete)
+    for model_dir in dirs_to_delete:
       shutil.rmtree(model_dir, ignore_errors=True)
 
   def _import_extensions(self):
