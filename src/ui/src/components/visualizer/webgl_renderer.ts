@@ -926,6 +926,7 @@ export class WebglRenderer implements OnInit, OnChanges, OnDestroy {
       20,
     );
     this.webglRendererThreejsService.setupThreeJs();
+    this.svgTextRendererService.init(this);
 
     // Run outside Angular to not trigger change detection.
     this.ngZone.runOutsideAngular(() => {

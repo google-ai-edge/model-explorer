@@ -44,6 +44,7 @@ export const CONFIG_KEYS_CAN_RERENDER = new Set<string>([
   'hideEmptyNodeDataEntries',
   'showSidePanelOnNodeSelection',
   'maxEdgeLabelCharCount',
+  'svgTextRenderer',
 ]);
 
 /**
