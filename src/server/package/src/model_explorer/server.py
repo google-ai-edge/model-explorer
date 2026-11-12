@@ -13,6 +13,7 @@
 # limitations under the License.
 # ==============================================================================
 
+import contextlib
 import http
 from importlib import metadata
 import json
@@ -57,6 +58,7 @@ from .extension_manager import ExtensionManager
 from .file_change_handler import FileChangeHandler
 from .server_directive_dispatcher import ServerDirectiveDispatcher
 from .server_director import ServerDirector
+from . import task_manager
 from .utils import convert_adapter_response
 
 OSS_WEB_APP_DIR = os.path.join(os.path.dirname(__file__), 'web_app')
@@ -86,11 +88,34 @@ def _print_loaded_extensions(type: str, label: str, all_extensions: list[dict]):
       print(f' - {extension["name"]}')
 
 
-def _make_json_response(obj):
+def _make_json_response(
+    obj: Any, status: int = http.HTTPStatus.OK
+) -> flask.Response:
   body = json.dumps(obj)
-  resp = flask.make_response(body)
+  resp = flask.make_response(body, status)
   resp.headers['Content-Type'] = 'application/json'
   return resp
+
+
+def _format_sse_event(event: task_manager.TaskEvent) -> str:
+  """Formats a task event as a named Server-Sent Event.
+
+  Heartbeats are named events too, not SSE comments: `EventSource` doesn't
+  surface comments, and the web app's watchdog needs to observe them.
+
+  Args:
+    event: The task event.
+
+  Returns:
+    The SSE message.
+  """
+  return f'event: {event.name}\ndata: {json.dumps(event.data)}\n\n'
+
+
+def _task_not_found(task_id: str) -> flask.Response:
+  return _make_json_response(
+      {'error': f'Task "{task_id}" not found'}, http.HTTPStatus.NOT_FOUND
+  )
 
 
 def _get_latest_version_from_repo(package_json_url: str) -> str:
@@ -371,6 +396,12 @@ def start(
   # The handler when a file change is detected.
   _file_change_event_handler = FileChangeHandler(callback=_refresh_app_callback)
 
+  # Runs asynchronous conversions started by `/apipost/v1/start_convert`.
+  conversion_tasks = task_manager.TaskManager()
+  # Cancels in-flight conversions on every exit path (e.g. Colab), so they
+  # don't block interpreter exit.
+  conversion_tasks.shutdown_at_exit()
+
   @app.route('/api/v1/check_new_version')
   def check_new_version():
     """Checks new version."""
@@ -420,6 +451,111 @@ def start(
       return _make_json_response({'error': f'{type(err).__name__}: {str(err)}'})
     finally:
       extension_manager.cleanup(flask.request.json)
+
+  @app.route('/apipost/v1/start_convert', methods=['POST'])
+  def start_convert() -> flask.Response:
+    """Starts an asynchronous adapter conversion and returns its task id."""
+    req = flask.request.get_json(silent=True)
+    if (
+        not isinstance(req, dict)
+        or not req.get('extensionId')
+        or not req.get('modelPath')
+    ):
+      return _make_json_response(
+          {'error': '"extensionId" and "modelPath" are required'},
+          http.HTTPStatus.BAD_REQUEST,
+      )
+    settings = req.get('settings')
+    cmd = {
+        **req,
+        'cmdId': 'convert',
+        'settings': settings if isinstance(settings, dict) else {},
+        'deleteAfterConversion': bool(req.get('deleteAfterConversion', False)),
+    }
+
+    def convert(on_progress):
+      return extension_manager.run_cmd(cmd, on_progress=on_progress)
+
+    try:
+      # Cleans up also when the task is cancelled before it starts.
+      submitted = conversion_tasks.submit(
+          convert, on_finish=lambda: extension_manager.cleanup(cmd)
+      )
+    except RuntimeError:
+      return _make_json_response(
+          {'error': 'The server is shutting down'},
+          http.HTTPStatus.SERVICE_UNAVAILABLE,
+      )
+    return _make_json_response(submitted)
+
+  @app.route('/apistream/task_progress')
+  def task_progress_stream() -> flask.Response:
+    """Streams a conversion task's progress as Server-Sent Events."""
+    task_id = flask.request.args.get('task_id', '')
+    events = conversion_tasks.open_event_stream(task_id)
+    if events is None:
+      return _task_not_found(task_id)
+
+    def stream():
+      # Closing `events` when the client disconnects unsubscribes it at once,
+      # instead of whenever the generator is garbage-collected.
+      with contextlib.closing(events):
+        # The first event is an immediate progress snapshot, which also
+        # flushes the response headers.
+        for event in events:
+          yield _format_sse_event(event)
+
+    return flask.Response(
+        stream(),
+        headers={'Cache-Control': 'no-cache', 'X-Accel-Buffering': 'no'},
+        mimetype='text/event-stream',
+    )
+
+  @app.route('/api/v1/get_task_status')
+  def get_task_status() -> flask.Response:
+    """Returns a conversion task's status and latest progress (polling)."""
+    task_id = flask.request.args.get('task_id', '')
+    snapshot = conversion_tasks.get(task_id)
+    if snapshot is None:
+      return _task_not_found(task_id)
+    return _make_json_response(snapshot.to_status_json())
+
+  @app.route('/api/v1/get_task_result')
+  def get_task_result() -> flask.Response:
+    """Returns a completed conversion task's graphs."""
+    task_id = flask.request.args.get('task_id', '')
+    snapshot = conversion_tasks.get(task_id)
+    if snapshot is None:
+      return _task_not_found(task_id)
+    if snapshot.status == task_manager.TaskStatus.COMPLETED:
+      return _make_json_response(snapshot.result)
+    if snapshot.status == task_manager.TaskStatus.FAILED:
+      return _make_json_response(snapshot.to_status_json())
+    if snapshot.status == task_manager.TaskStatus.CANCELLED:
+      return _make_json_response(
+          {**snapshot.to_status_json(), 'error': 'Conversion cancelled by user'}
+      )
+    return _make_json_response(
+        {
+            **snapshot.to_status_json(),
+            'error': f'Task "{task_id}" has not finished',
+        },
+        http.HTTPStatus.CONFLICT,
+    )
+
+  @app.route('/apipost/v1/cancel_task', methods=['POST'])
+  def cancel_task() -> flask.Response:
+    """Requests cooperative cancellation of a conversion task."""
+    req = flask.request.get_json(silent=True)
+    task_id = req.get('taskId') if isinstance(req, dict) else None
+    if not isinstance(task_id, str) or not task_id:
+      return _make_json_response(
+          {'error': '"taskId" is required'}, http.HTTPStatus.BAD_REQUEST
+      )
+    resp = conversion_tasks.cancel(task_id)
+    if resp is None:
+      return _task_not_found(task_id)
+    return _make_json_response(resp)
 
   @app.route('/api/v1/load_graphs_json')
   def load_graphs_json():
@@ -549,7 +685,7 @@ def start(
   def add_header(response):
     """Adds headers to all responses."""
     # Don't cache any files.
-    response.headers['Cache-Control'] = 'public, max-age=0'
+    response.headers.setdefault('Cache-Control', 'public, max-age=0')
     if cors_host is not None:
       response.headers['Access-Control-Allow-Origin'] = cors_host
       response.headers['Access-Control-Allow-Credentials'] = 'true'
@@ -635,6 +771,7 @@ def start(
         sleep(1)
     except KeyboardInterrupt:
       print('Stopping server...')
+      conversion_tasks.shutdown()
       extension_manager.delete_uploaded_model_dirs()
 
   def embed_in_colab():

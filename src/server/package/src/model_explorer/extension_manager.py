@@ -23,7 +23,7 @@ except ImportError:
 
 from dataclasses import asdict
 from importlib import import_module
-from typing import Any, Dict, Union
+from typing import Any
 
 from .adapter_runner import AdapterRunner
 from .ndp_runner import NdpRunner
@@ -31,7 +31,7 @@ from .consts import MODULE_NAME
 from .extension_class_processor import ExtensionClassProcessor
 from .registered_extension import RegisteredExtension
 from .singleton import Singleton
-from .types import AdapterCommand
+from .types import AdapterCommand, ProgressCallback
 from .utils import convert_adapter_response
 
 
@@ -51,7 +51,7 @@ class ExtensionManager(object, metaclass=Singleton):
       ]
   )
 
-  CACHED_REGISTERED_EXTENSIONS: Dict[str, list[RegisteredExtension]] = {}
+  CACHED_REGISTERED_EXTENSIONS: dict[str, list[RegisteredExtension]] = {}
 
   def __init__(self, custom_extension_modules: list[str] = []):
     # Don't load extensions from backend adapter if it is not available.
@@ -93,8 +93,19 @@ class ExtensionManager(object, metaclass=Singleton):
     })
     return exts
 
-  def run_cmd(self, cmd: Any) -> Any:
-    """Runs the given command."""
+  def run_cmd(
+      self, cmd: Any, on_progress: ProgressCallback | None = None
+  ) -> Any:
+    """Runs the given command.
+
+    Args:
+      cmd: The extension command.
+      on_progress: Optional conversion progress callback forwarded to adapter
+        extensions that accept it.
+
+    Returns:
+      The command response.
+    """
     # Get the extension.
     extension_id = cmd['extensionId']
     extension = self._get_extension_by_id(extension_id)
@@ -105,7 +116,9 @@ class ExtensionManager(object, metaclass=Singleton):
     #
     # Adapter.
     if extension.type == 'adapter':
-      resp = self.adapter_runner.run_adapter(extension=extension, cmd=cmd)
+      resp = self.adapter_runner.run_adapter(
+          extension=extension, cmd=cmd, on_progress=on_progress
+      )
       return convert_adapter_response(resp)
     # Node data provider.
     elif extension.type == 'node_data_provider':
@@ -183,8 +196,12 @@ class ExtensionManager(object, metaclass=Singleton):
         )
         self.extensions.extend(module_extensions)
 
-  def _get_extension_by_id(self, id: str) -> Union[RegisteredExtension, None]:
-    matches = [ext for ext in self.extensions if ext.metadata.id == id]
+  def _get_extension_by_id(
+      self, extension_id: str
+  ) -> RegisteredExtension | None:
+    matches = [
+        ext for ext in self.extensions if ext.metadata.id == extension_id
+    ]
     if len(matches) > 0:
       return matches[0]
     return None

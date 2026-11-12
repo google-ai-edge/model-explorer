@@ -13,7 +13,8 @@
 # limitations under the License.
 # ==============================================================================
 
-from typing import Dict, Type, TypedDict
+from collections.abc import Callable
+from typing import Any, TypedDict
 
 from typing_extensions import NotRequired
 
@@ -25,14 +26,48 @@ class ClassWithMetadata:
   metadata: ExtensionMetadata
 
 
-ExtensionClassType = Type[ClassWithMetadata]
+ExtensionClassType = type[ClassWithMetadata]
+
+DiagnosticsSummary = TypedDict(
+    'DiagnosticsSummary',
+    {
+        'warningCount': int,
+        'quantMismatches': int,
+        'missingOpDefs': int,
+        'details': NotRequired[dict[str, int]],
+    },
+)
+
+ProgressReport = TypedDict(
+    'ProgressReport',
+    {
+        'taskId': NotRequired[str],
+        'stage': str,
+        'stageId': NotRequired[int],
+        'currentStep': NotRequired[int],
+        'totalSteps': NotRequired[int],
+        'progressFraction': NotRequired[float],
+        'message': NotRequired[str],
+        'subgraphName': NotRequired[str],
+        'currentOp': NotRequired[str],
+        'currentOpLabel': NotRequired[str],
+        'elapsedTimeMs': NotRequired[int],
+        'payloadJson': NotRequired[str],
+        'diagnostics': NotRequired[DiagnosticsSummary],
+    },
+)
+
+# Receives one conversion progress dictionary (stage, stageId, currentStep,
+# totalSteps, progressFraction, message, ...). Returning `False` requests
+# cooperative cancellation; any other value continues the conversion.
+ProgressCallback = Callable[[dict[str, Any]], bool | None]
 
 AdapterCommand = TypedDict(
     'AdapterCommand',
     {
         'cmdId': str,
         'modelPath': str,
-        'settings': Dict,
+        'settings': dict[str, Any],
         'deleteAfterConversion': bool,
     },
 )
@@ -43,8 +78,8 @@ NdpCommand = TypedDict(
         'cmdId': str,
         'modelPath': str,
         'graphId': str,
-        'configValues': Dict,
-        'graph': NotRequired[Dict],
+        'configValues': dict[str, Any],
+        'graph': NotRequired[dict[str, Any]],
     },
 )
 

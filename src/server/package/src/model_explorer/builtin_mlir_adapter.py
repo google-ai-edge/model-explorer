@@ -13,7 +13,7 @@
 # limitations under the License.
 # ==============================================================================
 
-from typing import Dict
+from typing import Any
 
 import ai_edge_model_explorer_adapter as convert_wrapper
 
@@ -37,12 +37,20 @@ class BuiltinMlirAdapter(Adapter):
   def __init__(self):
     super().__init__()
 
-  def convert(self, model_path: str, settings: Dict) -> ModelExplorerGraphs:
+  def convert(
+      self,
+      model_path: str,
+      settings: dict[str, Any],
+      on_progress: convert_wrapper.ProgressCallback | None = None,
+  ) -> ModelExplorerGraphs:
+    """See base class."""
     # Construct config.
     config = convert_wrapper.VisualizeConfig()
     if 'const_element_count_limit' in settings:
       config.const_element_count_limit = settings['const_element_count_limit']
 
     # Run
-    resp_json_str = convert_wrapper.ConvertMlirToJson(config, model_path)
+    resp_json_str = convert_wrapper.ConvertMlirToJson(
+        config, model_path, on_progress=on_progress
+    )
     return {'graphCollections': convert_builtin_resp(resp_json_str)}
