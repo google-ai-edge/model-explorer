@@ -18,6 +18,10 @@ from .registered_extension import RegisteredExtension
 from .types import AdapterCommand, ModelExplorerGraphs
 from .utils import get_instance_method
 
+# The adapter methods that commands can run. Requests must not be able to call
+# arbitrary methods of the adapter instance.
+_ADAPTER_CMD_IDS = frozenset({'convert'})
+
 
 class AdapterRunner:
   """A runner to run adapter extension."""
@@ -25,15 +29,19 @@ class AdapterRunner:
   def run_adapter(
       self, extension: RegisteredExtension, cmd: AdapterCommand
   ) -> ModelExplorerGraphs:
+    cmd_id = cmd['cmdId']
+    if cmd_id not in _ADAPTER_CMD_IDS:
+      raise ValueError(f'Unsupported adapter command "{cmd_id}"')
+
     # Get extension class and create an instance.
     extension_class = extension.ext_class
     instance = extension_class()
 
     # Get the method by the cmdId.
-    fn = get_instance_method(instance, cmd['cmdId'])
+    fn = get_instance_method(instance, cmd_id)
     if fn is None:
       raise Exception(
-          f'Method {cmd["cmdId"]} not implemented in the adapter extension'
+          f'Method {cmd_id} not implemented in the adapter extension'
           f' "{extension.metadata.name}"'
       )
     modelPath = os.path.expanduser(cmd['modelPath'])

@@ -13,7 +13,7 @@
 # limitations under the License.
 # ==============================================================================
 
-from typing import TypedDict, Union
+from typing import Optional, TypedDict, Union
 
 from typing_extensions import NotRequired
 
@@ -58,16 +58,17 @@ def config() -> ModelExplorerConfig:
 
 
 def visualize(
-    model_paths: Union[str, list[str]] = [],
+    model_paths: Optional[Union[str, list[str]]] = None,
     host=DEFAULT_HOST,
     port=DEFAULT_PORT,
-    extensions: list[str] = [],
-    node_data: Union[NodeDataInfo, list[NodeDataInfo]] = [],
+    extensions: Optional[list[str]] = None,
+    node_data: Optional[Union[NodeDataInfo, list[NodeDataInfo]]] = None,
     colab_height=DEFAULT_COLAB_HEIGHT,
     reuse_server: bool = False,
     reuse_server_host: str = DEFAULT_HOST,
     reuse_server_port: Union[int, None] = None,
     watch: bool = False,
+    disable_auth: bool = False,
 ) -> None:
   """Starts the ME local server and visualizes the models by the given paths.
 
@@ -85,17 +86,21 @@ def visualize(
       try to find a running server from port 8080 to 8099.
     watch: Whether to watch for changes in model files. If `True`, the page will
       automatically refresh when changes are detected.
+    disable_auth: INSECURE: whether to disable the access token that the
+      server requires on API requests. Without it, any web page the user
+      visits, and anyone who can reach the server, can read files and run
+      code through the server.
   """
   # Construct config.
   cur_config = config()
-  model_paths_list = model_paths
+  model_paths_list = model_paths or []
 
   if isinstance(model_paths, str):
     model_paths_list = [model_paths]
   for model_path in model_paths_list:
     cur_config.add_model_from_path(path=model_path)
 
-  _add_node_data_to_config(node_data=node_data, config=cur_config)
+  _add_node_data_to_config(node_data=node_data or [], config=cur_config)
 
   if reuse_server:
     cur_config.set_reuse_server(
@@ -108,8 +113,9 @@ def visualize(
       port=port,
       config=cur_config,
       colab_height=colab_height,
-      extensions=extensions,
+      extensions=extensions or [],
       watch=watch,
+      disable_auth=disable_auth,
   )
 
 
@@ -118,13 +124,14 @@ def visualize_pytorch(
     exported_program: 'torch.export.ExportedProgram',
     host=DEFAULT_HOST,
     port=DEFAULT_PORT,
-    extensions: list[str] = [],
-    node_data: Union[NodeDataInfo, list[NodeDataInfo]] = [],
+    extensions: Optional[list[str]] = None,
+    node_data: Optional[Union[NodeDataInfo, list[NodeDataInfo]]] = None,
     colab_height=DEFAULT_COLAB_HEIGHT,
     settings=DEFAULT_SETTINGS,
     reuse_server: bool = False,
     reuse_server_host: str = DEFAULT_HOST,
     reuse_server_port: Union[int, None] = None,
+    disable_auth: bool = False,
 ) -> None:
   """Visualizes a pytorch model.
 
@@ -142,6 +149,10 @@ def visualize_pytorch(
     reuse_server_host: the host of the server to reuse. Default to localhost.
     reuse_server_port: the port of the server to reuse. If unspecified, it will
       try to find a running server from port 8080 to 8099.
+    disable_auth: INSECURE: whether to disable the access token that the
+      server requires on API requests. Without it, any web page the user
+      visits, and anyone who can reach the server, can read files and run
+      code through the server.
   """
   # Construct config.
   cur_config = config()
@@ -149,7 +160,7 @@ def visualize_pytorch(
       name, exported_program=exported_program, settings=settings
   )
 
-  _add_node_data_to_config(node_data=node_data, config=cur_config)
+  _add_node_data_to_config(node_data=node_data or [], config=cur_config)
 
   if reuse_server:
     cur_config.set_reuse_server(
@@ -162,7 +173,8 @@ def visualize_pytorch(
       port=port,
       config=cur_config,
       colab_height=colab_height,
-      extensions=extensions,
+      extensions=extensions or [],
+      disable_auth=disable_auth,
   )
 
 
@@ -170,11 +182,12 @@ def visualize_from_config(
     config: Union[ModelExplorerConfig, None] = None,
     host=DEFAULT_HOST,
     port=DEFAULT_PORT,
-    extensions: list[str] = [],
+    extensions: Optional[list[str]] = None,
     cors_host: Union[str, None] = None,
     no_open_in_browser: bool = False,
     colab_height=DEFAULT_COLAB_HEIGHT,
     watch: bool = False,
+    disable_auth: bool = False,
 ) -> None:
   """Visualizes with a config.
 
@@ -189,17 +202,22 @@ def visualize_from_config(
     colab_height: The height of the embedded iFrame when running in colab.
     watch: Whether to watch for changes in model files. If `True`, the page will
       automatically refresh when changes are detected.
+    disable_auth: INSECURE: whether to disable the access token that the
+      server requires on API requests. Without it, any web page the user
+      visits, and anyone who can reach the server, can read files and run
+      code through the server.
   """
   # Start server.
   server.start(
       host=host,
       port=port,
       config=config,
-      extensions=extensions,
+      extensions=extensions or [],
       cors_host=cors_host,
       no_open_in_browser=no_open_in_browser,
       colab_height=colab_height,
       watch=watch,
+      disable_auth=disable_auth,
   )
 
 

@@ -15,6 +15,7 @@
 
 import requests
 
+from . import auth
 from .config import ModelExplorerConfig
 
 
@@ -24,8 +25,12 @@ class ServerDirector:
   def __init__(self, config: ModelExplorerConfig):
     self.config = config
 
-  def update_config(self):
-    """Updates config in the running server."""
+  def update_config(self) -> bool:
+    """Updates config in the running server.
+
+    Returns:
+      Whether the server accepted the update.
+    """
 
     data = self.config.get_transferrable_data()
     server_address = (
@@ -33,4 +38,17 @@ class ServerDirector:
         f'{self.config.reuse_server_host}:'
         f'{self.config.reuse_server_port}'
     )
-    requests.post(f'{server_address}/apipost/v1/update_config', json=data)
+    # A running server on this machine writes its access token to a
+    # user-private file. Never send it to another machine.
+    headers: dict[str, str] = {}
+    token = (
+        auth.read_token_file(self.config.reuse_server_port)
+        if auth.is_local_host(self.config.reuse_server_host)
+        else None
+    )
+    if token is not None:
+      headers[auth.AUTH_TOKEN_HEADER] = token
+    resp = requests.post(
+        f'{server_address}/apipost/v1/update_config', json=data, headers=headers
+    )
+    return resp.ok

@@ -81,6 +81,16 @@ parser.add_argument(
         ' the visualizer'
     ),
 )
+parser.add_argument(
+    '--disable_auth',
+    action='store_true',
+    help=(
+        'INSECURE: disable the access token that the server requires on API'
+        ' requests. Without it, any web page you visit, and anyone who can'
+        ' reach the server, can read your files and run code through it. Only'
+        ' use it in a trusted, isolated environment.'
+    ),
+)
 args = parser.parse_args()
 
 
@@ -130,4 +140,5 @@ def main(parsed_args: Any = None) -> None:
       no_open_in_browser=parsed_args.no_open_in_browser,
       skip_health_check=parsed_args.skip_health_check,
       watch=parsed_args.watch,
+      disable_auth=parsed_args.disable_auth,
   )

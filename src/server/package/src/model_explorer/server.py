@@ -13,6 +13,7 @@
 # limitations under the License.
 # ==============================================================================
 
+import atexit
 import http
 from importlib import metadata
 import json
@@ -46,6 +47,7 @@ from packaging.version import parse
 from termcolor import colored, cprint
 from watchdog.observers import Observer
 
+from . import auth
 from .config import ModelExplorerConfig
 from .consts import (
     DEFAULT_COLAB_HEIGHT,
@@ -270,6 +272,16 @@ def _refresh_app_callback():
   )
 
 
+def _print_auth_disabled_warning():
+  cprint(
+      '\nWARNING: The access token is disabled. Any web page you visit, and'
+      ' anyone who can reach this server, can read your files and run code on'
+      ' this machine through it. Only use --disable_auth in a trusted, isolated'
+      ' environment.',
+      'red',
+  )
+
+
 def start(
     host=DEFAULT_HOST,
     port=DEFAULT_PORT,
@@ -280,6 +292,8 @@ def start(
     cors_host: Union[str, None] = None,
     skip_health_check: bool = False,
     watch: bool = False,
+    disable_auth: bool = False,
+    auth_token: Union[str, None] = None,
 ):
   """Starts the local server that serves the web app.
 
@@ -295,6 +309,15 @@ def start(
     skip_health_check: Whether to skip the health check after server starts.
     watch: Whether to watch for changes in model files. If `True`, the page will
       automatically refresh when changes are detected.
+    disable_auth: Whether to disable the access token that API requests need.
+      INSECURE: without it, any web page the user visits, and anyone who can
+      reach the server, can read files and run code through the server.
+    auth_token: The access token that API requests need: at least 16 characters
+      out of A-Z, a-z, 0-9, "_" and "-". A random one is generated if it is
+      None. Ignored if `disable_auth` is True.
+
+  Raises:
+    ValueError: If `auth_token` is not a valid access token.
   """
 
   # Don't start the server if user wants to reuse an existing server.
@@ -304,8 +327,17 @@ def start(
       and config.reuse_server_port > 0
   ):
     director = ServerDirector(config=config)
-    director.update_config()
+    if not director.update_config():
+      print(
+          'Failed to update the Model Explorer server at'
+          f' {config.reuse_server_host}:{config.reuse_server_port}. Note that'
+          ' --reuse_server only works with a server started by the same user'
+          ' on the same machine.'
+      )
     return
+
+  if not disable_auth and auth_token is not None:
+    auth.check_token_format(auth_token)
 
   # Check whether it is running in colab.
   colab = 'google.colab' in sys.modules or os.getenv('COLAB_RELEASE_TAG')
@@ -335,6 +367,13 @@ def start(
         sys.exit(1)
 
   app = flask.Flask(__name__)
+
+  # The access token that API requests need (None if disabled). See auth.py.
+  if disable_auth:
+    auth_token = None
+    _print_auth_disabled_warning()
+  elif auth_token is None:
+    auth_token = auth.generate_token()
 
   # Disable logging from werkzeug.
   #
@@ -371,6 +410,29 @@ def start(
   # The handler when a file change is detected.
   _file_change_event_handler = FileChangeHandler(callback=_refresh_app_callback)
 
+  @app.before_request
+  def check_auth_token():
+    """Rejects API requests without a valid access token."""
+    if auth_token is None or not auth.is_protected_path(flask.request.path):
+      return None
+    # CORS preflight requests can't carry the token. Flask answers them without
+    # running any handler.
+    if flask.request.method == 'OPTIONS':
+      return None
+    provided_token = flask.request.headers.get(auth.AUTH_TOKEN_HEADER)
+    if not provided_token and auth.accepts_query_token(flask.request.path):
+      provided_token = flask.request.args.get(auth.AUTH_TOKEN_QUERY_PARAM)
+    if auth.is_valid_token(auth_token, provided_token):
+      return None
+    resp = _make_json_response({
+        'error': (
+            'Missing or invalid Model Explorer access token. Open the URL'
+            ' printed by the Model Explorer server.'
+        )
+    })
+    resp.status_code = http.HTTPStatus.UNAUTHORIZED
+    return resp
+
   @app.route('/api/v1/check_new_version')
   def check_new_version():
     """Checks new version."""
@@ -396,6 +458,7 @@ def start(
     except Exception:
       shutil.rmtree(tmp_dir, ignore_errors=True)
       raise
+    extension_manager.register_upload_dir(tmp_dir)
     return _make_json_response({'path': file_path})
 
   @app.route('/api/v1/send_command')
@@ -476,7 +539,9 @@ def start(
       server_directive_dispatcher.broadcast(
           json.dumps({
               'name': 'refreshPage',
-              'url': f'/?data={config.to_url_param_value()}',
+              'url': auth.add_token_to_url(
+                  f'/?data={config.to_url_param_value()}', auth_token
+              ),
           })
       )
 
@@ -525,7 +590,6 @@ def start(
         server_directive_dispatcher.remove_listener(directive_queue)
 
     headers = {
-        'Access-Control-Allow-Origin': '*',
         'Cache-Control': 'no-cache',
     }
     return flask.Response(
@@ -550,10 +614,14 @@ def start(
     """Adds headers to all responses."""
     # Don't cache any files.
     response.headers['Cache-Control'] = 'public, max-age=0'
+    # Page URLs carry the access token. Don't leak them to other sites.
+    response.headers['Referrer-Policy'] = 'no-referrer'
     if cors_host is not None:
       response.headers['Access-Control-Allow-Origin'] = cors_host
       response.headers['Access-Control-Allow-Credentials'] = 'true'
-      response.headers['Access-Control-Allow-Headers'] = 'Content-Type'
+      response.headers['Access-Control-Allow-Headers'] = (
+          f'Content-Type, {auth.AUTH_TOKEN_HEADER}'
+      )
     return response
 
   def _watch_file_changes(file_path: str):
@@ -595,6 +663,12 @@ def start(
       for model_file in model_files:
         _watch_file_changes(file_path=model_file)
 
+    # Let other Model Explorer processes of this user (`--reuse_server`) find
+    # the access token of this server.
+    if auth_token is not None:
+      auth.write_token_file(port, auth_token)
+      atexit.register(auth.remove_token_file, port, auth_token)
+
     app_thread = threading.Thread(
         target=lambda: app.run(host=host, port=port), daemon=True
     )
@@ -616,6 +690,8 @@ def start(
     url_params: list[str] = []
     if config is not None and config.has_data_to_encode_in_url():
       url_params.append(f'data={config.to_url_param_value()}')
+    if auth_token is not None:
+      url_params.append(auth.token_query_param(auth_token))
 
     if len(url_params) > 0:
       server_address = f'{server_address}/?{"&".join(url_params)}'
@@ -653,6 +729,9 @@ def start(
           if ('%DATA_PARAM%' !== '') {
             url += '&%DATA_PARAM%';
           }
+          if ('%TOKEN_PARAM%' !== '') {
+            url += '&%TOKEN_PARAM%';
+          }
           if ('%INTERNAL%' === 'True') {
             url += '&internal_colab=1';
           }
@@ -668,12 +747,16 @@ def start(
     data_param = ''
     if config is not None and config.has_data_to_encode_in_url():
       data_param = f'data={config.to_url_param_value()}'
+    token_param = ''
+    if auth_token is not None:
+      token_param = auth.token_query_param(auth_token)
     replacements = [
         ('%PORT%', f'{colab_port}'),
         ('%HOSTED_RUNTIME%', f'{colab}'),
         ('%INTERNAL%', f'{internal_colab}'),
         ('%HEIGHT%', f'{colab_height}'),
         ('%DATA_PARAM%', f'{data_param}'),
+        ('%TOKEN_PARAM%', f'{token_param}'),
     ]
     for k, v in replacements:
       shell = shell.replace(k, v)

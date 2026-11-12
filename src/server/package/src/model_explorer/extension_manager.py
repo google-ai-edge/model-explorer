@@ -73,6 +73,9 @@ class ExtensionManager(object, metaclass=Singleton):
     self.adapter_runner: AdapterRunner = AdapterRunner()
     self.ndp_runner: NdpRunner = NdpRunner()
     self.uploaded_model_dirs_to_delete: list[str] = []
+    # The directories that the server created for uploaded files. Only these
+    # can be deleted through `deleteAfterConversion`.
+    self._upload_dirs: set[str] = set()
 
   def load_extensions(self) -> None:
     """Loads all extensions."""
@@ -127,8 +130,15 @@ class ExtensionManager(object, metaclass=Singleton):
         adapter_cmd: AdapterCommand = cmd
         if adapter_cmd['deleteAfterConversion']:
           model_path = adapter_cmd['modelPath']
-          model_dir = os.path.dirname(model_path)
-          self.uploaded_model_dirs_to_delete.append(model_dir)
+          model_dir = os.path.realpath(os.path.dirname(model_path))
+          # Only delete directories created for uploaded files, never a
+          # directory chosen by the request.
+          if model_dir in self._upload_dirs:
+            self.uploaded_model_dirs_to_delete.append(model_dir)
+
+  def register_upload_dir(self, upload_dir: str) -> None:
+    """Records a directory that the server created for an uploaded file."""
+    self._upload_dirs.add(os.path.realpath(upload_dir))
 
   def delete_uploaded_model_dirs(self):
     for model_dir in self.uploaded_model_dirs_to_delete:
