@@ -147,11 +147,34 @@ export class WebglRendererAttrsTableService {
     }
 
     if (labels.length > 0) {
-      this.attrsTableTexts.generateMesh(labels);
-      this.webglRendererThreejsService.addToScene(this.attrsTableTexts.mesh);
+      if (
+        this.webglRenderer.appService.config()?.svgTextRenderer &&
+        !this.webglRenderer.forceDisableSvg
+      ) {
+        this.attrsTableTexts.generateMesh([]);
+        this.webglRendererThreejsService.removeFromScene(this.attrsTableTexts.mesh);
+        this.webglRenderer.svgTextRendererService.renderTexts(
+          this.webglRenderer.svgTextRenderer.nativeElement,
+          labels,
+          this.webglRenderer.appService.theme() === 'dark',
+          'g.attrs-table-labels-group',
+        );
+      } else {
+        this.webglRenderer.svgTextRendererService.clear(
+          this.webglRenderer.svgTextRenderer.nativeElement,
+          'g.attrs-table-labels-group',
+        );
+        this.attrsTableTexts.generateMesh(labels);
+        this.webglRendererThreejsService.addToScene(this.attrsTableTexts.mesh);
+      }
 
       this.attrsTableBgs.generateMesh(tableBgRectangles);
       this.webglRendererThreejsService.addToScene(this.attrsTableBgs.mesh);
+    } else {
+      this.webglRenderer.svgTextRendererService.clear(
+        this.webglRenderer.svgTextRenderer.nativeElement,
+        'g.attrs-table-labels-group',
+      );
     }
   }
 
