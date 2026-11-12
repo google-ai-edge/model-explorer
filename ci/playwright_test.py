@@ -33,6 +33,20 @@ TMP_SCREENSHOT_DIR = ROOT_DIR / "build"
 DEBUG_SCREENSHOT_DIR = TMP_SCREENSHOT_DIR / "debug"
 EXPECTED_SCREENSHOT_DIR = ROOT_DIR / "test/screenshots_golden/chrome-linux"
 
+try:
+  # Servers with access token protection write their token to a user-private
+  # file, which `--reuse_server` also reads.
+  from model_explorer import auth as me_auth
+except ImportError:  # An older server without access token protection.
+  me_auth = None
+
+
+def with_token(url: str, port: int = 8080) -> str:
+  """Returns `url` with the access token of the local server on `port`."""
+  if me_auth is None:
+    return url
+  return me_auth.add_token_to_url(url, me_auth.read_token_file(port))
+
 
 # Compares two images, the similarity is determined by calculating the percentage
 # of mismatched pixels. `threshold` can be set between 0 to 1, 0 means the images
@@ -99,7 +113,7 @@ def take_and_compare_screenshot(page: Page, name: str):
 
 
 def test_homepage(page: Page):
-  page.goto(LOCAL_SERVER)
+  page.goto(with_token(LOCAL_SERVER))
   expect(page).to_have_title(re.compile("Model Explorer"))
   take_and_compare_screenshot(page, "homepage.png")
 
@@ -108,7 +122,7 @@ def test_homepage(page: Page):
 
 
 def test_litert_direct_adapter(page: Page):
-  page.goto(LOCAL_SERVER)
+  page.goto(with_token(LOCAL_SERVER))
   page.get_by_placeholder("Absolute file paths (").fill(
       str(TEST_FILES_DIR / "fully_connected.tflite")
   )
@@ -125,7 +139,7 @@ def test_litert_direct_adapter(page: Page):
 
 
 def test_litert_mlir_adapter(page: Page):
-  page.goto(LOCAL_SERVER)
+  page.goto(with_token(LOCAL_SERVER))
   page.get_by_placeholder("Absolute file paths (").fill(
       str(TEST_FILES_DIR / "fully_connected.tflite")
   )
@@ -139,7 +153,7 @@ def test_litert_mlir_adapter(page: Page):
 
 
 def test_tf_mlir_adapter(page: Page):
-  page.goto(LOCAL_SERVER)
+  page.goto(with_token(LOCAL_SERVER))
   page.get_by_placeholder("Absolute file paths (").fill(
       str(TEST_FILES_DIR / "simple_add/saved_model.pb")
   )
@@ -153,7 +167,7 @@ def test_tf_mlir_adapter(page: Page):
 
 
 def test_tf_direct_adapter(page: Page):
-  page.goto(LOCAL_SERVER)
+  page.goto(with_token(LOCAL_SERVER))
   page.get_by_placeholder("Absolute file paths (").fill(
       str(TEST_FILES_DIR / "simple_add/saved_model.pb")
   )
@@ -169,7 +183,7 @@ def test_tf_direct_adapter(page: Page):
 
 
 def test_tf_graphdef_adapter(page: Page):
-  page.goto(LOCAL_SERVER)
+  page.goto(with_token(LOCAL_SERVER))
   page.get_by_placeholder("Absolute file paths (").fill(
       str(TEST_FILES_DIR / "graphdef_foo.pbtxt")
   )
@@ -181,7 +195,7 @@ def test_tf_graphdef_adapter(page: Page):
 
 
 def test_shlo_mlir_adapter(page: Page):
-  page.goto(LOCAL_SERVER)
+  page.goto(with_token(LOCAL_SERVER))
   page.get_by_placeholder("Absolute file paths (").fill(
       str(TEST_FILES_DIR / "stablehlo_sin.mlir")
   )
@@ -203,7 +217,7 @@ def test_pytorch(page: Page):
   torch.export.save(ep, pt2_file_path)
 
   # Load into ME.
-  page.goto(LOCAL_SERVER)
+  page.goto(with_token(LOCAL_SERVER))
   page.get_by_placeholder("Absolute file paths (").fill(pt2_file_path)
   page.get_by_role("button", name="Add").click()
   delay_view_model(page)
@@ -214,7 +228,7 @@ def test_pytorch(page: Page):
 
 def test_reuse_server_non_pytorch(page: Page):
   # Load a tflite model
-  page.goto(LOCAL_SERVER)
+  page.goto(with_token(LOCAL_SERVER))
   page.get_by_placeholder("Absolute file paths (").fill(
       str(TEST_FILES_DIR / "fully_connected.tflite")
   )
@@ -233,7 +247,7 @@ def test_reuse_server_non_pytorch(page: Page):
 
 def test_reuse_server_pytorch(page: Page):
   # Load a tflite model
-  page.goto(LOCAL_SERVER)
+  page.goto(with_token(LOCAL_SERVER))
   page.get_by_placeholder("Absolute file paths (").fill(
       str(TEST_FILES_DIR / "fully_connected.tflite")
   )
@@ -254,7 +268,7 @@ def test_reuse_server_pytorch(page: Page):
 
 def test_reuse_server_pytorch_from_config(page: Page):
   # Load a tflite model
-  page.goto(LOCAL_SERVER)
+  page.goto(with_token(LOCAL_SERVER))
   page.get_by_placeholder("Absolute file paths (").fill(
       str(TEST_FILES_DIR / "fully_connected.tflite")
   )
@@ -282,7 +296,7 @@ def test_reuse_server_two_pytorch_models(page: Page):
   torch.export.save(ep, pt2_file_path.name)
 
   # Load it into ME.
-  page.goto(LOCAL_SERVER)
+  page.goto(with_token(LOCAL_SERVER))
   page.get_by_placeholder("Absolute file paths (").fill(pt2_file_path.name)
   page.get_by_role("button", name="Add").click()
   delay_view_model(page)
@@ -323,9 +337,12 @@ def test_hot_reload_from_command_line(page: Page):
 
   # Show the graph.
   page.goto(
-      'http://127.0.0.1:8081/?data={"models":[{"url":"'
-      + str(TEST_FILES_DIR / "test_graph1.json")
-      + '","adapterId":"builtin_json"}]}'
+      with_token(
+          'http://127.0.0.1:8081/?data={"models":[{"url":"'
+          + str(TEST_FILES_DIR / "test_graph1.json")
+          + '","adapterId":"builtin_json"}]}',
+          port=8081,
+      )
   )
 
   # Wait for animation.
@@ -370,7 +387,7 @@ def test_hot_reload_from_ui(page: Page):
   time.sleep(3)
 
   # Show the graph.
-  page.goto("http://127.0.0.1:8082/")
+  page.goto(with_token("http://127.0.0.1:8082/", port=8082))
 
   # Fill in absolute model path.
   page.get_by_placeholder("Absolute file paths (").fill(
