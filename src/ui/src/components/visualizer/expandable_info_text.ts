@@ -47,7 +47,7 @@ interface UrlInfo {
 const MARKDOWN_LINK_REGEX = /^\[([^\]]+)\]\(([^)]+)\)$/;
 
 // Internal URL prefixes that should be recognized as URLs.
-const INTERNAL_URL_PREFIXES = ['go/', 'b/', 'cl/', 'cs/', 'google3/'];
+const INTERNAL_URL_PREFIXES = ['go/', 'b/', 'cl/', 'cs/'];
 
 /** Expandable info text component. */
 @Component({

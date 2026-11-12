@@ -18,6 +18,7 @@
 
 import {Injectable, signal} from '@angular/core';
 
+import {apiFetch} from '../common/api_auth';
 import {GRAPHS_MODEL_SOURCE_PREFIX} from '../common/consts';
 import {
   AdapterConvertCommand,
@@ -112,7 +113,7 @@ export class ModelLoaderService implements ModelLoaderServiceInterface {
     if (modelItem.type === ModelItemType.FILE_PATH) {
       // Send the model path to server for watching its changes if specified.
       try {
-        await fetch(
+        await apiFetch(
           `${NOTIFY_USER_PROVIDED_MODEL_PATH}?path=${encodeURIComponent(modelItem.path)}`,
         );
       } catch (e) {
@@ -220,7 +221,7 @@ export class ModelLoaderService implements ModelLoaderServiceInterface {
   }
 
   private async readTextFile(path: string): Promise<string> {
-    const resp = await fetch(`${READ_TEXT_FILE_API_PATH}?path=${path}`);
+    const resp = await apiFetch(`${READ_TEXT_FILE_API_PATH}?path=${path}`);
     const jsonObj = (await resp.json()) as ReadTextFileResponse;
     if (jsonObj.error) {
       throw new Error(`Failed to read file: ${jsonObj.error}`);
@@ -239,7 +240,7 @@ export class ModelLoaderService implements ModelLoaderServiceInterface {
     const lastSlashIndex = partsStr.lastIndexOf('/');
     const name = partsStr.substring(0, lastSlashIndex);
     const index = Number(partsStr.substring(lastSlashIndex + 1));
-    const resp = await fetch(
+    const resp = await apiFetch(
       `${LOAD_GRAPHS_JSON_API_PATH}?graph_index=${index}`,
     );
     const json = (await resp.json()) as AdapterConvertResponse;
@@ -255,7 +256,7 @@ export class ModelLoaderService implements ModelLoaderServiceInterface {
   ): Promise<{path: string; error?: string}> {
     const data = new FormData();
     data.append('file', file, file.name);
-    const uploadResp = await fetch(UPLOAD_API_PATH, {
+    const uploadResp = await apiFetch(UPLOAD_API_PATH, {
       method: 'POST',
       body: data,
     });
