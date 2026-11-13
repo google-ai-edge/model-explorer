@@ -45,6 +45,7 @@
 #include "xla/hlo/ir/hlo_computation.h"
 #include "xla/hlo/ir/hlo_instruction.h"
 #include "xla/hlo/ir/hlo_instructions.h"
+#include "xla/hlo/ir/hlo_module.h"
 #include "xla/hlo/ir/hlo_opcode.h"
 #include "xla/hlo/ir/hlo_print_options.h"
 #include "xla/service/pattern_matcher.h"
@@ -222,12 +223,94 @@ void RecursiveIncludeNestedComputations(
   }
 }
 
+// Returns the caller instruction enclosing the given computation, or nullptr
+// if it is an entry computation or has no known caller.
+const xla::HloInstruction* GetEnclosingCallerInstruction(
+    const xla::HloComputation* computation) {
+  if (computation == nullptr || computation->IsEntryComputation()) {
+    return nullptr;
+  }
+  if (const auto* fusion_instruction = computation->FusionInstruction()) {
+    return fusion_instruction;
+  }
+  const auto callers = computation->caller_instructions();
+  if (!callers.empty()) {
+    return callers.front();
+  }
+  return nullptr;
+}
+
+// Computes the ancestor computations from `computation` up to the root
+// computation in child-to-parent order.
+std::vector<const xla::HloComputation*> GetComputationAncestry(
+    const xla::HloComputation* comp) {
+  std::vector<const xla::HloComputation*> ancestry;
+  absl::flat_hash_set<const xla::HloComputation*> visited;
+  const xla::HloComputation* current = comp;
+  while (current != nullptr && visited.insert(current).second) {
+    ancestry.push_back(current);
+    if (current->IsEntryComputation()) {
+      break;
+    }
+    const xla::HloInstruction* caller = GetEnclosingCallerInstruction(current);
+    if (caller == nullptr || caller->parent() == nullptr ||
+        caller->parent() == current) {
+      break;
+    }
+    current = caller->parent();
+  }
+  return ancestry;
+}
+
+// Finds the Lowest Common Ancestor (LCA) computation among all given
+// computations.
+const xla::HloComputation* FindLowestCommonAncestorComputation(
+    const std::vector<const xla::HloComputation*>& computations) {
+  if (computations.empty()) {
+    return nullptr;
+  }
+  if (computations.size() == 1) {
+    return computations.front();
+  }
+
+  std::vector<const xla::HloComputation*> common_ancestors =
+      GetComputationAncestry(computations.front());
+
+  for (size_t i = 1; i < computations.size(); ++i) {
+    std::vector<const xla::HloComputation*> ancestry =
+        GetComputationAncestry(computations[i]);
+    absl::flat_hash_set<const xla::HloComputation*> ancestry_set(
+        ancestry.begin(), ancestry.end());
+    std::vector<const xla::HloComputation*> filtered;
+    for (const auto* comp : common_ancestors) {
+      if (ancestry_set.contains(comp)) {
+        filtered.push_back(comp);
+      }
+    }
+    common_ancestors = std::move(filtered);
+    if (common_ancestors.empty()) {
+      break;
+    }
+  }
+
+  if (!common_ancestors.empty()) {
+    return common_ancestors.front();
+  }
+  if (computations.front()->parent() != nullptr &&
+      computations.front()->parent()->has_entry_computation()) {
+    return computations.front()->parent()->entry_computation();
+  }
+  return computations.front();
+}
+
 // Gets a NodeFilter that includes roughly all instructions whose distance from
-// root is <= radius. The fusion instruction (and its fused computation) is
-// treated as a single entity. The scope will not go beyond instruction's parent
-// computation.
-NodeFilter MakeInstructionRadiusAroundFilter(const xla::HloInstruction* root,
-                                             const int radius) {
+// root is <= radius, plus any extra_node_names resolved across computations.
+// If out_lca is non-null, records the lowest common ancestor computation
+// containing root and all resolved extra instructions.
+NodeFilter MakeInstructionRadiusAroundFilter(
+    const xla::HloInstruction* root, const int radius,
+    const absl::flat_hash_set<std::string>& extra_node_names,
+    const xla::HloComputation** out_lca) {
   absl::flat_hash_set<const xla::HloInstruction*> included_nodes;
   std::deque<std::pair<const xla::HloInstruction*, int>> worklist;
   worklist.push_back({root, 0});
@@ -268,6 +351,54 @@ NodeFilter MakeInstructionRadiusAroundFilter(const xla::HloInstruction* root,
         worklist.push_back({user, depth + 1});
       }
     }
+  }
+
+  const xla::HloComputation* lca = (root != nullptr) ? root->parent() : nullptr;
+
+  // Resolve extra_node_names across module computations and include enclosing
+  // caller instructions up to the common ancestor computation.
+  if (!extra_node_names.empty() && root != nullptr &&
+      root->GetModule() != nullptr) {
+    std::vector<const xla::HloInstruction*> extra_instructions;
+    for (const xla::HloComputation* comp : root->GetModule()->computations()) {
+      for (const xla::HloInstruction* instr : comp->instructions()) {
+        if (extra_node_names.contains(instr->name())) {
+          extra_instructions.push_back(instr);
+          included_nodes.insert(instr);
+          RecursiveIncludeNestedComputations(instr, included_nodes);
+        }
+      }
+    }
+
+    std::vector<const xla::HloComputation*> computations_to_unify;
+    if (root->parent() != nullptr) {
+      computations_to_unify.push_back(root->parent());
+    }
+    for (const auto* extra_instr : extra_instructions) {
+      if (extra_instr->parent() != nullptr) {
+        computations_to_unify.push_back(extra_instr->parent());
+      }
+    }
+    lca = FindLowestCommonAncestorComputation(computations_to_unify);
+
+    // Include all intermediate enclosing caller instructions along the ancestry
+    // chains up to the LCA computation.
+    for (const auto* comp : computations_to_unify) {
+      const xla::HloComputation* current = comp;
+      while (current != nullptr && current != lca) {
+        const xla::HloInstruction* caller =
+            GetEnclosingCallerInstruction(current);
+        if (caller == nullptr) {
+          break;
+        }
+        included_nodes.insert(caller);
+        current = caller->parent();
+      }
+    }
+  }
+
+  if (out_lca != nullptr) {
+    *out_lca = lca;
   }
 
   return [=](const xla::HloInstruction* instruction) {
@@ -772,12 +903,53 @@ absl::StatusOr<GraphCollection> HloToGraph(
 
 absl::StatusOr<std::string> HloGraphAdapter(
     const xla::HloComputation& computation, const HloAdapterOption& options) {
+  const xla::HloComputation* lca = &computation;
+  absl::flat_hash_set<const xla::HloInstruction*> included_nodes;
+
+  if (!options.extra_node_names.empty() && computation.parent() != nullptr) {
+    std::vector<const xla::HloInstruction*> extra_instructions;
+    for (const xla::HloComputation* comp :
+         computation.parent()->computations()) {
+      for (const xla::HloInstruction* instr : comp->instructions()) {
+        if (options.extra_node_names.contains(instr->name())) {
+          extra_instructions.push_back(instr);
+          included_nodes.insert(instr);
+          RecursiveIncludeNestedComputations(instr, included_nodes);
+        }
+      }
+    }
+    std::vector<const xla::HloComputation*> computations_to_unify = {
+        &computation};
+    for (const auto* extra_instr : extra_instructions) {
+      if (extra_instr->parent() != nullptr) {
+        computations_to_unify.push_back(extra_instr->parent());
+      }
+    }
+    lca = FindLowestCommonAncestorComputation(computations_to_unify);
+    for (const auto* comp : computations_to_unify) {
+      const xla::HloComputation* current = comp;
+      while (current != nullptr && current != lca) {
+        const xla::HloInstruction* caller =
+            GetEnclosingCallerInstruction(current);
+        if (caller == nullptr) {
+          break;
+        }
+        included_nodes.insert(caller);
+        current = caller->parent();
+      }
+    }
+  }
+
   const NodeFilter node_filter = [&](const xla::HloInstruction* instruction) {
-    return true;
+    if (options.extra_node_names.empty()) {
+      return true;
+    }
+    return instruction->parent() == &computation ||
+           included_nodes.contains(instruction);
   };
 
   ABSL_ASSIGN_OR_RETURN(GraphCollection graph_collection,
-                        HloToGraph(computation, node_filter, options));
+                        HloToGraph(*lca, node_filter, options));
 
   return GraphCollectionToJson(graph_collection);
 }
@@ -785,14 +957,35 @@ absl::StatusOr<std::string> HloGraphAdapter(
 absl::StatusOr<std::string> HloGraphAdapter(
     const xla::HloInstruction& instruction, const int radius,
     const HloAdapterOption& options) {
-  const NodeFilter node_filter =
-      MakeInstructionRadiusAroundFilter(&instruction, radius);
+  const xla::HloComputation* lca = nullptr;
+  const NodeFilter node_filter = MakeInstructionRadiusAroundFilter(
+      &instruction, radius, options.extra_node_names, &lca);
+  if (lca == nullptr) {
+    lca = instruction.parent();
+  }
 
-  ABSL_ASSIGN_OR_RETURN(
-      GraphCollection graph_collection,
-      HloToGraph(*instruction.parent(), node_filter, options));
+  ABSL_ASSIGN_OR_RETURN(GraphCollection graph_collection,
+                        HloToGraph(*lca, node_filter, options));
 
   return GraphCollectionToJson(graph_collection);
+}
+
+absl::StatusOr<std::string> HloGraphAdapter(
+    const xla::HloInstruction& instruction, const int radius,
+    const absl::flat_hash_set<std::string>& extra_node_names) {
+  HloAdapterOption options;
+  options.extra_node_names = extra_node_names;
+  return HloGraphAdapter(instruction, radius, options);
+}
+
+absl::StatusOr<std::string> HloGraphAdapter(
+    const xla::HloInstruction& instruction, const int radius,
+    const HloAdapterOption& options,
+    const absl::flat_hash_set<std::string>& extra_node_names) {
+  HloAdapterOption combined_options = options;
+  combined_options.extra_node_names.insert(extra_node_names.begin(),
+                                           extra_node_names.end());
+  return HloGraphAdapter(instruction, radius, combined_options);
 }
 
 }  // namespace adapter
