@@ -32,3 +32,31 @@ export class LocalStorageService implements LocalStorageServiceInterface {
     window.localStorage.setItem(key, value);
   }
 }
+
+/**
+ * Returns the value stored under `key` in the session storage, or null if there
+ * is none or the session storage is unavailable (e.g. in some sandboxed
+ * iframes).
+ *
+ * This is a plain function (not part of `LocalStorageService`) so that code
+ * outside of Angular's dependency injection can use it.
+ */
+export function getSessionStorageItem(key: string): string | null {
+  try {
+    return window.sessionStorage.getItem(key);
+  } catch (e) {
+    return null;
+  }
+}
+
+/**
+ * Stores `value` under `key` in the session storage. Does nothing if the
+ * session storage is unavailable (e.g. in some sandboxed iframes).
+ */
+export function setSessionStorageItem(key: string, value: string): void {
+  try {
+    window.sessionStorage.setItem(key, value);
+  } catch (e) {
+    // Ignore: callers treat the session storage as a best-effort cache.
+  }
+}

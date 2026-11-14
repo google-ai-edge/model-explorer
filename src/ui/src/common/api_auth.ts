@@ -16,6 +16,11 @@
  * ==============================================================================
  */
 
+import {
+  getSessionStorageItem,
+  setSessionStorageItem,
+} from '../components/visualizer/local_storage_service';
+
 import {IS_EXTERNAL} from './flags';
 
 /**
@@ -97,20 +102,12 @@ export function resetApiAuthForTesting(): void {
 }
 
 function readStoredApiToken(): string {
-  try {
-    return window.sessionStorage.getItem(API_TOKEN_SESSION_STORAGE_KEY) ?? '';
-  } catch (e) {
-    // Storage might be unavailable (e.g. in some sandboxed iframes).
-    return '';
-  }
+  return getSessionStorageItem(API_TOKEN_SESSION_STORAGE_KEY) ?? '';
 }
 
 function storeApiToken(token: string): void {
-  try {
-    window.sessionStorage.setItem(API_TOKEN_SESSION_STORAGE_KEY, token);
-  } catch (e) {
-    // Ignore. The token in the page URL still works.
-  }
+  // Best effort: if it can't be stored, the token in the page URL still works.
+  setSessionStorageItem(API_TOKEN_SESSION_STORAGE_KEY, token);
 }
 
 /**
