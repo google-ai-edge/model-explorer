@@ -54,12 +54,29 @@ export interface ApiAuthDeps {
 
   /** Whether the page is the custom element, which sets this global. */
   isCustomElement(): boolean;
+
+  /**
+   * Returns the storage that keeps the token across navigations, or null if
+   * there is none. Might throw (e.g. in some sandboxed iframes).
+   */
+  getSessionStorage(): Storage | null;
+}
+
+/**
+ * Returns the browser's session storage in the external version.
+ *
+ * The internal version doesn't use the token, and client-side storage there
+ * needs a conformance review, so it doesn't touch the session storage at all.
+ */
+function getBrowserSessionStorage(): Storage | null {
+  return window.sessionStorage;
 }
 
 const DEFAULT_DEPS: Readonly<ApiAuthDeps> = {
   tokenAuthEnabled: IS_EXTERNAL,
   getLocationHref: () => window.location.href,
   isCustomElement: () => Reflect.get(window, 'modelExplorer') != null,
+  getSessionStorage: getBrowserSessionStorage,
 };
 
 /** Logs that the server rejected the page's token, until the app sets a UI. */
@@ -98,7 +115,9 @@ export function resetApiAuthForTesting(): void {
 
 function readStoredApiToken(): string {
   try {
-    return window.sessionStorage.getItem(API_TOKEN_SESSION_STORAGE_KEY) ?? '';
+    // Get the storage inside `try`: just accessing it might throw.
+    const storage = deps.getSessionStorage();
+    return storage?.getItem(API_TOKEN_SESSION_STORAGE_KEY) ?? '';
   } catch (e) {
     // Storage might be unavailable (e.g. in some sandboxed iframes).
     return '';
@@ -107,7 +126,7 @@ function readStoredApiToken(): string {
 
 function storeApiToken(token: string): void {
   try {
-    window.sessionStorage.setItem(API_TOKEN_SESSION_STORAGE_KEY, token);
+    deps.getSessionStorage()?.setItem(API_TOKEN_SESSION_STORAGE_KEY, token);
   } catch (e) {
     // Ignore. The token in the page URL still works.
   }
