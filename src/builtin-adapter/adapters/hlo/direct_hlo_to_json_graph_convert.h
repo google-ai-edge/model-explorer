@@ -18,6 +18,7 @@
 
 #include <string>
 
+#include "absl/container/flat_hash_set.h"
 #include "absl/functional/any_invocable.h"
 #include "absl/status/statusor.h"
 #include "common/schema_structs.h"
@@ -42,6 +43,11 @@ struct HloAdapterOption {
   // async-collective-done, mark it as implementation details and hide
   // on visualization.
   bool hide_async_collective_fusion_parameter = true;
+
+  // Extra instruction names to explicitly include in the converted graph,
+  // even if they fall outside the neighborhood radius or reside in different
+  // computations within the module (e.g. across fusion boundaries).
+  absl::flat_hash_set<std::string> extra_node_names;
 };
 
 // Gets the instruction id.
@@ -86,12 +92,24 @@ absl::StatusOr<std::string> HloGraphAdapter(
 
 // Converts an HLO instruction and its neighbors roughly within the radius to a
 // JSON graph. The fusion instruction (and its fused computation) is
-// treated as a single entity. The scope will not go beyond instruction's parent
-// computation (i.e., traversal continues until reaching parent computation
-// boundary).
+// treated as a single entity. The scope will expand to the lowest common
+// ancestor computation containing both the instruction and any extra_node_names
+// specified in options.
 absl::StatusOr<std::string> HloGraphAdapter(
     const xla::HloInstruction& instruction, int radius,
     const HloAdapterOption& options = HloAdapterOption());
+
+// Overload taking explicit extra_node_names to include in the graph.
+absl::StatusOr<std::string> HloGraphAdapter(
+    const xla::HloInstruction& instruction, int radius,
+    const absl::flat_hash_set<std::string>& extra_node_names);
+
+// Converts an HLO instruction with custom options and explicit
+// extra_node_names.
+absl::StatusOr<std::string> HloGraphAdapter(
+    const xla::HloInstruction& instruction, int radius,
+    const HloAdapterOption& options,
+    const absl::flat_hash_set<std::string>& extra_node_names);
 
 }  // namespace adapter
 }  // namespace model_explorer
