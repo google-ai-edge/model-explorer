@@ -78,7 +78,7 @@ export class WebglRendererAttrsTableService {
   private readonly visualizerThemeService: VisualizerThemeService = inject(
     VisualizerThemeService,
   );
-  private readonly attrsTableBgs = new WebglRoundedRectangles(
+  readonly attrsTableBgs = new WebglRoundedRectangles(
     4,
     this.visualizerThemeService,
   );
