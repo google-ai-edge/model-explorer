@@ -903,3 +903,4 @@ function getMaxAttrLabelAndValueWidth(
   }
   return {maxAttrLabelWidth, maxAttrValueWidth};
 }
+ 
