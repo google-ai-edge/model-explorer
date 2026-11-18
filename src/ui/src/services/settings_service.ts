@@ -270,14 +270,13 @@ export const SETTING_USE_SVG_TEXT_RENDERER: Setting = {
   label: 'Use SVG text renderer',
   key: SettingKey.USE_SVG_TEXT_RENDERER,
   type: SettingType.BOOLEAN,
-  defaultValue: false,
+  defaultValue: true,
   help:
     'Enable this to render node label and on-node attribute texts ' +
     'using SVG for improved clarity, especially at smaller font sizes. ' +
     'It also supports rendering non-ASCII characters. ' +
     '⚠️ Note: This may impact performance when rendering large models.',
 };
-
 const SETTINGS_LOCAL_STORAGE_KEY = 'model_explorer_settings';
 
 /**

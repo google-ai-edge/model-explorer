@@ -21,7 +21,7 @@ import {IS_EXTERNAL} from '../../../common/flags';
 /** The height of the node label. */
 export const DEFAULT_NODE_LABEL_HEIGHT = 11;
 
-/** The padding of the label. */
+/** The default padding around node label. */
 export const LABEL_PADDING = 24;
 
 /**
@@ -38,13 +38,13 @@ export const DEFAULT_NODE_ATTRS_TABLE_FONT_SIZE = 9;
 /** The ratio of the attrs table height to the font size. */
 export const NODE_ATTRS_TABLE_FONT_SIZE_TO_HEIGHT_RATIO = 1.33;
 
-/** The margin top factor of the attrs table to the node label. */
-export const NODE_ATTRS_TABLE_MARGIN_TOP_FACTOR = 1.5;
-
 /** The maximum number of characters in a value in the attrs table. */
 export const NODE_ATTRS_TABLE_VALUE_MAX_CHAR_COUNT = 60;
 
-/** The duration of the node animation. */
+/** The ratio of node label Y padding to the top margin above attrs table. */
+export const NODE_ATTRS_TABLE_MARGIN_TOP_FACTOR = 1.5;
+
+/** The duration of the node animation in ms. */
 export const NODE_ANIMATION_DURATION = 200;
 
 /** The height of the summary row in node data provider. */

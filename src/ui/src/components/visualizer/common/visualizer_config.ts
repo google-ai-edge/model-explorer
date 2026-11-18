@@ -72,14 +72,6 @@ export declare interface VisualizerConfig {
   /** The maximum number of child nodes under a layer node. Default: 400. */
   artificialLayerNodeCountThreshold?: number;
 
-  /**
-   * The maximum width for node labels.
-   *
-   * If set, node labels will be wrapped to this width.
-   * If unset (default), the node labels will have a default maximum width.
-   */
-  maxNodeLabelWidth?: number;
-
   /** The font size of the edge label. Default: 7.5. */
   edgeLabelFontSize?: number;
 
@@ -91,6 +83,15 @@ export declare interface VisualizerConfig {
 
   /** The font size of the op node label. Default: 11. */
   opNodeLabelFontSize?: number;
+
+  /**
+   * The maximum width for node labels.
+   *
+   * If set, node labels will be wrapped to multiple lines if they exceed this
+   * width.
+   * If unset (default), the node labels will have a default maximum width.
+   */
+  maxNodeLabelWidth?: number;
 
   /** The font size of the group node label. Default: 11. */
   groupNodeLabelFontSize?: number;
@@ -270,7 +271,6 @@ export declare interface VisualizerConfig {
    * If set, expand the values in the info panel by default.
    */
   expandInfoPanelValuesByDefault?: boolean;
-
   /**
    * If set, enable the background texture which will draw a grid with dots on
    * the background.

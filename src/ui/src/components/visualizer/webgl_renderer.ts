@@ -268,6 +268,8 @@ export class WebglRenderer implements OnInit, OnChanges, OnDestroy {
   dragToSelectDragArea!: DragArea;
   @ViewChild('svgZoomTarget', {static: true})
   svgZoomTarget!: ElementRef<SVGAElement>;
+  @ViewChild('svgTextRendererEle', {static: true})
+  svgTextRendererEle!: ElementRef<SVGElement>;
 
   readonly appService: AppService = inject(AppService);
   private readonly threejsService: ThreejsService = inject(ThreejsService);
@@ -325,7 +327,6 @@ export class WebglRenderer implements OnInit, OnChanges, OnDestroy {
   curHiddenOutputIds: Record<string, boolean> = {};
 
   elementsToRender: RenderElement[] = [];
-
   private updateNodesStylesSavedSelectedNodeId = '';
   private updateNodesStylesSavedIoTracingData?: IoTracingData;
   private curSelectedRenderer?: RendererInfo;
