@@ -16,19 +16,57 @@
  * ==============================================================================
  */
 
-import {Injectable} from '@angular/core';
+import {Injectable, OnDestroy} from '@angular/core';
+
+declare interface GlobalWithWorkerScriptPath {
+  readonly modelExplorer?: {
+    readonly workerScriptPath?: string;
+  };
+}
 
 /**
- * Service to manage web worker.
+ * Service managing the layout Web Worker for the custom element bundle.
  */
 @Injectable()
-export class WorkerService {
-  readonly worker: Worker;
+export class WorkerService implements OnDestroy {
+  private currentWorker?: Worker;
 
-  constructor() {
+  /** Returns the active layout worker after `init()` has initialized it. */
+  get worker(): Worker {
+    if (!this.currentWorker) {
+      throw new Error(
+        'WorkerService.init() must be called before accessing worker.',
+      );
+    }
+    return this.currentWorker;
+  }
+
+  /**
+   * Initializes (or re-initializes) the layout worker, honoring
+   * `window.modelExplorer.workerScriptPath` before falling back to
+   * `'worker.js'`.
+   *
+   * Accepts `_onPortal` to match the main app's `WorkerService.init` contract
+   * used via Angular CLI `fileReplacements`.
+   */
+  init(_onPortal: boolean): void {
+    this.disposeWorker();
+
+    const workerScriptPath = (globalThis as GlobalWithWorkerScriptPath)
+      .modelExplorer?.workerScriptPath;
     const workerScriptUrl =
-      // tslint:disable-next-line:no-any
-      (window as any)['modelExplorer'].workerScriptPath ?? 'worker.js';
-    this.worker = new Worker(workerScriptUrl);
+      workerScriptPath != null && workerScriptPath !== ''
+        ? workerScriptPath
+        : 'worker.js';
+    this.currentWorker = new Worker(workerScriptUrl);
+  }
+
+  ngOnDestroy(): void {
+    this.disposeWorker();
+  }
+
+  private disposeWorker(): void {
+    this.currentWorker?.terminate();
+    this.currentWorker = undefined;
   }
 }

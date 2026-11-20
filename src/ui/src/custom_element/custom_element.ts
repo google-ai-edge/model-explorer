@@ -43,8 +43,8 @@ createApplication({
   }
 });
 
-// tslint:disable-next-line:no-any
-(window as any)['modelExplorer'] = {};
+// Preserve host options configured before the bundle loads.
+(globalThis as {modelExplorer?: unknown}).modelExplorer ??= {};
 
 // Re-export all the common types used by the visualizer.
 //
