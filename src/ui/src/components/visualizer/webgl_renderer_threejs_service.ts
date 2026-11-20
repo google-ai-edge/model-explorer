@@ -65,7 +65,6 @@ export class WebglRendererThreejsService {
 
   setupZoomAndPan(
     rootEle: HTMLElement | SVGElement,
-    svgTextRendererEle: HTMLElement | SVGElement,
     minZoom = 0.1,
     maxZoom = 10,
   ) {
@@ -193,7 +192,7 @@ export class WebglRendererThreejsService {
         return true;
       })
       .on('zoom', () => {
-        this.handleZoom(svgTextRendererEle);
+        this.handleZoom();
       })
       .on('end', () => {
         this.handleZoomEnd(savedTranslateX, savedTranslateY);
@@ -385,32 +384,30 @@ export class WebglRendererThreejsService {
   }
 
   renderPngDownloader(camera: three.Camera) {
-    // If using svg text renderer, render without svg text renderer first, then
-    // render the png downloader image.
-    const useSvgTextRenderer =
-      this.webglRenderer.appService.config()?.svgTextRenderer === true;
-    if (useSvgTextRenderer) {
-      this.webglRenderer.renderAll({forceDisableSvgTextRenderer: true});
+    const useSvg = this.webglRenderer.appService.config()?.svgTextRenderer;
+    if (useSvg) {
+      this.webglRenderer.forceDisableSvgAndRender();
     }
     this.pngDownloaderRenderer.render(this.scene, camera);
-    if (useSvgTextRenderer) {
-      this.webglRenderer.renderAll();
+    if (useSvg) {
+      this.webglRenderer.restoreSvgAndRender();
     }
   }
 
   renderSnapshot(width: number, height: number) {
-    // If using svg text renderer, render without svg text renderer first, then
-    // render the snapshot image.
-    const useSvgTextRenderer =
-      this.webglRenderer.appService.config()?.svgTextRenderer === true;
-    if (useSvgTextRenderer) {
-      this.webglRenderer.renderAll({forceDisableSvgTextRenderer: true});
+    const useSvg = this.webglRenderer.appService.config()?.svgTextRenderer;
+    if (useSvg) {
+      this.webglRenderer.forceDisableSvgAndRender();
     }
     this.snapshotRenderer.setSize(width, height, false);
     this.snapshotRenderer.render(this.scene, this.camera);
-    if (useSvgTextRenderer) {
-      this.webglRenderer.renderAll();
+    if (useSvg) {
+      this.webglRenderer.restoreSvgAndRender();
     }
+  }
+
+  setSceneBackground(color: three.Color) {
+    this.scene.background = color;
   }
 
   createOrthographicCamera(
@@ -726,8 +723,20 @@ export class WebglRendererThreejsService {
     this.zoom.translateBy(view, deltaX, deltaY);
   }
 
-  private handleZoom(svgTextRendererEle: HTMLElement | SVGElement) {
-    const transform = d3.event.transform;
+  updateSvgTransform() {
+    if (
+      this.webglRenderer.appService.config()?.svgTextRenderer &&
+      this.webglRenderer.svgTextRenderer
+    ) {
+      const svg = this.webglRenderer.svgTextRenderer.nativeElement;
+      const transform = d3.zoomTransform(
+        this.webglRenderer.container.nativeElement,
+      );
+      d3.select(svg).select('g.root-group').attr('transform', transform.toString());
+    }
+  }
+
+  private handleZoom() {
     this.curScale = d3.event.transform.k;
     this.curTranslateX = d3.event.transform.x;
     this.curTranslateY = d3.event.transform.y;
@@ -739,12 +748,11 @@ export class WebglRendererThreejsService {
 
       this.setCameraFrustum();
 
+      this.updateSvgTransform();
+
       this.webglRenderer.updateNodeBgColorWhenFar();
       this.render();
       this.webglRenderer.handleHoveredGroupNodeIconChanged();
-
-      const svgTextRendererEleSelect = d3.select(svgTextRendererEle);
-      svgTextRendererEleSelect.attr('transform', transform);
     });
   }
 
@@ -809,7 +817,7 @@ export class WebglRendererThreejsService {
       this.setCameraFrustum();
       this.render();
       if (this.webglRenderer.appService.config()?.svgTextRenderer === true) {
-        this.webglRenderer.renderSvgTexts(true);
+        this.webglRenderer.renderGraph();
       }
 
       this.zoomFit(

@@ -266,8 +266,8 @@ export class WebglRenderer implements OnInit, OnChanges, OnDestroy {
   rangeZoomDragArea!: DragArea;
   @ViewChild('dragToSelectDragArea', {static: true})
   dragToSelectDragArea!: DragArea;
-  @ViewChild('svgZoomTarget', {static: true})
-  svgZoomTarget!: ElementRef<SVGAElement>;
+  @ViewChild('svgTextRenderer', {static: true})
+  svgTextRenderer!: ElementRef<SVGElement>;
 
   readonly appService: AppService = inject(AppService);
   private readonly threejsService: ThreejsService = inject(ThreejsService);
@@ -385,6 +385,7 @@ export class WebglRenderer implements OnInit, OnChanges, OnDestroy {
   private savedSyncNavigationData: SyncNavigationData | undefined = undefined;
   private savedShowDiffHighlightsInMatchNodeIdMode: boolean | undefined =
     undefined;
+  forceDisableSvg = false;
 
   private readonly selectedNodeInfo = computed(() => {
     const pane = this.appService.getPaneById(this.paneId);
@@ -483,7 +484,6 @@ export class WebglRenderer implements OnInit, OnChanges, OnDestroy {
     readonly webglRendererThreejsService: WebglRendererThreejsService,
     private readonly workerService: WorkerService,
   ) {
-    this.svgTextRendererService.init(this);
     this.webglRendererAttrsTableService.init(this);
     this.webglRendererEdgeTextsService.init(this);
     this.webglRendererEdgeOverlaysService.init(this);
@@ -921,7 +921,6 @@ export class WebglRenderer implements OnInit, OnChanges, OnDestroy {
 
     this.webglRendererThreejsService.setupZoomAndPan(
       this.container.nativeElement,
-      this.svgZoomTarget.nativeElement,
       0.0001,
       20,
     );
@@ -2231,7 +2230,7 @@ export class WebglRenderer implements OnInit, OnChanges, OnDestroy {
     this.workerService.worker.postMessage(req);
   }
 
-  private renderGraph(options?: RenderGraphOptions) {
+  renderGraph(options?: RenderGraphOptions) {
     const useSvgTextRenderer =
       this.appService.config()?.svgTextRenderer === true &&
       !options?.forceDisableSvgTextRenderer;
@@ -2257,11 +2256,7 @@ export class WebglRenderer implements OnInit, OnChanges, OnDestroy {
     if (!options?.skipReRenderEdges) {
       this.renderEdges();
     }
-    if (useSvgTextRenderer) {
-      this.renderSvgTexts();
-    } else {
-      this.renderTexts();
-    }
+    this.renderTexts();
 
     const keys = getShowOnEdgeInputOutputMetadataKeys(this.curShowOnEdgeItem);
     if (!options?.skipReRenderEdgeTexts) {
@@ -2743,23 +2738,16 @@ export class WebglRenderer implements OnInit, OnChanges, OnDestroy {
     }
   }
 
-  renderSvgTexts(clearAllFirst = false) {
-    this.svgTextRendererService.render(
-      this.svgZoomTarget.nativeElement,
-      clearAllFirst,
-    );
-  }
-
   private setSvgTextsVisible(visible: boolean) {
     this.svgTextRendererService.setTextsVisible(
-      this.svgZoomTarget.nativeElement,
+      this.svgTextRenderer.nativeElement,
       visible,
     );
   }
 
   private setSvgTextsOpacity(nodeIds: string[], opacity: number) {
     this.svgTextRendererService.setTextsOpacity(
-      this.svgZoomTarget.nativeElement,
+      this.svgTextRenderer.nativeElement,
       nodeIds,
       opacity,
     );
@@ -2767,20 +2755,23 @@ export class WebglRenderer implements OnInit, OnChanges, OnDestroy {
 
   private restoreSvgTextsOpacity() {
     this.svgTextRendererService.restoreTextsOpacity(
-      this.svgZoomTarget.nativeElement,
+      this.svgTextRenderer.nativeElement,
     );
   }
 
   private updateSvgTextsColor(nodeIds: string[], color: string) {
     this.svgTextRendererService.updateColorInNode(
-      this.svgZoomTarget.nativeElement,
+      this.svgTextRenderer.nativeElement,
       nodeIds,
       color,
     );
   }
 
   private restoreSvgTextsColors() {
-    this.svgTextRendererService.restoreColors(this.svgZoomTarget.nativeElement);
+    this.svgTextRendererService.restoreColors(
+      this.svgTextRenderer.nativeElement,
+      this.appService.theme() === 'dark',
+    );
   }
 
   private renderTexts() {
@@ -2825,8 +2816,35 @@ export class WebglRenderer implements OnInit, OnChanges, OnDestroy {
         });
       }
     }
-    this.texts.generateMesh(labels);
-    this.webglRendererThreejsService.addToScene(this.texts.mesh);
+
+    if (this.appService.config()?.svgTextRenderer && !this.forceDisableSvg) {
+      this.texts.generateMesh([]);
+      this.webglRendererThreejsService.removeFromScene(this.texts.mesh);
+      this.svgTextRendererService.renderTexts(
+        this.svgTextRenderer.nativeElement,
+        labels,
+        this.appService.theme() === 'dark',
+        'g.node-labels-group',
+      );
+      this.webglRendererThreejsService.updateSvgTransform();
+    } else {
+      this.svgTextRendererService.clear(
+        this.svgTextRenderer.nativeElement,
+        'g.node-labels-group',
+      );
+      this.texts.generateMesh(labels);
+      this.webglRendererThreejsService.addToScene(this.texts.mesh);
+    }
+  }
+
+  forceDisableSvgAndRender() {
+    this.forceDisableSvg = true;
+    this.renderGraph();
+  }
+
+  restoreSvgAndRender() {
+    this.forceDisableSvg = false;
+    this.renderGraph();
   }
 
   private renderArtificialGroupBorders() {
